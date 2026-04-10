@@ -1,5 +1,5 @@
-import { FeedMediaPost, FeedPost } from "@/types/feedTypes";
-import React from "react";
+import { FeedPost } from "@/types/feedTypes";
+import React, { useCallback } from "react";
 import {
   useAnimatedStyle,
   useSharedValue,
@@ -20,7 +20,7 @@ interface Props {
   tabBarHeight: number;
 }
 
-export default function PostMedia({
+function PostMediaComponent({
   post,
   isPlaying,
   onTogglePlay,
@@ -37,7 +37,7 @@ export default function PostMedia({
     opacity: heartOpacity.value,
   }));
 
-  const triggerHeart = () => {
+  const triggerHeart = useCallback(() => {
     heartScale.value = 0;
     heartOpacity.value = 1;
 
@@ -47,32 +47,19 @@ export default function PostMedia({
         heartOpacity.value = withTiming(0, { duration: 200 });
       });
     });
-  };
+  }, []);
 
   /* ================= MEDIA ================= */
   if (post.type === "media") {
-    const mediaPost = post as FeedMediaPost;
-    const firstMedia = mediaPost.media?.[0];
+    const media = post.media?.[0];
 
-    if (!firstMedia || !firstMedia.url) return null;
+    // VIDEO
+    if (post.mediaType === "video") {
+      if (!media?.url) return null;
 
-    if (firstMedia.type === "image") {
-      return (
-        <CarouselPostCard
-          post={mediaPost}
-          onLike={onLike}
-          heartStyle={heartStyle}
-          triggerHeart={triggerHeart}
-          screenWidth={screenWidth}
-          screenHeight={screenHeight}
-        />
-      );
-    }
-
-    if (firstMedia.type === "video") {
       return (
         <VideoPostCard
-          post={mediaPost}
+          post={post}
           isPlaying={isPlaying}
           onTogglePlay={onTogglePlay}
           onLike={onLike}
@@ -85,13 +72,33 @@ export default function PostMedia({
       );
     }
 
-    return null;
+    // IMAGE
+    if (!post.media?.length) return null;
+
+    return (
+      <CarouselPostCard
+        post={post}
+        onLike={onLike}
+        heartStyle={heartStyle}
+        triggerHeart={triggerHeart}
+        screenWidth={screenWidth}
+        screenHeight={screenHeight}
+      />
+    );
   }
 
-  /* ================= TEXT / BIBLE ================= */
+  /* ================= TEXT ================= */
   if (post.type === "text" || post.type === "bible") {
     return <TextPostCard post={post} onLike={onLike} />;
   }
 
   return null;
 }
+
+/* 🔥 PREVENT RE-RENDERS */
+export default React.memo(
+  PostMediaComponent,
+  (prev, next) =>
+    prev.post.id === next.post.id &&
+    prev.isPlaying === next.isPlaying
+);

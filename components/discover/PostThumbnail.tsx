@@ -18,48 +18,54 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
   const firstMedia = isMedia ? post.media?.[0] : undefined;
 
   const isCarousel =
-    isMedia &&
-    post.media?.length > 1 &&
-    firstMedia?.type === "image";
+    isMedia && post.media?.length > 1 && firstMedia?.type === "image";
 
   /* ================= VIDEO THUMBNAIL ================= */
 
+  const mediaUrl = firstMedia?.url;
+
   useEffect(() => {
-  let isMounted = true;
+    let isMounted = true;
 
-  async function loadThumbnail() {
-    if (!isMedia || firstMedia?.type !== "video") return;
+    async function loadThumbnail() {
+      if (!isMedia || firstMedia?.type !== "video") return;
 
-    const backendThumb = firstMedia.thumbnailUrl;
+      console.log("[THUMB] 🎬 Processing", mediaUrl);
 
-    // ignore bad backend thumbnail
-    const isValidBackend =
-      backendThumb &&
-      !backendThumb.endsWith(".mp4") &&
-      !backendThumb.includes(".mp4?");
+      const backendThumb = firstMedia.thumbnailUrl;
 
-    if (isValidBackend) {
-      setThumbnailUri(backendThumb);
-      return;
-    }
+      const isValidBackend =
+        backendThumb &&
+        !backendThumb.endsWith(".mp4") &&
+        !backendThumb.includes(".mp4?");
 
-    try {
-      const generated = await generateVideoThumbnail(firstMedia.url);
-
-      if (generated && isMounted) {
-        setThumbnailUri(generated);
+      if (isValidBackend) {
+        console.log("[THUMB] ✅ Using backend thumbnail", backendThumb);
+        setThumbnailUri(backendThumb);
+        return;
       }
-    } catch (err) {
-      console.warn("Thumbnail generation failed", err);
+
+      try {
+        console.log("[THUMB] ⚙️ Generating thumbnail...");
+        const generated = await generateVideoThumbnail(mediaUrl);
+
+        if (generated && isMounted) {
+          console.log("[THUMB] ✅ Generated thumbnail", generated);
+          setThumbnailUri(generated);
+        } else {
+          console.warn("[THUMB] ❌ Generation returned null");
+        }
+      } catch (e) {
+        console.error("[THUMB] ❌ Generation failed", e);
+      }
     }
-  }
 
-  loadThumbnail();
+    loadThumbnail();
 
-  return () => {
-    isMounted = false;
-  };
-}, [firstMedia?.url]);
+    return () => {
+      isMounted = false;
+    };
+  }, [mediaUrl]);
 
   /* ================= RENDER MEDIA ================= */
 
@@ -78,7 +84,18 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
     /* VIDEO */
     if (isMedia && firstMedia?.type === "video") {
       if (!thumbnailUri) {
-        return <View style={{ flex: 1, backgroundColor: "#000" }} />;
+        return (
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "#111",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="videocam" size={24} color="#666" />
+          </View>
+        );
       }
 
       return (
@@ -87,6 +104,33 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
           style={{ width: "100%", height: "100%" }}
           resizeMode="cover"
         />
+      );
+    }
+
+    if (isMedia && !firstMedia) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#111",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 8,
+          }}
+        >
+          <Ionicons name="image" size={20} color="white" />
+          <Text
+            numberOfLines={2}
+            style={{
+              color: "#fff",
+              fontSize: 10,
+              marginTop: 4,
+              textAlign: "center",
+            }}
+          >
+            {post.caption || "Media Post"}
+          </Text>
+        </View>
       );
     }
 

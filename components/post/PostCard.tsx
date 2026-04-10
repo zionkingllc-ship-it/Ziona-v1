@@ -4,13 +4,11 @@ import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
-import { Pressable } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Pressable, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
 
-/* MODALS */
-import { TouchableOpacity } from "react-native";
 import { CommentsSheet } from "../comments/commentsModal";
 import BookmarkFoldersModal from "../ui/modals/BookmarkFoldersModal";
 import ConfirmReportModal from "../ui/modals/ConfirmReportModal";
@@ -20,8 +18,6 @@ import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
 
 import { useToggleLike } from "@/hooks/useToggleLike";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 
 /* ICONS */
 const likeIcon = require("@/assets/images/likeIcon.png");
@@ -31,11 +27,8 @@ const bookmarkIcon = require("@/assets/images/bookmarkIcon.png");
 const bookmarkIconActive = require("@/assets/images/bookmarkIconActive.png");
 const shareIcon = require("@/assets/images/shareIcon.png");
 
-
-
 type Props = {
   post: FeedPost;
-  liked: boolean;
   isPlaying: boolean;
   screenHeight: number;
   onTogglePlay?: () => void;
@@ -43,16 +36,17 @@ type Props = {
   tabBarHeight: number;
 };
 
-export function PostCard({
+function PostCardComponent({
   post,
   isPlaying,
   screenHeight,
   onTogglePlay,
   screenWidth,
   tabBarHeight,
-  liked,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+
+  /* MODALS */
   const [commentsVisible, setCommentsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
@@ -61,11 +55,8 @@ export function PostCard({
   const [createVisible, setCreateVisible] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
 
-  const likedState = liked;
+  const likedState = post.viewerState.liked;
   const likeCount = post.stats.likesCount;
-  const insets = useSafeAreaInsets();
-
-  const toggleLikeMutation = useToggleLike();
 
   const { folders, toggleBookmark, getSavedFolderIds, createFolder } =
     useBookmarksStore();
@@ -73,36 +64,46 @@ export function PostCard({
   const savedFolderIds = getSavedFolderIds(post.id);
   const isBookmarked = savedFolderIds.length > 0;
 
-  const { getIconSize, getAvatarSize, getFontSize } = useResponsiveSize();
+  const toggleLikeMutation = useToggleLike();
 
+  /* RESET CAPTION ON POST CHANGE */
   useEffect(() => {
     setExpanded(false);
   }, [post.id]);
 
+  /* HANDLERS (MEMO SAFE) */
   const handleLike = () => {
     toggleLikeMutation.mutate({
       postId: post.id,
+      currentLiked: likedState,
     });
   };
+
+  /* MEDIA PROPS MEMO */
+  const mediaProps = useMemo(
+    () => ({
+      post,
+      isPlaying,
+      onTogglePlay,
+      screenWidth,
+      screenHeight,
+      tabBarHeight,
+      onLike: handleLike,
+    }),
+    [post, isPlaying, screenWidth, screenHeight, tabBarHeight]
+  );
 
   return (
     <YStack height={screenHeight} width="100%" backgroundColor="black">
       {/* MEDIA */}
-      <PostMedia
-        post={post}
-        isPlaying={isPlaying}
-        onTogglePlay={onTogglePlay}
-        screenWidth={screenWidth}
-        screenHeight={screenHeight}
-        tabBarHeight={tabBarHeight}
-        onLike={handleLike}
-      />
+      <PostMedia {...mediaProps} />
 
-      {/*SINGLE OVERLAY*/}
-      <YStack position="absolute" bottom={tabBarHeight/3} width="100%">
+      {/* OVERLAY */}
+      <YStack position="absolute" bottom={tabBarHeight / 3} width="100%">
         <XStack padding="$4" alignItems="flex-end">
+          {/* LEFT SIDE */}
           <YStack flex={1} gap="$2">
-            {/* PROFILE ROW */}
+            {/* PROFILE */}
             <XStack gap="$4" alignItems="center">
               <XStack gap="$2" alignItems="center">
                 <Image
@@ -133,8 +134,10 @@ export function PostCard({
                     alignItems: "center",
                   }}
                 >
-                  <Text color={colors.white} fontSize={13} fontWeight="500">
-                    {post.viewerState?.followingAuthor ? "following" : "follow"}
+                  <Text color={colors.white} fontSize={13}>
+                    {post.viewerState?.followingAuthor
+                      ? "following"
+                      : "follow"}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -154,7 +157,7 @@ export function PostCard({
                 {post.caption.length > 90 && (
                   <Pressable onPress={() => setExpanded((p) => !p)}>
                     <LinearGradient
-                      colors={["transparent", "rgba(55, 55, 55, 0.6)"]}
+                      colors={["transparent", "rgba(55,55,55,0.6)"]}
                       style={{
                         position: "absolute",
                         bottom: 0,
@@ -162,13 +165,7 @@ export function PostCard({
                         width: "100%",
                       }}
                     />
-
-                    <Text
-                      color={colors.white}
-                      fontSize={14}
-                      fontWeight="600"
-                      alignSelf="flex-end"
-                    >
+                    <Text color={colors.white} fontSize={14}>
                       {expanded ? "less" : "more"}
                     </Text>
                   </Pressable>
@@ -177,9 +174,9 @@ export function PostCard({
             )}
           </YStack>
 
-          {/* ACTIONS */}
+          {/* RIGHT ACTIONS */}
           <YStack gap="$4">
-            <YStack justifyContent="center" alignItems="center">
+            <YStack alignItems="center">
               <Pressable onPress={handleLike}>
                 <Image
                   source={likedState ? likeIconActive : likeIcon}
@@ -187,7 +184,7 @@ export function PostCard({
                   height={24}
                 />
               </Pressable>
-              <Text color={colors.white} fontFamily={"$body"} fontSize={12}>
+              <Text color={colors.white} fontSize={12}>
                 {likeCount}
               </Text>
             </YStack>
@@ -215,12 +212,8 @@ export function PostCard({
         </XStack>
       </YStack>
 
-      {/* MODALS (UNCHANGED) */}
-      <CommentsSheet
-        visible={commentsVisible}
-        onClose={() => setCommentsVisible(false)}
-      />
-
+      {/* MODALS */}
+      <CommentsSheet visible={commentsVisible} onClose={() => setCommentsVisible(false)} />
       <ConfirmReportModal
         visible={confirmVisible}
         onClose={() => setConfirmVisible(false)}
@@ -229,7 +222,6 @@ export function PostCard({
           setReasonsVisible(true);
         }}
       />
-
       <ReportReasonsModal
         visible={reasonsVisible}
         onClose={() => setReasonsVisible(false)}
@@ -239,18 +231,8 @@ export function PostCard({
         }}
         onSelectOther={() => {}}
       />
-
-      <ShareModal
-        visible={shareVisible}
-        onClose={() => setShareVisible(false)}
-        post={post}
-      />
-
-      <SuccessModal
-        visible={successVisible}
-        onClose={() => setSuccessVisible(false)}
-      />
-
+      <ShareModal visible={shareVisible} onClose={() => setShareVisible(false)} post={post} />
+      <SuccessModal visible={successVisible} onClose={() => setSuccessVisible(false)} />
       <BookmarkFoldersModal
         visible={foldersVisible}
         folders={folders}
@@ -262,7 +244,6 @@ export function PostCard({
           setCreateVisible(true);
         }}
       />
-
       <CreateFolderModal
         visible={createVisible}
         post={post}
@@ -275,3 +256,11 @@ export function PostCard({
     </YStack>
   );
 }
+
+/* 🔥 CRITICAL: PREVENT RE-RENDERS */
+export const PostCard = React.memo(
+  PostCardComponent,
+  (prev, next) =>
+    prev.post.id === next.post.id &&
+    prev.isPlaying === next.isPlaying
+);

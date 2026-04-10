@@ -50,20 +50,41 @@ export async function fetchForYouFeed({
   nextCursor?: string;
   hasMore: boolean;
 }> {
-  const data = await graphqlRequest(GET_FOR_YOU_FEED, {
-    cursor: pageParam,
-    limit: 20,
-  });
+  try {
+    console.log("[FEED][FOR_YOU] 🚀 Request start", {
+      cursor: pageParam,
+    });
 
-  const feed = data?.forYouFeed;
+    const data = await graphqlRequest(GET_FOR_YOU_FEED, {
+      cursor: pageParam,
+      limit: 20,
+    });
 
-  const rawPosts = feed?.posts ?? [];
+    console.log("[FEED][FOR_YOU] ✅ Raw response", data);
 
-  return {
-    posts: Array.isArray(rawPosts) ? rawPosts : [],
-    nextCursor: feed?.nextCursor ?? undefined,
-    hasMore: Boolean(feed?.hasMore),
-  };
+    const feed = data?.forYouFeed;
+
+    if (!feed) {
+      console.warn("[FEED][FOR_YOU] ⚠️ Missing forYouFeed in response");
+    }
+
+    const rawPosts = feed?.posts ?? [];
+
+    console.log("[FEED][FOR_YOU] 📦 Posts received", {
+      count: rawPosts?.length,
+      hasMore: feed?.hasMore,
+      nextCursor: feed?.nextCursor,
+    });
+
+    return {
+      posts: Array.isArray(rawPosts) ? rawPosts : [],
+      nextCursor: feed?.nextCursor ?? undefined,
+      hasMore: Boolean(feed?.hasMore),
+    };
+  } catch (error) {
+    console.error("[FEED][FOR_YOU] ❌ Request failed", error);
+    throw error;
+  }
 }
 
 export async function fetchFollowingFeed({
@@ -75,18 +96,39 @@ export async function fetchFollowingFeed({
   nextCursor?: string;
   hasMore: boolean;
 }> {
-const data = await graphqlRequest(GET_FOLLOWING_FEED, {
-  cursor: pageParam,
-  limit: 20,
-});
+  try {
+    console.log("[FEED][FOLLOWING] 🚀 Request start", {
+      cursor: pageParam,
+    });
 
-  const feed = data?.forYouFeed;
+    const data = await graphqlRequest(GET_FOLLOWING_FEED, {
+      cursor: pageParam,
+      limit: 20,
+    });
 
-  const rawPosts = feed?.posts ?? [];
+    console.log("[FEED][FOLLOWING] ✅ Raw response", data);
 
-  return {
-    posts: Array.isArray(rawPosts) ? rawPosts : [],
-    nextCursor: feed?.nextCursor ?? undefined,
-    hasMore: Boolean(feed?.hasMore),
-  };
+    const feed = data?.followingFeed;
+
+    if (!feed) {
+      console.warn("[FEED][FOLLOWING] ⚠️ Missing followingFeed in response");
+    }
+
+    const rawPosts = feed?.posts ?? [];
+
+    console.log("[FEED][FOLLOWING] 📦 Posts received", {
+      count: rawPosts?.length,
+      hasMore: feed?.hasMore,
+      nextCursor: feed?.nextCursor,
+    });
+
+    return {
+      posts: Array.isArray(rawPosts) ? rawPosts : [],
+      nextCursor: feed?.nextCursor ?? undefined,
+      hasMore: Boolean(feed?.hasMore),
+    };
+  } catch (error) {
+    console.error("[FEED][FOLLOWING] ❌ Request failed", error);
+    throw error;
+  }
 }

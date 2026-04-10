@@ -1,4 +1,7 @@
-import { requestMediaUpload, uploadFileToStorage } from "../mediaUpload";
+import {
+  requestMediaUpload,
+  uploadFileToStorage,
+} from "../mutation/media/mediaUpload";
 import { createMediaPost } from "../mutation/publishMediaPost";
 
 import { MediaDraft } from "@/types/createPost";
@@ -39,7 +42,7 @@ function extractPublicUrl(uploadUrl: string) {
 
 export async function publishMediaPost(
   draft: MediaDraft,
-  queryClient: QueryClient
+  queryClient: QueryClient,
 ) {
   console.log("━━━━━━━━ PUBLISH MEDIA START ━━━━━━━━");
   console.log("Draft received:", draft);
@@ -85,19 +88,14 @@ export async function publishMediaPost(
       const upload = await requestMediaUpload(
         fileName,
         fileType,
-        fileInfo.size
+        fileInfo.size,
       );
 
-      await uploadFileToStorage(
-        upload.uploadUrl,
-        item.uri,
-        fileType
-      );
+      await uploadFileToStorage(upload.uploadUrl, item.uri, fileType);
 
       const publicUrl = extractPublicUrl(upload.uploadUrl);
 
       return publicUrl;
-
     } catch (err) {
       console.error(`Media upload failed at index ${index}`, err);
       throw err;

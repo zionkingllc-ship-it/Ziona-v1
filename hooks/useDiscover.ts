@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   fetchDiscoverCategories,
   fetchDiscoverFeed,
-} from "@/services/graphQL/discover/discover";
+} from "@/services/graphQL/queries/discover/discover";
 
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";

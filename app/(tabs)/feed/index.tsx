@@ -1,37 +1,177 @@
+import FeedHeader from "@/components/feedHeader";
+import { PostCard } from "@/components/post/PostCard";
+import colors from "@/constants/colors";
+import { preloadPostMedia } from "@/helpers/preloadMedia";
+import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
+import { usePostActionsStore } from "@/store/usePostActionStore";
+import { FeedPost } from "@/types/feedTypes";
+import { normalizePost } from "@/utils/feed/normalizePost";
+import { mergePostState } from "@/utils/post/postState/mergePostState";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useFocusEffect } from "@react-navigation/native";
+import { InfiniteData, useQueryClient } from "@tanstack/react-query";
+import { PostViewerEngine } from "@/components/post/PostViewerEngine";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ActivityIndicator,
+  AppState,
+  FlatList,
+  Text,
+  ViewToken,
+} from "react-native";
+import { View } from "tamagui";
 
-import { View, StyleSheet } from 'react-native';
-import { Video } from 'expo-av';
-import { useRef } from 'react';
-import { ResizeMode } from 'expo-av';
+export default function Feed() {
+  const tabBarHeight = useBottomTabBarHeight();
+  const flatListRef = useRef<FlatList<FeedPost>>(null);
+  const queryClient = useQueryClient();
 
-export default function TestVideo() {
-  const videoRef = useRef(null);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [feedType, setFeedType] = useState<"forYou" | "following">("forYou");
+  const [containerHeight, setContainerHeight] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [pausedPostId, setPausedPostId] = useState<string | null>(null);
+
+  const forYouQuery = useForYouFeed();
+  const followingQuery = useFollowingFeed();
+  const query = feedType === "forYou" ? forYouQuery : followingQuery;
+
+  const likedMap = usePostActionsStore((s) => s.likedPosts);
+  const savedMap = usePostActionsStore((s) => s.savedPosts);
+  const followedMap = usePostActionsStore((s) => s.followedUsers);
+
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["feed"], exact: false });
+
+      setActivePostId(null);
+    }, [queryClient]),
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") {
+        setActivePostId(null);
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
+  const pages =
+    (query.data as InfiniteData<{ posts: any[] }> | undefined)?.pages ?? [];
+  const data: FeedPost[] = useMemo(() => {
+    if (!pages.length) return [];
+
+    return pages
+      .flatMap((page) => page.posts ?? [])
+      .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => {
+        if (!p) return false;
+
+        if (p.type === "media") {
+          return Array.isArray(p.media) && p.media.length > 0;
+        }
+
+        return true;
+      })
+      .map((post) =>
+        mergePostState(post, {
+          likedPosts: likedMap,
+          savedPosts: savedMap,
+          followedUsers: followedMap,
+        }),
+      );
+  }, [pages, likedMap, savedMap, followedMap]);
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 80,
+    minimumViewTime: 200,
+  }).current;
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (!viewableItems.length) return;
+
+      const current = viewableItems[0].item;
+      if (!current?.id) return;
+
+      // prevent loop
+      if (current.id === activePostId) return;
+
+      setPausedPostId(null);
+      setActivePostId(current.id);
+
+      const index = data.findIndex((p) => p.id === current.id);
+
+      if (index >= 0) {
+        if (data[index + 1]) preloadPostMedia(data[index + 1] as any);
+        if (data[index - 1]) preloadPostMedia(data[index - 1] as any);
+      }
+    },
+  ).current;
+
+  const renderItem = useCallback(
+    ({ item }: { item: FeedPost }) => (
+      <PostCard
+        post={item}
+        isPlaying={item.id === activePostId && item.id !== pausedPostId}
+        onTogglePlay={() => {
+          setPausedPostId((prev) => (prev === item.id ? null : item.id));
+        }}
+        screenHeight={containerHeight}
+        screenWidth={containerWidth}
+        tabBarHeight={tabBarHeight}
+      />
+    ),
+    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
+  );
+
+  if (query.isLoading) {
+    return (
+      <View flex={1} justifyContent="center" alignItems="center">
+        <ActivityIndicator size={40} color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Video
-        ref={videoRef}
-        source={{
-          uri: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    <View flex={1}>
+      <View width="100%" marginTop={35}>
+        <FeedHeader
+          feedType={feedType}
+          onChangeFeedType={setFeedType}
+          emptyFollowing={data.length === 0}
+        />
+      </View>
+
+      <View
+        style={{ flex: 1 }}
+        onLayout={(e) => {
+          const { height, width } = e.nativeEvent.layout;
+          if (height !== containerHeight) setContainerHeight(height);
+          if (width !== containerWidth) setContainerWidth(width);
         }}
-        style={styles.video}
-        resizeMode={ResizeMode.CONTAIN}
-        shouldPlay
-        isLooping
-        useNativeControls={false}
-      />
+      >
+        {data.length === 0 ? (
+          <View flex={1} justifyContent="center" alignItems="center">
+            <Text style={{ color: colors.text }}>No posts yet</Text>
+          </View>
+        ) : (
+      <PostViewerEngine
+  posts={data}
+  containerHeight={containerHeight}
+  containerWidth={containerWidth}
+  tabBarHeight={tabBarHeight}
+/>
+        )}
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-  },
-  video: {
-    width: '100%',
-    height: 300,
-  },
-});

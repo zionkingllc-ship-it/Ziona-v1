@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthStore>()(
         });
 
         await AsyncStorage.removeItem("auth-storage");
-        queryClient.clear(); // 🔥 ensure no stale cache
+        queryClient.clear(); 
       },
 
       /* -------- INIT AUTH -------- */

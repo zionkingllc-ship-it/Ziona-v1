@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateProfile } from "@/services/graphQL/profile/profile";
+import { updateProfile } from "@/services/profile/profileService";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UserProfile } from "@/types/userProfile";
 

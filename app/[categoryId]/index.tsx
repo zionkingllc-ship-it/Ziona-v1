@@ -79,13 +79,13 @@ export default function DiscoverCategoryScreen() {
           data={filteredPosts}
           keyExtractor={(item) => item.id}
           numColumns={3}
-          renderItem={({ item, index }) => ( // ✅ FIXED
+          renderItem={({ item, index }) => ( 
             <PostThumbnail
               post={item}
               size={width / 3 - 9}
               onPress={() => {
                 router.push({
-                  pathname: `/discoverContent/${item.id}`,
+                  pathname: `/viewer/${item.id}`,
                   params: {
                     categoryId,
                     filter,

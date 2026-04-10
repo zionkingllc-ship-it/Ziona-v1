@@ -1,37 +1,26 @@
 import { useMutation } from "@tanstack/react-query";
 import { usePostActionsStore } from "@/store/usePostActionStore";
-import { likePost, unlikePost } from "@/services/graphQL/actions/index";
+import { likePost, unlikePost } from "@/services/graphQL/mutation/actions/index";
+
+type ToggleLikeInput = {
+  postId: string;
+  currentLiked: boolean;
+};
 
 export function useToggleLike() {
   const toggleLikeStore = usePostActionsStore((s) => s.toggleLike);
 
   return useMutation({
-    mutationFn: async ({
-      postId,
-    }: {
-      postId: string;
-    }) => {
-      const state = usePostActionsStore.getState();
-      const currentLiked = state.likedPosts[postId];
-
-      if (currentLiked === undefined) {
-        // fallback → treat as not liked
-        return likePost(postId);
-      }
-
+    mutationFn: async ({ postId, currentLiked }: ToggleLikeInput) => {
       return currentLiked
         ? unlikePost(postId)
         : likePost(postId);
     },
 
-    onMutate: ({ postId }) => {
-      const state = usePostActionsStore.getState();
-
-      const currentLiked = state.likedPosts[postId] ?? false;
-
+    onMutate: ({ postId, currentLiked }) => {
       const next = !currentLiked;
 
-      // optimistic
+      // optimistic update
       toggleLikeStore(postId, next);
 
       return { postId, previous: currentLiked };

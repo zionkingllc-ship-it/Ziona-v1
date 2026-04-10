@@ -24,14 +24,14 @@ type BaseFeedPost = {
     bdColor?: string;
     textPostBg: string;
   };
- 
+
   stats: {
     likesCount: number;
     commentsCount: number;
     sharesCount: number;
     savesCount: number;
   };
- 
+
   viewerState: {
     liked: boolean;
     saved: boolean;
@@ -67,15 +67,29 @@ export type FeedTextPost = BaseFeedPost & {
    MEDIA
 ========================= */
 
-export type FeedMediaPost = BaseFeedPost & {
-  type: "media";
-  mediaType: "image" | "video";
-  media: {
-    type: "image" | "video";
-    url: string;
-    thumbnailUrl?: string;
-  }[];
+type ImageMedia = {
+  type: "image";
+  url: string;
+  thumbnailUrl?: string;
 };
+
+type VideoMedia = {
+  type: "video";
+  url: string;
+  thumbnailUrl?: string;
+};
+
+export type FeedMediaPost =
+  | (BaseFeedPost & {
+      type: "media";
+      mediaType: "image";
+      media: ImageMedia[];
+    })
+  | (BaseFeedPost & {
+      type: "media";
+      mediaType: "video";
+      media: [VideoMedia]; 
+    });
 
 /* =========================
    BIBLE

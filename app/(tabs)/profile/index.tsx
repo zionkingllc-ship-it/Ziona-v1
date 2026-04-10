@@ -7,7 +7,10 @@ import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useUserPosts } from "@/hooks/useUserPost";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useAuthStore } from "@/store/useAuthStore";
+import { FeedPost } from "@/types/feedTypes";
+import { normalizePost } from "@/utils/feed/normalizePost";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -26,6 +29,22 @@ export default function ProfileScreen() {
 
   const user = useAuthStore((s) => s.user);
   const userId = user?.id;
+
+  const {
+    data: likedData,
+    fetchNextPage: fetchLikedNext,
+    hasNextPage: hasLikedNext,
+    isFetchingNextPage: fetchingLikedNext,
+  } = useLikedPosts();
+
+  const likedPosts = useMemo(() => {
+    if (!likedData?.pages?.length) return [];
+
+    return likedData.pages
+      .flatMap((p) => p.posts ?? [])
+      .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => p !== null);
+  }, [likedData?.pages]);
 
   const {
     posts = [],
@@ -67,6 +86,9 @@ export default function ProfileScreen() {
           const media = post.media?.[0];
           if (!media) return;
 
+          // skip if already exists
+          if (videoThumbnails[post.id]) return;
+
           if (media.type === "video") {
             if (media.thumbnailUrl) {
               thumbnails[post.id] = media.thumbnailUrl;
@@ -78,7 +100,8 @@ export default function ProfileScreen() {
         }),
       );
 
-      if (isMounted) {
+      //  prevent unnecessary state updates
+      if (isMounted && Object.keys(thumbnails).length > 0) {
         setVideoThumbnails((prev) => ({ ...prev, ...thumbnails }));
       }
     }
@@ -88,17 +111,16 @@ export default function ProfileScreen() {
     return () => {
       isMounted = false;
     };
-  }, [posts]);
+  }, [posts, videoThumbnails]);
 
   /* ================= FILTER ================= */
 
   const filteredPosts = useMemo(() => {
     if (activeTab === "liked") {
-      return posts.filter((post) => post.viewerState?.liked);
+      return likedPosts;
     }
     return posts;
-  }, [activeTab, posts]);
-
+  }, [activeTab, posts, likedPosts]);
   const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "U";
 
   /* ================= PULL TO REFRESH ================= */
@@ -282,8 +304,12 @@ export default function ProfileScreen() {
                   size={itemSize}
                   onPress={() =>
                     router.push({
-                      pathname: "/profile/post/[postId]",
-                      params: { postId: item.id },
+                      pathname: "/viewer/[postId]",
+                      params: {
+                        postId: item.id,
+                        source: activeTab === "liked" ? "liked" : "user",
+                        index: String(index),
+                      },
                     })
                   }
                 />
@@ -294,8 +320,14 @@ export default function ProfileScreen() {
               }
               showsVerticalScrollIndicator={false}
               onEndReached={() => {
-                if (hasNextPage && !isFetchingNextPage) {
-                  fetchNextPage();
+                if (activeTab === "liked") {
+                  if (hasLikedNext && !fetchingLikedNext) {
+                    fetchLikedNext();
+                  }
+                } else {
+                  if (hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                  }
                 }
               }}
               onEndReachedThreshold={0.5}

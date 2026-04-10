@@ -1,5 +1,5 @@
-import { createTextPost } from "../mutation/createTextPost";
 import { BibleDraft } from "@/types/createPost";
+import { createTextPost } from "../mutation/text/createTextPost";
 
 export async function publishBiblePost(draft: BibleDraft) {
   console.log("━━━━━━━━ PUBLISH BIBLE START ━━━━━━━━");
@@ -16,7 +16,7 @@ export async function publishBiblePost(draft: BibleDraft) {
   const verse = draft.bibleVerse;
 
   const input: any = {
-    postType: "BIBLE", 
+    postType: "BIBLE",
     category: String(draft.category.id),
 
     scriptureBook: verse.book,
@@ -26,8 +26,7 @@ export async function publishBiblePost(draft: BibleDraft) {
   };
 
   if (verse.verses?.length > 1) {
-    input.scriptureVerseEnd =
-      verse.verses[verse.verses.length - 1];
+    input.scriptureVerseEnd = verse.verses[verse.verses.length - 1];
   }
 
   console.log("FINAL INPUT TO createPost:", input);
