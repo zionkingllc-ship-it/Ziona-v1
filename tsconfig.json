@@ -10,6 +10,10 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
-, "app/(tabs)/feed", "app/authGate/loading.ts"  ]
+    "**/*.tsx",
+    "app/(tabs)/feed",
+    "app/authGate/loading.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }
