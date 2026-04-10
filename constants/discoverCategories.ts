@@ -1,0 +1,58 @@
+import { Category } from "@/types/category"
+
+export const DISCOVER_CATEGORIES: Category[] = [
+{
+id: "1",
+label: "All",
+slug: "all",
+icon: require("@/assets/images/all.png"),
+bgColor: "#F3F2D8",
+bdColor: "#CAC653",
+order: 1,
+},
+{
+id: "2",
+label: "Love",
+slug: "love",
+icon: require("@/assets/images/love.png"),
+bgColor: "#F3D8DA",
+bdColor: "#C8545D",
+order: 2,
+},
+{
+id: "3",
+label: "Trust",
+slug: "trust",
+icon: require("@/assets/images/trust.png"),
+bgColor: "#D8DBF3",
+bdColor: "#292E62",
+order: 3,
+},
+{
+id: "4",
+label: "Worship",
+slug: "worship",
+icon: require("@/assets/images/worship.png"),
+bgColor: "#F3E8D8",
+bdColor: "#C89854",
+order: 4,
+},
+{
+id: "5",
+label: "Patience",
+slug: "patience",
+icon: require("@/assets/images/patience.png"),
+bgColor: "#F3D8EB",
+bdColor: "#682253",
+order: 5,
+},
+{
+id: "6",
+label: "Prayer",
+slug: "prayer",
+icon: require("@/assets/images/prayer.png"),
+bgColor: "#D8F3ECE8",
+bdColor: "#226858",
+order: 6,
+},
+]
