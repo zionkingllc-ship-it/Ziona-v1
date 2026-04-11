@@ -37,11 +37,16 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       const cached = await AsyncStorage.getItem(STORAGE_KEY);
 
       if (cached) {
-        const parsed: DiscoverCategory[] = JSON.parse(cached);
+        try {
+          const parsed: DiscoverCategory[] = JSON.parse(cached);
 
-        const normalizedCache = normalizeCategories(parsed);
+          const normalizedCache = normalizeCategories(parsed);
 
-        set({ categories: normalizedCache });
+          set({ categories: normalizedCache });
+        } catch (error) {
+          console.warn("Invalid cached categories, clearing cache", error);
+          await AsyncStorage.removeItem(STORAGE_KEY);
+        }
       }
 
       /* =========================

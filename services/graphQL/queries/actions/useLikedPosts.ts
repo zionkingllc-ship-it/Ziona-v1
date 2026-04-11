@@ -1,63 +1,13 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { POST_FEED_FIELDS } from "@/services/graphQL/queries/actions/postFields";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const GET_LIKED_POSTS = `
   query likedPosts($userId: String!, $limit: Int!, $cursor: String) {
     likedPosts(userId: $userId, limit: $limit, cursor: $cursor) {
       posts {
-        id
-        type
-        caption
-        createdAt
-
-        author {
-          id
-          username
-          avatarUrl
-        }
-
-        image {
-          items {
-            id
-            url
-            thumbnailUrl
-            width
-            height
-          }
-        }
-
-        video {
-          url
-          thumbnailUrl
-          duration
-          width
-          height
-        }
-
-        scripture {
-          reference
-          text
-          translation
-          book
-          chapter
-          verseStart
-          verseEnd
-        }
-
-        stats {
-          likesCount
-          commentsCount
-          sharesCount
-          savesCount
-        }
-
-        viewerState {
-          liked
-          saved
-          followingAuthor
-          isOwner
-        }
+        ${POST_FEED_FIELDS}
       }
 
       nextCursor

@@ -95,7 +95,7 @@ export function PostViewerEngine({
       if (!current?.id) return;
 
       setActivePostId(current.id);
-      setPausedPostId(null); // 🔥 reset pause when new item
+      setPausedPostId(null); 
     }
   ).current;
 
@@ -110,9 +110,7 @@ export function PostViewerEngine({
           post={item}
           isPlaying={isActive && !isPaused}
           onTogglePlay={() => {
-            setPausedPostId((prev) =>
-              prev === item.id ? null : item.id
-            );
+            setPausedPostId((prev) => (prev === item.id ? null : item.id));
           }}
           screenHeight={containerHeight}
           screenWidth={containerWidth}
@@ -120,7 +118,7 @@ export function PostViewerEngine({
         />
       );
     },
-    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight]
+    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
   );
 
   /* LAYOUT */
@@ -139,6 +137,7 @@ export function PostViewerEngine({
     <FlatList
       ref={flatListRef}
       data={mergedPosts}
+      extraData={`${activePostId ?? ""}:${pausedPostId ?? ""}`}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}
       pagingEnabled

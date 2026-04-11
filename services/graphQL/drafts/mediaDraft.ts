@@ -5,6 +5,7 @@ import {
 import { createMediaPost } from "../mutation/publishMediaPost";
 
 import { MediaDraft } from "@/types/createPost";
+import { invalidateFeed } from "@/services/feed/invalidateFeed";
 import * as FileSystem from "expo-file-system/legacy";
 
 import { QueryClient } from "@tanstack/react-query";
@@ -132,10 +133,7 @@ export async function publishMediaPost(
 
     console.log("Media post created successfully:", response);
 
-    await queryClient.invalidateQueries({
-      queryKey: ["feed"],
-      exact: false,
-    });
+    await invalidateFeed(queryClient);
 
     console.log("Feed invalidated");
     console.log("━━━━━━━━ PUBLISH MEDIA END ━━━━━━━━");

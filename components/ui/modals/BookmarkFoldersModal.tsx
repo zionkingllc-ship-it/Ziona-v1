@@ -1,4 +1,6 @@
 import { Folder } from "@/types/folder";
+import { useSyncBookmarkFolders } from "@/hooks/useSyncBookmarkFolders";
+import { useBookmarksStore } from "@/store/useBookmarkStore";
 import React from "react";
 import { FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { Image, Text, View, XStack } from "tamagui";
@@ -6,7 +8,6 @@ import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
 
 interface Props {
   visible: boolean;
-  folders: Folder[];
   savedFolderIds: string[];
   onClose: () => void;
   onToggleFolder: (folderId: string) => void;
@@ -15,12 +16,13 @@ interface Props {
 
 export default function BookmarkFoldersModal({
   visible,
-  folders,
   savedFolderIds,
   onClose,
   onToggleFolder,
   onCreateNew,
 }: Props) {
+  const { folders } = useBookmarksStore();
+  const { isLoading } = useSyncBookmarkFolders();
   const bookmarkInactive = require("@/assets/images/bookmarkBlackIcon.png");
   const bookmarkActive = require("@/assets/images/bookmarkIconActive.png");
   return (

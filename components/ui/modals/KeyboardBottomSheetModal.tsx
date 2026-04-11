@@ -58,13 +58,11 @@ export default function KeyboardBottomSheetModal({
       visible={visible}
       animationType="fade"
       statusBarTranslucent
+      presentationStyle="overFullScreen"
     >
       <View style={{ flex: 1 }}>
         {/* Backdrop */}
-        <Pressable
-          onPress={onClose}
-          style={styles.backdrop}
-        />
+        <Pressable onPress={onClose} style={styles.backdrop} />
 
         {/* Bottom Container */}
         <View style={styles.container} pointerEvents="box-none">
@@ -91,10 +89,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: "rgba(0,0,0,0.4)",
+    zIndex: 99999,
+    elevation: 9999,
   },
   container: {
     flex: 1,
     justifyContent: "flex-end",
+    zIndex: 99998,
+    elevation: 9998,
   },
   sheet: {
     flex: 1,

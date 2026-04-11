@@ -1,7 +1,7 @@
 import AuthGate from "@/components/auth/AuthGate";
-import colors from "@/constants/colors";
 import { ScreenDimensionsProvider } from "@/context/ScreenDimensionsContext";
 import { debugAuthStorage } from "@/helpers/asyncDataLog";
+import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
 import { useCategoryStore } from "@/store/categoryStore";
@@ -14,12 +14,17 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { ActivityIndicator, useColorScheme } from "react-native";
+import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { TamaguiProvider, View } from "tamagui";
+import { TamaguiProvider } from "tamagui";
 
 SplashScreen.preventAutoHideAsync();
+
+function SyncHooks() {
+  useSyncSavedPosts();
+  return null;
+}
 
 export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
@@ -80,6 +85,7 @@ export default function RootLayout() {
           <NotificationProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <QueryClientProvider client={queryClient}>
+                <SyncHooks />
                 <AuthGate>
                   <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(tabs)" />

@@ -1,6 +1,6 @@
-import { Button, XStack, Text, Spinner } from "tamagui";
+import colors from "@/constants/colors";
 import { Pressable, StyleProp, ViewStyle } from "react-native";
-import colors from "@/constants/colors"; 
+import { Spinner, Text, XStack } from "tamagui";
 
 type AppButtonProps = {
   text: string;
@@ -24,15 +24,22 @@ export function SimpleButtonWithStyle({
   disabled = false,
   loading = false,
   style,
-}: AppButtonProps) { 
+}: AppButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
     <Pressable
-      onPress={onPress} 
+      onPress={onPress}
       disabled={isDisabled}
-      style={[style,{ backgroundColor:isDisabled ? colors.inactiveButton : color, height:50, justifyContent:"center"}]}
-        
+      style={[
+        style,
+        {
+          backgroundColor: isDisabled ? colors.inactiveButton : color,
+          height: 50,
+          justifyContent: "center",
+          borderRadius:30
+        },
+      ]}
     >
       <XStack width="100%" justifyContent="center" alignItems="center">
         {loading ? (

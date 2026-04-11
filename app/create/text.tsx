@@ -12,6 +12,7 @@ import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
 import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, TouchableOpacity } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -120,7 +121,11 @@ export default function CreateTextScreen() {
 
       feedback.showSuccess();
     } catch (error: any) {
-      feedback.showError(error?.message);
+      const networkFeedback = getNetworkModalCopy(
+        error,
+        error?.message || "We couldn't create your post.",
+      );
+      feedback.showError(networkFeedback.message, networkFeedback.type);
     } finally {
       setUploading(false);
     }
@@ -241,7 +246,13 @@ export default function CreateTextScreen() {
       <SuccessModal
         visible={feedback.visible}
         onClose={feedback.handleClose}
-        title={feedback.type === "success" ? "Success" : "failed"}
+        title={
+          feedback.type === "success"
+            ? "Success"
+            : feedback.type === "warning"
+              ? "Network issue"
+              : "Failed"
+        }
         message={feedback.message}
         type={feedback.type}
         autoClose

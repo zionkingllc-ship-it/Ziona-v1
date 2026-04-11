@@ -18,6 +18,7 @@ type AuthStore = AuthState & {
   logout: () => Promise<void>;
   initializeAuth: () => Promise<void>;
   setHasHydrated: (state: boolean) => void;
+  clearSession: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthStore>()(
@@ -62,11 +63,7 @@ export const useAuthStore = create<AuthStore>()(
 
       /* -------- LOGOUT -------- */
 
-      logout: async () => {
-        try {
-          await authApi.signOut();
-        } catch {}
-
+      clearSession: async () => {
         clearAuthTokens();
 
         set({
@@ -77,7 +74,15 @@ export const useAuthStore = create<AuthStore>()(
         });
 
         await AsyncStorage.removeItem("auth-storage");
-        queryClient.clear(); 
+        queryClient.clear();
+      },
+
+      logout: async () => {
+        try {
+          await authApi.signOut();
+        } catch {}
+
+        await get().clearSession();
       },
 
       /* -------- INIT AUTH -------- */
@@ -113,6 +118,10 @@ export const useAuthStore = create<AuthStore>()(
           // normalize again (backend inconsistency safe)
           const user = userRes?.data ?? userRes;
 
+          if (!user?.id) {
+            throw new Error("Invalid getMe response");
+          }
+
           set({
             user,
             isAuthenticated: true,
@@ -146,7 +155,8 @@ export const useAuthStore = create<AuthStore>()(
             }),
           ]);
         } catch (err) {
-          console.log("Auth verification failed");
+          console.log("Auth verification failed", err);
+          await get().clearSession();
         }
 
         set({

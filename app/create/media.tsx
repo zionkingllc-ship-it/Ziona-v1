@@ -10,13 +10,56 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { MediaItem } from "@/types/createPost";
 import { Trash } from "@tamagui/lucide-icons";
-import { ResizeMode, Video } from "expo-av";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 
 import { useEffect, useState } from "react";
-import { FlatList, Image, TextInput, TouchableOpacity } from "react-native";
+import { FlatList, Image, Platform, TextInput, TouchableOpacity } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
+
+function MediaPreviewTile({
+  item,
+  width,
+  height,
+}: {
+  item: MediaItem;
+  width: number;
+  height: number;
+}) {
+  const player = useVideoPlayer(item.type === "VIDEO" ? item.uri : null, (instance) => {
+    instance.loop = true;
+  });
+
+  if (item.type === "VIDEO") {
+    return (
+      <VideoView
+        player={player}
+        style={{
+          width,
+          height,
+          borderRadius: 6,
+          marginRight: 8,
+        }}
+        contentFit="cover"
+        nativeControls={false}
+        surfaceType={Platform.OS === "android" ? "textureView" : undefined}
+      />
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: item.uri }}
+      style={{
+        width,
+        height,
+        borderRadius: 6,
+        marginRight: 8,
+      }}
+    />
+  );
+}
 
 export default function CreateMediaScreen() {
   const { wp, hp, fs } = useResponsive();
@@ -153,16 +196,7 @@ export default function CreateMediaScreen() {
           renderItem={({ item }) => (
             <YStack>
               {item.type === "VIDEO" ? (
-                <Video
-                  source={{ uri: item.uri }}
-                  style={{
-                    width: wp(40),
-                    height: wp(45),
-                    borderRadius: 6,
-                    marginRight: wp(2),
-                  }}
-                  resizeMode={ResizeMode.COVER}
-                />
+                <MediaPreviewTile item={item} width={wp(40)} height={wp(45)} />
               ) : (
                 <Image
                   source={{ uri: item.uri }}

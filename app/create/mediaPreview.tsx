@@ -11,11 +11,12 @@ import { useCreatePostStore } from "@/store/createPostStore";
 import { router } from "expo-router";
 import { useState } from "react";
 
-import { ResizeMode, Video } from "expo-av";
-import { Image, TouchableOpacity } from "react-native";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { Image, Platform, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
  
 import { useQueryClient } from "@tanstack/react-query";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 export default function CreateMediaPreviewScreen() {
   const { wp, hp, fs } = useResponsive();
@@ -27,7 +28,9 @@ export default function CreateMediaPreviewScreen() {
 
   //  modal state
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<"success" | "failed">("success");
+  const [modalType, setModalType] = useState<
+    "success" | "failed" | "warning"
+  >("success");
   const [modalMessage, setModalMessage] = useState("");
   const [progress, setProgress] = useState(0);
 
@@ -35,6 +38,9 @@ export default function CreateMediaPreviewScreen() {
 
   const mediaDraft = draft;
   const media = mediaDraft.media.items[0];
+  const player = useVideoPlayer(media?.type === "VIDEO" ? media.uri : null, (instance) => {
+    instance.loop = true;
+  });
 
   const caption = mediaDraft.caption ?? "";
 
@@ -75,8 +81,12 @@ export default function CreateMediaPreviewScreen() {
         router.replace("/(tabs)/create");
       }, 1200);
     } catch (error: any) {
-      setModalType("failed");
-      setModalMessage(error?.message || "Upload failed");
+      const feedback = getNetworkModalCopy(
+        error,
+        error?.message || "Upload failed",
+      );
+      setModalType(feedback.type);
+      setModalMessage(feedback.message);
       setModalVisible(true);
     } finally {
       setUploading(false);
@@ -109,11 +119,12 @@ export default function CreateMediaPreviewScreen() {
         )}
 
         {media?.type === "VIDEO" && (
-          <Video
-            source={{ uri: media.uri }}
+          <VideoView
+            player={player}
             style={{ width: "100%", height: "100%" }}
-            resizeMode={ResizeMode.COVER}
-            useNativeControls
+            contentFit="cover"
+            nativeControls
+            surfaceType={Platform.OS === "android" ? "textureView" : undefined}
           />
         )}
 
@@ -184,7 +195,13 @@ export default function CreateMediaPreviewScreen() {
       <SuccessModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        title={modalType === "success" ? "Success" : "Failed"}
+        title={
+          modalType === "success"
+            ? "Success"
+            : modalType === "warning"
+              ? "Network issue"
+              : "Failed"
+        }
         message={modalMessage}
         type={modalType}
         autoClose
