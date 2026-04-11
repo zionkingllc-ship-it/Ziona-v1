@@ -1,16 +1,17 @@
-import colors from "@/constants/colors";
-import { useUserPosts } from "@/hooks/useUserPost";
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import SuccessModal from "@/components/ui/modals/successModal";
+import colors from "@/constants/colors";
+import { useUserPosts } from "@/hooks/useUserPost";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator } from "react-native";
-import { View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "tamagui";
 
 export default function ProfilePostViewerScreen() {
   const { source, index, postId } = useLocalSearchParams<{
@@ -65,6 +66,7 @@ export default function ProfilePostViewerScreen() {
   const [modalType, setModalType] = useState<"warning" | "failed">("warning");
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const isFocused = useIsFocused();
 
   const targetIndex = useMemo(() => {
     const passedIndex = Number(index ?? -1);
@@ -103,9 +105,9 @@ export default function ProfilePostViewerScreen() {
     );
   }
 
-  /* ================= MAIN ================= */ 
+  /* ================= MAIN ================= */
   return (
-    <SafeAreaView style={{flex:1}}>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         flex={1}
         backgroundColor={colors.black}
@@ -122,6 +124,7 @@ export default function ProfilePostViewerScreen() {
             containerHeight={containerHeight}
             containerWidth={containerWidth}
             tabBarHeight={0}
+            isScreenFocused={isFocused}
           />
         )}
       </View>

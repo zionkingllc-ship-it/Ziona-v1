@@ -56,31 +56,34 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         action: () => openNativeShare(post),
       },
     ],
-    [url],
+    [url]
   );
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
-      presentationStyle="overFullScreen"
-      hardwareAccelerated
-      supportedOrientations={["portrait", "landscape"]}
-    >
-      <View style={styles.fullScreenContainer}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+    return (
+  <Modal
+    visible={visible}
+    transparent
+    animationType="fade"
+    statusBarTranslucent
+  >
+    <View style={styles.root}>
+      {/* BACKDROP */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View
-          style={[styles.container, { paddingBottom: insets.bottom || 16 }]}
-        >
+      {/* CONTENT */}
+      <View
+        style={[
+          styles.sheetContainer,
+          { paddingBottom: insets.bottom || 16 },
+        ]}
+        pointerEvents="box-none"
+      >
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <YStack
             backgroundColor="white"
             borderTopLeftRadius={24}
             borderTopRightRadius={24}
             padding="$4"
-            style={styles.modal}
           >
             <Text fontSize={18} fontWeight="600" alignSelf="center">
               Share
@@ -109,39 +112,26 @@ export default function ShareModal({ visible, onClose, post }: Props) {
               )}
             />
           </YStack>
-        </View>
+        </Pressable>
       </View>
-    </Modal>
-  );
+    </View>
+  </Modal>
+);
 }
 
 const styles = StyleSheet.create({
-  fullScreenContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    zIndex: 100000,
-    elevation: 10000,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  container: {
+  root: {
     flex: 1,
     justifyContent: "flex-end",
-    zIndex: 100001,
-    elevation: 10001,
   },
-  modal: {
-    zIndex: 100002,
-    elevation: 10002,
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  sheetContainer: {
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    width: "100%",
   },
 });

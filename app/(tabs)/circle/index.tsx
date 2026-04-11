@@ -13,19 +13,10 @@ export default function CirclesScreen() {
   const { hp, wp } = useResponsive();
 
   const [circles, setCircles] = useState<any[]>([]);
-  const [error, setError] = useState("");
-  const hasSeenIntro = useCircleStore((s) => s.hasSeenIntro);
-  const loadSeenIntro = useCircleStore((s) => s.loadSeenIntro);
-
+  const [error, setError] = useState(""); 
+const [showIntro, setShowIntro] = useState(true);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    async function init() {
-      await loadSeenIntro();
-      setReady(true);
-    }
-    init();
-  }, []);
 
   /* =========================
      TEMP DATA (replace with backend)
@@ -73,12 +64,11 @@ export default function CirclesScreen() {
     }
   }
 
-  if (!ready) return null;
-
-  if (!hasSeenIntro) {
-    return <CirclesIntro />;
-  }
-
+   
+  if (showIntro) {
+  return <CirclesIntro onClose={() => setShowIntro(false)} />;
+}
+   
   return (
     <ProtectedScreen>
     <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>

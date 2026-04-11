@@ -12,6 +12,7 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { View } from "tamagui";
 import { Play } from "@tamagui/lucide-icons";
 import colors from "@/constants/colors";
+import { LinearGradient } from "expo-linear-gradient";
 
 type VideoPost = Extract<FeedMediaPost, { mediaType: "video" }>;
 
@@ -210,10 +211,23 @@ const gesture = Gesture.Exclusive(doubleTap, singleTap);
               {
                 height: "100%",
                 backgroundColor: colors.secondary,
+                zIndex: 1,
               },
               progressStyle,
             ]}
           />
+          
+                {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.7)"]}
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 200,
+                  }}
+                />
         </Animated.View>
       </Animated.View>
     </GestureDetector>

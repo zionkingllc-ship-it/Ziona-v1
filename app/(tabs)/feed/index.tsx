@@ -13,6 +13,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
+import { useIsFocused } from "@react-navigation/native";
 import React, {
   useCallback,
   useEffect,
@@ -43,10 +44,12 @@ export default function Feed() {
   const [modalType, setModalType] = useState<"warning" | "failed">("warning");
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  
 
   const forYouQuery = useForYouFeed();
   const followingQuery = useFollowingFeed();
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
+const isFocused = useIsFocused();
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
@@ -60,6 +63,16 @@ export default function Feed() {
       setActivePostId(null);
     }, [queryClient]),
   );
+
+  useFocusEffect(
+  useCallback(() => { 
+
+    return () => { 
+      setActivePostId(null);
+      setPausedPostId(null);
+    };
+  }, [])
+);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -185,11 +198,12 @@ export default function Feed() {
             <Text style={{ color: colors.text }}>No posts yet</Text>
           </View>
         ) : (
-      <PostViewerEngine
+<PostViewerEngine
   posts={data}
   containerHeight={containerHeight}
   containerWidth={containerWidth}
   tabBarHeight={tabBarHeight}
+  isScreenFocused={isFocused}
 />
         )}
       </View>

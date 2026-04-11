@@ -8,64 +8,80 @@ export async function updateProfile(input: {
   fullName?: string;
   bio?: string;
   username?: string;
+  avatarUrl?: string;
+  location?: string;
 }) {
   const query = `
-    mutation UpdateProfile($input: UpdateProfileInput!) {
-      updateProfile(input: $input) {
-        success
-        user {
-          id
-          username
-          fullName
-          bio
-          avatarUrl
-        }
-        error { message }
-      }
+mutation UpdateProfile(
+  $bio: String
+  $fullName: String
+  $avatarUrl: String
+  $location: String
+  $username: String
+  
+) {
+  updateProfile(
+    bio: $bio
+    fullName: $fullName
+    avatarUrl: $avatarUrl
+    location: $location
+     username: $username
+  ) {
+    success
+    profile {
+      id
+      bio
+      fullName
+      username
+      avatarUrl
+      location
     }
+    error { code message }
+  }
+}
   `;
 
-  const data = await graphqlRequest(query, { input });
+  const data = await graphqlRequest(query, input); // ✅ FIXED
 
   const res = data?.updateProfile;
-  console.log("AVATAR URL", res.avatar)
-   console.log("USER", res.user)
-    console.log("USER ID", res.userId)
-    
 
   if (!res?.success) {
     throw new Error(res?.error?.message || "Failed to update profile");
   }
-  
 
-  return res.user;
+  return res.profile; // ✅ FIXED
 }
 
 /* =========================
    UPDATE AVATAR
 ========================= */
 
-export async function updateAvatar(file: any) {
+export async function updateAvatar(file: { uri: string }) {
   const query = `
-    mutation UpdateAvatar($file: Upload!) {
-      updateAvatar(file: $file) {
-        success
-        avatarUrl
-        error { message }
-      }
+mutation UpdateProfile( 
+  $avatarUrl: String 
+) {
+  updateProfile( 
+    avatarUrl: $avatarUrl 
+  ) {
+    success
+    profile { 
+      avatarUrl 
     }
+    error { code message }
+  }
+}
   `;
 
-  const data = await graphqlRequest(query, { file });
+  const data = await graphqlRequest(query, {
+    avatarUrl: file.uri, 
+  });
 
-  const res = data?.updateAvatar;
-  console.log("AVATAR URL", res)
-  console.log("UPDATE AVATAR RESPONSE:", data);
+  const res = data?.updateProfile; 
 
   if (!res?.success) {
     throw new Error(res?.error?.message || "Failed to update avatar");
   }
 
-
-  return res.avatarUrl;
+  return res.profile?.avatarUrl ?? null; 
 }

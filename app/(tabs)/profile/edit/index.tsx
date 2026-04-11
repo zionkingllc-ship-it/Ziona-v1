@@ -11,6 +11,7 @@ import { router } from "expo-router";
 import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Text, XStack, YStack } from "tamagui";
+import SuccessModal from "@/components/ui/modals/successModal";
 
 export default function EditProfileScreen() {
   const avatarMutation = useUpdateAvatar();
@@ -25,19 +26,23 @@ export default function EditProfileScreen() {
     ["userProfile", userId],
   ]);
 
-  //LOCAL PREVIEW STATE
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
+  /* ✅ MODAL STATE */
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
 
   const handlePickImage = async () => {
     if (avatarMutation.isPending) return;
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,   
-      aspect: [1, 1],      
+      allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.7,
     });
 
@@ -45,9 +50,6 @@ export default function EditProfileScreen() {
 
     const asset = result.assets[0];
 
-    console.log("SELECTED IMAGE:", asset);
-
-    // SET LOCAL PREVIEW IMMEDIATELY
     setLocalAvatar(asset.uri);
 
     const file = {
@@ -56,11 +58,16 @@ export default function EditProfileScreen() {
 
     try {
       await avatarMutation.mutateAsync(file);
+
+      /* ✅ SUCCESS */
+      setSuccessVisible(true);
     } catch (e) {
       console.log("Avatar update failed", e);
 
-      //revert preview if backend fails
       setLocalAvatar(null);
+
+      /* ❌ ERROR */
+      setErrorVisible(true);
     }
   };
 
@@ -91,7 +98,7 @@ export default function EditProfileScreen() {
               <Avatar.Image
                 source={
                   localAvatar
-                    ? { uri: localAvatar } // ✅ LOCAL FIRST
+                    ? { uri: localAvatar }
                     : user?.avatarUrl
                     ? { uri: user.avatarUrl }
                     : require("@/assets/images/emptyDP.png")
@@ -151,6 +158,24 @@ export default function EditProfileScreen() {
           </YStack>
         </YStack>
       </ScrollView>
+
+      {/*SUCCESS MODAL */}
+      <SuccessModal
+        visible={successVisible}
+        onClose={() => setSuccessVisible(false)}
+        title="Success"
+        message="Profile photo updated"
+        type="success"
+      />
+
+      {/* ERROR MODAL */}
+      <SuccessModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        title="Failed"
+        message="Could not update profile photo"
+        type="failed"
+      />
     </SafeAreaView>
   );
 }

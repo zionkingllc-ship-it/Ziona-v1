@@ -17,6 +17,7 @@ type Props = {
   containerHeight: number;
   containerWidth: number;
   tabBarHeight: number;
+  isScreenFocused?: boolean;
 };
 
 export function PostViewerEngine({
@@ -25,6 +26,7 @@ export function PostViewerEngine({
   containerHeight,
   containerWidth,
   tabBarHeight,
+  isScreenFocused,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
   const hasScrolledRef = useRef(false);
@@ -44,7 +46,7 @@ export function PostViewerEngine({
         likedPosts: likedMap,
         savedPosts: savedMap,
         followedUsers: followedMap,
-      })
+      }),
     );
   }, [posts, likedMap, savedMap, followedMap]);
 
@@ -95,8 +97,8 @@ export function PostViewerEngine({
       if (!current?.id) return;
 
       setActivePostId(current.id);
-      setPausedPostId(null); 
-    }
+      setPausedPostId(null);
+    },
   ).current;
 
   /* RENDER */
@@ -104,6 +106,8 @@ export function PostViewerEngine({
     ({ item }: { item: FeedPost }) => {
       const isActive = item.id === activePostId;
       const isPaused = item.id === pausedPostId;
+
+      const shouldPlay = isScreenFocused && isActive && !isPaused;
 
       return (
         <PostCard
@@ -128,7 +132,7 @@ export function PostViewerEngine({
       offset: containerHeight * index,
       index,
     }),
-    [containerHeight]
+    [containerHeight],
   );
 
   if (!containerHeight) return null;

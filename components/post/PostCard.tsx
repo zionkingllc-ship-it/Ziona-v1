@@ -112,22 +112,12 @@ function PostCardComponent({
       {/* MEDIA */}
       <PostMedia {...mediaProps} />
 
-      {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.7)"]}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 200,
-        }}
-      />
+
 
       {/* OVERLAY */}
       <YStack
         position="absolute"
-        bottom={Math.max(insets.bottom-12)}
+        bottom={Math.max(insets.bottom-25)}
         width="100%"
         paddingTop={insets.top + 12}
       >
