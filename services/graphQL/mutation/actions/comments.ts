@@ -18,7 +18,7 @@ export async function getPostComments(
           id
           text
           createdAt
-          author {
+          user {
             id
             username
             avatarUrl
@@ -58,7 +58,7 @@ export async function createComment(postId: string, text: string) {
           id
           text
           createdAt
-          author {
+          user {
             id
             username
             avatarUrl

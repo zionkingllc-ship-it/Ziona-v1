@@ -1,6 +1,5 @@
+import { Bookmark, Folder } from "@/types/folder";
 import { create } from "zustand";
-import { Folder, Bookmark } from "@/types/folder";
-import { useBookmarkFolders } from "@/hooks/useBookmarkFolders";
 
 interface BookmarkState {
   folders: Folder[];
@@ -10,6 +9,7 @@ interface BookmarkState {
   toggleBookmark: (postId: string, folderId: string) => void;
   getSavedFolderIds: (postId: string) => string[];
   setFolders: (folders: Folder[]) => void;
+  setBookmarks: (bookmarks: Bookmark[]) => void;
 }
 
 export const useBookmarksStore = create<BookmarkState>((set, get) => ({
@@ -65,5 +65,9 @@ export const useBookmarksStore = create<BookmarkState>((set, get) => ({
 
   setFolders: (folders) => {
     set({ folders });
+  },
+
+  setBookmarks: (bookmarks) => {
+    set({ bookmarks });
   },
 }));

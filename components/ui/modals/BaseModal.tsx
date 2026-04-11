@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, StyleSheet, Pressable } from "react-native";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface BaseModalProps {
@@ -23,6 +23,7 @@ export default function BaseModal({
       transparent
       animationType="fade"
       statusBarTranslucent
+      presentationStyle="overFullScreen"
     >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -52,9 +53,13 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
+    zIndex: 99999,
+    elevation: 9999,
   },
   container: {
     flex: 1,
     justifyContent: "center",
+    zIndex: 99998,
+    elevation: 9998,
   },
 });

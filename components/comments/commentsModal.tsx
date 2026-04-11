@@ -1,9 +1,9 @@
 import BaseModal from "@/components/ui/modals/BaseModal";
 import colors from "@/constants/colors";
-import { Heart } from "@tamagui/lucide-icons";
-import { usePostComments } from "@/hooks/usePostComments";
 import { useCreateComment } from "@/hooks/useCreateComment";
+import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
+import { Heart } from "@tamagui/lucide-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -37,6 +37,9 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [bottomHeight, setBottomHeight] = useState(10);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(
+    new Set(),
+  );
 
   const inputRef = useRef<TextInput>(null);
 
@@ -81,19 +84,25 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const addComment = () => {
     if (!inputValue.trim()) return;
 
+    const text = inputValue.trim();
+    setInputValue("");
+    inputRef.current?.blur();
+
     createCommentMutation.mutate(
-      { postId, text: inputValue.trim() },
+      { postId, text },
       {
-        onSuccess: () => {
-          setInputValue("");
-          inputRef.current?.blur();
+        onError: () => {
+          // If mutation fails, restore the input
+          setInputValue(text);
         },
       },
     );
   };
   const addEmoji = (emoji: string) => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
     setInputValue((prev) => prev + emoji);
-    inputRef.current?.focus();
   };
 
   const onBottomLayout = (e: LayoutChangeEvent) => {
@@ -135,79 +144,130 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
               padding: 16,
               paddingBottom: bottomHeight,
             }}
-            renderItem={({ item }) => (
-              <XStack justifyContent="space-between" padding="$4">
-                <XStack gap="$2" flex={1}>
-                  <Image
-                    source={
-                      item.author?.avatarUrl
-                        ? { uri: item.author.avatarUrl }
-                        : { uri: "https://i.pravatar.cc/100" }
+            renderItem={({ item }) => {
+              const isExpanded = expandedComments.has(item.id);
+              const shouldTruncate = item.text.length > 20;
+              const displayText =
+                isExpanded || !shouldTruncate
+                  ? item.text
+                  : item.text.slice(0, 20) + "...";
+
+              return (
+                <XStack justifyContent="space-between" padding="$4">
+                  <XStack gap="$2" flex={1}>
+                    <Image
+                      source={
+                        item.user?.avatarUrl
+                          ? { uri: item.user.avatarUrl }
+                          : { uri: "https://i.pravatar.cc/100" }
+                      }
+                      width={30}
+                      height={30}
+                      borderRadius={50}
+                    />
+
+                    <YStack flex={1}>
+                      <XStack gap="$2" alignItems="center">
+                        <Text fontWeight="600" fontFamily="$body" fontSize={16}>
+                          {item.user?.username || "User"}
+                        </Text>
+                        <Text color="#999" fontFamily="$body" fontSize={10}>
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </Text>
+                      </XStack>
+
+                      <Text fontSize={13} fontFamily="$body">
+                        {displayText}
+                      </Text>
+
+                      {shouldTruncate && !isExpanded && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setExpandedComments((prev) =>
+                              new Set(prev).add(item.id),
+                            );
+                          }}
+                        >
+                          <Text
+                            fontSize={12}
+                            fontFamily="$body"
+                            color="#836F8B"
+                          >
+                            more
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      {isExpanded && shouldTruncate && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setExpandedComments((prev) => {
+                              const newSet = new Set(prev);
+                              newSet.delete(item.id);
+                              return newSet;
+                            });
+                          }}
+                        >
+                          <Text
+                            fontSize={12}
+                            fontFamily="$body"
+                            color="#836F8B"
+                          >
+                            less
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      <XStack marginTop={15} gap={15}>
+                        <TouchableOpacity
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#836F8B",
+                            paddingHorizontal: 2,
+                            borderRadius: 4,
+                            width: 40,
+                            justifyContent: "center",
+                            height: 15,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text
+                            fontSize={10}
+                            fontFamily="$body"
+                            fontWeight={600}
+                          >
+                            Reply
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity>
+                          <Text fontSize={10} fontFamily="$body">
+                            View Replies ({item.stats?.repliesCount || 0})
+                          </Text>
+                        </TouchableOpacity>
+                      </XStack>
+                    </YStack>
+                  </XStack>
+
+                  <Pressable
+                    onPress={() =>
+                      toggleLike(item.id, item.viewerState?.liked || false)
                     }
-                    width={30}
-                    height={30}
-                    borderRadius={50}
-                  />
+                    disabled={toggleLikeMutation.isPending}
+                  >
+                    {item.viewerState?.liked ? (
+                      <Image source={likeIconActive} width={24} height={24} />
+                    ) : (
+                      <Heart size={24} color={colors.primary} />
+                    )}
 
-                  <YStack flex={1}>
-                    <XStack gap="$2" alignItems="center">
-                      <Text fontWeight="600" fontFamily="$body" fontSize={16}>
-                        {item.author?.username || "User"}
-                      </Text>
-                      <Text color="#999" fontFamily="$body" fontSize={10}>
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </Text>
-                    </XStack>
-
-                    <Text fontSize={13} fontFamily="$body">
-                      {item.text}
+                    <Text fontSize={10} fontFamily="$body" textAlign="center">
+                      {item.stats?.likesCount || 0}
                     </Text>
-
-                    <XStack marginTop={15} gap={15}>
-                      <TouchableOpacity
-                        style={{
-                          borderWidth: 1,
-                          borderColor: "#836F8B",
-                          paddingHorizontal: 2,
-                          borderRadius: 4,
-                          width: 40,
-                          justifyContent: "center",
-                          height: 15,
-                          alignItems: "center",
-                        }}
-                      >
-                        <Text fontSize={10} fontFamily="$body" fontWeight={600}>
-                          Reply
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity>
-                        <Text fontSize={10} fontFamily="$body">
-                          View Replies ({item.stats?.repliesCount || 0})
-                        </Text>
-                      </TouchableOpacity>
-                    </XStack>
-                  </YStack>
+                  </Pressable>
                 </XStack>
-
-                <Pressable
-                  onPress={() =>
-                    toggleLike(item.id, item.viewerState?.liked || false)
-                  }
-                  disabled={toggleLikeMutation.isPending}
-                >
-                  {item.viewerState?.liked ? (
-                    <Image source={likeIconActive} width={24} height={24} />
-                  ) : (
-                    <Heart size={24} color={colors.primary} />
-                  )}
-
-                  <Text fontSize={10} fontFamily="$body" textAlign="center">
-                    {item.stats?.likesCount || 0}
-                  </Text>
-                </Pressable>
-              </XStack>
-            )}
+              );
+            }}
           />
         </View>
 
@@ -235,6 +295,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
               onChangeText={setInputValue}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
+              maxLength={100}
               style={{ flex: 1, fontFamily: "$body" }}
             />
 
@@ -255,20 +316,23 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
             </TouchableOpacity>
           </XStack>
 
-          {isFocused && (
-            <XStack
-              paddingHorizontal="$3"
-              paddingBottom="$3"
-              gap="$3"
-              marginBottom={15}
-            >
-              {EMOJIS.map((emoji) => (
-                <Text key={emoji} fontSize={22} onPress={() => addEmoji(emoji)}>
-                  {emoji}
-                </Text>
-              ))}
-            </XStack>
-          )}
+          <XStack
+            paddingHorizontal="$3"
+            paddingVertical="$2"
+            gap="$2"
+            flexWrap="wrap"
+            justifyContent="flex-start"
+          >
+            {EMOJIS.map((emoji) => (
+              <Pressable
+                key={emoji}
+                onPress={() => addEmoji(emoji)}
+                hitSlop={8}
+              >
+                <Text fontSize={24}>{emoji}</Text>
+              </Pressable>
+            ))}
+          </XStack>
         </YStack>
       </Animated.View>
     </BaseModal>

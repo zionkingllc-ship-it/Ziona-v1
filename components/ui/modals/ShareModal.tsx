@@ -9,8 +9,9 @@ import {
 } from "@/services/share/services";
 import { FeedPost } from "@/types/feedTypes";
 import React, { useMemo } from "react";
-import { FlatList, Modal, Pressable } from "react-native";
-import { Image, Text, YStack } from "tamagui";
+import { FlatList, Modal, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image, Text, View, YStack } from "tamagui";
 
 type Props = {
   visible: boolean;
@@ -19,6 +20,7 @@ type Props = {
 };
 
 export default function ShareModal({ visible, onClose, post }: Props) {
+  const insets = useSafeAreaInsets();
   const url = buildPostUrl(post.id);
 
   const shareTargets = useMemo(
@@ -54,49 +56,92 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         action: () => openNativeShare(post),
       },
     ],
-    [url]
+    [url],
   );
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <Pressable style={{ flex: 1 }} onPress={onClose}>
-        <YStack
-          backgroundColor="white"
-          borderTopLeftRadius={24}
-          borderTopRightRadius={24}
-          padding="$4"
-          position="absolute"
-          bottom={0}
-          width="100%"
-        >
-          <Text fontSize={18} fontWeight="600" alignSelf="center">
-            Share
-          </Text>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      hardwareAccelerated
+      supportedOrientations={["portrait", "landscape"]}
+    >
+      <View style={styles.fullScreenContainer}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
 
-          <FlatList
-            data={shareTargets}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <Pressable
-                style={{ alignItems: "center", marginRight: 20 }}
-                onPress={() =>
-                  withHaptic(async () => {
-                    await item.action();
-                    onClose();
-                  })
-                }
-              >
-                <Image source={item.icon} width={45} height={45} />
-                <Text fontSize={12} marginTop={6}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            )}
-          />
-        </YStack>
-      </Pressable>
+        <View
+          style={[styles.container, { paddingBottom: insets.bottom || 16 }]}
+        >
+          <YStack
+            backgroundColor="white"
+            borderTopLeftRadius={24}
+            borderTopRightRadius={24}
+            padding="$4"
+            style={styles.modal}
+          >
+            <Text fontSize={18} fontWeight="600" alignSelf="center">
+              Share
+            </Text>
+
+            <FlatList
+              data={shareTargets}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={{ alignItems: "center", marginRight: 20 }}
+                  onPress={() =>
+                    withHaptic(async () => {
+                      await item.action();
+                      onClose();
+                    })
+                  }
+                >
+                  <Image source={item.icon} width={45} height={45} />
+                  <Text fontSize={12} marginTop={6}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </YStack>
+        </View>
+      </View>
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    zIndex: 100000,
+    elevation: 10000,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  container: {
+    flex: 1,
+    justifyContent: "flex-end",
+    zIndex: 100001,
+    elevation: 10001,
+  },
+  modal: {
+    zIndex: 100002,
+    elevation: 10002,
+  },
+});

@@ -13,7 +13,7 @@ export async function updateProfile(input: {
     mutation UpdateProfile($input: UpdateProfileInput!) {
       updateProfile(input: $input) {
         success
-        user {
+        profile {
           id
           username
           fullName

@@ -1,8 +1,7 @@
 import colors from "@/constants/colors";
-import { useResponsiveSize } from "@/hooks/useResponsiveSize";
-import { usePostActionsStore } from "@/store/usePostActionStore";
 import { useBookmarkFlow } from "@/hooks/useBookmarkFlow";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
+import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -62,7 +61,7 @@ function PostCardComponent({
 
   const { folders, getSavedFolderIds } = useBookmarksStore();
   const savedFolderIds = getSavedFolderIds(post.id);
-  const isBookmarked = savedFolderIds.length > 0;
+  const isBookmarked = post.viewerState?.saved || savedFolderIds.length > 0;
   const {
     foldersVisible,
     createVisible,
@@ -113,10 +112,22 @@ function PostCardComponent({
       {/* MEDIA */}
       <PostMedia {...mediaProps} />
 
+      {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.7)"]}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 200,
+        }}
+      />
+
       {/* OVERLAY */}
       <YStack
         position="absolute"
-        bottom={Math.max(tabBarHeight / 3, insets.bottom + 12)}
+        bottom={Math.max(insets.bottom-12)}
         width="100%"
         paddingTop={insets.top + 12}
       >
