@@ -1,10 +1,12 @@
 import FeedHeader from "@/components/feedHeader";
 import { PostCard } from "@/components/post/PostCard";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -37,6 +39,10 @@ export default function Feed() {
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"warning" | "failed">("warning");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
   const forYouQuery = useForYouFeed();
   const followingQuery = useFollowingFeed();
@@ -48,7 +54,8 @@ export default function Feed() {
 
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["feed"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
 
       setActivePostId(null);
     }, [queryClient]),
@@ -63,6 +70,20 @@ export default function Feed() {
 
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    if (!query.isError) return;
+
+    const feedback = getNetworkModalCopy(
+      query.error,
+      "We couldn't load your feed right now. Please try again.",
+    );
+
+    setModalType(feedback.type);
+    setModalTitle(feedback.title);
+    setModalMessage(feedback.message);
+    setModalVisible(true);
+  }, [query.isError, query.error]);
 
   const pages =
     (query.data as InfiniteData<{ posts: any[] }> | undefined)?.pages ?? [];
@@ -172,6 +193,21 @@ export default function Feed() {
 />
         )}
       </View>
+
+      <SuccessModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        autoClose
+        withButton
+        buttonText="Try again"
+        onButtonPress={() => {
+          setModalVisible(false);
+          query.refetch();
+        }}
+      />
     </View>
   );
 }

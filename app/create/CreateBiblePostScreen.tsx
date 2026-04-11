@@ -11,6 +11,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { queryClient } from "@/lib/queryClient";
 import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useRef, useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -104,7 +105,11 @@ export default function CreateBiblePostScreen() {
       await publishDraftPost(bibleDraft, queryClient);
       feedback.showSuccess();
     } catch (error: any) {
-      feedback.showError(error?.message);
+      const networkFeedback = getNetworkModalCopy(
+        error,
+        error?.message || "We couldn't create your post.",
+      );
+      feedback.showError(networkFeedback.message, networkFeedback.type);
     } finally {
       setUploading(false);
     }
@@ -209,7 +214,13 @@ export default function CreateBiblePostScreen() {
       <SuccessModal
         visible={feedback.visible}
         onClose={feedback.handleClose}
-        title={feedback.type === "success" ? "Success" : "failed"}
+        title={
+          feedback.type === "success"
+            ? "Success"
+            : feedback.type === "warning"
+              ? "Network issue"
+              : "Failed"
+        }
         message={feedback.message}
         type={feedback.type}
         autoClose

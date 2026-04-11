@@ -99,6 +99,9 @@ function PostMediaComponent({
 export default React.memo(
   PostMediaComponent,
   (prev, next) =>
-    prev.post.id === next.post.id &&
-    prev.isPlaying === next.isPlaying
+    prev.post === next.post &&
+    prev.isPlaying === next.isPlaying &&
+    prev.screenWidth === next.screenWidth &&
+    prev.screenHeight === next.screenHeight &&
+    prev.tabBarHeight === next.tabBarHeight
 );

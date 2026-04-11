@@ -1,6 +1,9 @@
 import BaseModal from "@/components/ui/modals/BaseModal";
 import colors from "@/constants/colors";
 import { Heart } from "@tamagui/lucide-icons";
+import { usePostComments } from "@/hooks/usePostComments";
+import { useCreateComment } from "@/hooks/useCreateComment";
+import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -22,33 +25,15 @@ import { Image, Text, View, XStack, YStack } from "tamagui";
 const { height } = Dimensions.get("window");
 const likeIconActive = require("@/assets/images/likeIcon2.png");
 
-type Comment = {
-  id: string;
-  name: string;
-  text: string;
-  time: string;
-  liked: boolean;
-  likeCount: number;
-};
-
 type Props = {
   visible: boolean;
   onClose: () => void;
+  postId: string;
 };
-
-const INITIAL_COMMENTS: Comment[] = Array.from({ length: 20 }).map((_, i) => ({
-  id: String(i),
-  name: "Pastor David",
-  text: "This is exactly what I preach",
-  time: "5 mins",
-  liked: false,
-  likeCount: Math.floor(Math.random() * 10),
-}));
 
 const EMOJIS = ["😀", "🥰", "😂", "😳", "😌", "😁", "🥺", "😏", "😬"];
 
-export function CommentsSheet({ visible, onClose }: Props) {
-  const [comments, setComments] = useState<Comment[]>(INITIAL_COMMENTS);
+export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [bottomHeight, setBottomHeight] = useState(10);
@@ -56,6 +41,13 @@ export function CommentsSheet({ visible, onClose }: Props) {
   const inputRef = useRef<TextInput>(null);
 
   const keyboardHeight = useSharedValue(0);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    usePostComments(postId, visible);
+  const createCommentMutation = useCreateComment();
+  const toggleLikeMutation = useToggleCommentLike();
+
+  const comments = data?.pages.flatMap((page) => page.comments) || [];
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -82,27 +74,30 @@ export function CommentsSheet({ visible, onClose }: Props) {
     ],
   }));
 
-  const toggleLike = (id: string) => {
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              liked: !c.liked,
-              likeCount: c.liked ? c.likeCount - 1 : c.likeCount + 1,
-            }
-          : c,
-      ),
+  const toggleLike = (commentId: string, currentLiked: boolean) => {
+    toggleLikeMutation.mutate({ commentId, currentLiked });
+  };
+
+  const addComment = () => {
+    if (!inputValue.trim()) return;
+
+    createCommentMutation.mutate(
+      { postId, text: inputValue.trim() },
+      {
+        onSuccess: () => {
+          setInputValue("");
+          inputRef.current?.blur();
+        },
+      },
     );
+  };
+  const addEmoji = (emoji: string) => {
+    setInputValue((prev) => prev + emoji);
+    inputRef.current?.focus();
   };
 
   const onBottomLayout = (e: LayoutChangeEvent) => {
     setBottomHeight(e.nativeEvent.layout.height);
-  };
-
-  const addEmoji = (emoji: string) => {
-    setInputValue((prev) => prev + emoji);
-    inputRef.current?.focus();
   };
 
   return (
@@ -110,7 +105,7 @@ export function CommentsSheet({ visible, onClose }: Props) {
       <Animated.View
         style={[
           {
-            height: height * 0.7,   // key fix
+            height: height * 0.7, // key fix
             backgroundColor: "white",
             borderTopLeftRadius: 30,
             borderTopRightRadius: 30,
@@ -144,7 +139,11 @@ export function CommentsSheet({ visible, onClose }: Props) {
               <XStack justifyContent="space-between" padding="$4">
                 <XStack gap="$2" flex={1}>
                   <Image
-                    source={{ uri: "https://i.pravatar.cc/100" }}
+                    source={
+                      item.author?.avatarUrl
+                        ? { uri: item.author.avatarUrl }
+                        : { uri: "https://i.pravatar.cc/100" }
+                    }
                     width={30}
                     height={30}
                     borderRadius={50}
@@ -153,10 +152,10 @@ export function CommentsSheet({ visible, onClose }: Props) {
                   <YStack flex={1}>
                     <XStack gap="$2" alignItems="center">
                       <Text fontWeight="600" fontFamily="$body" fontSize={16}>
-                        {item.name}
+                        {item.author?.username || "User"}
                       </Text>
                       <Text color="#999" fontFamily="$body" fontSize={10}>
-                        {item.time}
+                        {new Date(item.createdAt).toLocaleDateString()}
                       </Text>
                     </XStack>
 
@@ -184,22 +183,27 @@ export function CommentsSheet({ visible, onClose }: Props) {
 
                       <TouchableOpacity>
                         <Text fontSize={10} fontFamily="$body">
-                          View Replies
+                          View Replies ({item.stats?.repliesCount || 0})
                         </Text>
                       </TouchableOpacity>
                     </XStack>
                   </YStack>
                 </XStack>
 
-                <Pressable onPress={() => toggleLike(item.id)}>
-                  {item.liked ? (
+                <Pressable
+                  onPress={() =>
+                    toggleLike(item.id, item.viewerState?.liked || false)
+                  }
+                  disabled={toggleLikeMutation.isPending}
+                >
+                  {item.viewerState?.liked ? (
                     <Image source={likeIconActive} width={24} height={24} />
                   ) : (
                     <Heart size={24} color={colors.primary} />
                   )}
 
                   <Text fontSize={10} fontFamily="$body" textAlign="center">
-                    {item.likeCount}
+                    {item.stats?.likesCount || 0}
                   </Text>
                 </Pressable>
               </XStack>
@@ -234,15 +238,30 @@ export function CommentsSheet({ visible, onClose }: Props) {
               style={{ flex: 1, fontFamily: "$body" }}
             />
 
-            <Image
-              source={require("@/assets/images/sendIcon.png")}
-              width={30}
-              height={30}
-            />
+            <TouchableOpacity
+              onPress={addComment}
+              disabled={createCommentMutation.isPending || !inputValue.trim()}
+            >
+              <Image
+                source={require("@/assets/images/sendIcon.png")}
+                width={30}
+                height={30}
+                opacity={
+                  createCommentMutation.isPending || !inputValue.trim()
+                    ? 0.5
+                    : 1
+                }
+              />
+            </TouchableOpacity>
           </XStack>
 
           {isFocused && (
-            <XStack paddingHorizontal="$3" paddingBottom="$3" gap="$3" marginBottom={15}>
+            <XStack
+              paddingHorizontal="$3"
+              paddingBottom="$3"
+              gap="$3"
+              marginBottom={15}
+            >
               {EMOJIS.map((emoji) => (
                 <Text key={emoji} fontSize={22} onPress={() => addEmoji(emoji)}>
                   {emoji}

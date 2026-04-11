@@ -1,9 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { usePostActionsStore } from "@/store/usePostActionStore";
-import {
-  savePost,
-  unsavePost,
-} from "@/services/graphQL/actions/actionService";
+import { savePost, unsavePost } from "@/services/graphQL/mutation/actions";
 
 export function useToggleSave() {
   const toggleSaveStore = usePostActionsStore((s) => s.toggleSave);
@@ -34,7 +31,7 @@ export function useToggleSave() {
 
     onError: (_err, _vars, ctx) => {
       if (!ctx) return;
- 
+
       toggleSaveStore(ctx.postId, ctx.previous);
     },
   });

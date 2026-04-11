@@ -1,5 +1,7 @@
 import colors from "@/constants/colors";
 import { useResponsiveSize } from "@/hooks/useResponsiveSize";
+import { usePostActionsStore } from "@/store/usePostActionStore";
+import { useBookmarkFlow } from "@/hooks/useBookmarkFlow";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
@@ -18,6 +20,7 @@ import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
 
 import { useToggleLike } from "@/hooks/useToggleLike";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ICONS */
 const likeIcon = require("@/assets/images/likeIcon.png");
@@ -44,6 +47,7 @@ function PostCardComponent({
   screenWidth,
   tabBarHeight,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(false);
 
   /* MODALS */
@@ -51,18 +55,27 @@ function PostCardComponent({
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
-  const [foldersVisible, setFoldersVisible] = useState(false);
-  const [createVisible, setCreateVisible] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
 
   const likedState = post.viewerState.liked;
   const likeCount = post.stats.likesCount;
 
-  const { folders, toggleBookmark, getSavedFolderIds, createFolder } =
-    useBookmarksStore();
-
+  const { folders, getSavedFolderIds } = useBookmarksStore();
   const savedFolderIds = getSavedFolderIds(post.id);
   const isBookmarked = savedFolderIds.length > 0;
+  const {
+    foldersVisible,
+    createVisible,
+    openFolders,
+    setFoldersVisible,
+    setCreateVisible,
+    toggleFolder,
+    createFolder,
+    isCreating,
+  } = useBookmarkFlow(post.id, post.viewerState.saved || isBookmarked);
+  const isLikePending = usePostActionsStore(
+    (s) => s.pendingLikes[post.id] ?? false,
+  );
 
   const toggleLikeMutation = useToggleLike();
 
@@ -73,6 +86,8 @@ function PostCardComponent({
 
   /* HANDLERS (MEMO SAFE) */
   const handleLike = () => {
+    if (isLikePending) return;
+
     toggleLikeMutation.mutate({
       postId: post.id,
       currentLiked: likedState,
@@ -90,7 +105,7 @@ function PostCardComponent({
       tabBarHeight,
       onLike: handleLike,
     }),
-    [post, isPlaying, screenWidth, screenHeight, tabBarHeight]
+    [post, isPlaying, screenWidth, screenHeight, tabBarHeight],
   );
 
   return (
@@ -99,7 +114,12 @@ function PostCardComponent({
       <PostMedia {...mediaProps} />
 
       {/* OVERLAY */}
-      <YStack position="absolute" bottom={tabBarHeight / 3} width="100%">
+      <YStack
+        position="absolute"
+        bottom={Math.max(tabBarHeight / 3, insets.bottom + 12)}
+        width="100%"
+        paddingTop={insets.top + 12}
+      >
         <XStack padding="$4" alignItems="flex-end">
           {/* LEFT SIDE */}
           <YStack flex={1} gap="$2">
@@ -135,9 +155,7 @@ function PostCardComponent({
                   }}
                 >
                   <Text color={colors.white} fontSize={13}>
-                    {post.viewerState?.followingAuthor
-                      ? "following"
-                      : "follow"}
+                    {post.viewerState?.followingAuthor ? "following" : "follow"}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -193,7 +211,7 @@ function PostCardComponent({
               <Image source={commentIcon} width={24} height={24} />
             </Pressable>
 
-            <Pressable onPress={() => setFoldersVisible(true)}>
+            <Pressable onPress={openFolders}>
               <Image
                 source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
                 width={24}
@@ -213,7 +231,11 @@ function PostCardComponent({
       </YStack>
 
       {/* MODALS */}
-      <CommentsSheet visible={commentsVisible} onClose={() => setCommentsVisible(false)} />
+      <CommentsSheet
+        visible={commentsVisible}
+        onClose={() => setCommentsVisible(false)}
+        postId={post.id}
+      />
       <ConfirmReportModal
         visible={confirmVisible}
         onClose={() => setConfirmVisible(false)}
@@ -231,14 +253,20 @@ function PostCardComponent({
         }}
         onSelectOther={() => {}}
       />
-      <ShareModal visible={shareVisible} onClose={() => setShareVisible(false)} post={post} />
-      <SuccessModal visible={successVisible} onClose={() => setSuccessVisible(false)} />
+      <ShareModal
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        post={post}
+      />
+      <SuccessModal
+        visible={successVisible}
+        onClose={() => setSuccessVisible(false)}
+      />
       <BookmarkFoldersModal
         visible={foldersVisible}
-        folders={folders}
         savedFolderIds={savedFolderIds}
         onClose={() => setFoldersVisible(false)}
-        onToggleFolder={(id) => toggleBookmark(post.id, id)}
+        onToggleFolder={toggleFolder}
         onCreateNew={() => {
           setFoldersVisible(false);
           setCreateVisible(true);
@@ -249,7 +277,7 @@ function PostCardComponent({
         post={post}
         onClose={() => setCreateVisible(false)}
         onSave={(name) => {
-          createFolder(name, "", post.id);
+          createFolder(name);
           setCreateVisible(false);
         }}
       />
@@ -261,6 +289,9 @@ function PostCardComponent({
 export const PostCard = React.memo(
   PostCardComponent,
   (prev, next) =>
-    prev.post.id === next.post.id &&
-    prev.isPlaying === next.isPlaying
+    prev.post === next.post &&
+    prev.isPlaying === next.isPlaying &&
+    prev.screenHeight === next.screenHeight &&
+    prev.screenWidth === next.screenWidth &&
+    prev.tabBarHeight === next.tabBarHeight,
 );

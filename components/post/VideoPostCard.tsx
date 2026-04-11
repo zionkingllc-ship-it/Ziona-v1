@@ -1,12 +1,14 @@
 import { FeedMediaPost } from "@/types/feedTypes";
-import React, { useEffect, useRef } from "react";
+import { Image } from "expo-image";
+import React, { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import { Video, ResizeMode } from "expo-av";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { View } from "tamagui";
 import { Play } from "@tamagui/lucide-icons";
 import colors from "@/constants/colors";
@@ -35,32 +37,63 @@ function VideoPostCardComponent({
   screenWidth,
   screenHeight,
 }: Props) {
-  const videoRef = useRef<Video>(null);
   const progress = useSharedValue(0);
+  const [hasFirstFrame, setHasFirstFrame] = useState(false);
 
   const videoUrl = post.media?.[0]?.url;
+  const thumbnailUrl = post.media?.[0]?.thumbnailUrl;
   if (!videoUrl) return null;
+
+  const player = useVideoPlayer(videoUrl, (playerInstance) => {
+    playerInstance.loop = true;
+  });
 
   /* PLAYBACK */
   useEffect(() => {
-    if (!videoRef.current) return;
-
     if (isPlaying) {
-      videoRef.current.playAsync();
+      player.play();
     } else {
-      videoRef.current.pauseAsync();
+      player.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, player]);
+
+  useEffect(() => {
+    setHasFirstFrame(false);
+    progress.value = 0;
+  }, [post.id, progress]);
+
+  useEffect(() => {
+    const subscription = player.addListener("statusChange", ({ status, error }) => {
+      if (status === "error" || error) {
+        console.log("[expo-video] statusChange", {
+          postId: post.id,
+          videoUrl,
+          status,
+          error,
+        });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player, post.id, videoUrl]);
 
   /* PROGRESS */
-  const onStatusUpdate = (status: any) => {
-    if (!status.isLoaded) return;
+  useEffect(() => {
+    player.timeUpdateEventInterval = 0.25;
 
-    if (status.positionMillis && status.durationMillis) {
-      progress.value =
-        status.positionMillis / status.durationMillis;
-    }
-  };
+    const subscription = player.addListener("timeUpdate", ({ currentTime }) => {
+      const duration = player.duration;
+      if (duration > 0) {
+        progress.value = currentTime / duration;
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player, progress]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: progress.value * screenWidth,
@@ -94,15 +127,38 @@ const gesture = Gesture.Exclusive(doubleTap, singleTap);
           backgroundColor: "black",
         }}
       >
-        <Video
-          ref={videoRef}
-          source={{ uri: videoUrl }}
+        <VideoView
+          player={player}
           style={{ width: "100%", height: "100%" }}
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          shouldPlay={false}
-          onPlaybackStatusUpdate={onStatusUpdate}
+          contentFit="cover"
+          nativeControls={false}
+          surfaceType={Platform.OS === "android" ? "textureView" : undefined}
+          useExoShutter={false}
+          onFirstFrameRender={() => {
+            setHasFirstFrame(true);
+            progress.value = 0;
+          }}
         />
+
+        {!hasFirstFrame &&
+          (thumbnailUrl ? (
+            <Image
+              source={thumbnailUrl}
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+              }}
+              contentFit="cover"
+            />
+          ) : (
+            <View
+              position="absolute"
+              width="100%"
+              height="100%"
+              backgroundColor="black"
+            />
+          ))}
 
         {/* PLAY BUTTON */}
         {!isPlaying && (
@@ -167,6 +223,8 @@ const gesture = Gesture.Exclusive(doubleTap, singleTap);
 export default React.memo(
   VideoPostCardComponent,
   (prev, next) =>
-    prev.post.id === next.post.id &&
-    prev.isPlaying === next.isPlaying
+    prev.post === next.post &&
+    prev.isPlaying === next.isPlaying &&
+    prev.screenWidth === next.screenWidth &&
+    prev.screenHeight === next.screenHeight
 );

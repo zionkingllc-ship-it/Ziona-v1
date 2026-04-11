@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { POST_FEED_FIELDS } from "@/services/graphQL/queries/actions/postFields";
 import { useAuthStore } from "@/store/useAuthStore";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
@@ -24,17 +25,7 @@ query GetUserPosts($userId: String!, $cursor: String, $limit: Int = 20) {
     hasMore
     nextCursor
     posts {
-      id
-      type
-      caption
-      createdAt
-      author { id username avatarUrl }
-      category { id label slug bgColor bdColor textPostBg }
-      image { items { id url thumbnailUrl width height } }
-      video { url thumbnailUrl duration width height }
-      scripture { 
-        reference text translation book chapter verseStart verseEnd 
-      }
+      ${POST_FEED_FIELDS}
     }
   }
 }
@@ -46,7 +37,6 @@ query GetUserPosts($userId: String!, $cursor: String, $limit: Int = 20) {
 
 export function useUserPosts(overrideUserId?: string) {
   const authUser = useAuthStore((state) => state.user);
-  const user = useAuthStore((s) => s.user?.data ?? s.user); 
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
 
   const userId = overrideUserId ?? authUser?.id;

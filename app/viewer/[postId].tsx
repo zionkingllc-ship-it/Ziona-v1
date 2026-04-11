@@ -1,23 +1,16 @@
-import { PostCard } from "@/components/post/PostCard";
 import colors from "@/constants/colors";
-import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useUserPosts } from "@/hooks/useUserPost";
-import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
-import { usePostActionsStore } from "@/store/usePostActionStore";
-import { FeedPost } from "@/types/feedTypes";
-import { normalizePost } from "@/utils/feed/normalizePost";  
-import { mergePostState } from "@/utils/post/postState/mergePostState";
-import { useLocalSearchParams } from "expo-router";
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { ActivityIndicator, AppState, FlatList, ViewToken } from "react-native";
+import SuccessModal from "@/components/ui/modals/successModal";
+import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
+import { FeedPost } from "@/types/feedTypes";
+import { normalizePost } from "@/utils/feed/normalizePost";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { View } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfilePostViewerScreen() {
   const { source, index, postId } = useLocalSearchParams<{
@@ -27,18 +20,23 @@ export default function ProfilePostViewerScreen() {
   }>();
 
   const isLiked = source === "liked";
-  const tabBarHeight = 0;
 
   /* ================= DATA ================= */
 
   const {
     posts: userPosts,
     isLoading: isUserLoading,
+    isError: isUserError,
+    error: userError,
+    refetch: refetchUserPosts,
   } = useUserPosts();
 
   const {
     data: likedData,
     isLoading: isLikedLoading,
+    isError: isLikedError,
+    error: likedError,
+    refetch: refetchLikedPosts,
   } = useLikedPosts();
 
   /*  NORMALIZE LIKED POSTS */
@@ -61,115 +59,39 @@ export default function ProfilePostViewerScreen() {
 
   const posts: FeedPost[] = isLiked ? likedPosts : userPosts;
 
-  
-
-  /* ================= REFS ================= */
-
-  const flatListRef = useRef<FlatList<FeedPost>>(null);
-  const hasScrolledRef = useRef(false);
-
-  /* ================= STATE ================= */
-
-  const [activePostId, setActivePostId] = useState<string | null>(null);
-  const [pausedPostId, setPausedPostId] = useState<string | null>(null);
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
-
-  /* ================= STORE ================= */
-
-  const likedMap = usePostActionsStore((s) => s.likedPosts);
-  const savedMap = usePostActionsStore((s) => s.savedPosts);
-  const followedMap = usePostActionsStore((s) => s.followedUsers);
-
-  /* ================= MERGE ================= */
-
-  const mergedPosts = useMemo(() => {
-    return posts.map((p) =>
-      mergePostState(p, {
-        likedPosts: likedMap,
-        savedPosts: savedMap,
-        followedUsers: followedMap,
-      })
-    );
-  }, [posts, likedMap, savedMap, followedMap]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<"warning" | "failed">("warning");
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
   const targetIndex = useMemo(() => {
-  const passedIndex = Number(index ?? -1);
-
-  if (!isNaN(passedIndex) && passedIndex >= 0) {
-    return passedIndex;
-  }
-
-  return mergedPosts.findIndex((p) => p.id === postId);
-}, [index, postId, mergedPosts]);
-
-  /* ================= INITIAL SCROLL ================= */
-
-  useEffect(() => {
-    if (hasScrolledRef.current) return;
-    if (!mergedPosts.length) return;
-    if (!containerHeight) return;
-
     const passedIndex = Number(index ?? -1);
 
-    let targetIndex = passedIndex;
-
-    if (isNaN(passedIndex) || passedIndex < 0) {
-      targetIndex = mergedPosts.findIndex((p) => p.id === postId);
+    if (!isNaN(passedIndex) && passedIndex >= 0) {
+      return passedIndex;
     }
 
-    if (targetIndex < 0 || targetIndex >= mergedPosts.length) return;
-
-    requestAnimationFrame(() => {
-      flatListRef.current?.scrollToOffset({
-        offset: targetIndex * containerHeight,
-        animated: false,
-      });
-
-      setActivePostId(mergedPosts[targetIndex]?.id ?? null);
-      hasScrolledRef.current = true;
-    });
-  }, [mergedPosts, postId, index, containerHeight]);
-
-  /* ================= APP STATE ================= */
+    return posts.findIndex((p) => p.id === postId);
+  }, [index, postId, posts]);
 
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state !== "active") {
-        setActivePostId(null);
-        setPausedPostId(null);
-      }
-    });
+    const error = isLiked ? likedError : userError;
+    const isError = isLiked ? isLikedError : isUserError;
 
-    return () => sub.remove();
-  }, []);
+    if (!isError) return;
 
-  /* ================= VIEWABILITY ================= */
+    const feedback = getNetworkModalCopy(
+      error,
+      "We couldn't load this post right now. Please try again.",
+    );
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 80,
-    minimumViewTime: 200,
-  }).current;
-
-  const prevIdRef = useRef<string | null>(null);
-
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (!viewableItems.length) return;
-
-      const current = viewableItems[0].item;
-      if (!current?.id) return;
-
-      if (prevIdRef.current && prevIdRef.current !== current.id) {
-        setPausedPostId(prevIdRef.current);
-      }
-
-      setActivePostId(current.id);
-      setPausedPostId(null);
-
-      prevIdRef.current = current.id;
-    }
-  ).current;
+    setModalType(feedback.type);
+    setModalTitle(feedback.title);
+    setModalMessage(feedback.message);
+    setModalVisible(true);
+  }, [isLiked, isLikedError, likedError, isUserError, userError]);
 
   /* ================= LOADING ================= */
 
@@ -182,24 +104,46 @@ export default function ProfilePostViewerScreen() {
   }
 
   /* ================= MAIN ================= */ 
-    return (
-    <View
-      flex={1}
-      onLayout={(e) => {
-        const { height, width } = e.nativeEvent.layout;
-        setContainerHeight(height);
-        setContainerWidth(width);
-      }}
-    >
-      {containerHeight === 0 ? null : (
-       <PostViewerEngine
-  posts={mergedPosts}
-  initialIndex={targetIndex}
-  containerHeight={containerHeight}
-  containerWidth={containerWidth}
-  tabBarHeight={0}
-/>
-      )}
-    </View>
+  return (
+    <SafeAreaView style={{flex:1}}>
+      <View
+        flex={1}
+        backgroundColor={colors.black}
+        onLayout={(e) => {
+          const { height, width } = e.nativeEvent.layout;
+          setContainerHeight(height);
+          setContainerWidth(width);
+        }}
+      >
+        {containerHeight === 0 ? null : (
+          <PostViewerEngine
+            posts={posts}
+            initialIndex={targetIndex >= 0 ? targetIndex : 0}
+            containerHeight={containerHeight}
+            containerWidth={containerWidth}
+            tabBarHeight={0}
+          />
+        )}
+      </View>
+
+      <SuccessModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        autoClose
+        withButton
+        buttonText="Try again"
+        onButtonPress={() => {
+          setModalVisible(false);
+          if (isLiked) {
+            refetchLikedPosts();
+          } else {
+            refetchUserPosts();
+          }
+        }}
+      />
+    </SafeAreaView>
   );
 }

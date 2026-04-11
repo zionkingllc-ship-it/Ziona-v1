@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Folder, Bookmark } from "@/types/folder";
+import { useBookmarkFolders } from "@/hooks/useBookmarkFolders";
 
 interface BookmarkState {
   folders: Folder[];
@@ -8,17 +9,11 @@ interface BookmarkState {
   createFolder: (name: string, cover: string, postId?: string) => void;
   toggleBookmark: (postId: string, folderId: string) => void;
   getSavedFolderIds: (postId: string) => string[];
+  setFolders: (folders: Folder[]) => void;
 }
 
 export const useBookmarksStore = create<BookmarkState>((set, get) => ({
-  folders: [
-    {
-      id: "1", 
-      name: "All",
-      cover: "https://picsum.photos/200",
-      createdAt: new Date().toISOString(),
-    },
-  ],
+  folders: [],
 
   bookmarks: [],
 
@@ -41,7 +36,7 @@ export const useBookmarksStore = create<BookmarkState>((set, get) => ({
 
   toggleBookmark: (postId, folderId) => {
     const existing = get().bookmarks.find(
-      (b) => b.postId === postId && b.folderId === folderId
+      (b) => b.postId === postId && b.folderId === folderId,
     );
 
     if (existing) {
@@ -66,5 +61,9 @@ export const useBookmarksStore = create<BookmarkState>((set, get) => ({
     return get()
       .bookmarks.filter((b) => b.postId === postId)
       .map((b) => b.folderId);
+  },
+
+  setFolders: (folders) => {
+    set({ folders });
   },
 }));

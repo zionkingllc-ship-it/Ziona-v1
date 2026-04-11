@@ -18,6 +18,7 @@ export default function ProtectedScreen({
     if (isBootstrapping) return;
 
     if (!isAuthenticated) {
+      setShouldRender(false);
       router.replace("/(auth)");
       return;
     }

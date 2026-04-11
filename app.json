@@ -57,14 +57,17 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
-        "dark": { "backgroundColor": "#ffffff" } 
+          "dark": {
+            "backgroundColor": "#ffffff"
+          }
         }
       ],
       "expo-asset",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-video"
     ],
-        "extra": {
+    "extra": {
       "router": {},
       "eas": {
         "projectId": "ae56ecb7-5133-4048-849f-b5f191d82d6a"
