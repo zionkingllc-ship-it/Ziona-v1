@@ -28,7 +28,7 @@ export default function EditProfileScreen() {
 
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
 
-  /* ✅ MODAL STATE */
+  
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
 
@@ -59,14 +59,14 @@ export default function EditProfileScreen() {
     try {
       await avatarMutation.mutateAsync(file);
 
-      /* ✅ SUCCESS */
+      /* SUCCESS */
       setSuccessVisible(true);
     } catch (e) {
       console.log("Avatar update failed", e);
 
       setLocalAvatar(null);
 
-      /* ❌ ERROR */
+      /*ERROR */
       setErrorVisible(true);
     }
   };

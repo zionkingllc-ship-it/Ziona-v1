@@ -3,8 +3,7 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { useAuthStore } from "@/store/useAuthStore";
 
 type BioResponse = {
-  id: string;
-  bio?: string;
+  bio?: string | null;
 };
 
 export function useUpdateBio() {
@@ -13,36 +12,32 @@ export function useUpdateBio() {
 
   return useMutation({
     mutationFn: async (bio: string) => {
-      console.log("SENDING BIO:", bio);
-
       const data = await graphqlRequest(
         `
         mutation UpdateProfile($bio: String!) {
           updateProfile(bio: $bio) {
             success
-            user { id bio }
+            profile {
+              bio
+            }
+            error { code message }
           }
         }
-      `,
+        `,
         { bio }
       );
 
-      console.log("UPDATE BIO RESPONSE:", data);
+      const res = data?.updateProfile;
 
-      if (!data?.updateProfile?.success) {
-        throw new Error("Failed to update bio");
+      if (!res?.success) {
+        throw new Error(res?.error?.message || "Failed to update bio");
       }
 
-      return data.updateProfile.user as BioResponse;
+      return res.profile as BioResponse; // ✅ FIXED
     },
 
-    onSuccess: (updatedUser) => {
+    onSuccess: (profile) => {
       if (!userId) return;
-
-      if (!updatedUser?.bio && updatedUser?.bio !== "") {
-        console.log(" Backend returned invalid bio");
-        return;
-      }
 
       queryClient.setQueryData(
         ["userProfile", userId],
@@ -51,7 +46,7 @@ export function useUpdateBio() {
 
           return {
             ...old,
-            bio: updatedUser.bio,
+            bio: profile?.bio ?? "",
           };
         }
       );
