@@ -18,6 +18,9 @@ type Props = {
   containerWidth: number;
   tabBarHeight: number;
   isScreenFocused?: boolean;
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 };
 
 export function PostViewerEngine({
@@ -27,6 +30,9 @@ export function PostViewerEngine({
   containerWidth,
   tabBarHeight,
   isScreenFocused,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
   const hasScrolledRef = useRef(false);
@@ -107,12 +113,12 @@ export function PostViewerEngine({
       const isActive = item.id === activePostId;
       const isPaused = item.id === pausedPostId;
 
-      const shouldPlay = isScreenFocused && isActive && !isPaused;
+      const shouldPlay = !!isScreenFocused && isActive && !isPaused;
 
       return (
         <PostCard
           post={item}
-          isPlaying={isActive && !isPaused}
+          isPlaying={shouldPlay}
           onTogglePlay={() => {
             setPausedPostId((prev) => (prev === item.id ? null : item.id));
           }}
@@ -122,7 +128,14 @@ export function PostViewerEngine({
         />
       );
     },
-    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
+    [
+      activePostId,
+      pausedPostId,
+      containerHeight,
+      containerWidth,
+      tabBarHeight,
+      isScreenFocused,
+    ],
   );
 
   /* LAYOUT */
@@ -134,6 +147,12 @@ export function PostViewerEngine({
     }),
     [containerHeight],
   );
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!containerHeight) return null;
 
@@ -154,6 +173,8 @@ export function PostViewerEngine({
       getItemLayout={getItemLayout}
       viewabilityConfig={viewabilityConfig}
       onViewableItemsChanged={onViewableItemsChanged}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
       showsVerticalScrollIndicator={false}
     />
   );

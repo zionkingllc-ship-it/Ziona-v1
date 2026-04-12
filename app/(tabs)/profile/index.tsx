@@ -55,6 +55,19 @@ export default function ProfileScreen() {
   } = useUserPosts(userId);
 
   const { data: profile } = useUserProfile(userId);
+  const [profileAvatarSource, setProfileAvatarSource] = useState(
+    profile?.avatarUrl && profile.avatarUrl.trim()
+      ? { uri: profile.avatarUrl }
+      : null,
+  );
+
+  useEffect(() => {
+    setProfileAvatarSource(
+      profile?.avatarUrl && profile.avatarUrl.trim()
+        ? { uri: profile.avatarUrl }
+        : null,
+    );
+  }, [profile?.avatarUrl]);
 
   const [activeTab, setActiveTab] = useState<"posts" | "liked">("posts");
 
@@ -149,13 +162,19 @@ export default function ProfileScreen() {
         <YStack width={"100%"} padding={20}>
           <XStack width={"100%"} justifyContent="space-between">
             <YStack alignItems="center" alignSelf="flex-start">
-              {profile?.avatarUrl ? (
+              {profileAvatarSource ? (
                 <Image
-                  source={{ uri: profile.avatarUrl }}
+                  source={profileAvatarSource}
                   style={{
                     width: 80,
                     height: 80,
                     borderRadius: 40,
+                  }}
+                  onError={() => {
+                    console.log(
+                      "[ProfilePage] Avatar load failed, using fallback",
+                    );
+                    setProfileAvatarSource(null);
                   }}
                 />
               ) : (
@@ -227,23 +246,33 @@ export default function ProfileScreen() {
             </Text>
           </YStack>
 
-          <YStack alignItems="center" justifyContent="center" width={"33.3%"}>
-            <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
-              {profile?.stats?.followersCount ?? 0}
-            </Text>
-            <Text fontFamily={"$body"} fontSize={13} color={colors.gray}>
-              Followers
-            </Text>
-          </YStack>
+          <TouchableOpacity
+            style={{ width: "33.3%" }}
+            onPress={() => router.push("/(tabs)/profile/followers")}
+          >
+            <YStack alignItems="center" justifyContent="center">
+              <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
+                {profile?.stats?.followersCount ?? 0}
+              </Text>
+              <Text fontFamily={"$body"} fontSize={13} color={colors.gray}>
+                Followers
+              </Text>
+            </YStack>
+          </TouchableOpacity>
 
-          <YStack alignItems="center" justifyContent="center" width={"33.3%"}>
-            <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
-              {profile?.stats?.followingCount ?? 0}
-            </Text>
-            <Text fontFamily={"$body"} fontSize={"$3"} color={colors.gray}>
-              Following
-            </Text>
-          </YStack>
+          <TouchableOpacity
+            style={{ width: "33.3%" }}
+            onPress={() => router.push("/(tabs)/profile/following")}
+          >
+            <YStack alignItems="center" justifyContent="center">
+              <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
+                {profile?.stats?.followingCount ?? 0}
+              </Text>
+              <Text fontFamily={"$body"} fontSize={"$3"} color={colors.gray}>
+                Following
+              </Text>
+            </YStack>
+          </TouchableOpacity>
         </XStack>
 
         {/* TABS */}

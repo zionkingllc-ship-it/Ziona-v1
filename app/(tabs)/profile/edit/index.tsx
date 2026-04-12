@@ -1,5 +1,5 @@
-import { useState } from "react";
 import Header from "@/components/layout/header";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useUpdateAvatar } from "@/hooks/useProfileMutations";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -8,10 +8,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Text, XStack, YStack } from "tamagui";
-import SuccessModal from "@/components/ui/modals/successModal";
 
 export default function EditProfileScreen() {
   const avatarMutation = useUpdateAvatar();
@@ -22,21 +22,20 @@ export default function EditProfileScreen() {
     enabled: !!userId,
   });
 
-  const { refreshing, onRefresh } = usePullToRefresh([
-    ["userProfile", userId],
-  ]);
+  const { refreshing, onRefresh } = usePullToRefresh([["userProfile", userId]]);
 
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
-
-  
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [localAvatar, user?.avatarUrl]);
   const [errorVisible, setErrorVisible] = useState(false);
 
   const handlePickImage = async () => {
     if (avatarMutation.isPending) return;
 
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -99,10 +98,13 @@ export default function EditProfileScreen() {
                 source={
                   localAvatar
                     ? { uri: localAvatar }
-                    : user?.avatarUrl
-                    ? { uri: user.avatarUrl }
-                    : require("@/assets/images/emptyDP.png")
+                    : user?.avatarUrl && !avatarLoadFailed
+                      ? { uri: user.avatarUrl }
+                      : require("@/assets/images/emptyDP.png")
                 }
+                onError={() => {
+                  setAvatarLoadFailed(true);
+                }}
               />
               <Avatar.Fallback backgroundColor={colors.black} />
             </Avatar>

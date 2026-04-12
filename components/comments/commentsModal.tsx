@@ -40,6 +40,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(
     new Set(),
   );
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
 
   const inputRef = useRef<TextInput>(null);
 
@@ -157,13 +158,22 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                   <XStack gap="$2" flex={1}>
                     <Image
                       source={
-                        item.user?.avatarUrl
+                        item.user?.avatarUrl &&
+                        item.user.avatarUrl.trim() &&
+                        !failedAvatarUrls.includes(item.user.avatarUrl)
                           ? { uri: item.user.avatarUrl }
-                          : { uri: "https://i.pravatar.cc/100" }
+                          : { uri: "https://i.pravatar.cc/100?d=mp" }
                       }
                       width={30}
                       height={30}
                       borderRadius={50}
+                      onError={() => {
+                        if (item.user?.avatarUrl) {
+                          setFailedAvatarUrls((prev) => [
+                            ...new Set([...prev, item.user!.avatarUrl]),
+                          ]);
+                        }
+                      }}
                     />
 
                     <YStack flex={1}>
