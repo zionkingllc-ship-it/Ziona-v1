@@ -25,7 +25,6 @@ export default function EditUsernameScreen() {
   const [username, setUsername] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
 
-  
   useEffect(() => {
     if (user?.username) {
       setUsername(user.username);
@@ -41,7 +40,7 @@ export default function EditUsernameScreen() {
         onSuccess: () => {
           setSuccessVisible(true);
         },
-      }
+      },
     );
   };
 
@@ -88,6 +87,15 @@ export default function EditUsernameScreen() {
             autoCapitalize="none"
           />
         </YStack>
+        <Text
+          alignSelf="center"
+          fontFamily={"$body"}
+          fontWeight={"400"}
+          fontSize={13}
+          color={colors.tertiary}
+        >
+          Next change on <Text fontWeight="bold">March 3 2026</Text>
+        </Text>
 
         <SimpleButton
           onPress={handleSave}

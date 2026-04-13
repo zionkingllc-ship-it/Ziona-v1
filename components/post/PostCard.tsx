@@ -5,6 +5,7 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -158,19 +159,20 @@ function PostCardComponent({
           <YStack flex={1} gap="$2">
             {/* PROFILE */}
             <XStack gap="$4" alignItems="center">
-              <XStack gap="$2" alignItems="center">
+              <TouchableOpacity
+                onPress={() => {
+                  if (post.author?.id) {
+                    router.push(`/guest?userId=${post.author.id}`);
+                  }
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Image
                   source={authorAvatarSource}
                   width={30}
                   height={30}
                   borderRadius={15}
                   onError={() => {
-                    console.log(
-                      "[PostCard] Avatar load failed for user:",
-                      post.author?.id,
-                      "URL:",
-                      post.author?.avatarUrl,
-                    );
                     setAuthorAvatarSource(
                       require("@/assets/images/profile.png"),
                     );
@@ -180,7 +182,7 @@ function PostCardComponent({
                 <Text color={colors.white} fontSize={16} fontWeight="500">
                   {post.author?.username ?? "user"}
                 </Text>
-              </XStack>
+              </TouchableOpacity>
 
               {!post.viewerState?.isOwner && (
                 <TouchableOpacity

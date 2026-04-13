@@ -7,7 +7,6 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 export async function updateProfile(input: {
   fullName?: string;
   bio?: string;
-  username?: string;
   avatarUrl?: string;
   location?: string;
 }) {
@@ -17,7 +16,6 @@ mutation UpdateProfile(
   $fullName: String
   $avatarUrl: String
   $location: String
-  $username: String
   
 ) {
   updateProfile(
@@ -25,7 +23,6 @@ mutation UpdateProfile(
     fullName: $fullName
     avatarUrl: $avatarUrl
     location: $location
-     username: $username
   ) {
     success
     profile {

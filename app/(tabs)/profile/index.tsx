@@ -9,11 +9,12 @@ import { useUserPosts } from "@/hooks/useUserPost";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useAuthStore } from "@/store/useAuthStore";
+import { queryClient } from "@/lib/queryClient";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -69,6 +70,17 @@ export default function ProfileScreen() {
         : null,
     );
   }, [profile?.avatarUrl]);
+
+  /* ================= FORCE REFRESH ON FOCUS ================= */
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
+        queryClient.invalidateQueries({ queryKey: ["userPosts", userId] });
+        queryClient.invalidateQueries({ queryKey: ["likedPosts"] });
+      }
+    }, [userId]),
+  );
 
   const [activeTab, setActiveTab] = useState<"posts" | "liked">("posts");
 
@@ -167,6 +179,7 @@ export default function ProfileScreen() {
           heading={`@${profile?.username || ""}`}
           imageAfter2={settingIcon}
           imageAfter={profileShareIcon}
+          imageAfter2Press={() => router.push("/(tabs)/profile/settings")}
         />
       </XStack>
 

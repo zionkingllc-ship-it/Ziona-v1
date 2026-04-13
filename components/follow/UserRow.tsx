@@ -3,6 +3,7 @@ import { useToggleFollow } from "@/hooks/useFollow";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,6 +42,8 @@ export default function FollowUserRow({
   const handlePress = () => {
     if (onPress) {
       onPress();
+    } else {
+      router.push(`/guest?userId=${id}`);
     }
   };
 

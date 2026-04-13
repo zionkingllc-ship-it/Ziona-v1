@@ -56,7 +56,7 @@ export default function EditNameScreen() {
       </XStack>
 
       <YStack flex={1} padding="$4" gap="$4">
-        <Text fontSize={16} fontFamily={"$body"}>
+        <Text fontFamily={"$body"} fontWeight={"400"} fontSize={16}>
           You're allowed one name change every 14 days.
         </Text>
 
@@ -72,6 +72,7 @@ export default function EditNameScreen() {
             color={colors.text}
             fontSize={13}
             fontFamily={"$body"}
+            fontWeight={"400"}
             left={10}
           >
             Name
@@ -84,11 +85,12 @@ export default function EditNameScreen() {
             onChangeText={setName}
             size="$4"
             fontFamily={"$body"}
+            fontWeight={"400"}
             marginTop={-4}
           />
         </YStack>
 
-        <Text fontSize={13} color={colors.tertiary}>
+        <Text alignSelf="center" fontFamily={"$body" } fontWeight={"400"} fontSize={13} color={colors.tertiary}>
           Next change on <Text fontWeight="bold">March 3 2026</Text>
         </Text>
 
