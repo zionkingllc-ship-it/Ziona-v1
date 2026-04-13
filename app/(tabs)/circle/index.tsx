@@ -1,22 +1,38 @@
 import CircleCard from "@/components/circles/CircleCard";
 import CirclesIntro from "@/components/circles/CirclesIntro";
-import { useCircleStore } from "@/store/circleStore";
-import { FlatList, StyleSheet, TextInput } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
-import ProtectedScreen from "@/components/auth/ProtectedScreen";
+import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
+import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, TextInput } from "react-native";
+import { Text, XStack, YStack } from "tamagui";
 
 export default function CirclesScreen() {
   const { hp, wp } = useResponsive();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [circles, setCircles] = useState<any[]>([]);
-  const [error, setError] = useState(""); 
-const [showIntro, setShowIntro] = useState(true);
+  const [error, setError] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
   const [ready, setReady] = useState(false);
 
+  if (!isAuthenticated) {
+    return (
+      <YStack
+        style={{ justifyContent: "center", alignItems: "center" }}
+        flex={1}
+        backgroundColor={colors.white}
+      >
+        <AuthPrompt
+          message="Login to create a post"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </YStack>
+    );
+  }
 
   /* =========================
      TEMP DATA (replace with backend)
@@ -64,13 +80,11 @@ const [showIntro, setShowIntro] = useState(true);
     }
   }
 
-   
   if (showIntro) {
-  return <CirclesIntro onClose={() => setShowIntro(false)} />;
-}
-   
+    return <CirclesIntro onClose={() => setShowIntro(false)} />;
+  }
+
   return (
-    <ProtectedScreen>
     <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
       {/* SEARCH */}
       <XStack
@@ -113,7 +127,6 @@ const [showIntro, setShowIntro] = useState(true);
         )}
       />
     </YStack>
-    </ProtectedScreen>
   );
 }
 

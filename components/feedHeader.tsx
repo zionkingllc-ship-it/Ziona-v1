@@ -1,9 +1,9 @@
 // components/feedHeader.tsx
+import colorsDefault from "@/constants/colors";
+import { Bell } from "@tamagui/lucide-icons";
 import { Image } from "react-native";
 import { XStack } from "tamagui";
 import TwoButtonSwitch from "./ui/twoButtonSwitch";
-import colorsDefault from "@/constants/colors";
-import { Bell } from "@tamagui/lucide-icons";
 
 type FeedHeaderProps = {
   feedType: "forYou" | "following";
@@ -47,9 +47,16 @@ export default function FeedHeader({
         borderRadius={20}
         alignItems="center"
         justifyContent="center"
-        backgroundColor="rgba(255,255,255,0.12)"
+        backgroundColor="rgba(255, 255, 255, 0.24)"
+        shadowColor="#000"
       >
-        <Bell size={24} color={feedType==="forYou"? colorsDefault.white:colorsDefault.bell} />
+        <Bell
+          size={24}
+          stroke={colorsDefault.black}
+          color={colorsDefault.white} 
+          strokeOpacity={1}
+          strokeWidth={3}
+        />
       </XStack>
     </XStack>
   );

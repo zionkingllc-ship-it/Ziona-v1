@@ -1,6 +1,7 @@
 import FeedHeader from "@/components/feedHeader";
 import { PostCard } from "@/components/post/PostCard";
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
+import FollowSuggestions from "@/components/following/FollowingSuggestions";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
@@ -190,7 +191,9 @@ export default function Feed() {
           if (width !== containerWidth) setContainerWidth(width);
         }}
       >
-        {data.length === 0 ? (
+        {feedType === "following" && data.length === 0 && !query.isLoading ? (
+          <FollowSuggestions onDone={() => setFeedType("forYou")} />
+        ) : data.length === 0 ? (
           <View flex={1} justifyContent="center" alignItems="center">
             <Text style={{ color: colors.text }}>No posts yet</Text>
           </View>

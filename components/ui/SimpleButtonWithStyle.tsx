@@ -37,11 +37,14 @@ export function SimpleButtonWithStyle({
           backgroundColor: isDisabled ? colors.inactiveButton : color,
           height: 50,
           justifyContent: "center",
-          borderRadius:30
+          alignItems: "center",
+          borderRadius:30,
+          paddingHorizontal: 20,
+          width: "70%",
         },
       ]}
     >
-      <XStack width="100%" justifyContent="center" alignItems="center">
+      <XStack >
         {loading ? (
           <Spinner color={textColor ?? "#F6EAFA"} size="small" />
         ) : (

@@ -1,5 +1,6 @@
 import colors from "@/constants/colors";
 import { useToggleFollow } from "@/hooks/useFollow";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import React, { useState } from "react";
@@ -29,6 +30,7 @@ export default function FollowUserRow({
   const currentUserId = useAuthStore((s) => s.user?.id);
   const followedUsers = usePostActionsStore((s) => s.followedUsers);
   const { mutate: toggleFollow, isPending } = useToggleFollow();
+  const { requireAuth, AuthModal } = useRequireAuth();
 
   const isSelf = currentUserId === id;
   const isFollowing = followedUsers[id] ?? initialFollowing ?? false;
@@ -45,7 +47,9 @@ export default function FollowUserRow({
   const handleToggleFollow = (e: any) => {
     e.stopPropagation?.();
     if (isSelf) return;
-    toggleFollow({ userId: id, currentFollowing: isFollowing });
+    requireAuth(() => {
+      toggleFollow({ userId: id, currentFollowing: isFollowing });
+    });
   };
 
   const initials = username?.slice(0, 2)?.toUpperCase() || "U";
@@ -98,6 +102,7 @@ export default function FollowUserRow({
           </Text>
         </TouchableOpacity>
       )}
+      {AuthModal}
     </TouchableOpacity>
   );
 }
