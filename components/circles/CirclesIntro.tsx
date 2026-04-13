@@ -4,16 +4,20 @@ import { useCircleStore } from "@/store/circleStore";
 import { useEffect } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
-
+import { Pressable } from "react-native";
 import Animated, {
-  useSharedValue,
+  runOnJS,
   useAnimatedStyle,
+  useSharedValue,
   withRepeat,
   withTiming,
-  runOnJS,
 } from "react-native-reanimated";
 
-export default function CirclesIntro() {
+export default function CirclesIntro({
+  onClose,
+}: {
+  onClose: () => void;
+})  {
   const { hp, wp, fs } = useResponsive();
   const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
@@ -23,21 +27,15 @@ export default function CirclesIntro() {
 
   const opacity = useSharedValue(1);
 
-  function finishIntro() {
-    setSeenIntro();
-  }
+function finishIntro() {
+  onClose();
+}
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // fade out first
-      opacity.value = withTiming(0, { duration: 600 }, () => {
-        runOnJS(finishIntro)();
-      });
-    }, 3500); // fade starts slightly before 4s
-
-    return () => clearTimeout(timer);
-  }, []);
-
+  const handleClose = () => {
+    opacity.value = withTiming(0, { duration: 300 }, () => {
+      runOnJS(finishIntro)();
+    });
+  };
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
@@ -67,24 +65,15 @@ export default function CirclesIntro() {
   }, []);
 
   const style1 = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x1.value },
-      { translateY: y1.value },
-    ],
+    transform: [{ translateX: x1.value }, { translateY: y1.value }],
   }));
 
   const style2 = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x2.value },
-      { translateY: y2.value },
-    ],
+    transform: [{ translateX: x2.value }, { translateY: y2.value }],
   }));
 
   const style3 = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: x3.value },
-      { translateY: y3.value },
-    ],
+    transform: [{ translateX: x3.value }, { translateY: y3.value }],
   }));
 
   /* =========================
@@ -92,76 +81,78 @@ export default function CirclesIntro() {
   ========================= */
 
   return (
-    <Animated.View style={[{ flex: 1 }, containerStyle]}>
-      <GradientBackground>
-        <YStack flex={1} paddingTop={hp(10)}>
-          {/* TEXT */}
-          <YStack paddingHorizontal={wp(5)}>
-            <Text
-              style={{
-                fontSize: fs(31),
-                fontWeight: "700",
-                color: "#754800",
-                marginBottom: 10,
-                fontFamily: "$body",
-              }}
-            >
-              WELCOME TO{"\n"}CIRCLES
-            </Text>
+    <Pressable style={{ flex: 1 }} onPress={handleClose}>
+      <Animated.View style={[{ flex: 1 }, containerStyle]}>
+        <GradientBackground>
+          <YStack flex={1} paddingTop={hp(10)}>
+            {/* TEXT */}
+            <YStack paddingHorizontal={wp(5)}>
+              <Text
+                style={{
+                  fontSize: fs(31),
+                  fontWeight: "700",
+                  color: "#754800",
+                  marginBottom: 10,
+                  fontFamily: "$body",
+                }}
+              >
+                WELCOME TO{"\n"}CIRCLES
+              </Text>
 
-            <Text
-              style={{
-                fontFamily: "$body",
-                fontSize: fs(16),
-                color: "#836F8B",
-                fontWeight: "400",
-                lineHeight: 24,
-                marginBottom: 30,
-              }}
-            >
-              Grow in faith together; Find your circle, pray together,
-              study the scriptures, support one another, build meaningful
-              and Christ-centered friendships.
-            </Text>
-          </YStack>
+              <Text
+                style={{
+                  fontFamily: "$body",
+                  fontSize: fs(16),
+                  color: "#836F8B",
+                  fontWeight: "400",
+                  lineHeight: 24,
+                  marginBottom: 30,
+                }}
+              >
+                Grow in faith together; Find your circle, pray together, study
+                the scriptures, support one another, build meaningful and
+                Christ-centered friendships.
+              </Text>
+            </YStack>
 
-          {/* IMAGES */}
-          <View style={{ flex: 1 }}>
-            {/* BACKGROUND IMAGE */}
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-              }}
-              style={[styles.backgroundImage, { top: hp(5) }]}
-            />
-
-            {/* FLOATING IMAGES */}
-            <YStack style={{ flex: 1, justifyContent: "center" }}>
-              <Animated.Image
+            {/* IMAGES */}
+            <View style={{ flex: 1 }}>
+              {/* BACKGROUND IMAGE */}
+              <Image
                 source={{
                   uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
                 }}
-                style={[styles.image, { top: 0, left: 0 }, style1]}
+                style={[styles.backgroundImage, { top: hp(5) }]}
               />
 
-              <Animated.Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
-                }}
-                style={[styles.image, { top: 140, right: 0 }, style2]}
-              />
+              {/* FLOATING IMAGES */}
+              <YStack style={{ flex: 1, justifyContent: "center" }}>
+                <Animated.Image
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
+                  }}
+                  style={[styles.image, { top: 0, left: 0 }, style1]}
+                />
 
-              <Animated.Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-                }}
-                style={[styles.image, { bottom: 20, left: 53 }, style3]}
-              />
-            </YStack>
-          </View>
-        </YStack>
-      </GradientBackground>
-    </Animated.View>
+                <Animated.Image
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
+                  }}
+                  style={[styles.image, { top: 140, right: 0 }, style2]}
+                />
+
+                <Animated.Image
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+                  }}
+                  style={[styles.image, { bottom: 20, left: 53 }, style3]}
+                />
+              </YStack>
+            </View>
+          </YStack>
+        </GradientBackground>
+      </Animated.View>
+    </Pressable>
   );
 }
 

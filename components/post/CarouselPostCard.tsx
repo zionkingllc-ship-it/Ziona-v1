@@ -1,5 +1,6 @@
 import colors from "@/constants/colors";
 import { FeedMediaPost } from "@/types/feedTypes";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
 import {
   FlatList,
@@ -34,7 +35,7 @@ export default function CarouselPostCard({
 
   // derive from actual media structure
   const mediaItems = (post.media ?? []).filter(
-    (item) => item.type === "image" && item.url
+    (item) => item.type === "image" && item.url,
   );
 
   const clamp = (value: number, min: number, max: number) =>
@@ -123,14 +124,24 @@ export default function CarouselPostCard({
                 height={wp(2)}
                 borderRadius={wp(1)}
                 backgroundColor={
-                  index === activeIndex
-                    ? colors.white
-                    : "rgba(255,255,255,0.4)"
+                  index === activeIndex ? colors.white : "rgba(255,255,255,0.4)"
                 }
               />
             ))}
           </XStack>
         )}
+
+        {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.7)"]}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 200,
+          }}
+        />
       </Animated.View>
     </GestureDetector>
   );

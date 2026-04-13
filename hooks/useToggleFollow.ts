@@ -3,7 +3,7 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 import {
   followUser,
   unfollowUser,
-} from "@/services/graphQL/actions/actionService";
+} from "@/services/graphQL/mutation/actions/follow";
 
 export function useToggleFollow() {
   const toggleFollowStore = usePostActionsStore((s) => s.toggleFollow);
@@ -22,7 +22,7 @@ export function useToggleFollow() {
     },
 
     onMutate: ({ userId, currentFollowing }) => {
-      toggleFollowStore(userId, currentFollowing);
+      toggleFollowStore(userId, !currentFollowing);
 
       return { userId, previous: currentFollowing };
     },
@@ -30,7 +30,7 @@ export function useToggleFollow() {
     onError: (_err, _vars, ctx) => {
       if (!ctx) return;
 
-      toggleFollowStore(ctx.userId, !ctx.previous);
+      toggleFollowStore(ctx.userId, ctx.previous);
     },
   });
 }

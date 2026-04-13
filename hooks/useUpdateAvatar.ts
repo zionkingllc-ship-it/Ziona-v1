@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { useAuthStore } from "@/store/useAuthStore";
+import { UserProfile } from "@/types/userProfile";
+import { updateAvatar } from "@/services/profile/profileService";
 
 /* =========================
    UPDATE AVATAR
@@ -8,9 +10,9 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 const UPDATE_AVATAR = `
 mutation UpdateProfile($avatarUrl: String!) {
-  updateProfile(avatarUrl: $avatarUrl) {
+  updateProfile(id: $userId, avatarUrl: $avatarUrl) {
     success
-    user {
+    profile {
       id
       avatarUrl
     }
@@ -25,46 +27,29 @@ type AvatarResponse = {
 
 export function useUpdateAvatar() {
   const queryClient = useQueryClient();
-  const userId = useAuthStore((s) => s.user?.id);  
+  const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
-    mutationFn: async (file: { uri: string }) => {
-      const avatarUrl = file.uri;
+    mutationFn: updateAvatar,
 
-      console.log("SENDING AVATAR TO BACKEND:", avatarUrl);
-
-      const data = await graphqlRequest(UPDATE_AVATAR, {
-        avatarUrl,
-      });
-
-      console.log("UPDATE AVATAR RESPONSE:", data);
-
-      if (!data?.updateProfile?.success) {
-        throw new Error("Backend failed to update avatar");
-      }
-
-      return data.updateProfile.user as AvatarResponse;
-    },
-
-    onSuccess: (updatedUser) => {
-      if (!userId) return;
-
-      if (!updatedUser?.avatarUrl) {
-        console.log("Backend returned empty avatarUrl");
-        return;
-      }
+    onSuccess: (avatarUrl: string | null) => {
+      if (!userId || !avatarUrl) return;
 
       queryClient.setQueryData(
         ["userProfile", userId],
-        (old: any) => ({
-          ...old,
-          avatarUrl: updatedUser.avatarUrl,
-        })
+        (prev: UserProfile | null) => {
+          if (!prev) return prev;
+
+          return {
+            ...prev,
+            avatarUrl,
+          };
+        }
       );
 
       queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
-      queryClient.invalidateQueries({ queryKey: ["feed"] });
-      queryClient.invalidateQueries({ queryKey: ["discoverFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
     },
   });
 }

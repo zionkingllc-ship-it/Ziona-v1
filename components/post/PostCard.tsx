@@ -19,6 +19,7 @@ import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
 
 import { useToggleLike } from "@/hooks/useToggleLike";
+import { useToggleFollow } from "@/hooks/useFollow";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ICONS */
@@ -59,8 +60,23 @@ function PostCardComponent({
   const likedState = post.viewerState.liked;
   const likeCount = post.stats.likesCount;
 
+  const [authorAvatarSource, setAuthorAvatarSource] = useState(
+    post.author?.avatarUrl && post.author.avatarUrl.trim()
+      ? { uri: post.author.avatarUrl }
+      : require("@/assets/images/profile.png"),
+  );
+
   const { folders, getSavedFolderIds } = useBookmarksStore();
   const savedFolderIds = getSavedFolderIds(post.id);
+
+  useEffect(() => {
+    setAuthorAvatarSource(
+      post.author?.avatarUrl && post.author.avatarUrl.trim()
+        ? { uri: post.author.avatarUrl }
+        : require("@/assets/images/profile.png"),
+    );
+  }, [post.author?.avatarUrl]);
+
   const isBookmarked = post.viewerState?.saved || savedFolderIds.length > 0;
   const {
     foldersVisible,
@@ -77,6 +93,9 @@ function PostCardComponent({
   );
 
   const toggleLikeMutation = useToggleLike();
+  const toggleFollowMutation = useToggleFollow();
+  const followedUsers = usePostActionsStore((s) => s.followedUsers);
+  const isFollowing = followedUsers[post.author?.id ?? ""] ?? post.viewerState?.followingAuthor ?? false;
 
   /* RESET CAPTION ON POST CHANGE */
   useEffect(() => {
@@ -90,6 +109,14 @@ function PostCardComponent({
     toggleLikeMutation.mutate({
       postId: post.id,
       currentLiked: likedState,
+    });
+  };
+
+  const handleFollow = () => {
+    if (!post.author?.id) return;
+    toggleFollowMutation.mutate({
+      userId: post.author.id,
+      currentFollowing: isFollowing,
     });
   };
 
@@ -112,22 +139,10 @@ function PostCardComponent({
       {/* MEDIA */}
       <PostMedia {...mediaProps} />
 
-      {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.7)"]}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 200,
-        }}
-      />
-
       {/* OVERLAY */}
       <YStack
         position="absolute"
-        bottom={Math.max(insets.bottom-12)}
+        bottom={Math.max(insets.bottom - 25)}
         width="100%"
         paddingTop={insets.top + 12}
       >
@@ -138,14 +153,21 @@ function PostCardComponent({
             <XStack gap="$4" alignItems="center">
               <XStack gap="$2" alignItems="center">
                 <Image
-                  source={
-                    post.author?.avatarUrl
-                      ? { uri: post.author.avatarUrl }
-                      : require("@/assets/images/profile.png")
-                  }
+                  source={authorAvatarSource}
                   width={30}
                   height={30}
                   borderRadius={15}
+                  onError={() => {
+                    console.log(
+                      "[PostCard] Avatar load failed for user:",
+                      post.author?.id,
+                      "URL:",
+                      post.author?.avatarUrl,
+                    );
+                    setAuthorAvatarSource(
+                      require("@/assets/images/profile.png"),
+                    );
+                  }}
                 />
 
                 <Text color={colors.white} fontSize={16} fontWeight="500">
@@ -155,6 +177,7 @@ function PostCardComponent({
 
               {!post.viewerState?.isOwner && (
                 <TouchableOpacity
+                  onPress={handleFollow}
                   style={{
                     borderWidth: 1,
                     borderColor: colors.white,
@@ -166,7 +189,7 @@ function PostCardComponent({
                   }}
                 >
                   <Text color={colors.white} fontSize={13}>
-                    {post.viewerState?.followingAuthor ? "following" : "follow"}
+                    {isFollowing ? "following" : "follow"}
                   </Text>
                 </TouchableOpacity>
               )}

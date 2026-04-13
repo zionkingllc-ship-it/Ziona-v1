@@ -9,6 +9,7 @@ type State = {
   toggleLike: (postId: string, value: boolean) => void;
   toggleSave: (postId: string, value: boolean) => void;
   setLikePending: (postId: string, value: boolean) => void;
+  toggleFollow: (userId: string, value: boolean) => void;
 };
 
 export const usePostActionsStore = create<State>((set) => ({
@@ -38,6 +39,14 @@ export const usePostActionsStore = create<State>((set) => ({
       pendingLikes: {
         ...state.pendingLikes,
         [postId]: value,
+      },
+    })),
+
+  toggleFollow: (userId, value) =>
+    set((state) => ({
+      followedUsers: {
+        ...state.followedUsers,
+        [userId]: value,
       },
     })),
 }));

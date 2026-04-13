@@ -1,5 +1,5 @@
-import { useState } from "react";
 import Header from "@/components/layout/header";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useUpdateAvatar } from "@/hooks/useProfileMutations";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Text, XStack, YStack } from "tamagui";
@@ -21,12 +22,15 @@ export default function EditProfileScreen() {
     enabled: !!userId,
   });
 
-  const { refreshing, onRefresh } = usePullToRefresh([
-    ["userProfile", userId],
-  ]);
+  const { refreshing, onRefresh } = usePullToRefresh([["userProfile", userId]]);
 
-  //LOCAL PREVIEW STATE
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [localAvatar, user?.avatarUrl]);
+  const [errorVisible, setErrorVisible] = useState(false);
 
   const handlePickImage = async () => {
     if (avatarMutation.isPending) return;
@@ -36,8 +40,8 @@ export default function EditProfileScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,   
-      aspect: [1, 1],      
+      allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.7,
     });
 
@@ -45,9 +49,6 @@ export default function EditProfileScreen() {
 
     const asset = result.assets[0];
 
-    console.log("SELECTED IMAGE:", asset);
-
-    // SET LOCAL PREVIEW IMMEDIATELY
     setLocalAvatar(asset.uri);
 
     const file = {
@@ -56,11 +57,16 @@ export default function EditProfileScreen() {
 
     try {
       await avatarMutation.mutateAsync(file);
+
+      /* SUCCESS */
+      setSuccessVisible(true);
     } catch (e) {
       console.log("Avatar update failed", e);
 
-      //revert preview if backend fails
       setLocalAvatar(null);
+
+      /*ERROR */
+      setErrorVisible(true);
     }
   };
 
@@ -91,11 +97,14 @@ export default function EditProfileScreen() {
               <Avatar.Image
                 source={
                   localAvatar
-                    ? { uri: localAvatar } // ✅ LOCAL FIRST
-                    : user?.avatarUrl
-                    ? { uri: user.avatarUrl }
-                    : require("@/assets/images/emptyDP.png")
+                    ? { uri: localAvatar }
+                    : user?.avatarUrl && !avatarLoadFailed
+                      ? { uri: user.avatarUrl }
+                      : require("@/assets/images/emptyDP.png")
                 }
+                onError={() => {
+                  setAvatarLoadFailed(true);
+                }}
               />
               <Avatar.Fallback backgroundColor={colors.black} />
             </Avatar>
@@ -151,6 +160,24 @@ export default function EditProfileScreen() {
           </YStack>
         </YStack>
       </ScrollView>
+
+      {/*SUCCESS MODAL */}
+      <SuccessModal
+        visible={successVisible}
+        onClose={() => setSuccessVisible(false)}
+        title="Success"
+        message="Profile photo updated"
+        type="success"
+      />
+
+      {/* ERROR MODAL */}
+      <SuccessModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        title="Failed"
+        message="Could not update profile photo"
+        type="failed"
+      />
     </SafeAreaView>
   );
 }

@@ -1,30 +1,31 @@
 import PostThumbnail from "@/components/discover/PostThumbnail";
 import SearchHeader from "@/components/SearchHeader";
 import colors from "@/constants/colors";
+import { useDiscoverFeed } from "@/hooks/useDiscover";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { FeedPost } from "@/types/feedTypes";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   FlatList,
+  RefreshControl,
   useWindowDimensions,
   View,
-  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
-import { useDiscoverFeed } from "@/hooks/useDiscover";
-import { FeedPost } from "@/types/feedTypes";
-import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 export default function DiscoverCategoryScreen() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { width } = useWindowDimensions();
 
-  const { posts } = useDiscoverFeed(categoryId);
+  const { posts, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useDiscoverFeed(categoryId);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<
-    "all" | "images" | "video" | "text"
-  >("all");
+  const [filter, setFilter] = useState<"all" | "images" | "video" | "text">(
+    "all",
+  );
 
   const { refreshing, onRefresh } = usePullToRefresh([
     ["discoverFeed", categoryId],
@@ -79,7 +80,7 @@ export default function DiscoverCategoryScreen() {
           data={filteredPosts}
           keyExtractor={(item) => item.id}
           numColumns={3}
-          renderItem={({ item, index }) => ( 
+          renderItem={({ item, index }) => (
             <PostThumbnail
               post={item}
               size={width / 3 - 9}
@@ -89,7 +90,7 @@ export default function DiscoverCategoryScreen() {
                   params: {
                     categoryId,
                     filter,
-                    index: String(index), 
+                    index: String(index),
                   },
                 });
               }}
@@ -99,6 +100,12 @@ export default function DiscoverCategoryScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
         />
       </View>
     </SafeAreaView>

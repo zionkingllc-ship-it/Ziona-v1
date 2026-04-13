@@ -17,6 +17,10 @@ type Props = {
   containerHeight: number;
   containerWidth: number;
   tabBarHeight: number;
+  isScreenFocused?: boolean;
+  fetchNextPage?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
 };
 
 export function PostViewerEngine({
@@ -25,6 +29,10 @@ export function PostViewerEngine({
   containerHeight,
   containerWidth,
   tabBarHeight,
+  isScreenFocused,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
   const hasScrolledRef = useRef(false);
@@ -44,7 +52,7 @@ export function PostViewerEngine({
         likedPosts: likedMap,
         savedPosts: savedMap,
         followedUsers: followedMap,
-      })
+      }),
     );
   }, [posts, likedMap, savedMap, followedMap]);
 
@@ -95,8 +103,8 @@ export function PostViewerEngine({
       if (!current?.id) return;
 
       setActivePostId(current.id);
-      setPausedPostId(null); 
-    }
+      setPausedPostId(null);
+    },
   ).current;
 
   /* RENDER */
@@ -105,10 +113,12 @@ export function PostViewerEngine({
       const isActive = item.id === activePostId;
       const isPaused = item.id === pausedPostId;
 
+      const shouldPlay = !!isScreenFocused && isActive && !isPaused;
+
       return (
         <PostCard
           post={item}
-          isPlaying={isActive && !isPaused}
+          isPlaying={shouldPlay}
           onTogglePlay={() => {
             setPausedPostId((prev) => (prev === item.id ? null : item.id));
           }}
@@ -118,7 +128,14 @@ export function PostViewerEngine({
         />
       );
     },
-    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
+    [
+      activePostId,
+      pausedPostId,
+      containerHeight,
+      containerWidth,
+      tabBarHeight,
+      isScreenFocused,
+    ],
   );
 
   /* LAYOUT */
@@ -128,8 +145,14 @@ export function PostViewerEngine({
       offset: containerHeight * index,
       index,
     }),
-    [containerHeight]
+    [containerHeight],
   );
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!containerHeight) return null;
 
@@ -150,6 +173,8 @@ export function PostViewerEngine({
       getItemLayout={getItemLayout}
       viewabilityConfig={viewabilityConfig}
       onViewableItemsChanged={onViewableItemsChanged}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.5}
       showsVerticalScrollIndicator={false}
     />
   );

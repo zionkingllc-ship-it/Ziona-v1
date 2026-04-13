@@ -1,18 +1,18 @@
 import FeedHeader from "@/components/feedHeader";
 import { PostCard } from "@/components/post/PostCard";
+import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { normalizePost } from "@/utils/feed/normalizePost";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
-import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import React, {
   useCallback,
   useEffect,
@@ -47,6 +47,7 @@ export default function Feed() {
   const forYouQuery = useForYouFeed();
   const followingQuery = useFollowingFeed();
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
+  const isFocused = useIsFocused();
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
@@ -59,6 +60,15 @@ export default function Feed() {
 
       setActivePostId(null);
     }, [queryClient]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setActivePostId(null);
+        setPausedPostId(null);
+      };
+    }, []),
   );
 
   useEffect(() => {
@@ -185,12 +195,16 @@ export default function Feed() {
             <Text style={{ color: colors.text }}>No posts yet</Text>
           </View>
         ) : (
-      <PostViewerEngine
-  posts={data}
-  containerHeight={containerHeight}
-  containerWidth={containerWidth}
-  tabBarHeight={tabBarHeight}
-/>
+          <PostViewerEngine
+            posts={data}
+            containerHeight={containerHeight}
+            containerWidth={containerWidth}
+            tabBarHeight={tabBarHeight}
+            isScreenFocused={isFocused}
+            fetchNextPage={query.fetchNextPage}
+            hasNextPage={query.hasNextPage}
+            isFetchingNextPage={query.isFetchingNextPage}
+          />
         )}
       </View>
 
