@@ -9,6 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CreateScreen() {
   const { startDraft, setMedia } = useCreatePostStore();
@@ -17,17 +18,13 @@ export default function CreateScreen() {
 
   if (!isAuthenticated) {
     return (
-      <YStack
-        style={{ justifyContent: "center", alignItems: "center" }}
-        flex={1}
-        backgroundColor={colors.white}
-      >
-        <AuthPrompt
-          message="Login to create a post"
-          buttonText="Login"
-          buttonColor={colors.primary}
-        />
-      </YStack>
+       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+         <AuthPrompt
+           message="Login to access this feature"
+           buttonText="Login"
+           buttonColor={colors.primary}
+         />
+       </SafeAreaView>
     );
   }
 

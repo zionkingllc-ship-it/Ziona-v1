@@ -118,10 +118,12 @@ function PostCardComponent({
   const handleFollow = () => {
     if (!post.author?.id) return;
     requireAuth(() => {
-      toggleFollowMutation.mutate({
-        userId: post.author.id,
-        currentFollowing: isFollowing,
-      });
+      if (post.author) {
+        toggleFollowMutation.mutate({
+          userId: post.author.id,
+          currentFollowing: isFollowing,
+        });
+      }
     });
   };
 

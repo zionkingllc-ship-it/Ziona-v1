@@ -31,22 +31,6 @@ export default function ProfileScreen() {
   const userId = user?.id;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  if (!isAuthenticated) {
-    return (
-      <YStack
-        style={{ justifyContent: "center", alignItems: "center" }}
-        flex={1}
-        backgroundColor={colors.white}
-      >
-        <AuthPrompt
-          message="Login to create a post"
-          buttonText="Login"
-          buttonColor={colors.primary}
-        />
-      </YStack>
-    );
-  }
-
   const {
     data: likedData,
     fetchNextPage: fetchLikedNext,
@@ -159,6 +143,18 @@ export default function ProfileScreen() {
     ["userPosts", userId],
     ["userProfile", userId],
   ]);
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView

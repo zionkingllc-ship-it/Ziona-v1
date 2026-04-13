@@ -18,7 +18,7 @@ export function useRequireAuth() {
 
   const handleLogin = () => {
     setShowAuthModal(false);
-    router.push("/(auth)/login/signin");
+    router.push("/(auth)/login/");
   };
 
   const AuthModal = (

@@ -8,6 +8,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, TextInput } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
   const { hp, wp } = useResponsive();
@@ -16,27 +17,6 @@ export default function CirclesScreen() {
   const [circles, setCircles] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [showIntro, setShowIntro] = useState(true);
-  const [ready, setReady] = useState(false);
-
-  if (!isAuthenticated) {
-    return (
-      <YStack
-        style={{ justifyContent: "center", alignItems: "center" }}
-        flex={1}
-        backgroundColor={colors.white}
-      >
-        <AuthPrompt
-          message="Login to create a post"
-          buttonText="Login"
-          buttonColor={colors.primary}
-        />
-      </YStack>
-    );
-  }
-
-  /* =========================
-     TEMP DATA (replace with backend)
-  ========================= */
 
   useEffect(() => {
     loadCircles();
@@ -44,7 +24,6 @@ export default function CirclesScreen() {
 
   async function loadCircles() {
     try {
-      // TODO: replace with discoverFeed / API
       const data = [
         {
           id: "1",
@@ -80,13 +59,24 @@ export default function CirclesScreen() {
     }
   }
 
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (showIntro) {
     return <CirclesIntro onClose={() => setShowIntro(false)} />;
   }
 
   return (
     <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
-      {/* SEARCH */}
       <XStack
         style={[
           styles.search,
@@ -99,7 +89,6 @@ export default function CirclesScreen() {
         <TextInput placeholder="Search" />
       </XStack>
 
-      {/* TITLE */}
       <Text
         fontFamily="$body"
         fontWeight="600"
@@ -111,7 +100,6 @@ export default function CirclesScreen() {
         All Circles
       </Text>
 
-      {/* LIST */}
       <FlatList
         data={circles}
         keyExtractor={(item) => item.id}
