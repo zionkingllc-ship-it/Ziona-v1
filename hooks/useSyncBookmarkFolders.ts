@@ -1,36 +1,23 @@
 import { useEffect } from "react";
-import { useBookmarkFolders } from "./useBookmarkFolders";
+import { useBookmarkFolders } from "./useBookmarkSettings";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 
 export function useSyncBookmarkFolders() {
-  const { data: apiFolders, isLoading } = useBookmarkFolders();
-  const { folders, setFolders } = useBookmarksStore();
+  const { data: apiFolders, isLoading, refetch } = useBookmarkFolders();
+  const { setFolders } = useBookmarksStore();
 
   useEffect(() => {
-    if (!apiFolders) return;
+    if (!apiFolders || !Array.isArray(apiFolders)) return;
 
     const mappedFolders = apiFolders.map((folder) => ({
       id: folder.id,
       name: folder.name,
-      cover: folder.cover ?? "",
+      cover: "",
       createdAt: folder.createdAt ?? new Date().toISOString(),
     }));
 
-    const hasAllFolder = mappedFolders.some((f) => f.name === "All");
-    const foldersToSet = hasAllFolder
-      ? mappedFolders
-      : [
-          {
-            id: "all",
-            name: "All",
-            cover: "https://picsum.photos/200",
-            createdAt: new Date().toISOString(),
-          },
-          ...mappedFolders,
-        ];
-
-    setFolders(foldersToSet);
+    setFolders(mappedFolders);
   }, [apiFolders, setFolders]);
 
-  return { isLoading };
+  return { isLoading, refetch };
 }

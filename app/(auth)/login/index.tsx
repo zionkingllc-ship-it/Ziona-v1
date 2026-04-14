@@ -205,7 +205,7 @@ export default function LoginIndex() {
 
           <XStack alignItems="center" justifyContent="center">
             <Text fontSize={fs(14)}>Don't have an account? </Text>
-            <Pressable onPress={() => router.back()}>
+            <Pressable onPress={() => router.replace("/(auth)")}>
               <Text
                 color={colors.primary}
                 fontFamily={"$body"}

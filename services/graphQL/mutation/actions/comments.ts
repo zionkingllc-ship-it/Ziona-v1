@@ -1,17 +1,59 @@
 import { graphqlRequest } from "../../graphqlClient";
-import { getToken } from "./token";
+
+export type CommentUser = {
+  id?: string;
+  username: string;
+  avatarUrl?: string | null;
+};
+
+export type CommentReply = {
+  id: string;
+  text: string;
+  createdAt: string;
+  user: CommentUser;
+  stats: {
+    likesCount: number;
+  };
+  viewerState?: {
+    liked: boolean;
+    isOwner: boolean;
+  };
+};
+
+export type Comment = {
+  id: string;
+  text: string;
+  createdAt: string;
+  user: CommentUser;
+  stats: {
+    likesCount: number;
+    repliesCount: number;
+  };
+  viewerState?: {
+    liked: boolean;
+    isOwner: boolean;
+  };
+  replies?: CommentReply[];
+  parentCommentId?: string;
+};
+
+export type PostCommentsResponse = {
+  totalCount: number;
+  hasMore: boolean;
+  nextCursor?: string;
+  comments: Comment[];
+};
 
 /* GET COMMENTS */
 export async function getPostComments(
   postId: string,
   cursor?: string,
   limit: number = 20,
-) {
-  const token = getToken();
-
+): Promise<PostCommentsResponse> {
   const query = `
-    query GetPostComments($postId: String!, $cursor: String, $limit: Int) {
+    query GetComments($postId: String!, $cursor: String, $limit: Int) {
       postComments(postId: $postId, cursor: $cursor, limit: $limit) {
+        totalCount
         hasMore
         nextCursor
         comments {
@@ -31,12 +73,23 @@ export async function getPostComments(
             liked
             isOwner
           }
+          replies {
+            id
+            text
+            createdAt
+            user {
+              username
+            }
+            stats {
+              likesCount
+            }
+          }
         }
       }
     }
   `;
 
-  const data = await graphqlRequest(query, { postId, cursor, limit }, token);
+  const data = await graphqlRequest(query, { postId, cursor, limit });
 
   const result = data?.postComments;
   if (!result) {
@@ -46,17 +99,60 @@ export async function getPostComments(
   return result;
 }
 
-/* CREATE COMMENT */
-export async function createComment(postId: string, text: string) {
-  const token = getToken();
-
+/* GET REPLIES */
+export async function getCommentReplies(
+  commentId: string,
+  cursor?: string,
+  limit: number = 20,
+) {
   const query = `
-    mutation CreateComment($postId: String!, $text: String!) {
-      createComment(postId: $postId, text: $text) {
+    query GetReplies($commentId: String!, $cursor: String) {
+      commentReplies(commentId: $commentId, cursor: $cursor, limit: $limit) {
+        hasMore
+        nextCursor
+        comments {
+          id
+          text
+          createdAt
+          user {
+            username
+            avatarUrl
+          }
+          stats {
+            likesCount
+          }
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(query, { commentId, cursor, limit });
+
+  return data?.commentReplies ?? { hasMore: false, comments: [] };
+}
+
+/* CREATE COMMENT */
+export async function createComment(
+  postId: string,
+  text: string,
+  parentCommentId?: string,
+) {
+  const query = `
+    mutation CreateComment(
+      $postId: String!
+      $text: String!
+      $parentCommentId: String
+    ) {
+      createComment(
+        postId: $postId
+        text: $text
+        parentCommentId: $parentCommentId
+      ) {
         success
         comment {
           id
           text
+          parentCommentId
           createdAt
           user {
             id
@@ -80,7 +176,7 @@ export async function createComment(postId: string, text: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { postId, text }, token);
+  const data = await graphqlRequest(query, { postId, text, parentCommentId });
 
   const res = data?.createComment;
   if (!res?.success) {
@@ -92,8 +188,6 @@ export async function createComment(postId: string, text: string) {
 
 /* LIKE COMMENT */
 export async function likeComment(commentId: string) {
-  const token = getToken();
-
   const query = `
     mutation LikeComment($commentId: String!) {
       likeComment(commentId: $commentId) {
@@ -109,7 +203,7 @@ export async function likeComment(commentId: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { commentId }, token);
+  const data = await graphqlRequest(query, { commentId });
 
   const res = data?.likeComment;
   if (!res?.success) {
@@ -121,8 +215,6 @@ export async function likeComment(commentId: string) {
 
 /* UNLIKE COMMENT */
 export async function unlikeComment(commentId: string) {
-  const token = getToken();
-
   const query = `
     mutation UnlikeComment($commentId: String!) {
       unlikeComment(commentId: $commentId) {
@@ -138,7 +230,7 @@ export async function unlikeComment(commentId: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { commentId }, token);
+  const data = await graphqlRequest(query, { commentId });
 
   const res = data?.unlikeComment;
   if (!res?.success) {

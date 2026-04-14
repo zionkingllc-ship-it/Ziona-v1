@@ -6,6 +6,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useUpdateProfile } from "@/hooks/useUdateProfle";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,10 +23,12 @@ export default function EditNameScreen() {
 
   const mutation = useUpdateProfile();
 
-  const [name, setName] = useState("Zion Kay");
+  const [name, setName] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorTitle, setErrorTitle] = useState("");
 
-  
   useEffect(() => {
     if (user?.fullName) {
       setName(user.fullName);
@@ -40,6 +43,12 @@ export default function EditNameScreen() {
       {
         onSuccess: () => {
           setSuccessVisible(true);
+        },
+        onError: (e: any) => {
+          const feedback = getNetworkModalCopy(e, e?.message || "Failed to update name");
+          setErrorTitle(feedback.title);
+          setErrorMessage(feedback.message);
+          setErrorVisible(true);
         },
       }
     );
@@ -90,8 +99,8 @@ export default function EditNameScreen() {
           />
         </YStack>
 
-        <Text alignSelf="center" fontFamily={"$body" } fontWeight={"400"} fontSize={13} color={colors.tertiary}>
-          Next change on <Text fontWeight="bold">March 3 2026</Text>
+        <Text alignSelf="center" fontFamily={"$body"} fontWeight={"400"} fontSize={13} color={colors.tertiary}>
+          Name changes are limited to once every 14 days
         </Text>
 
         <SimpleButton
@@ -109,9 +118,17 @@ export default function EditNameScreen() {
           setSuccessVisible(false);
           router.back();
         }}
-        title="Success"
-        message="Your name has been updated"
+        title="Name Updated"
+        message="Your name has been updated successfully."
         type="success"
+      />
+
+      <SuccessModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        title={errorTitle}
+        message={errorMessage}
+        type="warning"
       />
     </SafeAreaView>
   );

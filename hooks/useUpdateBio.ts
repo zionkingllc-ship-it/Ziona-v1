@@ -1,10 +1,6 @@
+import { updateProfile } from "@/services/profile/profileService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { useAuthStore } from "@/store/useAuthStore";
-
-type BioResponse = {
-  bio?: string | null;
-};
 
 export function useUpdateBio() {
   const queryClient = useQueryClient();
@@ -12,45 +8,36 @@ export function useUpdateBio() {
 
   return useMutation({
     mutationFn: async (bio: string) => {
-      const data = await graphqlRequest(
-        `
-        mutation UpdateProfile($bio: String!) {
-          updateProfile(bio: $bio) {
-            success
-            profile {
-              bio
-            }
-            error { code message }
-          }
-        }
-        `,
-        { bio }
-      );
-
-      const res = data?.updateProfile;
-
-      if (!res?.success) {
-        throw new Error(res?.error?.message || "Failed to update bio");
-      }
-
-      return res.profile as BioResponse; // ✅ FIXED
+      const result = await updateProfile({ bio });
+      return result;
     },
 
-    onSuccess: (profile) => {
+    onMutate: async (newBio) => {
       if (!userId) return;
+
+      await queryClient.cancelQueries({ queryKey: ["userProfile", userId] });
+
+      const previousData = queryClient.getQueryData(["userProfile", userId]);
 
       queryClient.setQueryData(
         ["userProfile", userId],
-        (old: any) => {
-          if (!old) return old;
-
-          return {
-            ...old,
-            bio: profile?.bio ?? "",
-          };
-        }
+        (old: any) => (old ? { ...old, bio: newBio } : old)
       );
 
+      return { previousData };
+    },
+
+    onError: (_err, _newBio, context) => {
+      if (!userId || !context?.previousData) return;
+
+      queryClient.setQueryData(
+        ["userProfile", userId],
+        context.previousData
+      );
+    },
+
+    onSettled: () => {
+      if (!userId) return;
       queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
     },
   });

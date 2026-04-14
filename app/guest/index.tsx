@@ -210,7 +210,7 @@ export default function GuestProfileScreen() {
           <Text fontFamily={"$body"} fontSize={13} color={colors.gray}>Posts</Text>
         </YStack>
 
-        <TouchableOpacity style={{ width: "33.3%" }} onPress={() => router.push(`/guest/followers?userId=${userId}`)}>
+        <TouchableOpacity style={{ width: "33.3%" }} onPress={() => router.push(`/followers?userId=${userId}`)}>
           <YStack alignItems="center" justifyContent="center">
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
               {profile?.stats?.followersCount ?? 0}
@@ -219,7 +219,7 @@ export default function GuestProfileScreen() {
           </YStack>
         </TouchableOpacity>
 
-        <TouchableOpacity style={{ width: "33.3%" }} onPress={() => router.push(`/guest/following?userId=${userId}`)}>
+        <TouchableOpacity style={{ width: "33.3%" }} onPress={() => router.push(`/following?userId=${userId}`)}>
           <YStack alignItems="center" justifyContent="center">
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
               {profile?.stats?.followingCount ?? 0}

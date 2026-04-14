@@ -18,6 +18,7 @@ import CreateFolderModal from "../ui/modals/CreateFolderModal";
 import ReportReasonsModal from "../ui/modals/ReportReasonsModal";
 import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
+import OptionsModal from "../ui/modals/OptionsModal";
 
 import { useToggleLike } from "@/hooks/useToggleLike";
 import { useToggleFollow } from "@/hooks/useFollow";
@@ -54,6 +55,7 @@ function PostCardComponent({
 
   /* MODALS */
   const [commentsVisible, setCommentsVisible] = useState(false);
+  const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
@@ -254,7 +256,10 @@ function PostCardComponent({
               <Image source={commentIcon} width={24} height={24} />
             </Pressable>
 
-            <Pressable onPress={() => requireAuth(openFolders)}>
+            <Pressable onPress={() => {
+              console.log("[PostCard] Bookmark pressed, calling openFolders");
+              requireAuth(openFolders);
+            }}>
               <Image
                 source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
                 width={24}
@@ -266,7 +271,7 @@ function PostCardComponent({
               <Image source={shareIcon} width={24} height={24} />
             </Pressable>
 
-            <Pressable onPress={() => requireAuth(() => setConfirmVisible(true))}>
+            <Pressable onPress={() => requireAuth(() => setOptionsVisible(true))}>
               <MoreHorizontal size={28} color={colors.white} />
             </Pressable>
           </YStack>
@@ -278,6 +283,11 @@ function PostCardComponent({
         visible={commentsVisible}
         onClose={() => setCommentsVisible(false)}
         postId={post.id}
+      />
+      <OptionsModal
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        onReportPost={() => setConfirmVisible(true)}
       />
       <ConfirmReportModal
         visible={confirmVisible}
@@ -329,7 +339,7 @@ function PostCardComponent({
   );
 }
 
-/* 🔥 CRITICAL: PREVENT RE-RENDERS */
+/*PREVENT RE-RENDERS */
 export const PostCard = React.memo(
   PostCardComponent,
   (prev, next) =>

@@ -5,20 +5,15 @@ export type FollowUser = {
   username: string;
   avatarUrl?: string | null;
   bio?: string;
-  stats?: {
-    followersCount: number;
-  };
 };
 
 export type FollowersResponse = {
   hasMore: boolean;
-  cursor?: string;
   users: FollowUser[];
 };
 
 export type FollowingResponse = {
   hasMore: boolean;
-  cursor?: string;
   users: FollowUser[];
 };
 
@@ -36,6 +31,12 @@ export type SuggestedCreatorsResponse = {
   stats?: {
     followersCount: number;
   };
+}[];
+
+export type SearchUsersResponse = {
+  id: string;
+  username: string;
+  avatarUrl?: string | null;
 }[];
 
 const USER_FRAGMENT = `
@@ -56,9 +57,11 @@ export async function getFollowers(
     query GetFollowers($userId: String!, $cursor: String) {
       followers(userId: $userId, cursor: $cursor) {
         hasMore
-        cursor
         users {
-          ${USER_FRAGMENT}
+          id
+          username
+          avatarUrl
+          bio
         }
       }
     }
@@ -76,9 +79,11 @@ export async function getFollowing(
     query GetFollowing($userId: String!, $cursor: String) {
       following(userId: $userId, cursor: $cursor) {
         hasMore
-        cursor
         users {
-          ${USER_FRAGMENT}
+          id
+          username
+          avatarUrl
+          bio
         }
       }
     }
@@ -116,4 +121,19 @@ export async function getSuggestedCreators(): Promise<SuggestedCreatorsResponse>
 
   const data = await graphqlRequest(query);
   return data?.suggestedCreators ?? [];
+}
+
+export async function searchUsers(query: string): Promise<SearchUsersResponse> {
+  const gql = `
+    query SearchUsers($query: String!) {
+      searchUsers(query: $query) {
+        id
+        username
+        avatarUrl
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(gql, { query });
+  return data?.searchUsers ?? [];
 }

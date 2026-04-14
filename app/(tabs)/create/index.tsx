@@ -7,14 +7,16 @@ import { MediaItem } from "@/types/createPost";
 import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { Image, StyleSheet, TouchableOpacity } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
+import { ActivityIndicator, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, XStack, YStack, View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
 
 export default function CreateScreen() {
   const { startDraft, setMedia } = useCreatePostStore();
   const { wp, hp, fs } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isAuthenticated) {
     return (
@@ -25,8 +27,8 @@ export default function CreateScreen() {
            buttonColor={colors.primary}
          />
        </SafeAreaView>
-    );
-  }
+     );
+   }
 
   async function ensurePermission() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,50 +50,47 @@ export default function CreateScreen() {
   }
 
   async function pickInitialMedia() {
-    const allowed = await ensurePermission();
-    if (!allowed) return;
+    try {
+      setIsLoading(true);
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsMultipleSelection: true,
-      quality: 1,
-    });
+      const allowed = await ensurePermission();
+      if (!allowed) return;
 
-    if (result.canceled) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsMultipleSelection: true,
+        quality: 1,
+      });
 
-    const assets = result.assets;
+      if (result.canceled) return;
 
-    const video = assets.find((a) => a.type === "video");
-    /* =========================
-   VIDEO FLOW
-========================= */
+      const assets = result.assets;
 
-    if (video) {
-      if (assets.length > 1) {
-        alert("Only one video allowed.");
+      const video = assets.find((a) => a.type?.toLowerCase().includes("video"));
+
+      if (video) {
+        if (assets.length > 1) {
+          alert("Only one video allowed.");
+          return;
+        }
+        startDraft("MEDIA", "VIDEO");
+        setMedia([normalizeMedia(video)]);
+        router.push("/create/media");
         return;
       }
-      startDraft("MEDIA", "VIDEO");
-      setMedia([normalizeMedia(video)]);
+
+      const images = assets.filter((a) => !a.type?.toLowerCase().includes("video")).slice(0, 5);
+
+      if (assets.length > 5) {
+        alert("Maximum 5 images allowed.");
+      }
+
+      startDraft("MEDIA", "IMAGE");
+      setMedia(images.map(normalizeMedia));
       router.push("/create/media");
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    /* =========================
-   IMAGE FLOW
-========================= */
-
-    const images = assets.filter((a) => a.type !== "video").slice(0, 5);
-
-    if (assets.length > 5) {
-      alert("Maximum 5 images allowed.");
-    }
-
-    startDraft("MEDIA", "IMAGE");
-
-    setMedia(images.map(normalizeMedia));
-
-    router.push("/create/media");
   }
 
   function openText() {
@@ -173,6 +172,21 @@ export default function CreateScreen() {
           </YStack>
         </TouchableOpacity>
       </XStack>
+
+      {isLoading && (
+        <View
+          style={StyleSheet.absoluteFill}
+          backgroundColor="rgba(255, 255, 255, 0.9)"
+          justifyContent="center"
+          alignItems="center"
+          zIndex={100}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text fontFamily="$body" marginTop={12} color={colors.gray}>
+            Loading...
+          </Text>
+        </View>
+      )}
     </YStack>
   );
 }

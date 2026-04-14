@@ -5,9 +5,11 @@ import { Image, Text, YStack } from "tamagui";
 import Header from "@/components/layout/header";
 import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWrapper";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import colors from "@/constants/colors";
 import { authApi } from "@/services/api/authApi";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,6 +17,9 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isFocus, setIsFocus] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const isValidEmail = emailRegex.test(email);
 
@@ -50,6 +55,10 @@ export default function ForgotPassword() {
         "PASSWORD RESET FAILED:",
         error?.response?.data || error
       );
+      const feedback = getNetworkModalCopy(error, "Failed to send reset code. Please try again.");
+      setErrorTitle(feedback.title);
+      setErrorMessage(feedback.message);
+      setErrorVisible(true);
     } finally {
       setLoading(false);
     }
@@ -125,6 +134,14 @@ export default function ForgotPassword() {
           style={{ width: "100%", marginTop: 20 }}
         />
       </YStack>
+
+      <SuccessModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        title={errorTitle}
+        message={errorMessage}
+        type="warning"
+      />
     </KeyboardAvoidingWrapper>
   );
 }

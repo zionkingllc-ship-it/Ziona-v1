@@ -3,18 +3,32 @@ import { useSuggestedCreators } from "@/hooks/useFollow";
 import React from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack, Text } from "tamagui";
-
+import { YStack, Text } from "tamagui"; 
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import FollowUserRow from "@/components/follow/UserRow";
 import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
+import AuthPrompt from "@/components/ui/AuthPrompt";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface FollowSuggestionsProps {
   onDone: () => void;
 }
 
 export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: creators, isLoading } = useSuggestedCreators();
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
@@ -22,6 +36,7 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
         {!isLoading && (!creators || creators.length === 0) && (
           <CenteredMessage
             fontFamily={"$body"}
+            fontWeight={"400"}
             text="No suggestions right now"
             subtitle="Check back later for new creators to follow."
           />
@@ -45,6 +60,7 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
             ListHeaderComponent={
               <Text
                 fontFamily={"$body"}
+                fontWeight={"400"}
                 style={styles.header}
               >
                 Suggested for you
@@ -55,8 +71,14 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
       </View>
       <View style={styles.footer}>
         <SimpleButtonWithStyle
+        disabled={isLoading || !creators || creators.length === 0}
           text="Done"
-          color={colors.secondary}
+          style={{ alignSelf: "center", paddingHorizontal: 24, }}
+          color={colors.primary}
+          textColor={colors.white}
+          textWeight={"400"}
+          fontFamily={"$body"}
+          borderRadius={8}
           onPress={onDone}
         />
       </View>

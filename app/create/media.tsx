@@ -81,7 +81,9 @@ export default function CreateMediaScreen() {
     }
   }, []);
 
-  if (!draft || draft.type !== "MEDIA") return null;
+  if (!draft || draft.type !== "MEDIA") {
+    return null;
+  }
   const mediaDraft = draft;
   const mediaItems = mediaDraft.media?.items ?? [];
   /* =========================

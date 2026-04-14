@@ -6,6 +6,7 @@ import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import colors from "@/constants/colors";
 import { authApi } from "@/services/api/authApi";
 import { isPasswordValid, passwordRules } from "@/utils/passwordRules";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { Eye, EyeClosed } from "@tamagui/lucide-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -22,6 +23,8 @@ export default function CreatePassword() {
   const [isFocus, setIsFocus] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("Password reset failed");
+  const [errorMessage, setErrorMessage] = useState("Your reset code may have expired. Please request a new code.");
 
   const checks = {
     length: passwordRules.minLength(password),
@@ -59,6 +62,9 @@ export default function CreatePassword() {
     } catch (error: any) {
       console.error("🔴 PASSWORD RESET FAILED", error?.response?.data || error);
 
+      const feedback = getNetworkModalCopy(error, "Your reset code may have expired. Please request a new code.");
+      setErrorTitle(feedback.title);
+      setErrorMessage(feedback.message);
       setErrorVisible(true);
     } finally {
       setLoading(false);
@@ -147,8 +153,8 @@ export default function CreatePassword() {
         autoClose
         duration={3000}
         onClose={() => setErrorVisible(false)}
-        title="Password reset failed"
-        message="Your reset code may have expired. Please request a new code."
+        title={errorTitle}
+        message={errorMessage}
       />
     </KeyboardAvoidingWrapper>
   );

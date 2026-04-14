@@ -184,9 +184,9 @@ export default function ProfileScreen() {
       </XStack>
 
       {/* PROFILE INFO */}
-      <YStack width={"100%"} padding={20}>
+      <YStack width={"100%"} gap={"$2"} padding={20}>
         <XStack width={"100%"} justifyContent="space-between">
-          <YStack alignItems="center" alignSelf="flex-start">
+          <YStack alignItems="flex-start" gap={"$2"} alignSelf="flex-start">
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           style={{ width: "33.3%" }}
-          onPress={() => router.push("/(tabs)/profile/followers")}
+          onPress={() => router.push("/followers")}
         >
           <YStack alignItems="center" justifyContent="center">
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
@@ -287,7 +287,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           style={{ width: "33.3%" }}
-          onPress={() => router.push("/(tabs)/profile/following")}
+          onPress={() => router.push("/following")}
         >
           <YStack alignItems="center" justifyContent="center">
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>

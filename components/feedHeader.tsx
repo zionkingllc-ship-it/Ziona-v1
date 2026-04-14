@@ -2,20 +2,24 @@
 import colorsDefault from "@/constants/colors";
 import { Bell } from "@tamagui/lucide-icons";
 import { Image } from "react-native";
-import { XStack } from "tamagui";
+import { XStack, Text } from "tamagui";
 import TwoButtonSwitch from "./ui/twoButtonSwitch";
+import { TouchableOpacity } from "react-native";
 
 type FeedHeaderProps = {
   feedType: "forYou" | "following";
   onChangeFeedType: (type: "forYou" | "following") => void;
-  // New optional props for "empty following" styling
   emptyFollowing?: boolean;
+  onBellPress?: () => void;
+  unreadCount?: number;
 };
 
 export default function FeedHeader({
   feedType,
   onChangeFeedType,
   emptyFollowing = false,
+  onBellPress,
+  unreadCount = 0,
 }: FeedHeaderProps) {
   const logoSource = emptyFollowing
     ? require("@/assets/images/logoColored.png")
@@ -33,31 +37,51 @@ export default function FeedHeader({
       zIndex={10}
     >
       <Image source={logoSource} width={24} height={24} />
-
+ 
       <TwoButtonSwitch
         value={feedType}
         onChange={onChangeFeedType}
         width="65%"
-        emptyFollowing={emptyFollowing} // pass down for styling
+        emptyFollowing={emptyFollowing}
       />
 
-      <XStack
-        width={40}
-        height={40}
-        borderRadius={20}
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor="rgba(255, 255, 255, 0.24)"
-        shadowColor="#000"
+      <TouchableOpacity
+        onPress={onBellPress}
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "rgba(255, 255, 255, 0.24)",
+        }}
       >
         <Bell
           size={24}
           stroke={colorsDefault.black}
           color={colorsDefault.white} 
           strokeOpacity={1}
-          strokeWidth={3}
+          strokeWidth={2}
         />
-      </XStack>
+        {unreadCount > 0 && (
+          <XStack
+            position="absolute"
+            top={4}
+            right={4}
+            backgroundColor={colorsDefault.primary}
+            borderRadius={10}
+            minWidth={18}
+            height={18}
+            paddingHorizontal={4}
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text fontSize={10} color={colorsDefault.white} fontWeight="bold">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </Text>
+          </XStack>
+        )}
+      </TouchableOpacity>
     </XStack>
   );
 }

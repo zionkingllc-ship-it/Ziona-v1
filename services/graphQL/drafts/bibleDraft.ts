@@ -1,5 +1,5 @@
 import { BibleDraft } from "@/types/createPost";
-import { createTextPost } from "../mutation/text/createTextPost";
+import { createBiblePost } from "../mutation/createPost";
 
 export async function publishBiblePost(draft: BibleDraft) {
   console.log("━━━━━━━━ PUBLISH BIBLE START ━━━━━━━━");
@@ -15,10 +15,15 @@ export async function publishBiblePost(draft: BibleDraft) {
 
   const verse = draft.bibleVerse;
 
-  const input: any = {
-    postType: "BIBLE",
-    category: String(draft.category.id),
-
+  const input: {
+    category: string;
+    scriptureBook: string;
+    scriptureChapter: number;
+    scriptureVerseStart: number;
+    scriptureTranslation: string;
+    scriptureVerseEnd?: number;
+  } = {
+    category: draft.category.id,
     scriptureBook: verse.book,
     scriptureChapter: verse.chapter,
     scriptureVerseStart: verse.verses?.[0],
@@ -29,17 +34,17 @@ export async function publishBiblePost(draft: BibleDraft) {
     input.scriptureVerseEnd = verse.verses[verse.verses.length - 1];
   }
 
-  console.log("FINAL INPUT TO createPost:", input);
+  console.log("FINAL INPUT TO createBiblePost:", input);
 
   try {
-    const response = await createTextPost(input);
+    const response = await createBiblePost(input);
 
     console.log("Bible post created successfully:", response);
     console.log("━━━━━━━━ PUBLISH BIBLE END ━━━━━━━━");
 
     return response;
   } catch (err) {
-    console.error("CreatePost failed with input:", input);
+    console.error("CreateBiblePost failed with input:", input);
     console.error("Error:", err);
     throw err;
   }

@@ -18,6 +18,8 @@ import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TamaguiProvider } from "tamagui";
+import { NetworkStatusBanner } from "@/components/ui/NetworkStatusBanner";
+import { DismissKeyboard } from "@/components/ui/DismissKeyboard";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -87,12 +89,19 @@ export default function RootLayout() {
               <QueryClientProvider client={queryClient}>
                 <SyncHooks />
                 <AuthGate>
-                  <Stack screenOptions={{ headerShown: false }}>
+                  <DismissKeyboard>
+                    <NetworkStatusBanner />
+                    <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="(auth)" />
                     <Stack.Screen name="viewer" />
                     <Stack.Screen name="guest" />
+                    <Stack.Screen name="notifications" />
+                    <Stack.Screen name="create" />
+                    <Stack.Screen name="followers" />
+                    <Stack.Screen name="following" />
                   </Stack>
+                  </DismissKeyboard>
                 </AuthGate>
               </QueryClientProvider>
             </GestureHandlerRootView>

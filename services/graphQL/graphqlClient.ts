@@ -2,8 +2,19 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 const GRAPHQL_URL = "https://ziona-api-staging.onrender.com/graphql/";
 
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const AUTH_ERROR_MESSAGES = [
+  "unauthorized",
+  "not authenticated",
+  "token expired",
+  "invalid token",
+  "missing token",
+  "jwt",
+  "bearer",
+];
+
+function isAuthErrorMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return AUTH_ERROR_MESSAGES.some((authMsg) => lower.includes(authMsg));
 }
 
 async function refreshAccessToken() {
@@ -71,20 +82,16 @@ export async function graphqlRequest(
     });
   };
 
-  console.log("GRAPHQL REQUEST BODY:", {
-  query,
-  variables,
-});
-
-
-
   let res = await makeRequest(token);
   let json = await res.json();
- 
+
   const isAuthError =
-    json?.errors?.some((err: any) =>
-      String(err.message).toLowerCase().includes("auth")
-    ) || res.status === 401;
+    res.status === 401 ||
+    json?.errors?.some(
+      (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
+                    err?.extensions?.code === "FORBIDDEN" ||
+                    isAuthErrorMessage(err?.message)
+    );
 
   if (isAuthError) {
     console.warn("Token expired — attempting refresh");
@@ -96,6 +103,18 @@ export async function graphqlRequest(
 
       res = await makeRequest(newAccessToken);
       json = await res.json();
+
+      const stillHasAuthError = res.status === 401 ||
+        json?.errors?.some(
+          (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
+                        err?.extensions?.code === "FORBIDDEN"
+        );
+
+      if (stillHasAuthError) {
+        console.warn("Refresh still failing — logging out");
+        useAuthStore.getState().logout?.();
+        throw new Error("Session expired");
+      }
     } else {
       console.warn("Refresh failed — logging out");
       useAuthStore.getState().logout?.();
@@ -103,6 +122,10 @@ export async function graphqlRequest(
     }
   }
 
-  console.log("GRAPHQL RESPONSE FULL:", json);
+  if (json?.errors?.length) {
+    const errorMessage = json.errors[0]?.message || "Request failed";
+    throw new Error(errorMessage);
+  }
+
   return json?.data;
 }

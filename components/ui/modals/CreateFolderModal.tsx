@@ -54,7 +54,7 @@ export default function CreateFolderModal({
   };
 
   return (
-    <KeyboardBottomSheetModal visible={visible} onClose={onClose}>
+    <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.6}>
       <View style={styles.container}>
         <XStack justifyContent="space-between" alignItems="center">
           <TouchableOpacity onPress={handleSave}>

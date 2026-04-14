@@ -1,4 +1,4 @@
-import { FeedPost } from "@/types/feedTypes";
+import { FeedPost, FeedMediaPost, FeedTextPost, FeedBiblePost } from "@/types/feedTypes";
 
 export type SharePayload = {
   id: string;
@@ -7,31 +7,33 @@ export type SharePayload = {
 };
 
 export function mapFeedPostToShare(post: FeedPost): SharePayload {
-  if (post.type === "media") {
-    const first = post.media?.[0];
+  const base = { id: post.id };
 
+  if (post.type === "media") {
+    const mediaPost = post as FeedMediaPost;
+    const first = mediaPost.media?.[0];
     return {
-      id: post.id,
-      text: post.caption,
+      ...base,
+      text: mediaPost.caption,
       mediaUrl: first?.url,
     };
   }
 
   if (post.type === "text") {
+    const textPost = post as FeedTextPost;
     return {
-      id: post.id,
-      text: post.message,
+      ...base,
+      text: textPost.message,
     };
   }
 
   if (post.type === "bible") {
+    const biblePost = post as FeedBiblePost;
     return {
-      id: post.id,
-      text: post.scripture?.text,
+      ...base,
+      text: biblePost.scripture?.text,
     };
   }
- 
-  return {
-    id: post.id,
-  };
+
+  return base;
 }

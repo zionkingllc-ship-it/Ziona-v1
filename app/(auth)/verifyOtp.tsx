@@ -6,6 +6,7 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Keyboard } from "react-native";
@@ -33,6 +34,8 @@ export default function VerifyOtp() {
 
   const [timer, setTimer] = useState(50);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("Incorrect code entered");
+  const [errorMessage, setErrorMessage] = useState("Please check the code and try again");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* ---------------- SCREEN MOUNT ---------------- */

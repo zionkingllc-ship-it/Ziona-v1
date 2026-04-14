@@ -9,9 +9,11 @@ type AppButtonProps = {
   onPress?: () => void;
   textSize?: any;
   textWeight?: any;
+  fontFamily?: string
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
+  borderRadius?: string | number;
 };
 
 export function SimpleButtonWithStyle({
@@ -24,6 +26,8 @@ export function SimpleButtonWithStyle({
   disabled = false,
   loading = false,
   style,
+  borderRadius = 30,
+  fontFamily,
 }: AppButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -38,13 +42,13 @@ export function SimpleButtonWithStyle({
           height: 50,
           justifyContent: "center",
           alignItems: "center",
-          borderRadius:30,
+          borderRadius: borderRadius,
           paddingHorizontal: 20,
           width: "70%",
         },
       ]}
     >
-      <XStack >
+      <XStack>
         {loading ? (
           <Spinner color={textColor ?? "#F6EAFA"} size="small" />
         ) : (
@@ -53,6 +57,8 @@ export function SimpleButtonWithStyle({
             textAlign="center"
             fontSize={textSize}
             fontWeight={textWeight}
+            
+            fontFamily={fontFamily}
           >
             {text}
           </Text>

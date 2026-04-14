@@ -13,6 +13,7 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { router } from "expo-router";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import React, {
   useCallback,
@@ -173,6 +174,10 @@ export default function Feed() {
     );
   }
 
+  const handleBellPress = () => {
+    router.push("/notifications");
+  };
+
   return (
     <View flex={1}>
       <View width="100%" marginTop={35}>
@@ -180,6 +185,7 @@ export default function Feed() {
           feedType={feedType}
           onChangeFeedType={setFeedType}
           emptyFollowing={data.length === 0}
+          onBellPress={handleBellPress}
         />
       </View>
 
