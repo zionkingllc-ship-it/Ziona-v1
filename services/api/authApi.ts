@@ -203,4 +203,55 @@ export const authApi = {
       throw err;
     }
   },
+
+  changePassword: async (payload: {
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    try {
+      log("changePassword called");
+
+      const response = await api.post("/auth/change-password", {
+        current_password: payload.currentPassword,
+        new_password: payload.newPassword,
+      });
+
+      log("changePassword response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("changePassword failed", err);
+      throw err;
+    }
+  },
+
+  deactivateAccount: async () => {
+    try {
+      log("deactivateAccount called");
+
+      const response = await api.post("/auth/deactivate");
+
+      log("deactivateAccount response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("deactivateAccount failed", err);
+      throw err;
+    }
+  },
+
+  deleteAccount: async () => {
+    try {
+      log("deleteAccount called");
+
+      const response = await api.delete("/auth/account");
+
+      log("deleteAccount response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("deleteAccount failed", err);
+      throw err;
+    }
+  },
 };

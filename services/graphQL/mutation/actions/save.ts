@@ -1,10 +1,7 @@
 import { graphqlRequest } from "../../graphqlClient";
-import { getToken } from "./token";
 
 /* SAVE */
 export async function savePost(postId: string, folderId?: string) {
-  const token = getToken();
-
   const query = `
     mutation SavePost($postId: String!, $folderId: String) {
       savePost(postId: $postId, folderId: $folderId) {
@@ -15,7 +12,7 @@ export async function savePost(postId: string, folderId?: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { postId, folderId }, token);
+  const data = await graphqlRequest(query, { postId, folderId });
 
   const res = data?.savePost;
 
@@ -28,8 +25,6 @@ export async function savePost(postId: string, folderId?: string) {
 
 /* UNSAVE */
 export async function unsavePost(postId: string) {
-  const token = getToken();
-
   const query = `
     mutation UnsavePost($postId: String!) {
       unsavePost(postId: $postId) {
@@ -39,7 +34,7 @@ export async function unsavePost(postId: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { postId }, token);
+  const data = await graphqlRequest(query, { postId });
 
   const res = data?.unsavePost;
 

@@ -1,26 +1,22 @@
 import CircleCard from "@/components/circles/CircleCard";
 import CirclesIntro from "@/components/circles/CirclesIntro";
-import { useCircleStore } from "@/store/circleStore";
-import { FlatList, StyleSheet, TextInput } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
-import ProtectedScreen from "@/components/auth/ProtectedScreen";
+import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
+import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, TextInput } from "react-native";
+import { Text, XStack, YStack } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
   const { hp, wp } = useResponsive();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [circles, setCircles] = useState<any[]>([]);
-  const [error, setError] = useState(""); 
-const [showIntro, setShowIntro] = useState(true);
-  const [ready, setReady] = useState(false);
-
-
-  /* =========================
-     TEMP DATA (replace with backend)
-  ========================= */
+  const [error, setError] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     loadCircles();
@@ -28,7 +24,6 @@ const [showIntro, setShowIntro] = useState(true);
 
   async function loadCircles() {
     try {
-      // TODO: replace with discoverFeed / API
       const data = [
         {
           id: "1",
@@ -64,15 +59,24 @@ const [showIntro, setShowIntro] = useState(true);
     }
   }
 
-   
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (showIntro) {
-  return <CirclesIntro onClose={() => setShowIntro(false)} />;
-}
-   
+    return <CirclesIntro onClose={() => setShowIntro(false)} />;
+  }
+
   return (
-    <ProtectedScreen>
     <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
-      {/* SEARCH */}
       <XStack
         style={[
           styles.search,
@@ -85,7 +89,6 @@ const [showIntro, setShowIntro] = useState(true);
         <TextInput placeholder="Search" />
       </XStack>
 
-      {/* TITLE */}
       <Text
         fontFamily="$body"
         fontWeight="600"
@@ -97,7 +100,6 @@ const [showIntro, setShowIntro] = useState(true);
         All Circles
       </Text>
 
-      {/* LIST */}
       <FlatList
         data={circles}
         keyExtractor={(item) => item.id}
@@ -113,7 +115,6 @@ const [showIntro, setShowIntro] = useState(true);
         )}
       />
     </YStack>
-    </ProtectedScreen>
   );
 }
 

@@ -8,6 +8,9 @@ const colors = {
   inactiveButton: "#CCC4CF",
   success: "#e0eddc",
   warning: "#FACC15",
+  warningBackground: "#FFF9E6",
+  warningBorder: "#F5D77A",
+  warningText: "#856404",
   danger: "#fcb9b9",
   gray: "#808080",
   white: "#FFFFFF",
@@ -51,6 +54,7 @@ const colors = {
   forgotPassword: "#836F8B",
   closeBtn: "#4E4252",
   secondaryText: "#4E4252",
+  sectionBackground: "#F5F5F5",
 };
 
 export default colors;

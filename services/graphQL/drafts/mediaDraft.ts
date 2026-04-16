@@ -1,8 +1,9 @@
 import {
   requestMediaUpload,
   uploadFileToStorage,
+  extractPublicUrl,
 } from "../mutation/media/mediaUpload";
-import { createMediaPost } from "../mutation/publishMediaPost";
+import { createMediaPost } from "../mutation/createPost";
 
 import { MediaDraft } from "@/types/createPost";
 import { invalidateFeed } from "@/services/feed/invalidateFeed";
@@ -18,23 +19,6 @@ function getMimeType(uri: string, type: "IMAGE" | "VIDEO") {
   if (type === "IMAGE") return "image/jpg";
   if (type === "VIDEO") return "video/mp4";
   return "application/octet-stream";
-}
-
-/* =========================
-   EXTRACT PUBLIC URL (REAL FIX)
-========================= */
-
-function extractPublicUrl(uploadUrl: string) {
-  const url = new URL(uploadUrl);
-
-  // Example:
-  // /ziona-media-dev/uploads/...mp4
-  let path = url.pathname;
-
-  // remove leading slash
-  if (path.startsWith("/")) path = path.slice(1);
-
-  return `https://storage.googleapis.com/${path}`;
 }
 
 /* =========================

@@ -7,7 +7,7 @@ type TwoButtonSwitchProps = {
   onChange: (value: "forYou" | "following") => void;
   width: number | string;
   emptyFollowing?: boolean;
-  fontFamily?:any
+  fontFamily?: any;
 };
 
 export default function TwoButtonSwitch({
@@ -15,13 +15,17 @@ export default function TwoButtonSwitch({
   onChange,
   width,
   emptyFollowing = false,
-  fontFamily ="$body"
+  fontFamily = "$body",
 }: TwoButtonSwitchProps) {
   const isForYou = value === "forYou";
 
   const activeBg = emptyFollowing ? colorsDefault.primary : colorsDefault.white;
-  const activeText = emptyFollowing ? colorsDefault.white : colorsDefault.primary;
-  const inactiveText = emptyFollowing ? colorsDefault.primary : colorsDefault.white;
+  const activeText = emptyFollowing
+    ? colorsDefault.white
+    : colorsDefault.primary;
+  const inactiveText = emptyFollowing
+    ? colorsDefault.primary
+    : colorsDefault.white;
 
   return (
     <XStack
@@ -45,6 +49,11 @@ export default function TwoButtonSwitch({
         fontFamily={fontFamily}
         fontWeight={"500"}
         onPress={() => onChange("forYou")}
+        shadowColor="#2b2a2a"
+        shadowOffset={{ width: 0, height: 2 }}
+        shadowOpacity={0.05}
+        shadowRadius={2}
+        elevation={2}
       >
         For You
       </Button>
@@ -56,6 +65,11 @@ export default function TwoButtonSwitch({
         backgroundColor={!isForYou ? activeBg : "transparent"}
         borderColor={!isForYou ? "#E4C0F1" : "transparent"}
         color={!isForYou ? activeText : inactiveText}
+        shadowColor="#000"
+        shadowOffset={{ width: 0, height: 2 }}
+        shadowOpacity={0.1}
+        shadowRadius={4}
+        elevation={3}
         fontSize={13}
         fontWeight={"500"}
         fontFamily={fontFamily}

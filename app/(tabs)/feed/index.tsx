@@ -1,6 +1,7 @@
 import FeedHeader from "@/components/feedHeader";
 import { PostCard } from "@/components/post/PostCard";
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
+import FollowSuggestions from "@/components/following/FollowingSuggestions";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
@@ -12,6 +13,7 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { router } from "expo-router";
 import { InfiniteData, useQueryClient } from "@tanstack/react-query";
 import React, {
   useCallback,
@@ -172,6 +174,10 @@ export default function Feed() {
     );
   }
 
+  const handleBellPress = () => {
+    router.push("/notifications");
+  };
+
   return (
     <View flex={1}>
       <View width="100%" marginTop={35}>
@@ -179,6 +185,7 @@ export default function Feed() {
           feedType={feedType}
           onChangeFeedType={setFeedType}
           emptyFollowing={data.length === 0}
+          onBellPress={handleBellPress}
         />
       </View>
 
@@ -190,7 +197,9 @@ export default function Feed() {
           if (width !== containerWidth) setContainerWidth(width);
         }}
       >
-        {data.length === 0 ? (
+        {feedType === "following" && data.length === 0 && !query.isLoading ? (
+          <FollowSuggestions onDone={() => setFeedType("forYou")} />
+        ) : data.length === 0 ? (
           <View flex={1} justifyContent="center" alignItems="center">
             <Text style={{ color: colors.text }}>No posts yet</Text>
           </View>

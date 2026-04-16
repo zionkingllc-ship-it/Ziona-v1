@@ -7,26 +7,29 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { publishMediaPost } from "@/services/graphQL/drafts/mediaDraft";
 import { useCreatePostStore } from "@/store/createPostStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
-import { Image, Platform, TouchableOpacity } from "react-native";
+import { Image, Platform, Pressable } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
- 
+import { Play, Pause } from "@tamagui/lucide-icons";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 export default function CreateMediaPreviewScreen() {
   const { wp, hp, fs } = useResponsive();
   const { draft } = useCreatePostStore();
+  const currentUser = useAuthStore((s) => s.user);
 
   const [uploading, setUploading] = useState(false);
- 
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const queryClient = useQueryClient();
 
-  //  modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<
     "success" | "failed" | "warning"
@@ -38,9 +41,18 @@ export default function CreateMediaPreviewScreen() {
 
   const mediaDraft = draft;
   const media = mediaDraft.media.items[0];
-  const player = useVideoPlayer(media?.type === "VIDEO" ? media.uri : null, (instance) => {
-    instance.loop = true;
-  });
+
+  const player = useVideoPlayer(media?.type === "VIDEO" ? media.uri : null);
+
+  useEffect(() => {
+    if (player) {
+      if (isPlaying) {
+        player.play();
+      } else {
+        player.pause();
+      }
+    }
+  }, [isPlaying, player]);
 
   const caption = mediaDraft.caption ?? "";
 
@@ -63,15 +75,17 @@ export default function CreateMediaPreviewScreen() {
 
       const interval = setInterval(() => {
         setProgress((prev) => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 10;
+          if (prev >= 95) return prev;
+          return prev + Math.random() * 15;
         });
-      }, 200);
+      }, 150);
 
       await publishMediaPost(mediaDraft, queryClient);
 
       clearInterval(interval);
       setProgress(100);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       setModalType("success");
       setModalMessage("Post uploaded successfully");
@@ -93,6 +107,10 @@ export default function CreateMediaPreviewScreen() {
     }
   }
 
+  const togglePlay = () => {
+    setIsPlaying((prev) => !prev);
+  };
+
   return (
     <YStack
       flex={1}
@@ -112,24 +130,58 @@ export default function CreateMediaPreviewScreen() {
         }}
       >
         {media?.type === "IMAGE" && (
-          <Image
-            source={{ uri: media.uri }}
+          <Pressable
+            onPress={togglePlay}
             style={{ width: "100%", height: "100%" }}
-          />
+          >
+            <Image
+              source={{ uri: media.uri }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </Pressable>
         )}
 
         {media?.type === "VIDEO" && (
-          <VideoView
-            player={player}
-            style={{ width: "100%", height: "100%" }}
-            contentFit="cover"
-            nativeControls
-            surfaceType={Platform.OS === "android" ? "textureView" : undefined}
-          />
+          <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
+            <Pressable
+              onPress={togglePlay}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <VideoView
+                player={player}
+                style={{ width: "100%", height: "100%" }}
+                contentFit="cover"
+                nativeControls={false}
+                surfaceType={Platform.OS === "android" ? "textureView" : undefined}
+              />
+
+              {!isPlaying && (
+                <View
+                  style={{
+                    position: "absolute",
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    backgroundColor: "#FFF1DB",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    alignSelf: "center",
+                    top: "50%",
+                    marginTop: -30,
+                  }}
+                >
+                  <Play size={28} color={colors.black} fill={colors.black} />
+                </View>
+              )}
+            </Pressable>
+          </View>
         )}
 
-        <TouchableOpacity
-          onPress={() => router.back()}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            router.back();
+          }}
           style={{
             position: "absolute",
             top: 14,
@@ -143,12 +195,40 @@ export default function CreateMediaPreviewScreen() {
           }}
         >
           <Text color="white">✕</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <XStack position="absolute" bottom={14} left={14} right={60}>
-          <YStack>
-            <Text color="white">Zion</Text>
-            <Text color="white">{caption}</Text>
+        <XStack
+          position="absolute"
+          bottom={14}
+          left={14}
+          right={60}
+          gap={10}
+          alignItems="center"
+        >
+          <Image
+            source={
+              currentUser?.avatarUrl
+                ? { uri: currentUser.avatarUrl }
+                : require("@/assets/images/profile.png")
+            }
+            width={36}
+            height={36}
+            borderRadius={18}
+          />
+          <YStack flex={1}>
+            <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
+              {currentUser?.username || "User"}
+            </Text>
+            {caption ? (
+              <Text
+                color="white"
+                fontFamily="$body"
+                fontSize={12}
+                numberOfLines={2}
+              >
+                {caption}
+              </Text>
+            ) : null}
           </YStack>
         </XStack>
       </View>
@@ -179,7 +259,7 @@ export default function CreateMediaPreviewScreen() {
       )}
 
       <XStack justifyContent="center" marginTop={hp(5)}>
-        <TagSelectorCard category={mediaDraft.category} disabled onPress={()=>{}} />
+        <TagSelectorCard category={mediaDraft.category} disabled onPress={() => {}} />
       </XStack>
 
       <YStack marginTop={hp(3)}>

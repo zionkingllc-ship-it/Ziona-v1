@@ -2,7 +2,9 @@ import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useUserPosts } from "@/hooks/useUserPost";
+import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
+import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -13,7 +15,7 @@ import { ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View } from "tamagui";
 
-export default function ProfilePostViewerScreen() {
+export default function PostViewerScreen() {
   const { source, index, postId } = useLocalSearchParams<{
     source?: string;
     index?: string;
@@ -21,6 +23,8 @@ export default function ProfilePostViewerScreen() {
   }>();
 
   const isLiked = source === "liked";
+  const isBookmarks = source === "bookmarks";
+  const isSaved = source === "saved";
 
   /* ================= DATA ================= */
 
@@ -40,6 +44,20 @@ export default function ProfilePostViewerScreen() {
     refetch: refetchLikedPosts,
   } = useLikedPosts();
 
+  const {
+    data: bookmarkData,
+    isLoading: isBookmarkLoading,
+    isError: isBookmarkError,
+    refetch: refetchBookmarks,
+  } = useBookmarkFolders();
+
+  const {
+    data: savedData,
+    isLoading: isSavedLoading,
+    isError: isSavedError,
+    refetch: refetchSavedPosts,
+  } = useUserSavedPosts();
+
   /*  NORMALIZE LIKED POSTS */
   const likedPosts: FeedPost[] = useMemo(() => {
     if (!likedData?.pages) return [];
@@ -58,7 +76,47 @@ export default function ProfilePostViewerScreen() {
       });
   }, [likedData]);
 
-  const posts: FeedPost[] = isLiked ? likedPosts : userPosts;
+  /*  NORMALIZE BOOKMARK POSTS */
+  const bookmarkPosts: FeedPost[] = useMemo(() => {
+    if (!bookmarkData) return [];
+
+    return bookmarkData
+      .flatMap((folder) => folder.posts || [])
+      .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => {
+        if (!p) return false;
+
+        if (p.type === "media") {
+          return Array.isArray(p.media) && p.media.length > 0;
+        }
+
+        return true;
+      });
+  }, [bookmarkData]);
+
+  /*  NORMALIZE SAVED POSTS */
+  const savedPosts: FeedPost[] = useMemo(() => {
+    if (!savedData?.pages?.length) return [];
+
+    return savedData.pages
+      .flatMap((p) => p.posts ?? [])
+      .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => {
+        if (!p) return false;
+
+        if (p.type === "media") {
+          return Array.isArray(p.media) && p.media.length > 0;
+        }
+
+        return true;
+      });
+  }, [savedData]);
+
+  const posts: FeedPost[] = isLiked ? likedPosts : isBookmarks ? bookmarkPosts : isSaved ? savedPosts : userPosts;
+  const isLoading = isUserLoading || isLikedLoading || isBookmarkLoading || isSavedLoading;
+  const isError = isUserError || isLikedError || isBookmarkError || isSavedError;
+  const error = isLiked ? likedError : isUserError;
+  const refetch = isLiked ? refetchLikedPosts : isBookmarks ? refetchBookmarks : isSaved ? refetchSavedPosts : refetchUserPosts;
 
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -79,9 +137,6 @@ export default function ProfilePostViewerScreen() {
   }, [index, postId, posts]);
 
   useEffect(() => {
-    const error = isLiked ? likedError : userError;
-    const isError = isLiked ? isLikedError : isUserError;
-
     if (!isError) return;
 
     const feedback = getNetworkModalCopy(
@@ -93,11 +148,11 @@ export default function ProfilePostViewerScreen() {
     setModalTitle(feedback.title);
     setModalMessage(feedback.message);
     setModalVisible(true);
-  }, [isLiked, isLikedError, likedError, isUserError, userError]);
+  }, [isError, error]);
 
   /* ================= LOADING ================= */
 
-  if (isUserLoading || isLikedLoading) {
+  if (isLoading) {
     return (
       <View flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size={40} color={colors.primary} />
@@ -106,6 +161,7 @@ export default function ProfilePostViewerScreen() {
   }
 
   /* ================= MAIN ================= */
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View
@@ -140,11 +196,7 @@ export default function ProfilePostViewerScreen() {
         buttonText="Try again"
         onButtonPress={() => {
           setModalVisible(false);
-          if (isLiked) {
-            refetchLikedPosts();
-          } else {
-            refetchUserPosts();
-          }
+          refetch();
         }}
       />
     </SafeAreaView>

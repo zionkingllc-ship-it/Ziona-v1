@@ -92,8 +92,8 @@ export const GET_DISCOVER_FEED = `
    FETCHERS
 ========================= */
 
-export async function fetchDiscoverCategories(token?: string) {
-  const res = await graphqlRequest(GET_DISCOVER_CATEGORIES, {}, token);
+export async function fetchDiscoverCategories() {
+  const res = await graphqlRequest(GET_DISCOVER_CATEGORIES, {});
   return res?.discoverCategories ?? [];
 }
 

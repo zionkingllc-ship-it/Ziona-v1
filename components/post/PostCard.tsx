@@ -5,6 +5,7 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -17,9 +18,11 @@ import CreateFolderModal from "../ui/modals/CreateFolderModal";
 import ReportReasonsModal from "../ui/modals/ReportReasonsModal";
 import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
+import OptionsModal from "../ui/modals/OptionsModal";
 
 import { useToggleLike } from "@/hooks/useToggleLike";
 import { useToggleFollow } from "@/hooks/useFollow";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ICONS */
@@ -52,6 +55,7 @@ function PostCardComponent({
 
   /* MODALS */
   const [commentsVisible, setCommentsVisible] = useState(false);
+  const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
@@ -96,6 +100,7 @@ function PostCardComponent({
   const toggleFollowMutation = useToggleFollow();
   const followedUsers = usePostActionsStore((s) => s.followedUsers);
   const isFollowing = followedUsers[post.author?.id ?? ""] ?? post.viewerState?.followingAuthor ?? false;
+  const { requireAuth, AuthModal } = useRequireAuth();
 
   /* RESET CAPTION ON POST CHANGE */
   useEffect(() => {
@@ -105,18 +110,23 @@ function PostCardComponent({
   /* HANDLERS (MEMO SAFE) */
   const handleLike = () => {
     if (isLikePending) return;
-
-    toggleLikeMutation.mutate({
-      postId: post.id,
-      currentLiked: likedState,
+    requireAuth(() => {
+      toggleLikeMutation.mutate({
+        postId: post.id,
+        currentLiked: likedState,
+      });
     });
   };
 
   const handleFollow = () => {
     if (!post.author?.id) return;
-    toggleFollowMutation.mutate({
-      userId: post.author.id,
-      currentFollowing: isFollowing,
+    requireAuth(() => {
+      if (post.author) {
+        toggleFollowMutation.mutate({
+          userId: post.author.id,
+          currentFollowing: isFollowing,
+        });
+      }
     });
   };
 
@@ -151,19 +161,20 @@ function PostCardComponent({
           <YStack flex={1} gap="$2">
             {/* PROFILE */}
             <XStack gap="$4" alignItems="center">
-              <XStack gap="$2" alignItems="center">
+              <TouchableOpacity
+                onPress={() => {
+                  if (post.author?.id) {
+                    router.push(`/guest?userId=${post.author.id}`);
+                  }
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Image
                   source={authorAvatarSource}
                   width={30}
                   height={30}
                   borderRadius={15}
                   onError={() => {
-                    console.log(
-                      "[PostCard] Avatar load failed for user:",
-                      post.author?.id,
-                      "URL:",
-                      post.author?.avatarUrl,
-                    );
                     setAuthorAvatarSource(
                       require("@/assets/images/profile.png"),
                     );
@@ -173,7 +184,7 @@ function PostCardComponent({
                 <Text color={colors.white} fontSize={16} fontWeight="500">
                   {post.author?.username ?? "user"}
                 </Text>
-              </XStack>
+              </TouchableOpacity>
 
               {!post.viewerState?.isOwner && (
                 <TouchableOpacity
@@ -241,11 +252,14 @@ function PostCardComponent({
               </Text>
             </YStack>
 
-            <Pressable onPress={() => setCommentsVisible(true)}>
+            <Pressable onPress={() => requireAuth(() => setCommentsVisible(true))}>
               <Image source={commentIcon} width={24} height={24} />
             </Pressable>
 
-            <Pressable onPress={openFolders}>
+            <Pressable onPress={() => {
+              console.log("[PostCard] Bookmark pressed, calling openFolders");
+              requireAuth(openFolders);
+            }}>
               <Image
                 source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
                 width={24}
@@ -253,11 +267,11 @@ function PostCardComponent({
               />
             </Pressable>
 
-            <Pressable onPress={() => setShareVisible(true)}>
+            <Pressable onPress={() => requireAuth(() => setShareVisible(true))}>
               <Image source={shareIcon} width={24} height={24} />
             </Pressable>
 
-            <Pressable onPress={() => setConfirmVisible(true)}>
+            <Pressable onPress={() => requireAuth(() => setOptionsVisible(true))}>
               <MoreHorizontal size={28} color={colors.white} />
             </Pressable>
           </YStack>
@@ -269,6 +283,11 @@ function PostCardComponent({
         visible={commentsVisible}
         onClose={() => setCommentsVisible(false)}
         postId={post.id}
+      />
+      <OptionsModal
+        visible={optionsVisible}
+        onClose={() => setOptionsVisible(false)}
+        onReportPost={() => setConfirmVisible(true)}
       />
       <ConfirmReportModal
         visible={confirmVisible}
@@ -315,11 +334,12 @@ function PostCardComponent({
           setCreateVisible(false);
         }}
       />
+      {AuthModal}
     </YStack>
   );
 }
 
-/* 🔥 CRITICAL: PREVENT RE-RENDERS */
+/*PREVENT RE-RENDERS */
 export const PostCard = React.memo(
   PostCardComponent,
   (prev, next) =>

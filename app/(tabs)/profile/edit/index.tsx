@@ -58,14 +58,12 @@ export default function EditProfileScreen() {
     try {
       await avatarMutation.mutateAsync(file);
 
-      /* SUCCESS */
+      setLocalAvatar(null);
       setSuccessVisible(true);
     } catch (e) {
       console.log("Avatar update failed", e);
 
       setLocalAvatar(null);
-
-      /*ERROR */
       setErrorVisible(true);
     }
   };

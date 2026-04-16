@@ -1,10 +1,7 @@
 import { graphqlRequest } from "../../graphqlClient";
-import { getToken } from "../../mutation/actions/token";
 
 /* GET SAVED POSTS */
 export async function getSavedPosts() {
-  const token = getToken();
-
   const query = `
     query GetSavedPosts {
       savedPosts {
@@ -15,7 +12,7 @@ export async function getSavedPosts() {
     }
   `;
 
-  const data = await graphqlRequest(query, {}, token);
+  const data = await graphqlRequest(query, {});
 
   const savedPosts = data?.savedPosts;
   if (!savedPosts) {

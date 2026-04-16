@@ -3,8 +3,9 @@ import colors from "@/constants/colors";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
+import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Dimensions,
   FlatList,
@@ -33,6 +34,12 @@ type Props = {
 
 const EMOJIS = ["😀", "🥰", "😂", "😳", "😌", "😁", "🥺", "😏", "😬"];
 
+interface MentionUser {
+  id: string;
+  username: string;
+  avatarUrl?: string | null;
+}
+
 export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -41,6 +48,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     new Set(),
   );
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
 
   const inputRef = useRef<TextInput>(null);
 
@@ -52,6 +60,42 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const toggleLikeMutation = useToggleCommentLike();
 
   const comments = data?.pages.flatMap((page) => page.comments) || [];
+
+  const detectMention = useCallback((text: string) => {
+    const lastAtIndex = text.lastIndexOf("@");
+    
+    if (lastAtIndex === -1) {
+      return null;
+    }
+    
+    const textAfterAt = text.slice(lastAtIndex + 1);
+    
+    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) {
+      return null;
+    }
+    
+    return textAfterAt;
+  }, []);
+
+  const handleTextChange = useCallback((text: string) => {
+    setInputValue(text);
+    
+    const mention = detectMention(text);
+    setMentionSearch(mention);
+  }, [detectMention]);
+
+  const handleSelectUser = useCallback((user: MentionUser) => {
+    const lastAtIndex = inputValue.lastIndexOf("@");
+    
+    if (lastAtIndex !== -1) {
+      const textBeforeMention = inputValue.slice(0, lastAtIndex);
+      const newText = `${textBeforeMention}@${user.username} `;
+      setInputValue(newText);
+    }
+    
+    setMentionSearch(null);
+    inputRef.current?.focus();
+  }, [inputValue]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -168,10 +212,13 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                       height={30}
                       borderRadius={50}
                       onError={() => {
-                        if (item.user?.avatarUrl) {
-                          setFailedAvatarUrls((prev) => [
-                            ...new Set([...prev, item.user!.avatarUrl]),
-                          ]);
+                        const url = item.user?.avatarUrl;
+                        if (url) {
+                          setFailedAvatarUrls((prev) => {
+                            const newSet = new Set(prev);
+                            newSet.add(url);
+                            return Array.from(newSet);
+                          });
                         }
                       }}
                     />
@@ -282,6 +329,13 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
         </View>
 
         <YStack borderTopWidth={1} borderColor="#eee" onLayout={onBottomLayout}>
+          {mentionSearch !== null && (
+            <MentionSuggestions
+              searchText={mentionSearch}
+              onSelectUser={handleSelectUser}
+            />
+          )}
+
           <XStack
             padding="$1"
             gap="$2"
@@ -302,7 +356,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
               placeholder="Join the conversation..."
               placeholderTextColor="#836F8B"
               value={inputValue}
-              onChangeText={setInputValue}
+              onChangeText={handleTextChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               maxLength={100}

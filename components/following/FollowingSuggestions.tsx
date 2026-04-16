@@ -1,139 +1,112 @@
-// components/screens/FollowSuggestions.tsx
 import colors from "@/constants/colors";
-import React, { useState } from "react";
-import {
-  FlatList,
-  Image,
-  StyleSheet, 
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useSuggestedCreators } from "@/hooks/useFollow";
+import React from "react";
+import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack, Text } from "tamagui";
-
+import { YStack, Text } from "tamagui"; 
 import CenteredMessage from "@/components/ui/CenteredMessage";
+import FollowUserRow from "@/components/follow/UserRow";
+import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
+import AuthPrompt from "@/components/ui/AuthPrompt";
+import { useAuthStore } from "@/store/useAuthStore";
 
-interface User {
-  id: string;
-  name: string;
-  avatar: string; // URL or require(...)
+interface FollowSuggestionsProps {
+  onDone: () => void;
 }
 
-const mockSuggestions: User[] = [
-  { id: "1", name: "Ziona", avatar: "https://i.pravatar.cc/150?img=32" },
-  { id: "2", name: "Pastor David", avatar: "https://i.pravatar.cc/150?img=12" },
-  { id: "3", name: "Lola", avatar: "https://i.pravatar.cc/150?img=45" },
-  { id: "4", name: "Rebecca", avatar: "https://i.pravatar.cc/150?img=23" },
-  { id: "5", name: "Joseph", avatar: "https://i.pravatar.cc/150?img=19" },
-  { id: "6", name: "Sarah", avatar: "https://i.pravatar.cc/150?img=7" },
-];
+export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { data: creators, isLoading } = useSuggestedCreators();
 
-export default function FollowSuggestions() {
-  const [following, setFollowing] = useState<string[]>([]);
-  const [feedType, setFeedType] = useState<"forYou" | "following">("following"); // default to "following"
-
-  const toggleFollow = (userId: string) => {
-    setFollowing((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId],
-    );
-  };
-
-  const renderItem = ({ item }: { item: User }) => {
-    const isFollowing = following.includes(item.id);
+  if (!isAuthenticated) {
     return (
-      <View style={styles.userRow}>
-        <Image source={{ uri: item.avatar }} style={styles.avatar} />
-        <View style={{ flex: 1 }}>
-          <Text fontFamily={"$body"} style={styles.userName}>{item.name}</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.followBtn, isFollowing && styles.followingBtn]}
-          onPress={() => toggleFollow(item.id)}
-        >
-          <Text
-          fontFamily={"$body"}
-            style={[
-              styles.followBtnText,
-              isFollowing && styles.followingBtnText,
-            ]}
-          >
-            {isFollowing ? "Following" : "Follow"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <YStack flex={1} padding={5} paddingTop={following.length === 0 ? 0 : 55}>
-        {/* Empty state */}
-        {following.length === 0 && (
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <View style={styles.content}>
+        {!isLoading && (!creators || creators.length === 0) && (
           <CenteredMessage
-          fontFamily={"$body"}
-            text="You are currently not following anyone"
-            subtitle="Follow users to see their posts here."
+            fontFamily={"$body"}
+            fontWeight={"400"}
+            text="No suggestions right now"
+            subtitle="Check back later for new creators to follow."
           />
         )}
-        <Text
-        fontFamily={"$body"}
-          style={{
-            marginLeft: 18,
-            fontSize: 16,
-            fontWeight: "400",
-            color: colors.headerText,
-            position: "static",
-          }}
-        >
-          Suggestions
-        </Text>
-        <FlatList
-          data={mockSuggestions}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+        {isLoading ? (
+          <CenteredMessage text="Loading..." fontFamily={"$body"} />
+        ) : (
+          <FlatList
+            data={creators ?? []}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <FollowUserRow
+                id={item.id}
+                username={item.username}
+                avatarUrl={item.avatarUrl}
+                bio={item.bio}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <Text
+                fontFamily={"$body"}
+                fontWeight={"400"}
+                style={styles.header}
+              >
+                Suggested for you
+              </Text>
+            }
+          />
+        )}
+      </View>
+      <View style={styles.footer}>
+        <SimpleButtonWithStyle
+        disabled={isLoading || !creators || creators.length === 0}
+          text="Done"
+          style={{ alignSelf: "center", paddingHorizontal: 24, }}
+          color={colors.primary}
+          textColor={colors.white}
+          textWeight={"400"}
+          fontFamily={"$body"}
+          borderRadius={8}
+          onPress={onDone}
         />
-      </YStack>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.white },
-  listContent: { paddingHorizontal: 16, paddingTop: 8 },
-  userRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomColor: colors.border,
-  },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 24,
-    marginRight: 12,
-  },
-  userName: { fontSize: 16, fontWeight: "500", color: colors.black },
-  followBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  followBtnText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  followingBtn: {
+  container: {
+    flex: 1,
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
   },
-  followingBtnText: {
-    color: colors.primary,
+  content: {
+    flex: 1,
+  },
+  header: {
+    marginLeft: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: "400",
+    color: colors.headerText,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });

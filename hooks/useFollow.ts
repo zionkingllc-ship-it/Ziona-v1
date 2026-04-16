@@ -1,13 +1,15 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FollowersResponse,
   FollowingResponse,
   FriendsListResponse,
   SuggestedCreatorsResponse,
+  SearchUsersResponse,
   getFollowers,
   getFollowing,
   getFriendsList,
   getSuggestedCreators,
+  searchUsers,
 } from "@/services/graphQL/queries/follow";
 import { followUser, unfollowUser } from "@/services/graphQL/mutation/actions/index";
 import { usePostActionsStore } from "@/store/usePostActionStore";
@@ -19,21 +21,17 @@ const FRIENDS_QUERY_KEY = "friendsList";
 const SUGGESTED_QUERY_KEY = "suggestedCreators";
 
 export function useFollowers(userId: string) {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => getFollowers(userId, pageParam),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.cursor : undefined),
+    queryFn: () => getFollowers(userId),
     enabled: !!userId,
   });
 }
 
 export function useFollowing(userId: string) {
-  return useInfiniteQuery({
+  return useQuery({
     queryKey: [FOLLOWING_QUERY_KEY, userId],
-    queryFn: ({ pageParam }) => getFollowing(userId, pageParam),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.cursor : undefined),
+    queryFn: () => getFollowing(userId),
     enabled: !!userId,
   });
 }
@@ -49,6 +47,14 @@ export function useSuggestedCreators() {
   return useQuery({
     queryKey: [SUGGESTED_QUERY_KEY],
     queryFn: getSuggestedCreators,
+  });
+}
+
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: ["searchUsers", query],
+    queryFn: () => searchUsers(query),
+    enabled: query.length > 0,
   });
 }
 

@@ -3,10 +3,12 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useUpdateProfile } from "@/hooks/useUdateProfle";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
+import { updateUsername, UpdateUsernameResponse } from "@/services/profile/profileService";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useRouter } from "expo-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input, Text, XStack, YStack } from "tamagui";
@@ -14,18 +16,45 @@ import { Input, Text, XStack, YStack } from "tamagui";
 export default function EditUsernameScreen() {
   const router = useRouter();
   const { hp } = useResponsive();
+  const queryClient = useQueryClient();
 
   const userId = useAuthStore((s) => s.user?.id);
   const { data: user } = useUserProfile(userId, {
     enabled: !!userId,
   });
 
-  const mutation = useUpdateProfile();
-
   const [username, setUsername] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [errorTitle, setErrorTitle] = useState("");
+  const [rateLimitDate, setRateLimitDate] = useState<string | null>(null);
 
-  
+  const mutation = useMutation({
+    mutationFn: updateUsername,
+    onSuccess: (res: UpdateUsernameResponse) => {
+      if (res.success && userId) {
+        queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
+        setSuccessVisible(true);
+        setRateLimitDate(null);
+      } else if (res.errorCode === "RATE_LIMIT_EXCEEDED") {
+        const dateMatch = res.message?.match(/Next change on ([\w\s\d,]+)\./);
+        if (dateMatch) {
+          setRateLimitDate(dateMatch[1]);
+        }
+        setErrorTitle("Cannot Update Username");
+        setErrorMessage(res.message || "You're not allowed to change your username yet.");
+        setErrorVisible(true);
+      }
+    },
+    onError: (e: any) => {
+      const feedback = getNetworkModalCopy(e, e?.message || "Failed to update username");
+      setErrorTitle(feedback.title);
+      setErrorMessage(feedback.message);
+      setErrorVisible(true);
+    },
+  });
+
   useEffect(() => {
     if (user?.username) {
       setUsername(user.username);
@@ -35,14 +64,7 @@ export default function EditUsernameScreen() {
   const handleSave = () => {
     if (!username.trim()) return;
 
-    mutation.mutate(
-      { username },
-      {
-        onSuccess: () => {
-          setSuccessVisible(true);
-        },
-      }
-    );
+    mutation.mutate(username.trim());
   };
 
   return (
@@ -86,15 +108,28 @@ export default function EditUsernameScreen() {
             fontFamily={"$body"}
             marginTop={-4}
             autoCapitalize="none"
+            disabled={!!rateLimitDate}
           />
         </YStack>
+
+        <Text
+          alignSelf="center"
+          fontFamily={"$body"}
+          fontWeight={"400"}
+          fontSize={13}
+          color={rateLimitDate ? colors.warningText : colors.tertiary}
+        >
+          {rateLimitDate
+            ? `You can change your username again on ${rateLimitDate}`
+            : "Username changes are limited to once every 30 days"}
+        </Text>
 
         <SimpleButton
           onPress={handleSave}
           text="Save"
           textColor="white"
           color={colors.primary}
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || !!rateLimitDate}
         />
       </YStack>
 
@@ -107,6 +142,14 @@ export default function EditUsernameScreen() {
         title="Success"
         message="Your username has been updated"
         type="success"
+      />
+
+      <SuccessModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        title={errorTitle}
+        message={errorMessage}
+        type="warning"
       />
     </SafeAreaView>
   );

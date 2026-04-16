@@ -15,7 +15,7 @@ type Props = {
 
   actionLabel?: string;
   onActionPress?: () => void;
-
+  fontWeight?: "400" | "500" | "600";
   titleColor?: string;
   subtitleColor?: string;
   fontFamily: any;
@@ -33,11 +33,12 @@ export default function CenteredMessage({
   fullScreen = true,
   containerStyle,
   fontFamily = "$body",
+  fontWeight = "500",
 }: Props) {
   return (
     <View style={[styles.container, fullScreen && { flex: 1 }, containerStyle]}>
       <Text
-        style={[styles.title, { color: titleColor, fontFamily: fontFamily }]}
+        style={[styles.title, { color: titleColor, fontFamily: fontFamily, fontWeight: fontWeight }]}
       >
         {text}
       </Text>
@@ -46,7 +47,7 @@ export default function CenteredMessage({
         <Text
           style={[
             styles.subtitle,
-            { color: subtitleColor, fontFamily: fontFamily },
+            { color: subtitleColor, fontFamily: fontFamily, fontWeight:"400" },
           ]}
         >
           {subtitle}
@@ -59,7 +60,7 @@ export default function CenteredMessage({
           activeOpacity={0.85}
           onPress={onActionPress}
         >
-          <Text style={[styles.buttonText, { fontFamily: fontFamily }]}>
+          <Text style={[styles.buttonText, { fontFamily: fontFamily, fontWeight: "400" }]}>
             {actionLabel}
           </Text>
         </TouchableOpacity>

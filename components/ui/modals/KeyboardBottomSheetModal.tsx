@@ -1,18 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Keyboard,
   Modal,
+  StyleSheet,
+  View,
   Platform,
   Pressable,
-  StyleSheet,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { View } from "tamagui";
 
 const { height } = Dimensions.get("window");
 
@@ -20,26 +15,24 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  maxHeightPercent?: number; // default 0.7
+  maxHeightPercent?: number;
 };
 
 export default function KeyboardBottomSheetModal({
   visible,
   onClose,
   children,
-  maxHeightPercent = 0.5,
+  maxHeightPercent = 0.85,
 }: Props) {
-  const keyboardHeight = useSharedValue(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      keyboardHeight.value = withTiming(e.endCoordinates.height, {
-        duration: 250,
-      });
+      setKeyboardHeight(e.endCoordinates.height);
     });
 
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      keyboardHeight.value = withTiming(0, { duration: 250 });
+      setKeyboardHeight(0);
     });
 
     return () => {
@@ -48,33 +41,22 @@ export default function KeyboardBottomSheetModal({
     };
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    marginBottom: Platform.OS === "android" ? keyboardHeight.value : 0,
-  }));
-
-  return (
+return (
     <Modal
-      transparent
       visible={visible}
-      animationType="fade"
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
       statusBarTranslucent
-      presentationStyle="overFullScreen"
     >
-      <View style={{ flex: 1 }}>
-        {/* Backdrop */}
-        <Pressable onPress={onClose} style={styles.backdrop} />
+      <View style={styles.wrapper}>
+        {/* Backdrop - close on press */}
+        <Pressable style={styles.backdrop} onPress={onClose} />
 
-        {/* Bottom Container */}
-        <View style={styles.container} pointerEvents="box-none">
-          <Animated.View
-            style={[
-              styles.sheet,
-              { maxHeight: height * maxHeightPercent },
-              animatedStyle,
-            ]}
-          >
-            {children}
-          </Animated.View>
+        {/* Sheet */}
+        <View style={[styles.sheet, { maxHeight: height * maxHeightPercent }]}>
+          <View style={styles.handle} />
+          {children}
         </View>
       </View>
     </Modal>
@@ -82,27 +64,30 @@ export default function KeyboardBottomSheetModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    zIndex: 99999,
-    elevation: 9999,
-  },
-  container: {
+  wrapper: {
     flex: 1,
-    justifyContent: "flex-end",
-    zIndex: 99998,
-    elevation: 9998,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
-    flex: 1,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: "white",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: "hidden",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 50 : 40,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#DDD",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 16,
   },
 });

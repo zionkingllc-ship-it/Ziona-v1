@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ChevronLeft } from "@tamagui/lucide-icons";
 import { router } from "expo-router";
 import React from "react";
-import { ImageSourcePropType } from "react-native";
+import { ImageSourcePropType, Pressable } from "react-native";
 import { Image, Text, XStack } from "tamagui";
 
 type prop = {
@@ -12,6 +12,7 @@ type prop = {
   iconAfter2?: any;
   imageAfter?: ImageSourcePropType;
   imageAfter2?: ImageSourcePropType;
+  imageAfter2Press?: () => void;
   iconBeforeColor?: string;
   headingSize?: any;
   headingWeight?: any;
@@ -26,6 +27,7 @@ export default function Header({
   imageAfter,
   iconAfter2,
   imageAfter2,
+  imageAfter2Press,
   headingWeight = "500",
   headerFontFamily = "$body",
 }: prop) {
@@ -52,14 +54,18 @@ export default function Header({
         </XStack>
       ) : (
         <XStack gap={5}>
-          <Image source={imageAfter} width={24} height={24} marginRight={10} />
+          {imageAfter && (
+            <Image source={imageAfter} width={24} height={24} marginRight={10} />
+          )}
           {imageAfter2 && (
-            <Image
-              source={imageAfter2}
-              width={24}
-              height={24}
-              marginRight={10}
-            />
+            <Pressable onPress={imageAfter2Press}>
+              <Image
+                source={imageAfter2}
+                width={24}
+                height={24}
+                marginRight={10}
+              />
+            </Pressable>
           )}
         </XStack>
       )}

@@ -17,7 +17,9 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
 
   /* ================= ACTIONS ================= */
 
-  const openFolders = () => setFoldersVisible(true);
+  const openFolders = () => {
+    setFoldersVisible(true);
+  };
 
   const toggleFolder = (folderId?: string) => {
     if (!folderId) return;

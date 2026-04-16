@@ -35,6 +35,17 @@ export async function requestMediaUpload(
 }
 
 /* =========================
+   EXTRACT PUBLIC URL
+========================= */
+
+export function extractPublicUrl(uploadUrl: string) {
+  const url = new URL(uploadUrl);
+  let path = url.pathname;
+  if (path.startsWith("/")) path = path.slice(1);
+  return `https://storage.googleapis.com/${path}`;
+}
+
+/* =========================
    FILE UPLOAD
 ========================= */
 
