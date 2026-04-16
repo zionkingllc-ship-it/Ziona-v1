@@ -1,135 +1,173 @@
-import Header from "@/components/layout/header";
-import AuthPrompt from "@/components/ui/AuthPrompt";
-import CenteredMessage from "@/components/ui/CenteredMessage";
+import { Image, Text, XStack, YStack, View } from "tamagui";
+import { ActivityIndicator, FlatList, Pressable } from "react-native";
+import { useState } from "react";
 import colors from "@/constants/colors";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from "@/hooks/useNotifications";
-import { router } from "expo-router";
-import { FlatList, TouchableOpacity, Pressable } from "react-native";
+import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, XStack, YStack, View } from "tamagui";
-import { normalizeDate } from "@/utils/date/normalizeDate";
 
-export default function NotificationsScreen() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { data, isLoading } = useNotifications(20);
+const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
+
+interface NotificationItem {
+  id: string;
+  type: string;
+  actor: {
+    id: string;
+    username: string;
+    avatarUrl?: string;
+  };
+  target?: {
+    id: string;
+    type: string;
+    content?: string;
+  };
+  createdAt: string;
+  read: boolean;
+}
+
+export default function ActivityScreen() {
+  const [activeTab, setActiveTab] = useState("All");
+  const { data: notificationsData, isLoading } = useNotifications(50);
   const markAsRead = useMarkNotificationAsRead();
-  const markAllAsRead = useMarkAllNotificationsAsRead();
 
-  const notifications = data?.items ?? [];
+  const notifications = notificationsData?.items ?? [];
+  
+  const filtered = notifications.filter((item: NotificationItem) => {
+    if (activeTab === "All") return true;
+    if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
+    if (activeTab === "Mentions") return item.type === "mention";
+    if (activeTab === "Replies") return item.type === "comment" || item.type === "reply";
+    if (activeTab === "Circles") return item.type === "circle";
+    return true;
+  });
 
-  const handleNotificationPress = async (item: typeof notifications[0]) => {
-    if (!item.isRead) {
-      await markAsRead.mutateAsync(item.id);
-    }
-
-    if (item.referenceType === "POST" && item.referenceId) {
-      router.push({
-        pathname: "/viewer/[postId]",
-        params: { postId: item.referenceId, source: "user" },
-      });
-    } else if (item.referenceType === "USER" && item.referenceId) {
-      router.push(`/profile/${item.referenceId}`);
-    }
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days}d`;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours > 0) return `${hours}h`;
+    const mins = Math.floor(diff / (1000 * 60));
+    if (mins > 0) return `${mins}m`;
+    return "Just now";
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "LIKE":
-        return "❤️";
-      case "COMMENT":
-        return "💬";
-      case "FOLLOW":
-        return "👤";
-      case "MENTION":
-        return "@";
+  const getNotificationContent = (item: NotificationItem) => {
+    switch (item.type) {
+      case "follow":
+        return "started following you";
+      case "follow_request":
+        return "sent you a follow request";
+      case "like":
+        return "liked your post";
+      case "comment":
+        return "commented on your post";
+      case "reply":
+        return "replied to your comment";
+      case "mention":
+        return "mentioned you in a post";
+      case "circle":
+        return "invited you to a circle";
       default:
-        return "🔔";
+        return "";
     }
   };
 
-  if (!isAuthenticated) {
+  const Tab = ({ label }: { label: string }) => {
+    const active = label === activeTab;
+
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-        <XStack padding={10}>
-          <Header heading="Notifications" />
+      <Pressable onPress={() => setActiveTab(label)}>
+        <XStack
+          paddingHorizontal={14}
+          paddingVertical={6}
+          borderRadius={20}
+          backgroundColor={active ? colors.black : colors.lightGrayBg}
+        >
+          <Text color={active ? colors.white : colors.black} fontSize={13}>
+            {label}
+          </Text>
         </XStack>
-        <AuthPrompt
-          message="Login to view notifications"
-          buttonText="Login"
-          buttonColor={colors.primary}
-        />
-      </SafeAreaView>
+      </Pressable>
     );
-  }
+  };
+
+  const renderNotification = ({ item }: { item: NotificationItem }) => {
+    const handlePress = () => {
+      if (!item.read) {
+        markAsRead.mutate(item.id);
+      }
+    };
+
+    return (
+      <Pressable onPress={handlePress} style={{ opacity: item.read ? 0.6 : 1 }}>
+        <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
+          <XStack gap="$3" flex={1}>
+            <Image
+              source={item.actor.avatarUrl ? { uri: item.actor.avatarUrl } : require("@/assets/images/emptyDP.png")}
+              width={40}
+              height={40}
+              borderRadius={20}
+            />
+            <YStack flex={1}>
+              <Text fontWeight="600" fontSize={14}>
+                {item.actor.username}{" "}
+                <Text fontWeight="400" color={colors.gray}>
+                  {formatTime(item.createdAt)}
+                </Text>
+              </Text>
+              <Text color={colors.gray} fontSize={13}>
+                {getNotificationContent(item)}
+              </Text>
+              {item.target?.content && (
+                <Text marginTop={4} fontSize={13} numberOfLines={2}>
+                  "{item.target.content}"
+                </Text>
+              )}
+            </YStack>
+          </XStack>
+
+          {!item.read && (
+            <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
+          )}
+        </XStack>
+        <View height={0.5} backgroundColor={colors.lightGrayBg} />
+      </Pressable>
+    );
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10} justifyContent="space-between" alignItems="center">
-        <Header heading="Notifications" />
-        {notifications.some((n) => !n.isRead) && (
-          <TouchableOpacity onPress={() => markAllAsRead.mutate()}>
-            <Text fontFamily="$body" color={colors.primary} fontSize={14}>
-              Mark all read
-            </Text>
-          </TouchableOpacity>
-        )}
-      </XStack>
+      <YStack flex={1} paddingTop={50}>
+        <Text textAlign="center" fontSize={18} fontWeight="600" marginBottom={12}>
+          Activity
+        </Text>
 
-      {isLoading ? (
-        <View flex={1} justifyContent="center" alignItems="center">
-          <Text fontFamily="$body" color={colors.gray}>Loading...</Text>
-        </View>
-      ) : notifications.length === 0 ? (
-        <CenteredMessage
-          fontFamily="$body"
-          text="No notifications yet"
-          subtitle="When someone interacts with your posts, you'll see it here."
-        />
-      ) : (
-        <FlatList
-          data={notifications}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => handleNotificationPress(item)}
-              style={{
-                backgroundColor: item.isRead ? colors.white : "#F5F0FF",
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.lightGrayBg,
-              }}
-            >
-              <XStack gap={12} alignItems="center">
-                <Text fontSize={24}>{getNotificationIcon(item.type)}</Text>
-                <YStack flex={1}>
-                  <Text
-                    fontFamily="$body"
-                    fontSize={14}
-                    color={colors.black}
-                    style={{ flexShrink: 1 }}
-                  >
-                    {item.message}
-                  </Text>
-                  <Text fontFamily="$body" fontSize={12} color={colors.gray} marginTop={2}>
-                    {normalizeDate(item.createdAt)}
-                  </Text>
-                </YStack>
-                {!item.isRead && (
-                  <View
-                    width={8}
-                    height={8}
-                    borderRadius={4}
-                    backgroundColor={colors.primary}
-                  />
-                )}
-              </XStack>
-            </Pressable>
-          )}
-        />
-      )}
+        <XStack padding={12} gap="$2">
+          {TABS.map((t) => (
+            <Tab key={t} label={t} />
+          ))}
+        </XStack>
+
+        {isLoading ? (
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </YStack>
+        ) : filtered.length === 0 ? (
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <Text color={colors.gray}>No notifications yet</Text>
+          </YStack>
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.id}
+            renderItem={renderNotification}
+            contentContainerStyle={{ paddingHorizontal: 12 }}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </YStack>
     </SafeAreaView>
   );
 }

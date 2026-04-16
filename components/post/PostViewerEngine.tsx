@@ -65,17 +65,20 @@ export function PostViewerEngine({
 
   /* INITIAL SCROLL */
   useEffect(() => {
-    if (hasScrolledRef.current) return;
     if (!mergedPosts.length || !containerHeight) return;
+    if (initialIndex === undefined || initialIndex < 0) return;
 
-    requestAnimationFrame(() => {
+    const targetId = mergedPosts[initialIndex]?.id;
+    if (!targetId) return;
+
+    const timeout = setTimeout(() => {
       flatListRef.current?.scrollToOffset({
         offset: initialIndex * containerHeight,
         animated: false,
       });
+    }, 100);
 
-      hasScrolledRef.current = true;
-    });
+    return () => clearTimeout(timeout);
   }, [mergedPosts, initialIndex, containerHeight]);
 
   /* APP STATE */
@@ -92,7 +95,8 @@ export function PostViewerEngine({
 
   /* VIEWABILITY */
   const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 80,
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
   }).current;
 
   const onViewableItemsChanged = useRef(
@@ -167,9 +171,8 @@ export function PostViewerEngine({
       snapToInterval={containerHeight}
       decelerationRate="fast"
       windowSize={3}
-      initialNumToRender={1}
-      maxToRenderPerBatch={2}
-      removeClippedSubviews
+      initialNumToRender={2}
+      maxToRenderPerBatch={3}
       getItemLayout={getItemLayout}
       viewabilityConfig={viewabilityConfig}
       onViewableItemsChanged={onViewableItemsChanged}

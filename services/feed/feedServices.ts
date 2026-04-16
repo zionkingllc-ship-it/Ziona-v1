@@ -12,7 +12,7 @@ query GetForYouFeed($cursor: String, $limit: Int = 20) {
       author { id username avatarUrl }
       image { items { id url thumbnailUrl width height } }
       video { url thumbnailUrl duration width height }
-      text
+      textMessage
       scripture { book chapter verseStart verseEnd translation text }
       stats { likesCount commentsCount sharesCount savesCount }
       viewerState { liked saved followingAuthor isOwner }
@@ -32,7 +32,7 @@ query GetFollowingFeed($cursor: String, $limit: Int = 20) {
       author { id username avatarUrl }
       image { items { id url thumbnailUrl width height } }
       video { url thumbnailUrl duration width height }
-      text
+      textMessage
       scripture { book chapter verseStart verseEnd translation text }
       stats { likesCount commentsCount sharesCount savesCount }
       viewerState { liked saved followingAuthor isOwner }

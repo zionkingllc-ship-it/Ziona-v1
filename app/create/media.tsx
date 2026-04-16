@@ -12,10 +12,10 @@ import { MediaItem } from "@/types/createPost";
 import { Trash } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
-import { FlatList, Image, Platform, TextInput, TouchableOpacity } from "react-native";
+import { FlatList, Image, TextInput, TouchableOpacity } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 function MediaPreviewTile({
@@ -27,9 +27,17 @@ function MediaPreviewTile({
   width: number;
   height: number;
 }) {
-  const player = useVideoPlayer(item.type === "VIDEO" ? item.uri : null, (instance) => {
-    instance.loop = true;
-  });
+  const getVideoUri = (uri: string) => {
+    if (uri.startsWith("file://")) {
+      return uri.replace("file://", "");
+    }
+    return uri;
+  };
+
+  const player = useVideoPlayer(
+    item.type === "VIDEO" ? getVideoUri(item.uri) : "",
+    item.type === "VIDEO" ? (instance) => { instance.loop = true; } : undefined
+  );
 
   if (item.type === "VIDEO") {
     return (
@@ -43,7 +51,6 @@ function MediaPreviewTile({
         }}
         contentFit="cover"
         nativeControls={false}
-        surfaceType={Platform.OS === "android" ? "textureView" : undefined}
       />
     );
   }
@@ -150,7 +157,7 @@ export default function CreateMediaScreen() {
       }
 
       setMedia([normalizeMedia(video)]);
-      router.push("/create/mediaPreview");
+      setTimeout(() => router.push("/create/mediaPreview"), 50);
       return;
     }
 
@@ -171,7 +178,7 @@ export default function CreateMediaScreen() {
     setMedia(updated);
 
     if (existing.length === 0 && updated.length > 0) {
-      router.push("/create/mediaPreview");
+      setTimeout(() => router.push("/create/mediaPreview"), 50);
     }
   }
 
@@ -244,14 +251,31 @@ export default function CreateMediaScreen() {
         <TextInput
           multiline
           value={mediaDraft.caption ?? ""}
-          onChangeText={setCaption}
-          maxLength={100}
+          onChangeText={(text) => {
+            if (text.length <= 500) {
+              setCaption(text);
+            }
+          }}
+          maxLength={500}
+          placeholder="Write a caption..."
+          placeholderTextColor={colors.placeHolderText}
           style={{
             minHeight: hp(8),
             borderBottomWidth: 1,
             borderColor: "#E5E5E5",
+            fontSize: fs(14),
+            color: colors.black,
           }}
         />
+
+        <Text
+          fontSize={fs(11)}
+          color={colors.gray}
+          alignSelf="flex-end"
+          marginTop={hp(0.5)}
+        >
+          {(mediaDraft.caption ?? "").length}/500
+        </Text>
       </YStack>
 
       <XStack marginTop={hp(3)}>

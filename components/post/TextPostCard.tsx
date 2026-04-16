@@ -42,7 +42,7 @@ export default function TextPostCard({ post, onLike }: Props) {
   }
 
   if (post.type === "text") {
-    testimonyText = post.message;
+    testimonyText = post.textMessage;
   }
 
   /* ================= HEART ANIMATION ================= */

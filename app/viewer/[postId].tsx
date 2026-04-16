@@ -5,6 +5,7 @@ import { useUserPosts } from "@/hooks/useUserPost";
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
+import { useDiscoverFeed } from "@/hooks/useDiscover";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -16,15 +17,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { View } from "tamagui";
 
 export default function PostViewerScreen() {
-  const { source, index, postId } = useLocalSearchParams<{
+  const { source, index, postId, categoryId, filter } = useLocalSearchParams<{
     source?: string;
     index?: string;
     postId: string;
+    categoryId?: string;
+    filter?: string;
   }>();
 
   const isLiked = source === "liked";
   const isBookmarks = source === "bookmarks";
   const isSaved = source === "saved";
+  const isDiscover = !!categoryId;
 
   /* ================= DATA ================= */
 
@@ -35,6 +39,12 @@ export default function PostViewerScreen() {
     error: userError,
     refetch: refetchUserPosts,
   } = useUserPosts();
+
+  const {
+    posts: discoverPosts,
+    isLoading: isDiscoverLoading,
+    isError: isDiscoverError,
+  } = useDiscoverFeed(categoryId);
 
   const {
     data: likedData,
@@ -112,9 +122,27 @@ export default function PostViewerScreen() {
       });
   }, [savedData]);
 
-  const posts: FeedPost[] = isLiked ? likedPosts : isBookmarks ? bookmarkPosts : isSaved ? savedPosts : userPosts;
-  const isLoading = isUserLoading || isLikedLoading || isBookmarkLoading || isSavedLoading;
-  const isError = isUserError || isLikedError || isBookmarkError || isSavedError;
+  const filteredDiscoverPosts = useMemo(() => {
+    if (!discoverPosts.length) return [];
+    if (!filter || filter === "all") return discoverPosts;
+    
+    return discoverPosts.filter((post: FeedPost) => {
+      if (filter === "images") {
+        return post.type === "media" && post.media?.[0]?.type === "image";
+      }
+      if (filter === "video") {
+        return post.type === "media" && post.media?.[0]?.type === "video";
+      }
+      if (filter === "text") {
+        return post.type === "text" || post.type === "bible";
+      }
+      return true;
+    });
+  }, [discoverPosts, filter]);
+
+  const posts: FeedPost[] = isLiked ? likedPosts : isBookmarks ? bookmarkPosts : isSaved ? savedPosts : filteredDiscoverPosts.length ? filteredDiscoverPosts : userPosts;
+  const isLoading = isUserLoading || isLikedLoading || isBookmarkLoading || isSavedLoading || isDiscoverLoading;
+  const isError = isUserError || isLikedError || isBookmarkError || isSavedError || isDiscoverError;
   const error = isLiked ? likedError : isUserError;
   const refetch = isLiked ? refetchLikedPosts : isBookmarks ? refetchBookmarks : isSaved ? refetchSavedPosts : refetchUserPosts;
 
@@ -127,14 +155,10 @@ export default function PostViewerScreen() {
   const isFocused = useIsFocused();
 
   const targetIndex = useMemo(() => {
-    const passedIndex = Number(index ?? -1);
-
-    if (!isNaN(passedIndex) && passedIndex >= 0) {
-      return passedIndex;
-    }
-
-    return posts.findIndex((p) => p.id === postId);
-  }, [index, postId, posts]);
+    const idx = posts.findIndex((p) => p.id === postId);
+    console.log("[Viewer] Finding post:", { postId, postsCount: posts.length, targetIndex: idx });
+    return idx;
+  }, [postId, posts]);
 
   useEffect(() => {
     if (!isError) return;

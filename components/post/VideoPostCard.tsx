@@ -1,7 +1,6 @@
 import { FeedMediaPost } from "@/types/feedTypes";
 import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
-import { Platform } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -38,12 +37,13 @@ function VideoPostCardComponent({
   screenWidth,
   screenHeight,
 }: Props) {
-  const progress = useSharedValue(0);
-  const [hasFirstFrame, setHasFirstFrame] = useState(false);
-
   const videoUrl = post.media?.[0]?.url;
   const thumbnailUrl = post.media?.[0]?.thumbnailUrl;
+
   if (!videoUrl) return null;
+
+  const progress = useSharedValue(0);
+  const [hasFirstFrame, setHasFirstFrame] = useState(false);
 
   const player = useVideoPlayer(videoUrl, (playerInstance) => {
     playerInstance.loop = true;
@@ -51,6 +51,8 @@ function VideoPostCardComponent({
 
   /* PLAYBACK */
   useEffect(() => {
+    if (!player) return;
+
     if (isPlaying) {
       player.play();
     } else {
@@ -63,37 +65,26 @@ function VideoPostCardComponent({
     progress.value = 0;
   }, [post.id, progress]);
 
-  useEffect(() => {
-    const subscription = player.addListener("statusChange", ({ status, error }) => {
-      if (status === "error" || error) {
-        console.log("[expo-video] statusChange", {
-          postId: post.id,
-          videoUrl,
-          status,
-          error,
-        });
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [player, post.id, videoUrl]);
-
   /* PROGRESS */
   useEffect(() => {
-    player.timeUpdateEventInterval = 0.25;
+    if (!player) return;
 
-    const subscription = player.addListener("timeUpdate", ({ currentTime }) => {
-      const duration = player.duration;
-      if (duration > 0) {
-        progress.value = currentTime / duration;
-      }
-    });
+    try {
+      player.timeUpdateEventInterval = 0.25;
 
-    return () => {
-      subscription.remove();
-    };
+      const subscription = player.addListener("timeUpdate", ({ currentTime }) => {
+        const duration = player.duration;
+        if (duration > 0) {
+          progress.value = currentTime / duration;
+        }
+      });
+
+      return () => {
+        subscription.remove();
+      };
+    } catch {
+      // Ignore progress listener errors
+    }
   }, [player, progress]);
 
   const progressStyle = useAnimatedStyle(() => ({
@@ -128,18 +119,19 @@ const gesture = Gesture.Exclusive(doubleTap, singleTap);
           backgroundColor: "black",
         }}
       >
-        <VideoView
-          player={player}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-          nativeControls={false}
-          surfaceType={Platform.OS === "android" ? "textureView" : undefined}
-          useExoShutter={false}
-          onFirstFrameRender={() => {
-            setHasFirstFrame(true);
-            progress.value = 0;
-          }}
-        />
+        {player && (
+          <VideoView
+            player={player}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+            nativeControls={false}
+            useExoShutter={false}
+            onFirstFrameRender={() => {
+              setHasFirstFrame(true);
+              progress.value = 0;
+            }}
+          />
+        )}
 
         {!hasFirstFrame &&
           (thumbnailUrl ? (
@@ -237,7 +229,7 @@ const gesture = Gesture.Exclusive(doubleTap, singleTap);
 export default React.memo(
   VideoPostCardComponent,
   (prev, next) =>
-    prev.post === next.post &&
+    prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
     prev.screenWidth === next.screenWidth &&
     prev.screenHeight === next.screenHeight

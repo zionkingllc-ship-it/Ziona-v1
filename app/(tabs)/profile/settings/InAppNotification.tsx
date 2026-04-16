@@ -73,8 +73,8 @@ export default function InAppNotificationScreen() {
           />
           <Row
             label="Mention and tags"
-            value={settings?.notifications?.mentions ?? false}
-            onChange={(v: boolean) => updateSetting("mentions", v)}
+            value={settings?.notifications?.comments ?? false}
+            onChange={(v: boolean) => updateSetting("comments", v)}
           />
         </View>
       </YStack>

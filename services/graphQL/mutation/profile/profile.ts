@@ -10,8 +10,17 @@ export async function updateProfile(input: {
   location?: string;
 }) {
   const query = `
-    mutation UpdateProfile($input: UpdateProfileInput!) {
-      updateProfile(input: $input) {
+    mutation UpdateProfile($bio: String 
+$fullName: String 
+$avatarUrl: String 
+$location: String 
+$hideLikeCount: Boolean ) {
+      updateProfile( 
+fullName: $fullName
+        bio:$bio
+avatarUrl: $avatarUrl
+location: $location 
+hideLikeCount: $hideLikeCount ) {
         success
         profile {
           id
@@ -43,10 +52,12 @@ export async function updateProfile(input: {
 
 export async function updateAvatar(file: any) {
   const query = `
-    mutation UpdateAvatar($file: Upload!) {
-      updateAvatar(file: $file) {
+    mutation UpdateAvatar($avatarUrl:String) {
+      updateProfile(avatarUrl:$avatarUrl) {
         success
-        avatarUrl
+        profile{
+          avatarUrl
+        }
         error { code message }
       }
     }

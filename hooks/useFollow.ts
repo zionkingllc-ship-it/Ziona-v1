@@ -4,12 +4,10 @@ import {
   FollowingResponse,
   FriendsListResponse,
   SuggestedCreatorsResponse,
-  SearchUsersResponse,
   getFollowers,
   getFollowing,
   getFriendsList,
   getSuggestedCreators,
-  searchUsers,
 } from "@/services/graphQL/queries/follow";
 import { followUser, unfollowUser } from "@/services/graphQL/mutation/actions/index";
 import { usePostActionsStore } from "@/store/usePostActionStore";
@@ -47,14 +45,6 @@ export function useSuggestedCreators() {
   return useQuery({
     queryKey: [SUGGESTED_QUERY_KEY],
     queryFn: getSuggestedCreators,
-  });
-}
-
-export function useSearchUsers(query: string) {
-  return useQuery({
-    queryKey: ["searchUsers", query],
-    queryFn: () => searchUsers(query),
-    enabled: query.length > 0,
   });
 }
 

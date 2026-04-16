@@ -43,7 +43,7 @@ export default function FollowingScreen() {
                 id={item.id} 
                 username={item.username} 
                 avatarUrl={item.avatarUrl} 
-                bio={item.bio} 
+                bio={item.bio}
               />
             )}
             showsVerticalScrollIndicator={false}

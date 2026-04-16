@@ -125,8 +125,8 @@ export async function getSuggestedCreators(): Promise<SuggestedCreatorsResponse>
 
 export async function searchUsers(query: string): Promise<SearchUsersResponse> {
   const gql = `
-    query SearchUsers($query: String!) {
-      searchUsers(query: $query) {
+    query SearchUser($query: String!) {
+      searchUser(query: $query) {
         id
         username
         avatarUrl
@@ -135,5 +135,5 @@ export async function searchUsers(query: string): Promise<SearchUsersResponse> {
   `;
 
   const data = await graphqlRequest(gql, { query });
-  return data?.searchUsers ?? [];
+  return data?.searchUser ?? [];
 }

@@ -71,18 +71,18 @@ export async function createMediaPost(variables: {
 }
 
 export async function createTextPost(variables: {
-  caption?: string | null;
+  textMessage?: string | null;
   category: string;
 }) {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
-      $caption: String
+      $textMessage: String
       $category: String
     ) {
       createPost(
         postType: $postType
-        caption: $caption
+        textMessage: $textMessage
         category: $category
       ) {
         success

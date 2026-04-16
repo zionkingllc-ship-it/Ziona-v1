@@ -59,7 +59,7 @@ export const GET_DISCOVER_FEED = `
           thumbnailUrl
         }
 
-        text
+        textMessage
 
         scripture {
           book

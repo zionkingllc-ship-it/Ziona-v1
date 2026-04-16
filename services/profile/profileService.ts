@@ -1,8 +1,8 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import {
+  extractPublicUrl,
   requestMediaUpload,
   uploadFileToStorage,
-  extractPublicUrl,
 } from "@/services/graphQL/mutation/media/mediaUpload";
 import { cleanAvatarUrl } from "@/services/utils/cleanAvatarUrl";
 import * as FileSystem from "expo-file-system/legacy";
@@ -47,17 +47,26 @@ mutation UpdateProfile(
 }
   `;
 
-  const data = await graphqlRequest(query, { ...input, avatarUrl: cleanedAvatarUrl });
+  const data = await graphqlRequest(query, {
+    ...input,
+    avatarUrl: cleanedAvatarUrl,
+  });
 
   const res = data?.updateProfile;
 
   if (!res?.success) {
     const error = res?.error;
-    if (error?.code === "VALIDATION_ERROR" || error?.code === "RATE_LIMIT_EXCEEDED") {
+    if (
+      error?.code === "VALIDATION_ERROR" ||
+      error?.code === "RATE_LIMIT_EXCEEDED"
+    ) {
       const dateMatch = error?.message?.match(/Next change on ([\w\s\d,]+)\./);
-      throw Object.assign(new Error(error?.message || "Failed to update profile"), {
-        rateLimitDate: dateMatch ? dateMatch[1] : null,
-      });
+      throw Object.assign(
+        new Error(error?.message || "Failed to update profile"),
+        {
+          rateLimitDate: dateMatch ? dateMatch[1] : null,
+        },
+      );
     }
     throw new Error(res?.error?.message || "Failed to update profile");
   }
@@ -76,7 +85,9 @@ export type UpdateUsernameResponse = {
   errorCode?: string;
 };
 
-export async function updateUsername(username: string): Promise<UpdateUsernameResponse> {
+export async function updateUsername(
+  username: string,
+): Promise<UpdateUsernameResponse> {
   const mutation = `
     mutation ChangeMyUsername($username: String!) {
       updateUsername(username: $username) {
@@ -93,7 +104,7 @@ export async function updateUsername(username: string): Promise<UpdateUsernameRe
   console.log("Update username response:", data);
 
   const res = data?.updateUsername;
-  
+
   console.log("Result:", res);
 
   if (!res?.success) {
@@ -114,7 +125,11 @@ export async function updateAvatar(file: { uri: string }) {
 
   if (!fileInfo.exists) throw new Error("Avatar file does not exist");
 
-  const upload = await requestMediaUpload(fileName, fileType, fileInfo.size || 0);
+  const upload = await requestMediaUpload(
+    fileName,
+    fileType,
+    fileInfo.size || 0,
+  );
   console.log("Upload URL from backend:", upload.uploadUrl);
   await uploadFileToStorage(upload.uploadUrl, file.uri, fileType);
   const avatarUrl = cleanAvatarUrl(extractPublicUrl(upload.uploadUrl));
@@ -138,11 +153,11 @@ mutation UpdateProfile(
 
   const data = await graphqlRequest(query, { avatarUrl });
 
-  const res = data?.updateProfile; 
+  const res = data?.updateProfile;
 
   if (!res?.success) {
     throw new Error(res?.error?.message || "Failed to update avatar");
   }
 
-  return cleanAvatarUrl(res.profile?.avatarUrl) ?? null; 
+  return cleanAvatarUrl(res.profile?.avatarUrl) ?? null;
 }

@@ -1,13 +1,17 @@
 export function normalizeText(p: any, base: any) {
   const message =
-    typeof p.text === "string" && p.text.trim() ? p.text : "";
+    typeof p.textMessage === "string" && p.textMessage.trim()
+      ? p.textMessage
+      : typeof p.text === "string" && p.text.trim()
+        ? p.text
+        : "";
 
-  if (!message && !p.scripture) return null;
+  if (!message) return null;
 
   return {
     ...base,
     type: "text",
-    message,
+    textMessage: message,
     scripture: p.scripture
       ? {
           book: p.scripture.book,

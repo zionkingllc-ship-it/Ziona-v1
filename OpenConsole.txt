@@ -1,1 +1,30 @@
- 
+ Fixed the success modal - now passes title and message to SuccessModal.
+For hiding reported content from feed, backend needs:
+1. Add hiddenPostIds field to user model - Array of post IDs the user has hidden (could also be Redis for faster access)
+2. Update feed queries to exclude hidden posts:
+# In forYouFeed/followingFeed query
+query GetForYouFeed($cursor: String, $userId: ID!) {
+  forYouFeed(cursor: $cursor, hiddenPostIds: $userId.hiddenPostIds) {
+    # ...
+  }
+}
+3. Add hidePost mutation - When user reports or explicitly hides a post:
+mutation HidePost($postId: ID!, $userId: ID!) {
+  hidePost(postId: $postId, userId: $userId)
+}
+4. Optional - Report flow: When reporting, backend can optionally auto-hide the post from the reporter's feed immediately (regardless of report outcome).
+Most efficient approach: Use Redis set user:{id}:hidden_posts for quick O(1) lookups instead of DB column, then join/filter in feed query.
+
+
+We need both because they represent different relationships:
+- isFollowing: You follow this user (direction: you → them)
+- isFollowedBy: This user follows you (direction: them → you)
+This determines the button logic:
+- isFollowing only → "Unfollow" (you're following them)
+- isFollowedBy only (not following) → "Follow back" (they follow you, you don't)
+- Both → "Friends" (mutual)
+- Neither → "Follow"
+The alternative would be to:
+1. Fetch the current user's following list and check if each user is in it
+2. Make separate API calls to check each relationship
+Both approaches are less efficient than having the backend return it directly in the followers/following queries.

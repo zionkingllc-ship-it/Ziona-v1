@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   TouchableOpacity,
@@ -333,7 +334,9 @@ export default function ProfileScreen() {
       {/* CONTENT */}
       <YStack flex={1} marginTop={10}>
         {isLoading ? (
-          <CenteredMessage text="Loading..." fontFamily={"$body"} />
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </YStack>
         ) : filteredPosts.length === 0 ? (
           <YStack marginTop={"$7"}>
             <CenteredMessage

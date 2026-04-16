@@ -65,6 +65,7 @@ export function TextInputWithIcon({
       : colors.inputTitle;
 
   const INPUT_HEIGHT = hp(7);
+  const INPUT_MIN_HEIGHT = 48;
   const ICON_SIZE = wp(5);
 
   const handleChange = (text: string) => {
@@ -82,6 +83,7 @@ export function TextInputWithIcon({
       alignItems="center"
       paddingHorizontal={wp(3)}
       paddingVertical={wp(1.5)}
+      minHeight={Math.max(INPUT_HEIGHT, INPUT_MIN_HEIGHT)}
       height={INPUT_HEIGHT}
       width="100%"
       borderColor={borderColor}
@@ -119,6 +121,8 @@ export function TextInputWithIcon({
             fontSize: fs(16),
             color: colors.black,
             fontFamily,
+            lineHeight: fs(20),
+            paddingVertical: 0,
           }}
           onChangeText={handleChange}
         />

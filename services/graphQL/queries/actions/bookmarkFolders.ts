@@ -27,9 +27,9 @@ export interface BookmarkPost {
 
 export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
   const query = `
-    query GetBookmarkFolders {
+    query GetSavedPosts {
       bookmarkFolders {
-        id 
+        id
         name
         savedCount
       }
@@ -50,22 +50,26 @@ export async function createBookmarkFolder(name: string) {
   const query = `
     mutation CreateBookmarkFolder($name: String!) {
       createBookmarkFolder(name: $name) {
-        id
-        name
-        createdAt
-        postCount
+        success
+        folder {
+          id
+          name
+          savedCount
+        }
+        error {
+          code
+          message
+          field
+          details
+        }
+        message
+        errorCode
       }
     }
   `;
 
   const data = await graphqlRequest(query, { name });
-
-  const folder = data?.createBookmarkFolder;
-  if (!folder) {
-    throw new Error("Failed to create folder");
-  }
-
-  return folder;
+  return data?.createBookmarkFolder;
 }
 
 export async function deleteBookmarkFolder(folderId: string) {

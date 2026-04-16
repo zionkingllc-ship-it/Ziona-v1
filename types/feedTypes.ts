@@ -59,7 +59,7 @@ type Scripture = {
 
 export type FeedTextPost = BaseFeedPost & {
   type: "text";
-  message: string;
+  textMessage: string;
   scripture?: Scripture;
 };
 

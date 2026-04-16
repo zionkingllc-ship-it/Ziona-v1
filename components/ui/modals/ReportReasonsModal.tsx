@@ -1,27 +1,9 @@
-// components/modals/ReportReasonsModal.tsx
-
 import colors from "@/constants/colors";
+import { REPORT_REASONS } from "@/services/graphQL/mutation/actions/report";
 import React from "react";
-import {
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
-import { Text, View, XStack } from "tamagui";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "tamagui";
 import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
-
-const { height } = Dimensions.get("window");
-
-const reasons = [
-  "I just don't like it",
-  "Misleading information",
-  "Nudity or sexual content",
-  "Scam or fraud",
-  "Unoriginal content",
-  "Restricted or against policy content",
-  "Other",
-];
 
 interface Props {
   visible: boolean;
@@ -36,43 +18,40 @@ export default function ReportReasonsModal({
   onSelectReason,
   onSelectOther,
 }: Props) {
-  const handleSelect = (reason: string) => {
-    if (reason === "Other") {
-      onSelectOther(); // open separate modal
+  const handleSelect = (reasonValue: string) => {
+    if (reasonValue === "OTHER") {
+      onSelectOther();
       return;
     }
-
-    onSelectReason(reason);
+    onSelectReason(reasonValue);
   };
 
   return (
     <KeyboardBottomSheetModal visible={visible} onClose={onClose}>
       <View style={styles.sheet}>
-        <XStack
-          justifyContent="space-between"
-          alignItems="center"
-          paddingHorizontal={20}
-        >
+        <View style={styles.headerRow}>
           <Text style={styles.header}>Report</Text>
           <TouchableOpacity style={styles.close} onPress={onClose}>
             <Text style={{ color: "#fff" }}>✕</Text>
           </TouchableOpacity>
-        </XStack>
+        </View>
 
-        <Text style={styles.subHeader}>Why are you reporting this post ?</Text>
+        <Text style={styles.subHeader}>Why are you reporting this post?</Text>
 
         <ScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 20 }}
         >
-          {reasons.map((reason) => (
+          {REPORT_REASONS.map((reason) => (
             <TouchableOpacity
-              key={reason}
+              key={reason.value}
               style={styles.item}
-              onPress={() => handleSelect(reason)}
+              onPress={() => handleSelect(reason.value)}
             >
-              <Text fontSize="$3">{reason}</Text>
+              <Text fontSize="$3" fontFamily="$body" fontWeight="500">
+                {reason.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -83,12 +62,19 @@ export default function ReportReasonsModal({
 
 const styles = StyleSheet.create({
   sheet: {
-    flex:1,
+    flex: 1,
     width: "100%",
     backgroundColor: "#fff",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 20,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   close: {
     backgroundColor: colors.closeBtn,
@@ -101,12 +87,13 @@ const styles = StyleSheet.create({
   header: {
     fontWeight: "600",
     fontFamily: "$body",
-    fontSize: 13,
-    left: "40%",
+    fontSize: 18,
+    textAlign: "center",
+    flex: 1,
   },
   subHeader: {
     textAlign: "center",
-    marginVertical: 10,
+    marginBottom: 10,
     fontWeight: "600",
     fontSize: 16,
     fontFamily: "$body",

@@ -1,13 +1,24 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 
+export type NotificationActor = {
+  id: string;
+  username: string;
+  avatarUrl?: string;
+};
+
+export type NotificationTarget = {
+  id: string;
+  type: string;
+  content?: string;
+};
+
 export type Notification = {
   id: string;
   type: string;
-  message: string;
-  referenceId?: string;
-  referenceType?: string;
-  isRead: boolean;
+  actor: NotificationActor;
+  target?: NotificationTarget;
   createdAt: string;
+  read: boolean;
 };
 
 export type NotificationsResponse = {
@@ -23,11 +34,18 @@ export async function getNotifications(limit: number = 20): Promise<Notification
         items {
           id
           type
-          message
-          referenceId
-          referenceType
-          isRead
           createdAt
+          read
+          actor {
+            id
+            username
+            avatarUrl
+          }
+          target {
+            id
+            type
+            content
+          }
         }
         hasMore
         nextCursor

@@ -32,7 +32,7 @@ export const POST_FEED_FIELDS = `
     width
     height
   }
-  text
+  textMessage
   scripture {
     reference
     text

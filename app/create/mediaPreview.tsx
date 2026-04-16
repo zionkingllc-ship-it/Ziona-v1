@@ -2,6 +2,7 @@ import Header from "@/components/layout/header";
 import TagSelectorCard from "@/components/post/TagSelectorCard";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
+import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -13,7 +14,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
-import { Image, Platform, Pressable } from "react-native";
+import { Image, Pressable, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 import { Play, Pause } from "@tamagui/lucide-icons";
 
@@ -26,6 +27,7 @@ export default function CreateMediaPreviewScreen() {
   const currentUser = useAuthStore((s) => s.user);
 
   const [uploading, setUploading] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const queryClient = useQueryClient();
@@ -35,24 +37,22 @@ export default function CreateMediaPreviewScreen() {
     "success" | "failed" | "warning"
   >("success");
   const [modalMessage, setModalMessage] = useState("");
-  const [progress, setProgress] = useState(0);
 
   if (!draft || draft.type !== "MEDIA") return null;
 
   const mediaDraft = draft;
   const media = mediaDraft.media.items[0];
 
-  const player = useVideoPlayer(media?.type === "VIDEO" ? media.uri : null);
+  const videoUri = media?.type === "VIDEO" ? media.uri : null;
+  const player = useVideoPlayer(videoUri ?? "", (instance) => {
+    instance.loop = true;
+  });
 
   useEffect(() => {
     if (player) {
-      if (isPlaying) {
-        player.play();
-      } else {
-        player.pause();
-      }
+      player.pause();
     }
-  }, [isPlaying, player]);
+  }, [player]);
 
   const caption = mediaDraft.caption ?? "";
 
@@ -71,29 +71,10 @@ export default function CreateMediaPreviewScreen() {
 
     try {
       setUploading(true);
-      setProgress(0);
-
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 95) return prev;
-          return prev + Math.random() * 15;
-        });
-      }, 150);
 
       await publishMediaPost(mediaDraft, queryClient);
 
-      clearInterval(interval);
-      setProgress(100);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setModalType("success");
-      setModalMessage("Post uploaded successfully");
-      setModalVisible(true);
-
-      setTimeout(() => {
-        router.replace("/(tabs)/create");
-      }, 1200);
+      setShowProgress(true);
     } catch (error: any) {
       const feedback = getNetworkModalCopy(
         error,
@@ -107,8 +88,25 @@ export default function CreateMediaPreviewScreen() {
     }
   }
 
+  function handleProgressComplete() {
+    setShowProgress(false);
+    setModalType("success");
+    setModalMessage("Post uploaded successfully");
+    setModalVisible(true);
+
+    setTimeout(() => {
+      router.replace("/(tabs)/create");
+    }, 1200);
+  }
+
   const togglePlay = () => {
+    if (uploading) return;
     setIsPlaying((prev) => !prev);
+  };
+
+  const handleBack = () => {
+    if (uploading) return;
+    router.back();
   };
 
   return (
@@ -132,7 +130,8 @@ export default function CreateMediaPreviewScreen() {
         {media?.type === "IMAGE" && (
           <Pressable
             onPress={togglePlay}
-            style={{ width: "100%", height: "100%" }}
+            disabled={uploading}
+            style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
           >
             <Image
               source={{ uri: media.uri }}
@@ -145,14 +144,14 @@ export default function CreateMediaPreviewScreen() {
           <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
             <Pressable
               onPress={togglePlay}
-              style={{ width: "100%", height: "100%" }}
+              disabled={uploading}
+              style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
             >
               <VideoView
                 player={player}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
                 nativeControls={false}
-                surfaceType={Platform.OS === "android" ? "textureView" : undefined}
               />
 
               {!isPlaying && (
@@ -177,11 +176,9 @@ export default function CreateMediaPreviewScreen() {
           </View>
         )}
 
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            router.back();
-          }}
+        <TouchableOpacity
+          onPress={handleBack}
+          disabled={uploading}
           style={{
             position: "absolute",
             top: 14,
@@ -192,10 +189,11 @@ export default function CreateMediaPreviewScreen() {
             borderRadius: 13,
             alignItems: "center",
             justifyContent: "center",
+            opacity: uploading ? 0.5 : 1,
           }}
         >
           <Text color="white">✕</Text>
-        </Pressable>
+        </TouchableOpacity>
 
         <XStack
           position="absolute"
@@ -233,33 +231,8 @@ export default function CreateMediaPreviewScreen() {
         </XStack>
       </View>
 
-      {uploading && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.35)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Text
-            style={{
-              color: "white",
-              fontSize: 28,
-              fontWeight: "700",
-            }}
-          >
-            {Math.floor(progress)}%
-          </Text>
-        </View>
-      )}
-
       <XStack justifyContent="center" marginTop={hp(5)}>
-        <TagSelectorCard category={mediaDraft.category} disabled onPress={() => {}} />
+        <TagSelectorCard category={mediaDraft.category} disabled={uploading} onPress={() => {}} />
       </XStack>
 
       <YStack marginTop={hp(3)}>
@@ -285,6 +258,10 @@ export default function CreateMediaPreviewScreen() {
         message={modalMessage}
         type={modalType}
         autoClose
+      />
+      <PostProgressModal
+        visible={showProgress}
+        onComplete={handleProgressComplete}
       />
     </YStack>
   );

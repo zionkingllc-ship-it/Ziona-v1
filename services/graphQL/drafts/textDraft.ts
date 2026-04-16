@@ -11,6 +11,7 @@ export async function publishTextPost(draft: TextDraft) {
   }
 
   const payload = {
+    textMessage: draft.text,
     category: draft.category.id,
   };
 

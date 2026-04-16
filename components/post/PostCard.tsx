@@ -24,6 +24,8 @@ import { useToggleLike } from "@/hooks/useToggleLike";
 import { useToggleFollow } from "@/hooks/useFollow";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReportContent } from "@/hooks/useReportContent";
+import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 
 /* ICONS */
 const likeIcon = require("@/assets/images/likeIcon.png");
@@ -59,6 +61,8 @@ function PostCardComponent({
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successTitle, setSuccessTitle] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [shareVisible, setShareVisible] = useState(false);
 
   const likedState = post.viewerState.liked;
@@ -101,6 +105,7 @@ function PostCardComponent({
   const followedUsers = usePostActionsStore((s) => s.followedUsers);
   const isFollowing = followedUsers[post.author?.id ?? ""] ?? post.viewerState?.followingAuthor ?? false;
   const { requireAuth, AuthModal } = useRequireAuth();
+  const reportMutation = useReportContent();
 
   /* RESET CAPTION ON POST CHANGE */
   useEffect(() => {
@@ -287,7 +292,10 @@ function PostCardComponent({
       <OptionsModal
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
-        onReportPost={() => setConfirmVisible(true)}
+        onReportPost={() => {
+          setOptionsVisible(false);
+          setConfirmVisible(true);
+        }}
       />
       <ConfirmReportModal
         visible={confirmVisible}
@@ -300,9 +308,23 @@ function PostCardComponent({
       <ReportReasonsModal
         visible={reasonsVisible}
         onClose={() => setReasonsVisible(false)}
-        onSelectReason={() => {
+        onSelectReason={(reason) => {
           setReasonsVisible(false);
-          setSuccessVisible(true);
+          reportMutation.mutate(
+            { reason: reason as ReportReason, postId: post.id },
+            {
+              onSuccess: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Report Submitted");
+                setSuccessMessage("Thank you for your report. We'll review it shortly.");
+              },
+              onError: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Something went wrong");
+                setSuccessMessage("Please try again later.");
+              },
+            }
+          );
         }}
         onSelectOther={() => {}}
       />
@@ -314,6 +336,8 @@ function PostCardComponent({
       <SuccessModal
         visible={successVisible}
         onClose={() => setSuccessVisible(false)}
+        title={successTitle}
+        message={successMessage}
       />
       <BookmarkFoldersModal
         visible={foldersVisible}
@@ -343,7 +367,7 @@ function PostCardComponent({
 export const PostCard = React.memo(
   PostCardComponent,
   (prev, next) =>
-    prev.post === next.post &&
+    prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
     prev.screenHeight === next.screenHeight &&
     prev.screenWidth === next.screenWidth &&
