@@ -15,6 +15,8 @@ interface FollowUserRowProps {
   avatarUrl?: string | null;
   bio?: string;
   showFollowButton?: boolean;
+  isFollowing?: boolean;
+  isFollowedBy?: boolean;
   onPress?: () => void;
 }
 
@@ -24,6 +26,8 @@ export default function FollowUserRow({
   avatarUrl,
   bio,
   showFollowButton = true,
+  isFollowing: propIsFollowing,
+  isFollowedBy: propIsFollowedBy,
   onPress,
 }: FollowUserRowProps) {
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -32,25 +36,27 @@ export default function FollowUserRow({
   const { requireAuth, AuthModal } = useRequireAuth();
 
   const isSelf = currentUserId === id;
-  const isFollowing = followedUsers[id] ?? false;
+  const isFollowing = propIsFollowing ?? followedUsers[id] ?? false;
+  const isFollowedBy = propIsFollowedBy ?? false;
   const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(
     avatarUrl ? { uri: avatarUrl } : null,
   );
 
   const getButtonText = () => {
     if (isFollowing) return "Unfollow";
+    if (isFollowedBy) return "Follow back";
     return "Follow";
   };
 
   const getButtonStyle = () => {
-    if (isFollowing) {
+    if (isFollowing || isFollowedBy) {
       return [styles.followBtn, styles.followingBtn];
     }
     return styles.followBtn;
   };
 
   const getButtonTextStyle = () => {
-    if (isFollowing) {
+    if (isFollowing || isFollowedBy) {
       return [styles.followBtnText, styles.followingBtnText];
     }
     return styles.followBtnText;

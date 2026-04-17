@@ -44,6 +44,8 @@ export default function FollowersScreen() {
                 username={item.username} 
                 avatarUrl={item.avatarUrl} 
                 bio={item.bio}
+                isFollowing={item.isFollowing}
+                isFollowedBy={item.isFollowedBy}
               />
             )}
             showsVerticalScrollIndicator={false}

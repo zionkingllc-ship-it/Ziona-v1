@@ -6,6 +6,7 @@ export type FollowUser = {
   avatarUrl?: string | null;
   bio?: string;
   isFollowing?: boolean;
+  isFollowedBy?: boolean;
 };
 
 export type FollowersResponse = {
@@ -69,6 +70,7 @@ export async function getFollowers(
           username
           avatarUrl
           isFollowing
+          isFollowedBy
         }
       }
     }
@@ -86,6 +88,7 @@ export async function getFollowers(
       username: u.username,
       avatarUrl: u.avatarUrl,
       isFollowing: u.isFollowing ?? false,
+      isFollowedBy: u.isFollowedBy ?? false,
     })),
   };
 }
@@ -103,6 +106,7 @@ export async function getFollowing(
           username
           avatarUrl
           isFollowing
+          isFollowedBy
         }
       }
     }
@@ -120,6 +124,7 @@ export async function getFollowing(
       username: u.username,
       avatarUrl: u.avatarUrl,
       isFollowing: u.isFollowing ?? false,
+      isFollowedBy: u.isFollowedBy ?? false,
     })),
   };
 }

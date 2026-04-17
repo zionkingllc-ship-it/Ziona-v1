@@ -69,7 +69,6 @@ export default function SettingsScreen() {
         {/* PROFILE */}
         <Pressable 
           onPress={() => router.push("/profile/edit")}
-          style={{ opacity: 0.7 }}
         >
           <XStack
             alignItems="center"
