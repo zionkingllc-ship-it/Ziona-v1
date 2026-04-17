@@ -47,7 +47,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
       try {
         console.log("[THUMB] ⚙️ Generating thumbnail...");
-        const generated = await generateVideoThumbnail(mediaUrl);
+        const generated = await generateVideoThumbnail(mediaUrl ?? "");
 
         if (generated && isMounted) {
           console.log("[THUMB] ✅ Generated thumbnail", generated);
@@ -136,14 +136,14 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
     /* TEXT / BIBLE */
     if (post.type === "text" || post.type === "bible") {
-      let text = "";
+      let cardText = "";
 
       if (post.type === "text") {
-        text = post.message;
+        cardText = post.textMessage ?? post.bibleMessage ?? "";
       }
 
-      if (post.scripture?.text) {
-        text = post.scripture.text;
+      if (post.type === "bible" && post.scripture?.verses) {
+        cardText = post.scripture.verses.map(v => v.text).join(" ");
       }
 
       return (
@@ -165,7 +165,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
               textAlign: "center",
             }}
           >
-            {text || "Text Post"}
+            {cardText || "Text Post"}
           </Text>
         </View>
       );

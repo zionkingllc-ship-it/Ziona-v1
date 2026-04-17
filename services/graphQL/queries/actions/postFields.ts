@@ -3,14 +3,10 @@ export const POST_FEED_FIELDS = `
   type
   caption
   createdAt
-  category {
-    id
-    label
-    slug
-    bgColor
-    bdColor
-    textPostBg
-  }
+  shareUrl
+  category { slug textPostBg bgColor id label }
+  textMessage
+  bibleMessage
   author {
     id
     username
@@ -21,37 +17,33 @@ export const POST_FEED_FIELDS = `
       id
       url
       thumbnailUrl
-      width
-      height
+      type
     }
   }
   video {
     url
     thumbnailUrl
-    duration
-    width
-    height
   }
-  textMessage
   scripture {
-    reference
-    text
+    verses { text number }
+    verseEnd
+    verseStart
     translation
     book
     chapter
-    verseStart
-    verseEnd
+    reference
   }
   stats {
     likesCount
     commentsCount
-    sharesCount
     savesCount
+    sharesCount
   }
   viewerState {
     liked
     saved
     followingAuthor
+    followedByAuthor
     isOwner
   }
 `;

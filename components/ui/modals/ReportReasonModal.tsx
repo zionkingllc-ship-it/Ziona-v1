@@ -2,7 +2,7 @@ import BaseModal from "./BaseModal";
 import colors from "@/constants/colors";
 import { REPORT_REASONS, ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Text, YStack, XStack, Radio } from "tamagui";
+import { Text, YStack, XStack } from "tamagui";
 
 interface Props {
   visible: boolean;
@@ -33,11 +33,7 @@ export default function ReportReasonModal({ visible, onClose, onSubmit, isSubmit
                 <Text style={styles.reasonLabel}>{reason.label}</Text>
                 <Text style={styles.reasonDescription}>{reason.description}</Text>
               </YStack>
-              <Radio
-                size="$3"
-                disabled={isSubmitting}
-                onPress={() => onSubmit(reason.value)}
-              />
+              <View style={styles.radioCircle} />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -99,6 +95,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 14,
     alignItems: "center",
+  },
+  radioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   cancelText: {
     fontFamily: "$body",

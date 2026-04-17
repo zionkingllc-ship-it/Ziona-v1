@@ -63,14 +63,13 @@ export default function SettingsScreen() {
           <TextInput 
             placeholder="Search" 
             placeholderTextColor={colors.placeholderText}
-            fontFamily="$body"
           />
         </View>
 
         {/* PROFILE */}
         <Pressable 
           onPress={() => router.push("/profile/edit")}
-          pressStyle={{ opacity: 0.7 }}
+          style={{ opacity: 0.7 }}
         >
           <XStack
             alignItems="center"

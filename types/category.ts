@@ -1,7 +1,7 @@
 export interface Category {
-  id: string;
+  id?: string;
   label: string;
-  slug: string;
+  slug?: string;
 
   icon?: {
     uri: string;
@@ -9,6 +9,6 @@ export interface Category {
 
   bgColor: string;
   bdColor: string;
-  textPostBg: string;
+  textPostBg?: string;
   order?: number;
 }

@@ -43,7 +43,7 @@ export function SettingsRow({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} pressStyle={{ opacity: 0.7 }}>
+      <Pressable onPress={onPress} style={{ opacity: 0.7 }}>
         {content}
       </Pressable>
     );

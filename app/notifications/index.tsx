@@ -4,25 +4,9 @@ import { useState } from "react";
 import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { NotificationItem } from "@/src/types/__generated__/graphql";
 
 const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
-
-interface NotificationItem {
-  id: string;
-  type: string;
-  actor: {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  target?: {
-    id: string;
-    type: string;
-    content?: string;
-  };
-  createdAt: string;
-  read: boolean;
-}
 
 export default function ActivityScreen() {
   const [activeTab, setActiveTab] = useState("All");
@@ -53,27 +37,6 @@ export default function ActivityScreen() {
     return "Just now";
   };
 
-  const getNotificationContent = (item: NotificationItem) => {
-    switch (item.type) {
-      case "follow":
-        return "started following you";
-      case "follow_request":
-        return "sent you a follow request";
-      case "like":
-        return "liked your post";
-      case "comment":
-        return "commented on your post";
-      case "reply":
-        return "replied to your comment";
-      case "mention":
-        return "mentioned you in a post";
-      case "circle":
-        return "invited you to a circle";
-      default:
-        return "";
-    }
-  };
-
   const Tab = ({ label }: { label: string }) => {
     const active = label === activeTab;
 
@@ -95,40 +58,32 @@ export default function ActivityScreen() {
 
   const renderNotification = ({ item }: { item: NotificationItem }) => {
     const handlePress = () => {
-      if (!item.read) {
+      if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
     };
 
     return (
-      <Pressable onPress={handlePress} style={{ opacity: item.read ? 0.6 : 1 }}>
+      <Pressable onPress={handlePress} style={{ opacity: item.isRead ? 0.6 : 1 }}>
         <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
           <XStack gap="$3" flex={1}>
             <Image
-              source={item.actor.avatarUrl ? { uri: item.actor.avatarUrl } : require("@/assets/images/emptyDP.png")}
+              source={require("@/assets/images/emptyDP.png")}
               width={40}
               height={40}
               borderRadius={20}
             />
             <YStack flex={1}>
               <Text fontWeight="600" fontSize={14}>
-                {item.actor.username}{" "}
+                <Text>{item.message}</Text>{" "}
                 <Text fontWeight="400" color={colors.gray}>
                   {formatTime(item.createdAt)}
                 </Text>
               </Text>
-              <Text color={colors.gray} fontSize={13}>
-                {getNotificationContent(item)}
-              </Text>
-              {item.target?.content && (
-                <Text marginTop={4} fontSize={13} numberOfLines={2}>
-                  "{item.target.content}"
-                </Text>
-              )}
             </YStack>
           </XStack>
 
-          {!item.read && (
+          {!item.isRead && (
             <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
           )}
         </XStack>

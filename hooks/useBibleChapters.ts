@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { bibleRepository } from "../repository";
+import type { BibleBook } from "@/types/bible";
 
 export function useBibleChapters(book: string) {
   const [chapters, setChapters] = useState<number>(0);
@@ -8,8 +9,8 @@ export function useBibleChapters(book: string) {
   useEffect(() => {
     if (!book) return;
 
-    bibleRepository.getChapters(book).then((res) => {
-      setChapters(res.chapters);
+    bibleRepository.getChapters(book as unknown as BibleBook).then((res: BibleBook | undefined) => {
+      setChapters(res?.chapters ?? 0);
       setLoading(false);
     });
   }, [book]);

@@ -5,6 +5,7 @@ export type FollowUser = {
   username: string;
   avatarUrl?: string | null;
   bio?: string;
+  isFollowing?: boolean;
 };
 
 export type FollowersResponse = {
@@ -26,10 +27,13 @@ export type FriendsListResponse = {
 export type SuggestedCreatorsResponse = {
   id: string;
   username: string;
+  fullName?: string;
   avatarUrl?: string | null;
   bio?: string;
   stats?: {
     followersCount: number;
+    postsCount: number;
+    followingCount: number;
   };
 }[];
 
@@ -42,10 +46,13 @@ export type SearchUsersResponse = {
 const USER_FRAGMENT = `
   id
   username
+  fullName
   avatarUrl
   bio
   stats {
     followersCount
+    postsCount
+    followingCount
   }
 `;
 
@@ -55,20 +62,32 @@ export async function getFollowers(
 ): Promise<FollowersResponse> {
   const query = `
     query GetFollowers($userId: String!, $cursor: String) {
-      followers(userId: $userId, cursor: $cursor) {
+      followers(userId: $userId, cursor: $cursor, limit: 20) {
         hasMore
         users {
           id
           username
           avatarUrl
-          bio
+          isFollowing
         }
       }
     }
   `;
 
   const data = await graphqlRequest(query, { userId, cursor });
-  return data?.followers ?? { hasMore: false, users: [] };
+  const result = data?.followers;
+
+  if (!result) return { hasMore: false, users: [] };
+
+  return {
+    hasMore: result.hasMore ?? false,
+    users: (result.users ?? []).map((u: any) => ({
+      id: u.id,
+      username: u.username,
+      avatarUrl: u.avatarUrl,
+      isFollowing: u.isFollowing ?? false,
+    })),
+  };
 }
 
 export async function getFollowing(
@@ -77,20 +96,32 @@ export async function getFollowing(
 ): Promise<FollowingResponse> {
   const query = `
     query GetFollowing($userId: String!, $cursor: String) {
-      following(userId: $userId, cursor: $cursor) {
+      following(userId: $userId, cursor: $cursor, limit: 20) {
         hasMore
         users {
           id
           username
           avatarUrl
-          bio
+          isFollowing
         }
       }
     }
   `;
 
   const data = await graphqlRequest(query, { userId, cursor });
-  return data?.following ?? { hasMore: false, users: [] };
+  const result = data?.following;
+
+  if (!result) return { hasMore: false, users: [] };
+
+  return {
+    hasMore: result.hasMore ?? false,
+    users: (result.users ?? []).map((u: any) => ({
+      id: u.id,
+      username: u.username,
+      avatarUrl: u.avatarUrl,
+      isFollowing: u.isFollowing ?? false,
+    })),
+  };
 }
 
 export async function getFriendsList(
@@ -110,16 +141,16 @@ export async function getFriendsList(
   return data?.friendsList ?? [];
 }
 
-export async function getSuggestedCreators(): Promise<SuggestedCreatorsResponse> {
+export async function getSuggestedCreators(limit: number = 10): Promise<SuggestedCreatorsResponse> {
   const query = `
-    query GetSuggestedCreators {
-      suggestedCreators {
+    query GetSuggestedCreators($limit: Int) {
+      suggestedCreators(limit: $limit) {
         ${USER_FRAGMENT}
       }
     }
   `;
 
-  const data = await graphqlRequest(query);
+  const data = await graphqlRequest(query, { limit });
   return data?.suggestedCreators ?? [];
 }
 

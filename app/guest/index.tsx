@@ -43,7 +43,7 @@ export default function GuestProfileScreen() {
   } = useUserPosts(userId);
 
   const { data: profile, isLoading: isProfileLoading } = useUserProfile(userId);
-  const isFollowing = followedUsers[userId ?? ""] ?? profile?.viewerState?.followingAuthor ?? false;
+  const isFollowing = followedUsers[userId ?? ""] ?? profile?.viewerState?.isFollowing ?? false;
   const [profileAvatarSource, setProfileAvatarSource] = useState<{ uri: string } | null>(
     profile?.avatarUrl && profile.avatarUrl.trim()
       ? { uri: profile.avatarUrl }

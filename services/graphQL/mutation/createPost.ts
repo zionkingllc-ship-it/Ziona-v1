@@ -2,36 +2,24 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 
 export async function createMediaPost(variables: {
   caption?: string | null;
-  category: string;
-  mediaUrls: string[];
+  mediaIds?: string[];
+  mediaUrls?: string[];
   mediaType?: string;
-  thumbnailUrl?: string;
-  width?: number;
-  height?: number;
-  duration?: number;
 }) {
   const mutation = `
-    mutation CreateNewPost(
+    mutation CreateMediaPost(
       $postType: PostType!
       $caption: String
-      $category: String
+      $mediaIds: [String!]
       $mediaUrls: [String!]
       $mediaType: MediaType
-      $thumbnailUrl: String
-      $width: Int
-      $height: Int
-      $duration: Int
     ) {
       createPost(
         postType: $postType
         caption: $caption
-        category: $category
+        mediaIds: $mediaIds
         mediaUrls: $mediaUrls
         mediaType: $mediaType
-        thumbnailUrl: $thumbnailUrl
-        width: $width
-        height: $height
-        duration: $duration
       ) {
         success
         post {
@@ -72,18 +60,15 @@ export async function createMediaPost(variables: {
 
 export async function createTextPost(variables: {
   textMessage?: string | null;
-  category: string;
 }) {
   const mutation = `
-    mutation CreateNewPost(
+    mutation CreateTextPost(
       $postType: PostType!
       $textMessage: String
-      $category: String
     ) {
       createPost(
         postType: $postType
         textMessage: $textMessage
-        category: $category
       ) {
         success
         post {

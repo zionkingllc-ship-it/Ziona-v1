@@ -4,7 +4,6 @@ export interface BookmarkFolder {
   id: string;
   name: string;
   createdAt?: string;
-  postCount?: number;
   savedCount: number;
   cover?: string;
   posts?: BookmarkPost[];
@@ -48,22 +47,22 @@ export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
 
 export async function createBookmarkFolder(name: string) {
   const query = `
-    mutation CreateBookmarkFolder($name: String!) {
+    mutation CreateFolder($name: String!) {
       createBookmarkFolder(name: $name) {
         success
+        message
+        errorCode
         folder {
           id
           name
           savedCount
+          createdAt
         }
         error {
           code
           message
-          field
           details
         }
-        message
-        errorCode
       }
     }
   `;

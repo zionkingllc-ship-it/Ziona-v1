@@ -70,18 +70,21 @@ export async function getPostComments(
             repliesCount
           }
           viewerState {
-            liked
             isOwner
+            liked
           }
           replies {
             id
             text
             createdAt
             user {
+              id
               username
+              avatarUrl
             }
             stats {
               likesCount
+              repliesCount
             }
           }
         }
@@ -138,7 +141,7 @@ export async function createComment(
   parentCommentId?: string,
 ) {
   const query = `
-    mutation CreateComment(
+    mutation AddComment(
       $postId: String!
       $text: String!
       $parentCommentId: String
@@ -149,6 +152,8 @@ export async function createComment(
         parentCommentId: $parentCommentId
       ) {
         success
+        errorCode
+        message
         comment {
           id
           text
@@ -164,13 +169,25 @@ export async function createComment(
             repliesCount
           }
           viewerState {
-            liked
             isOwner
+            liked
+          }
+          replies {
+            user {
+              username
+              id
+              avatarUrl
+            }
+            stats {
+              likesCount
+              repliesCount
+            }
           }
         }
         error {
           code
           message
+          details
         }
       }
     }
@@ -183,7 +200,10 @@ export async function createComment(
     throw new Error(res?.error?.message || "Failed to create comment");
   }
 
-  return res.comment;
+  return {
+    ...res.comment,
+    message: res.message,
+  };
 }
 
 /* LIKE COMMENT */

@@ -2,13 +2,22 @@ export type FeedPost = FeedTextPost | FeedMediaPost | FeedBiblePost;
 
 /* =========================
    SHARED
-========================= */
+ ========================= */
 
 type BaseFeedPost = {
   id: string;
   createdAt: string;
+  shareUrl?: string;
 
   caption?: string;
+
+  category?: {
+    slug: string;
+    textPostBg: string;
+    bgColor: string;
+    id: string;
+    label: string;
+  };
 
   author?: {
     id: string;
@@ -16,56 +25,50 @@ type BaseFeedPost = {
     avatarUrl?: string;
   };
 
-  category?: {
-    id: string;
-    label: string;
-    slug: string;
-    bgColor?: string;
-    bdColor?: string;
-    textPostBg: string;
-  };
-
   stats: {
     likesCount: number;
     commentsCount: number;
-    sharesCount: number;
     savesCount: number;
+    sharesCount: number;
   };
 
   viewerState: {
     liked: boolean;
     saved: boolean;
     followingAuthor: boolean;
+    followedByAuthor: boolean;
     isOwner: boolean;
   };
 };
 
 /* =========================
    SCRIPTURE SHARED TYPE
-========================= */
+ ========================= */
 
 type Scripture = {
-  book: string;
-  chapter: number;
-  verseStart: number;
+  verses?: { text: string; number: number }[]
   verseEnd?: number;
-  translation: string;
-  text: string;
+  verseStart?: number;
+  translation?: string;
+  book?: string;
+  chapter?: number;
+  reference?: string;
 };
 
 /* =========================
    TEXT
-========================= */
+ ========================= */
 
 export type FeedTextPost = BaseFeedPost & {
   type: "text";
-  textMessage: string;
+  textMessage?: string;
+  bibleMessage?: string;
   scripture?: Scripture;
 };
 
 /* =========================
    MEDIA
-========================= */
+ ========================= */
 
 type ImageMedia = {
   type: "image";
@@ -93,7 +96,7 @@ export type FeedMediaPost =
 
 /* =========================
    BIBLE
-========================= */
+ ========================= */
 
 export type FeedBiblePost = BaseFeedPost & {
   type: "bible";

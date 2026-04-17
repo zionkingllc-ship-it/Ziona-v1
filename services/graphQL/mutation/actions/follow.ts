@@ -5,8 +5,10 @@ export async function followUser(userId: string) {
     mutation FollowUser($userId: String!) {
       followUser(userId: $userId) {
         success
+        following
         stats {
           followersCount
+          followingCount
         }
         error {
           code
@@ -25,8 +27,10 @@ export async function followUser(userId: string) {
 
   return {
     ...res,
+    following: res.following,
     stats: {
       followersCount: Number(res?.stats?.followersCount ?? 0),
+      followingCount: Number(res?.stats?.followingCount ?? 0),
     },
   };
 }
@@ -36,8 +40,10 @@ export async function unfollowUser(userId: string) {
     mutation UnfollowUser($userId: String!) {
       unfollowUser(userId: $userId) {
         success
+        following
         stats {
           followersCount
+          followingCount
         }
         error {
           code
@@ -56,8 +62,10 @@ export async function unfollowUser(userId: string) {
 
   return {
     ...res,
+    following: res.following,
     stats: {
       followersCount: Number(res?.stats?.followersCount ?? 0),
+      followingCount: Number(res?.stats?.followingCount ?? 0),
     },
   };
 }

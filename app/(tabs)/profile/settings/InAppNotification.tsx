@@ -1,21 +1,22 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
-import { useUserSettings, useUpdateNotifications } from "@/hooks/useUserSettings";
+import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useUserSettings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Switch } from "react-native";
 import { Text, XStack, YStack, View } from "tamagui";
 
 export default function InAppNotificationScreen() {
-  const { data: settings, isLoading } = useUserSettings();
-  const updateNotifications = useUpdateNotifications();
+  const { data: prefs, isLoading } = useNotificationPreferences();
+  const updatePrefs = useUpdateNotificationPreferences();
 
-  const updateSetting = async (key: string, value: boolean) => {
-    if (!settings?.notifications) return;
-    
+  const updatePref = (key: string, value: boolean) => {
     try {
-      await updateNotifications.mutateAsync({
-        ...settings.notifications,
-        [key]: value,
+      updatePrefs.mutate({
+        likeNotifications: key === "likeNotifications" ? value : prefs?.likeNotifications ?? false,
+        replyNotifications: key === "replyNotifications" ? value : prefs?.replyNotifications ?? false,
+        anchorNotifications: key === "anchorNotifications" ? value : prefs?.anchorNotifications ?? false,
+        circleActivityNotifications: key === "circleActivityNotifications" ? value : prefs?.circleActivityNotifications ?? false,
+        adminAnnouncements: key === "adminAnnouncements" ? value : prefs?.adminAnnouncements ?? false,
       });
     } catch (error) {
       console.log("Failed to update notification:", error);
@@ -30,7 +31,7 @@ export default function InAppNotificationScreen() {
         onValueChange={onChange}
         trackColor={{ false: colors.inactiveButton, true: colors.primary }}
         thumbColor={colors.white}
-        disabled={disabled || updateNotifications.isPending}
+        disabled={disabled || updatePrefs.isPending}
       />
     </XStack>
   );
@@ -58,23 +59,23 @@ export default function InAppNotificationScreen() {
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
           <Row
             label="Likes"
-            value={settings?.notifications?.likes ?? false}
-            onChange={(v: boolean) => updateSetting("likes", v)}
+            value={prefs?.likeNotifications ?? false}
+            onChange={(v: boolean) => updatePref("likeNotifications", v)}
           />
           <Row
             label="Comments"
-            value={settings?.notifications?.comments ?? false}
-            onChange={(v: boolean) => updateSetting("comments", v)}
+            value={prefs?.replyNotifications ?? false}
+            onChange={(v: boolean) => updatePref("replyNotifications", v)}
           />
           <Row
-            label="New followers"
-            value={settings?.notifications?.followers ?? false}
-            onChange={(v: boolean) => updateSetting("followers", v)}
+            label="Anchor posts"
+            value={prefs?.anchorNotifications ?? false}
+            onChange={(v: boolean) => updatePref("anchorNotifications", v)}
           />
           <Row
-            label="Mention and tags"
-            value={settings?.notifications?.comments ?? false}
-            onChange={(v: boolean) => updateSetting("comments", v)}
+            label="Circle activity"
+            value={prefs?.circleActivityNotifications ?? false}
+            onChange={(v: boolean) => updatePref("circleActivityNotifications", v)}
           />
         </View>
       </YStack>

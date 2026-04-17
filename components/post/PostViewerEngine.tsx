@@ -3,6 +3,7 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
 import { mergePostState } from "@/utils/post/postState/mergePostState";
 import React, {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -23,7 +24,7 @@ type Props = {
   isFetchingNextPage?: boolean;
 };
 
-export function PostViewerEngine({
+function PostViewerEngineComponent({
   posts,
   initialIndex = 0,
   containerHeight,
@@ -35,18 +36,17 @@ export function PostViewerEngine({
   isFetchingNextPage,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
-  const hasScrolledRef = useRef(false);
+  const lastScrollTime = useRef(0);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
 
-  /* GLOBAL STATE */
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
   const followedMap = usePostActionsStore((s) => s.followedUsers);
 
-  /* MERGED POSTS */
   const mergedPosts = useMemo(() => {
+    if (!posts?.length) return [];
     return posts.map((p) =>
       mergePostState(p, {
         likedPosts: likedMap,
@@ -56,16 +56,14 @@ export function PostViewerEngine({
     );
   }, [posts, likedMap, savedMap, followedMap]);
 
-  /* INITIAL ACTIVE */
   useEffect(() => {
-    if (mergedPosts.length > 0) {
+    if (mergedPosts.length > 0 && initialIndex >= 0) {
       setActivePostId(mergedPosts[initialIndex]?.id ?? null);
     }
   }, [mergedPosts, initialIndex]);
 
-  /* INITIAL SCROLL */
   useEffect(() => {
-    if (!mergedPosts.length || !containerHeight) return;
+    if (!mergedPosts.length || !containerHeight || initialIndex <= 0) return;
     if (initialIndex === undefined || initialIndex < 0) return;
 
     const targetId = mergedPosts[initialIndex]?.id;
@@ -76,12 +74,10 @@ export function PostViewerEngine({
         offset: initialIndex * containerHeight,
         animated: false,
       });
-    }, 100);
-
+    }, 50);
     return () => clearTimeout(timeout);
   }, [mergedPosts, initialIndex, containerHeight]);
 
-  /* APP STATE */
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") {
@@ -89,42 +85,45 @@ export function PostViewerEngine({
         setPausedPostId(null);
       }
     });
-
     return () => sub.remove();
   }, []);
 
-  /* VIEWABILITY */
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
-    minimumViewTime: 100,
+    minimumViewTime: 150,
   }).current;
 
-  const onViewableItemsChanged = useRef(
+  const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (!viewableItems.length) return;
+      if (!viewableItems?.length) return;
+      const now = Date.now();
+      if (now - lastScrollTime.current < 100) return;
 
       const current = viewableItems[0]?.item;
       if (!current?.id) return;
 
+      lastScrollTime.current = now;
       setActivePostId(current.id);
       setPausedPostId(null);
     },
-  ).current;
+    [],
+  );
 
-  /* RENDER */
   const renderItem = useCallback(
     ({ item }: { item: FeedPost }) => {
-      const isActive = item.id === activePostId;
-      const isPaused = item.id === pausedPostId;
-
-      const shouldPlay = !!isScreenFocused && isActive && !isPaused;
+      const itemId = item?.id ?? "";
+      const isActive = itemId === (activePostId ?? "");
+      const isPaused = itemId === (pausedPostId ?? "");
+      const shouldPlay = !!(isScreenFocused && isActive && !isPaused);
 
       return (
         <PostCard
+          key={itemId}
           post={item}
           isPlaying={shouldPlay}
+          isActive={isActive ?? false}
           onTogglePlay={() => {
-            setPausedPostId((prev) => (prev === item.id ? null : item.id));
+            setPausedPostId((prev) => (prev === itemId ? null : itemId));
           }}
           screenHeight={containerHeight}
           screenWidth={containerWidth}
@@ -132,17 +131,9 @@ export function PostViewerEngine({
         />
       );
     },
-    [
-      activePostId,
-      pausedPostId,
-      containerHeight,
-      containerWidth,
-      tabBarHeight,
-      isScreenFocused,
-    ],
+    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight, isScreenFocused],
   );
 
-  /* LAYOUT */
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
       length: containerHeight,
@@ -158,27 +149,34 @@ export function PostViewerEngine({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const keyExtractor = useCallback((item: FeedPost) => item.id, []);
+
   if (!containerHeight) return null;
 
   return (
     <FlatList
       ref={flatListRef}
       data={mergedPosts}
-      extraData={`${activePostId ?? ""}:${pausedPostId ?? ""}`}
-      keyExtractor={(item) => item.id}
+      extraData={activePostId}
+      keyExtractor={keyExtractor}
       renderItem={renderItem}
       pagingEnabled
       snapToInterval={containerHeight}
       decelerationRate="fast"
-      windowSize={3}
-      initialNumToRender={2}
+      windowSize={5}
+      initialNumToRender={3}
       maxToRenderPerBatch={3}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       getItemLayout={getItemLayout}
       viewabilityConfig={viewabilityConfig}
       onViewableItemsChanged={onViewableItemsChanged}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
       showsVerticalScrollIndicator={false}
+      scrollsToTop={false}
     />
   );
 }
+
+export const PostViewerEngine = memo(PostViewerEngineComponent);

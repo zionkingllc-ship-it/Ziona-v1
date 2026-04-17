@@ -1,8 +1,8 @@
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import colors from "@/constants/colors";
-import { Text, YStack, XStack, TouchableOpacity } from "tamagui";
+import { Text, YStack, XStack } from "tamagui";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StyleSheet } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 
 interface NetworkStatusBannerProps {
   minimal?: boolean;

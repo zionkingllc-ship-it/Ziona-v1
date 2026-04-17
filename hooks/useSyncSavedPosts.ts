@@ -1,6 +1,7 @@
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { useEffect } from "react";
 import { useSavedPosts } from "./useSavedPosts";
+import { SavedPost } from "@/services/graphQL/queries/actions/bookmarks";
 
 export function useSyncSavedPosts() {
   const { data: apiBookmarks, isLoading } = useSavedPosts();
@@ -9,7 +10,7 @@ export function useSyncSavedPosts() {
   useEffect(() => {
     if (!apiBookmarks?.posts) return;
 
-    const mappedBookmarks = apiBookmarks.posts.map((bookmark) => ({
+    const mappedBookmarks: SavedPost[] = apiBookmarks.posts.map((bookmark) => ({
       id: bookmark.id,
       type: bookmark.type,
       author: bookmark.author,
@@ -26,7 +27,7 @@ export function useSyncSavedPosts() {
       category: bookmark.category,
     }));
 
-    setBookmarks(mappedBookmarks);
+    setBookmarks(mappedBookmarks as any);
   }, [apiBookmarks, setBookmarks]);
 
   return { isLoading };

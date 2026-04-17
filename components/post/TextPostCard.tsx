@@ -38,7 +38,7 @@ export default function TextPostCard({ post, onLike }: Props) {
       s.verseEnd ? `-${s.verseEnd}` : ""
     }`;
     translation = s.translation;
-    verseText = s.text;
+    verseText = s.verses?.map(v => v.text).join(" ") ?? "";
   }
 
   if (post.type === "text") {

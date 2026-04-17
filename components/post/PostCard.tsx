@@ -6,7 +6,7 @@ import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
@@ -38,6 +38,7 @@ const shareIcon = require("@/assets/images/shareIcon.png");
 type Props = {
   post: FeedPost;
   isPlaying: boolean;
+  isActive?: boolean;
   screenHeight: number;
   onTogglePlay?: () => void;
   screenWidth: number;
@@ -47,6 +48,7 @@ type Props = {
 function PostCardComponent({
   post,
   isPlaying,
+  isActive,
   screenHeight,
   onTogglePlay,
   screenWidth,
@@ -140,13 +142,14 @@ function PostCardComponent({
     () => ({
       post,
       isPlaying,
+      isActive: isActive ?? false,
       onTogglePlay,
       screenWidth,
       screenHeight,
       tabBarHeight,
       onLike: handleLike,
     }),
-    [post, isPlaying, screenWidth, screenHeight, tabBarHeight],
+    [post, isPlaying, screenWidth, screenHeight, tabBarHeight, isActive],
   );
 
   return (

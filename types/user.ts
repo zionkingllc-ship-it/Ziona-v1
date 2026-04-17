@@ -8,5 +8,6 @@ export type User = {
   avatarUrl?: string
   role: UserRole
   createdAt: string
+  fullName?: string
 }
 

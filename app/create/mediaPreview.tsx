@@ -43,8 +43,16 @@ export default function CreateMediaPreviewScreen() {
   const mediaDraft = draft;
   const media = mediaDraft.media.items[0];
 
-  const videoUri = media?.type === "VIDEO" ? media.uri : null;
-  const player = useVideoPlayer(videoUri ?? "", (instance) => {
+  const getVideoUri = (uri: string | null) => {
+    if (!uri) return "";
+    if (uri.startsWith("file://")) {
+      return uri.replace("file://", "");
+    }
+    return uri;
+  };
+
+  const videoUri = media?.type === "VIDEO" ? getVideoUri(media.uri) : null;
+  const player = useVideoPlayer(videoUri, (instance) => {
     instance.loop = true;
   });
 

@@ -1,63 +1,52 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import type {
+  NotificationItem as GQLNotificationItem,
+  NotificationConnection,
+  NotificationPreferencesType,
+} from "@/src/types/__generated__/graphql";
 
-export type NotificationActor = {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-};
+export type NotificationItem = Omit<GQLNotificationItem, "__typename">;
 
-export type NotificationTarget = {
-  id: string;
-  type: string;
-  content?: string;
-};
+export type NotificationsResponse = Omit<NotificationConnection, "__typename">;
 
-export type Notification = {
-  id: string;
-  type: string;
-  actor: NotificationActor;
-  target?: NotificationTarget;
-  createdAt: string;
-  read: boolean;
-};
-
-export type NotificationsResponse = {
-  items: Notification[];
-  hasMore: boolean;
-  nextCursor?: string;
-};
-
-export async function getNotifications(limit: number = 20): Promise<NotificationsResponse> {
+export async function getNotifications(limit: number = 50): Promise<NotificationsResponse> {
   const query = `
-    query GetNotification($limit: Int, $cursor: String) {
+    query MyNotifications($limit: Int, $cursor: String) {
       notifications(limit: $limit, cursor: $cursor) {
-        items {
-          id
-          type
-          createdAt
-          read
-          actor {
-            id
-            username
-            avatarUrl
-          }
-          target {
-            id
-            type
-            content
-          }
-        }
         hasMore
         nextCursor
+        items {
+          id
+          message
+          type
+          isRead
+          referenceId
+          createdAt
+        }
       }
     }
   `;
 
   try {
     const data = await graphqlRequest(query, { limit });
-    return data?.notifications ?? { items: [], hasMore: false };
+    return data?.notifications ?? { items: [], hasMore: false, nextCursor: null };
   } catch {
-    return { items: [], hasMore: false };
+    return { items: [], hasMore: false, nextCursor: null };
+  }
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const query = `
+    query UnreadCount {
+      unreadNotificationCount
+    }
+  `;
+
+  try {
+    const data = await graphqlRequest(query, {});
+    return data?.unreadNotificationCount ?? 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -66,7 +55,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<bo
     mutation MarkRead($notificationId: ID!) {
       markNotificationAsRead(notificationId: $notificationId) {
         success
-        error
       }
     }
   `;
@@ -80,7 +68,6 @@ export async function markAllNotificationsAsRead(): Promise<boolean> {
     mutation MarkAllRead {
       markAllNotificationsAsRead {
         success
-        error
       }
     }
   `;
@@ -91,10 +78,9 @@ export async function markAllNotificationsAsRead(): Promise<boolean> {
 
 export async function deleteNotification(notificationId: string): Promise<boolean> {
   const mutation = `
-    mutation DeleteNotif($notificationId: ID!) {
+    mutation DeleteNotification($notificationId: ID!) {
       deleteNotification(notificationId: $notificationId) {
         success
-        error
       }
     }
   `;
@@ -103,13 +89,7 @@ export async function deleteNotification(notificationId: string): Promise<boolea
   return data?.deleteNotification?.success ?? false;
 }
 
-export type NotificationPreferences = {
-  anchorNotifications: boolean;
-  replyNotifications: boolean;
-  likeNotifications: boolean;
-  circleActivityNotifications: boolean;
-  adminAnnouncements: boolean;
-};
+export type NotificationPreferences = Omit<NotificationPreferencesType, "__typename">;
 
 export async function updateNotificationPreferences(
   preferences: NotificationPreferences

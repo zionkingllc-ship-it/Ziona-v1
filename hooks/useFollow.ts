@@ -44,7 +44,7 @@ export function useFriendsList(search?: string) {
 export function useSuggestedCreators() {
   return useQuery({
     queryKey: [SUGGESTED_QUERY_KEY],
-    queryFn: getSuggestedCreators,
+    queryFn: () => getSuggestedCreators(),
   });
 }
 

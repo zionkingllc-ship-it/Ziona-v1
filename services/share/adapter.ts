@@ -23,15 +23,17 @@ export function mapFeedPostToShare(post: FeedPost): SharePayload {
     const textPost = post as FeedTextPost;
     return {
       ...base,
-      text: textPost.message,
+      text: textPost.textMessage ?? textPost.bibleMessage,
     };
   }
 
   if (post.type === "bible") {
     const biblePost = post as FeedBiblePost;
+    const verses = biblePost.scripture?.verses;
+    const text = verses?.map(v => v.text).join(" ") ?? biblePost.scripture?.reference;
     return {
       ...base,
-      text: biblePost.scripture?.text,
+      text,
     };
   }
 

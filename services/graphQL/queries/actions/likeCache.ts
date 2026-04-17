@@ -40,14 +40,15 @@ function patchPostLikeState(post: any, input: LikePatchInput) {
       ...(post.stats ?? {}),
       likesCount: getNextLikesCount(post, input),
       commentsCount: Number(post?.stats?.commentsCount ?? 0),
-      sharesCount: Number(post?.stats?.sharesCount ?? 0),
       savesCount: Number(post?.stats?.savesCount ?? 0),
+      sharesCount: Number(post?.stats?.sharesCount ?? 0),
     },
     viewerState: {
       ...(post.viewerState ?? {}),
       liked: input.liked,
       saved: Boolean(post?.viewerState?.saved ?? false),
       followingAuthor: Boolean(post?.viewerState?.followingAuthor ?? false),
+      followedByAuthor: Boolean(post?.viewerState?.followedByAuthor ?? false),
       isOwner: Boolean(post?.viewerState?.isOwner ?? false),
     },
   };

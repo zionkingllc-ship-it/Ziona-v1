@@ -77,8 +77,6 @@ export default function HelpScreen() {
           <TextInput
             placeholder="Find an answer"
             placeholderTextColor={colors.placeholderText}
-            fontFamily="$body"
-            fonteWeight={"400"}
           />
         </View>
 

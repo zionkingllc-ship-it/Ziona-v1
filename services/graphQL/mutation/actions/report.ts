@@ -22,11 +22,12 @@ export const REPORT_REASONS: { value: ReportReason; label: string; description: 
 export async function reportContent(
   reason: ReportReason,
   postId?: string,
-  commentId?: string
+  commentId?: string,
+  description?: string
 ): Promise<{ success: boolean; report?: { id: string; status: string } }> {
   const query = `
-    mutation ReportContent($reason: String!, $postId: String, $commentId: String) {
-      reportContent(reason: $reason, postId: $postId, commentId: $commentId) {
+    mutation ReportContent($reason: String!, $postId: String, $commentId: String, $description: String) {
+      reportContent(reason: $reason, postId: $postId, commentId: $commentId, description: $description) {
         success
         report {
           id
@@ -40,7 +41,7 @@ export async function reportContent(
     }
   `;
 
-  const data = await graphqlRequest(query, { reason, postId, commentId });
+  const data = await graphqlRequest(query, { reason, postId, commentId, description });
 
   const res = data?.reportContent;
 

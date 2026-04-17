@@ -112,11 +112,8 @@ export const useAuthStore = create<AuthStore>()(
           return;
         }
 
-        try {
-          const userRes = await authApi.getMe();
-
-          // normalize again (backend inconsistency safe)
-          const user = userRes?.data ?? userRes;
+try {
+          const user = await authApi.getMe();
 
           if (!user?.id) {
             throw new Error("Invalid getMe response");
