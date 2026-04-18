@@ -1,19 +1,29 @@
 export function normalizeText(p: any, base: any) {
+  console.log("🔍 normalizeText INPUT:", JSON.stringify({
+    id: p.id,
+    type: p.type,
+    textMessage: p.textMessage,
+    scripture: p.scripture,
+  }, null, 2));
+
   const message =
     typeof p.textMessage === "string" && p.textMessage.trim()
       ? p.textMessage
-      : typeof p.text === "string" && p.text.trim()
-        ? p.text
-        : "";
+      : typeof p.bibleMessage === "string" && p.bibleMessage.trim()
+        ? p.bibleMessage
+        : typeof p.text === "string" && p.text.trim()
+          ? p.text
+          : "";
 
-  if (!message) return null;
+  if (!message && !p.scripture) return null;
 
-  return {
+  const result = {
     ...base,
     type: "text",
     textMessage: message,
     scripture: p.scripture
       ? {
+          reference: p.scripture.reference,
           book: p.scripture.book,
           chapter: p.scripture.chapter,
           verseStart: p.scripture.verseStart,
@@ -23,4 +33,7 @@ export function normalizeText(p: any, base: any) {
         }
       : undefined,
   };
+
+  console.log("🔍 normalizeText OUTPUT:", JSON.stringify(result, null, 2));
+  return result;
 }

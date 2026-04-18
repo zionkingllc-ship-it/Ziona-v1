@@ -19,10 +19,12 @@ export function normalizePost(p: any): FeedPost | null {
     return normalizeMedia(p, base);
   }
 
+  // For TEXT type posts (including text + bible), use normalizeText
   if (type === "TEXT") {
     return normalizeText(p, base);
   }
 
+  // For BIBLE type posts (dedicated bible flow), use normalizeBible
   if (type === "BIBLE") {
     return normalizeBible(p, base);
   }

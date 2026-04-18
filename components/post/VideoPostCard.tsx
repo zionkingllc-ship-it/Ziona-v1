@@ -53,15 +53,15 @@ function VideoPostCardComponent({
   useEffect(() => {
     if (!player) return;
     if (isPlaying) {
-      player.play();
+      try { player.play(); } catch {}
     } else {
-      player.pause();
+      try { player.pause(); } catch {}
     }
   }, [isPlaying, player]);
 
   useEffect(() => {
     if (!player) return;
-    player.muted = !isPlaying;
+    try { player.muted = !isPlaying; } catch {}
   }, [player, isPlaying]);
 
   useEffect(() => {
@@ -72,9 +72,14 @@ function VideoPostCardComponent({
 
   useEffect(() => {
     if (!player) return;
+    let cancelled = false;
     return () => {
-      player.pause();
-      player.seekTo(0);
+      if (cancelled) return;
+      cancelled = true;
+      try {
+        player.pause();
+        player.seekTo(0);
+      } catch {}
     };
   }, [player]);
 

@@ -46,6 +46,7 @@ type BaseFeedPost = {
  ========================= */
 
 type Scripture = {
+  text?: string;
   verses?: { text: string; number: number }[]
   verseEnd?: number;
   verseStart?: number;
