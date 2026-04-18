@@ -78,5 +78,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# worktrees
+.worktrees/
+
 # @end expo-cli
 .opencode
