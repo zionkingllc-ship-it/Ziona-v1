@@ -108,6 +108,7 @@ export async function createBiblePost(variables: {
   scriptureVerseStart: number;
   scriptureVerseEnd?: number;
   scriptureTranslation: string;
+  bibleMessage?: string | null;
 }) {
   const mutation = `
     mutation CreateNewPost(
@@ -119,6 +120,7 @@ export async function createBiblePost(variables: {
       $scriptureVerseStart: Int
       $scriptureVerseEnd: Int
       $scriptureTranslation: String
+      $bibleMessage: String
     ) {
       createPost(
         postType: $postType
@@ -129,6 +131,7 @@ export async function createBiblePost(variables: {
         scriptureVerseStart: $scriptureVerseStart
         scriptureVerseEnd: $scriptureVerseEnd
         scriptureTranslation: $scriptureTranslation
+        bibleMessage: $bibleMessage
       ) {
         success
         post {

@@ -60,10 +60,23 @@ function VideoPostCardComponent({
   }, [isPlaying, player]);
 
   useEffect(() => {
+    if (!player) return;
+    player.muted = !isPlaying;
+  }, [player, isPlaying]);
+
+  useEffect(() => {
     if (!player || !videoUrl) return;
     setHasFirstFrame(false);
     progress.value = 0;
   }, [post.id]);
+
+  useEffect(() => {
+    if (!player) return;
+    return () => {
+      player.pause();
+      player.seekTo(0);
+    };
+  }, [player]);
 
   useEffect(() => {
     if (!player || !isPlaying) return;

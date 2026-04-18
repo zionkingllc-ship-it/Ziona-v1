@@ -372,6 +372,7 @@ export const PostCard = React.memo(
   (prev, next) =>
     prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
+    prev.post.viewerState?.liked === next.post.viewerState?.liked &&
     prev.screenHeight === next.screenHeight &&
     prev.screenWidth === next.screenWidth &&
     prev.tabBarHeight === next.tabBarHeight,
