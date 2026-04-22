@@ -17,6 +17,11 @@ export function normalizeText(p: any, base: any) {
 
   if (!message && !p.scripture) return null;
 
+  // Handle both single `text` and `verses[]` array from API
+  const verseText =
+    p.scripture?.text ??
+    (p.scripture?.verses?.map((v: any) => v.text).join(" ") ?? "");
+
   const result = {
     ...base,
     type: "text",
@@ -29,7 +34,7 @@ export function normalizeText(p: any, base: any) {
           verseStart: p.scripture.verseStart,
           verseEnd: p.scripture.verseEnd,
           translation: p.scripture.translation,
-          text: p.scripture.text,
+          text: verseText,
         }
       : undefined,
   };

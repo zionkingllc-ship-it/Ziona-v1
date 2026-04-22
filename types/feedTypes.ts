@@ -101,5 +101,6 @@ export type FeedMediaPost =
 
 export type FeedBiblePost = BaseFeedPost & {
   type: "bible";
+  textMessage?: string;
   scripture: Scripture;
 };

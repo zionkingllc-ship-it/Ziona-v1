@@ -4,7 +4,6 @@ export type FollowUser = {
   id: string;
   username: string;
   avatarUrl?: string | null;
-  bio?: string;
   isFollowing?: boolean;
   isFollowedBy?: boolean;
 };
@@ -28,7 +27,6 @@ export type FriendsListResponse = {
 export type SuggestedCreatorsResponse = {
   id: string;
   username: string;
-  fullName?: string;
   avatarUrl?: string | null;
   bio?: string;
   stats?: {
@@ -44,19 +42,6 @@ export type SearchUsersResponse = {
   avatarUrl?: string | null;
 }[];
 
-const USER_FRAGMENT = `
-  id
-  username
-  fullName
-  avatarUrl
-  bio
-  stats {
-    followersCount
-    postsCount
-    followingCount
-  }
-`;
-
 export async function getFollowers(
   userId: string,
   cursor?: string
@@ -65,12 +50,12 @@ export async function getFollowers(
     query GetFollowers($userId: String!, $cursor: String) {
       followers(userId: $userId, cursor: $cursor, limit: 20) {
         hasMore
+        nextCursor
         users {
           id
           username
           avatarUrl
           isFollowing
-          isFollowedBy
         }
       }
     }
@@ -88,7 +73,7 @@ export async function getFollowers(
       username: u.username,
       avatarUrl: u.avatarUrl,
       isFollowing: u.isFollowing ?? false,
-      isFollowedBy: u.isFollowedBy ?? false,
+      isFollowedBy: false,
     })),
   };
 }
@@ -101,12 +86,12 @@ export async function getFollowing(
     query GetFollowing($userId: String!, $cursor: String) {
       following(userId: $userId, cursor: $cursor, limit: 20) {
         hasMore
+        nextCursor
         users {
           id
           username
           avatarUrl
           isFollowing
-          isFollowedBy
         }
       }
     }
@@ -124,7 +109,7 @@ export async function getFollowing(
       username: u.username,
       avatarUrl: u.avatarUrl,
       isFollowing: u.isFollowing ?? false,
-      isFollowedBy: u.isFollowedBy ?? false,
+      isFollowedBy: false,
     })),
   };
 }
@@ -150,7 +135,15 @@ export async function getSuggestedCreators(limit: number = 10): Promise<Suggeste
   const query = `
     query GetSuggestedCreators($limit: Int) {
       suggestedCreators(limit: $limit) {
-        ${USER_FRAGMENT}
+        id
+        username
+        avatarUrl
+        bio
+        stats {
+          followersCount
+          postsCount
+          followingCount
+        }
       }
     }
   `;

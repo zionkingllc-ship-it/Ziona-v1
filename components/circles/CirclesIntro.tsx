@@ -17,9 +17,12 @@ export default function CirclesIntro({
   onClose,
 }: {
   onClose: () => void;
-})  {
-  const { hp, wp, fs } = useResponsive();
+}) {
+  const { hp, wp, fs, width, isSmallDevice } = useResponsive();
   const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
+
+  const imageWidth = isSmallDevice ? wp(38) : 169;
+  const imageHeight = isSmallDevice ? wp(32) : 138;
 
   /* =========================
      FADE CONTROL
@@ -27,9 +30,9 @@ export default function CirclesIntro({
 
   const opacity = useSharedValue(1);
 
-function finishIntro() {
-  onClose();
-}
+  function finishIntro() {
+    onClose();
+  }
 
   const handleClose = () => {
     opacity.value = withTiming(0, { duration: 300 }, () => {
@@ -84,7 +87,7 @@ function finishIntro() {
     <Pressable style={{ flex: 1 }} onPress={handleClose}>
       <Animated.View style={[{ flex: 1 }, containerStyle]}>
         <GradientBackground>
-          <YStack flex={1} paddingTop={hp(10)}>
+          <YStack flex={1} paddingTop={hp(8)}>
             {/* TEXT */}
             <YStack paddingHorizontal={wp(5)}>
               <Text
@@ -92,7 +95,7 @@ function finishIntro() {
                   fontSize: fs(31),
                   fontWeight: "700",
                   color: "#754800",
-                  marginBottom: 10,
+                  marginBottom: hp(1),
                   fontFamily: "$body",
                 }}
               >
@@ -105,8 +108,8 @@ function finishIntro() {
                   fontSize: fs(16),
                   color: "#836F8B",
                   fontWeight: "400",
-                  lineHeight: 24,
-                  marginBottom: 30,
+                  lineHeight: fs(24),
+                  marginBottom: hp(3),
                 }}
               >
                 Grow in faith together; Find your circle, pray together, study
@@ -126,28 +129,73 @@ function finishIntro() {
               />
 
               {/* FLOATING IMAGES */}
-              <YStack style={{ flex: 1, justifyContent: "center" }}>
-                <Animated.Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-                  }}
-                  style={[styles.image, { top: 0, left: 0 }, style1]}
-                />
+              <View style={styles.floatingContainer}>
+                {/* TOP LEFT */}
+                <Animated.View
+                  style={[
+                    {
+                      position: "absolute",
+                      top: hp(isSmallDevice ? 2 : 5),
+                      left: wp(isSmallDevice ? 3 : 5),
+                      width: imageWidth,
+                      height: imageHeight,
+                      borderRadius: 12,
+                    },
+                    style1,
+                  ]}
+                >
+                  <Image
+                    source={{
+                      uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
+                    }}
+                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                  />
+                </Animated.View>
 
-                <Animated.Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
-                  }}
-                  style={[styles.image, { top: 140, right: 0 }, style2]}
-                />
+                {/* TOP RIGHT */}
+                <Animated.View
+                  style={[
+                    {
+                      position: "absolute",
+                      top: hp(isSmallDevice ? 25 : 30),
+                      right: wp(5),
+                      width: imageWidth,
+                      height: imageHeight,
+                      borderRadius: 12,
+                    },
+                    style2,
+                  ]}
+                >
+                  <Image
+                    source={{
+                      uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
+                    }}
+                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                  />
+                </Animated.View>
 
-                <Animated.Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-                  }}
-                  style={[styles.image, { bottom: 20, left: 53 }, style3]}
-                />
-              </YStack>
+                {/* BOTTOM */}
+                <Animated.View
+                  style={[
+                    {
+                      position: "absolute",
+                      bottom: hp(isSmallDevice ? 5 : 8),
+                      left: wp(isSmallDevice ? 35 : 40),
+                      width: imageWidth,
+                      height: imageHeight,
+                      borderRadius: 12,
+                    },
+                    style3,
+                  ]}
+                >
+                  <Image
+                    source={{
+                      uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+                    }}
+                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                  />
+                </Animated.View>
+              </View>
             </View>
           </YStack>
         </GradientBackground>
@@ -156,16 +204,10 @@ function finishIntro() {
   );
 }
 
-/* =========================
-   STYLES
-========================= */
-
 const styles = StyleSheet.create({
-  image: {
-    position: "absolute",
-    width: 169,
-    height: 138,
-    borderRadius: 12,
+  floatingContainer: {
+    flex: 1,
+    justifyContent: "center",
   },
 
   backgroundImage: {

@@ -43,7 +43,6 @@ export default function FollowingScreen() {
                 id={item.id} 
                 username={item.username} 
                 avatarUrl={item.avatarUrl} 
-                bio={item.bio}
                 isFollowing={item.isFollowing}
                 isFollowedBy={item.isFollowedBy}
               />

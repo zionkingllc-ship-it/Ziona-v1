@@ -7,9 +7,8 @@ import {
   View,
   Platform,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
-
-const { height } = Dimensions.get("window");
 
 type Props = {
   visible: boolean;
@@ -24,15 +23,19 @@ export default function KeyboardBottomSheetModal({
   children,
   maxHeightPercent = 0.85,
 }: Props) {
+  const { height: windowHeight } = useWindowDimensions();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
       setKeyboardHeight(e.endCoordinates.height);
+      setKeyboardVisible(true);
     });
 
     const hideSub = Keyboard.addListener("keyboardDidHide", () => {
       setKeyboardHeight(0);
+      setKeyboardVisible(false);
     });
 
     return () => {
@@ -41,7 +44,7 @@ export default function KeyboardBottomSheetModal({
     };
   }, []);
 
-return (
+  return (
     <Modal
       visible={visible}
       transparent
@@ -54,7 +57,20 @@ return (
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         {/* Sheet */}
-        <View style={[styles.sheet, { maxHeight: height * maxHeightPercent }]}>
+        <View
+          style={[
+            styles.sheet,
+            {
+              maxHeight: windowHeight * maxHeightPercent,
+              minHeight: keyboardVisible ? 580 : 0,
+              paddingBottom: keyboardVisible
+                ? keyboardHeight + (Platform.OS === "ios" ? 20 : 10)
+                : Platform.OS === "ios"
+                ? 50
+                : 40,
+            },
+          ]}
+        >
           <View style={styles.handle} />
           {children}
         </View>

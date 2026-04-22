@@ -37,6 +37,7 @@ export default function VerifyOtp() {
   const [errorTitle, setErrorTitle] = useState("Incorrect code entered");
   const [errorMessage, setErrorMessage] = useState("Please check the code and try again");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   /* ---------------- SCREEN MOUNT ---------------- */
 
@@ -131,25 +132,20 @@ export default function VerifyOtp() {
   /* ---------------- RESEND OTP ---------------- */
 
   const resendCode = async () => {
-    if (!email) return;
+    if (!email || isResending) return;
 
-    line();
-    log("Resend OTP requested");
-    log("Email:", email);
-
+    setIsResending(true);
     setTimer(50);
 
     try {
       const response = await authApi.resendOtp(email);
-
       log("Resend success:", response);
     } catch (error: any) {
       console.error("Resend OTP failed:", error?.response?.data || error);
-
       setErrorVisible(true);
+    } finally {
+      setIsResending(false);
     }
-
-    line();
   };
 
   /* ---------------- RENDER ---------------- */
@@ -223,6 +219,8 @@ export default function VerifyOtp() {
           ) : (
             <PrimaryButton
               onPress={resendCode}
+              disabled={isResending}
+              loading={isResending}
               style={{ marginTop: 10 }}
               text="Resend code"
               textColor={colors.white}

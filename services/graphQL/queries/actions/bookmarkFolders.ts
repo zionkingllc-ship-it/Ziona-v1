@@ -26,11 +26,27 @@ export interface BookmarkPost {
 
 export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
   const query = `
-    query GetSavedPosts {
+    query GetBookmarkFolders {
       bookmarkFolders {
         id
         name
         savedCount
+        cover
+        posts {
+          id
+          type
+          caption
+          textMessage
+          scripture {
+            text
+          }
+          media {
+            items {
+              url
+              thumbnailUrl
+            }
+          }
+        }
       }
     }
   `;

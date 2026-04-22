@@ -1,10 +1,10 @@
 import { graphqlRequest } from "../../graphqlClient";
 
 /* CREATE BOOKMARK FOLDER */
-export async function createBookmarkFolder(name: string) {
+export async function createBookmarkFolder(name: string, cover?: string) {
   const query = `
-    mutation CreateBookmarkFolder($name: String!) {
-      createBookmarkFolder(name: $name) {
+    mutation CreateBookmarkFolder($name: String!, $cover: String) {
+      createBookmarkFolder(name: $name, cover: $cover) {
         success
         folder {
           id
@@ -23,7 +23,7 @@ export async function createBookmarkFolder(name: string) {
     }
   `;
 
-  const data = await graphqlRequest(query, { name });
+  const data = await graphqlRequest(query, { name, cover });
   return data?.createBookmarkFolder;
 }
 

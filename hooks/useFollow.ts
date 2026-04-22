@@ -21,7 +21,11 @@ const SUGGESTED_QUERY_KEY = "suggestedCreators";
 export function useFollowers(userId: string) {
   return useQuery({
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
-    queryFn: () => getFollowers(userId),
+    queryFn: async () => {
+      const result = await getFollowers(userId);
+      console.log("FOLLOWERS RESULT:", result);
+      return result;
+    },
     enabled: !!userId,
   });
 }
@@ -29,7 +33,11 @@ export function useFollowers(userId: string) {
 export function useFollowing(userId: string) {
   return useQuery({
     queryKey: [FOLLOWING_QUERY_KEY, userId],
-    queryFn: () => getFollowing(userId),
+    queryFn: async () => {
+      const result = await getFollowing(userId);
+      console.log("FOLLOWING RESULT:", result);
+      return result;
+    },
     enabled: !!userId,
   });
 }
@@ -44,7 +52,11 @@ export function useFriendsList(search?: string) {
 export function useSuggestedCreators() {
   return useQuery({
     queryKey: [SUGGESTED_QUERY_KEY],
-    queryFn: () => getSuggestedCreators(),
+    queryFn: async () => {
+      const result = await getSuggestedCreators();
+      console.log("SUGGESTED CREATORS RESULT:", result);
+      return result;
+    },
   });
 }
 

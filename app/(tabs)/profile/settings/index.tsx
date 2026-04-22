@@ -68,7 +68,7 @@ export default function SettingsScreen() {
 
         {/* PROFILE */}
         <Pressable 
-          onPress={() => router.push("/profile/edit")}
+          onPress={() => router.push("/profile/settings/AccountSetup")}
         >
           <XStack
             alignItems="center"
@@ -111,6 +111,11 @@ export default function SettingsScreen() {
         {/* ACCOUNT SETTINGS */}
         <SettingsSection title="Account settings">
           <SettingsRow 
+            icon={<Lock size={18} color={colors.secondaryGray} />} 
+            label="Password and security" 
+            onPress={() => router.push("/profile/settings/ChangePassword")}
+          />
+          <SettingsRow 
             icon={<Bell size={18} color={colors.secondaryGray} />} 
             label="Notification" 
             onPress={() => router.push("/profile/settings/Notification")}
@@ -119,6 +124,11 @@ export default function SettingsScreen() {
             icon={<Lock size={18} color={colors.secondaryGray} />} 
             label="Account privacy" 
             onPress={() => router.push("/profile/settings/Privacy")}
+          />
+          <SettingsRow 
+            icon={<Bell size={18} color={colors.secondaryGray} />} 
+            label="Like counts visible" 
+            onPress={() => router.push("/profile/settings/LikeCountVisible")}
           />
         </SettingsSection>
 

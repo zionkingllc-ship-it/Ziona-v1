@@ -4,16 +4,19 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { Text, View, XStack } from "tamagui";
 import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
 import { FeedPost } from "@/types/feedTypes";
+import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 
 interface Props {
   visible: boolean;
   post: FeedPost;
   onClose: () => void;
-  onSave: (name: string) => void;
+  onSave: (name: string, cover?: string) => void;
 }
 
 export default function CreateFolderModal({
@@ -24,38 +27,61 @@ export default function CreateFolderModal({
 }: Props) {
   const [name, setName] = useState("");
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+  const [loadingThumbnail, setLoadingThumbnail] = useState(false);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: 0 }] }));
 
   useEffect(() => {
     if (!visible || !post) {
       setName("");
+      setThumbnailUri(null);
       return;
     }
 
-    if (post.type === "media") {
-      const first = post.media?.[0];
-      if (first?.thumbnailUrl) {
-        setThumbnailUri(first.thumbnailUrl);
-        return;
+    const loadThumbnail = async () => {
+      if (post.type === "media") {
+        const first = post.media?.[0];
+        if (first?.thumbnailUrl) {
+          setThumbnailUri(first.thumbnailUrl);
+          return;
+        }
+        if (first?.type === "video" && first?.url) {
+          setLoadingThumbnail(true);
+          try {
+            const generated = await generateVideoThumbnail(first.url);
+            if (generated) {
+              setThumbnailUri(generated);
+            } else {
+              setThumbnailUri(first.url);
+            }
+          } catch {
+            setThumbnailUri(first.url);
+          } finally {
+            setLoadingThumbnail(false);
+          }
+          return;
+        }
+        if (first?.url) {
+          setThumbnailUri(first.url);
+          return;
+        }
       }
-      if (first?.url) {
-        setThumbnailUri(first.url);
-        return;
-      }
-    }
 
-    /* TEXT / BIBLE → no thumbnail */
-    setThumbnailUri(null);
+      setThumbnailUri(null);
+    };
+
+    loadThumbnail();
   }, [visible, post]);
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave(name.trim());
+    onSave(name.trim(), thumbnailUri || undefined);
     setName("");
   };
 
   return (
     <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.6}>
-      <View style={styles.container}>
+      <Animated.View style={[styles.container, sheetAnimatedStyle]}>
         <XStack justifyContent="space-between" alignItems="center">
           <TouchableOpacity onPress={handleSave}>
             <Text color="#7A2E8A" fontWeight="600">Save</Text>
@@ -68,8 +94,11 @@ export default function CreateFolderModal({
           </TouchableOpacity>
         </XStack>
 
-        {/* COVER */}
-        {thumbnailUri ? (
+        {loadingThumbnail ? (
+          <View style={styles.coverPlaceholder}>
+            <ActivityIndicator size="small" color="#999" />
+          </View>
+        ) : thumbnailUri ? (
           <Image source={{ uri: thumbnailUri }} style={styles.cover} />
         ) : (
           <View style={styles.coverPlaceholder} />
@@ -82,13 +111,13 @@ export default function CreateFolderModal({
           style={styles.input}
           placeholderTextColor="#aaa"
         />
-      </View>
+      </Animated.View>
     </KeyboardBottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 20 },
+  container: { flex: 1, padding: 20, gap: 24 },
   cover: {
     width: 100,
     height: 100,

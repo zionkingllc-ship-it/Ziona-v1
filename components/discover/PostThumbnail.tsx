@@ -136,14 +136,22 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
     /* TEXT / BIBLE */
     if (post.type === "text" || post.type === "bible") {
+      // For TEXT posts: show textMessage, or scripture.text if available
+      // For BIBLE posts: show scripture.text (already joined from verses in normalize)
       let cardText = "";
 
       if (post.type === "text") {
-        cardText = post.textMessage ?? post.bibleMessage ?? "";
+        // TEXT + scripture posts
+        if (post.textMessage?.trim()) {
+          cardText = post.textMessage;
+        } else if (post.scripture?.text?.trim()) {
+          cardText = post.scripture.text;
+        }
       }
 
-      if (post.type === "bible" && post.scripture?.verses) {
-        cardText = post.scripture.verses.map(v => v.text).join(" ");
+      if (post.type === "bible") {
+        // BIBLE posts - scripture.text is set in normalizeBible
+        cardText = post.scripture?.text ?? post.textMessage ?? "";
       }
 
       return (

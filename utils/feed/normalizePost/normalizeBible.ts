@@ -9,7 +9,10 @@ export function normalizeBible(p: any, base: any) {
 
   if (!p.scripture) return null;
 
-  const verseText = p.scripture.text ?? p.scripture.verses?.map((v: any) => v.text).join(" ") ?? "";
+  // Handle both single `text` and `verses[]` array from API
+  const verseText =
+    p.scripture.text ??
+    (p.scripture.verses?.map((v: any) => v.text).join(" ") ?? "");
 
   const result = {
     ...base,

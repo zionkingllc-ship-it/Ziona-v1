@@ -7,16 +7,56 @@ import { MediaItem } from "@/types/createPost";
 import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { ActivityIndicator, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { Text, XStack, YStack, View } from "tamagui";
+import { ActivityIndicator, FlatList, Image, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
+import { Text, YStack, View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
+
+const POST_TYPES = [
+  {
+    id: "text",
+    title: "Share your thoughts",
+    icon: require("@/assets/images/writeIcon.png"),
+    onPress: (startDraft: Function, router: any) => {
+      startDraft("TEXT");
+      router.push("/create/text");
+    },
+  },
+  {
+    id: "media",
+    title: "Upload a video / image",
+    icon: require("@/assets/images/imageIcon.png"),
+    onPress: () => {}, // handled separately for media picking
+  },
+  {
+    id: "bible",
+    title: "Share a Bible verse",
+    icon: require("@/assets/images/bibleIcon.png"),
+    onPress: (startDraft: Function, router: any) => {
+      startDraft("BIBLE");
+      router.push("/create/CreateBiblePostScreen");
+    },
+  },
+];
 
 export default function CreateScreen() {
   const { startDraft, setMedia } = useCreatePostStore();
   const { wp, hp, fs } = useResponsive();
+  const { width } = useWindowDimensions();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [isLoading, setIsLoading] = useState(false);
+
+  const numColumns = 2;
+  const cardWidth = (width - wp(12) - wp(4)) / numColumns; // (screenWidth - padding - gap) / 2
+  const cardHeight = hp(15);
+
+  const handleItemPress = (item: typeof POST_TYPES[0]) => {
+    if (item.id === "media") {
+      pickInitialMedia();
+    } else {
+      item.onPress(startDraft, router);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -93,16 +133,6 @@ export default function CreateScreen() {
     }
   }
 
-  function openText() {
-    startDraft("TEXT");
-    router.push("/create/text");
-  }
-
-  function openBible() {
-    startDraft("BIBLE");
-    router.push("/create/CreateBiblePostScreen");
-  }
-
   return (
     <YStack
       flex={1}
@@ -120,58 +150,30 @@ export default function CreateScreen() {
         Create Post
       </Text>
 
-      <XStack flexWrap="wrap" rowGap={wp(7)} columnGap={wp(4)}>
-        {/* TEXT */}
-
-        <TouchableOpacity
-          style={[styles.card, cardStyle(wp, hp)]}
-          onPress={openText}
-        >
-          <YStack alignItems="center" gap={hp(1)}>
-            <Image
-              source={require("@/assets/images/writeIcon.png")}
-              style={iconStyle(wp)}
-            />
-            <Text fontSize={fs(14)} textAlign="center">
-              Share your thoughts
-            </Text>
-          </YStack>
-        </TouchableOpacity>
-
-        {/* MEDIA */}
-
-        <TouchableOpacity
-          style={[styles.card, cardStyle(wp, hp)]}
-          onPress={pickInitialMedia}
-        >
-          <YStack alignItems="center" gap={hp(1)}>
-            <Image
-              source={require("@/assets/images/imageIcon.png")}
-              style={iconStyle(wp)}
-            />
-            <Text fontSize={fs(14)} textAlign="center">
-              Upload a video / image
-            </Text>
-          </YStack>
-        </TouchableOpacity>
-
-        {/* BIBLE */}
-
-        <TouchableOpacity
-          style={[styles.card, cardStyle(wp, hp)]}
-          onPress={openBible}
-        >
-          <YStack alignItems="center" gap={hp(1)}>
-            <Image
-              source={require("@/assets/images/bibleIcon.png")}
-              style={iconStyle(wp)}
-            />
-            <Text fontSize={fs(14)} textAlign="center">
-              Share a Bible verse
-            </Text>
-          </YStack>
-        </TouchableOpacity>
-      </XStack>
+      <FlatList
+        data={POST_TYPES}
+        numColumns={numColumns}
+        keyExtractor={(item) => item.id}
+        columnWrapperStyle={{ gap: wp(4) }}
+        contentContainerStyle={{ gap: wp(4) }}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.card, { width: cardWidth, height: cardHeight, borderRadius: wp(3) }]}
+            onPress={() => handleItemPress(item)}
+          >
+            <YStack alignItems="center" gap={hp(1)} flex={1} justifyContent="center">
+              <Image
+                source={item.icon}
+                style={{ width: wp(7), height: wp(7), resizeMode: "contain" }}
+              />
+              <Text fontSize={fs(14)} textAlign="center">
+                {item.title}
+              </Text>
+            </YStack>
+          </TouchableOpacity>
+        )}
+      />
 
       {isLoading && (
         <View
@@ -202,20 +204,3 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 0, width: 5 },
   },
 });
-
-function cardStyle(wp: any, hp: any) {
-  return {
-    width: wp(42),
-    height: hp(13),
-    borderRadius: wp(3),
-    padding: wp(7),
-  };
-}
-
-function iconStyle(wp: any) {
-  return {
-    width: wp(7),
-    height: wp(7),
-    resizeMode: "contain" as const,
-  };
-}

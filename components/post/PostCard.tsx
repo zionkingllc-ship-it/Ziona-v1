@@ -356,8 +356,8 @@ function PostCardComponent({
         visible={createVisible}
         post={post}
         onClose={() => setCreateVisible(false)}
-        onSave={(name) => {
-          createFolder(name);
+        onSave={(name, cover) => {
+          createFolder(name, cover);
           setCreateVisible(false);
         }}
       />
@@ -372,6 +372,7 @@ export const PostCard = React.memo(
   (prev, next) =>
     prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
+    prev.isActive === next.isActive &&
     prev.post.viewerState?.liked === next.post.viewerState?.liked &&
     prev.screenHeight === next.screenHeight &&
     prev.screenWidth === next.screenWidth &&

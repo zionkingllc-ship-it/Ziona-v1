@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useToggleSave } from "./useToggleSave";
 import { useCreateBookmarkFolder } from "./useCreateBookmarkFolder";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
+import { useBookmarkFolders } from "./useBookmarkSettings";
 
 export function useBookmarkFlow(postId: string, isSaved: boolean) {
   const [foldersVisible, setFoldersVisible] = useState(false);
@@ -41,19 +42,21 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(false);
   };
 
-  const createFolder = (name: string) => {
-    createFolderMutation.mutate(name, {
-      onSuccess: (newFolder) => {
-        const nextFolders = [
-          ...localFolders,
-          {
-            id: newFolder.id,
-            name,
-            cover: "",
-            createdAt: new Date().toISOString(),
-          },
-        ];
-        setFolders(nextFolders);
+  const createFolder = (name: string, cover?: string) => {
+    createFolderMutation.mutate(
+      { name, cover: cover || undefined },
+      {
+        onSuccess: (newFolder) => {
+          const nextFolders = [
+            ...localFolders,
+            {
+              id: newFolder.id,
+              name,
+              cover: cover || "",
+              createdAt: new Date().toISOString(),
+            },
+          ];
+          setFolders(nextFolders);
 
         // Save the post to the new folder
         toggleLocalBookmark(postId, newFolder.id);
