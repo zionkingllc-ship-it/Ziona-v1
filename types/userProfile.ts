@@ -5,6 +5,7 @@ export type UserProfile = {
   bio?: string
   avatarUrl?: string | null
   location?: string
+  hideLikeCount?: boolean
 
   stats?: {
     followersCount: number

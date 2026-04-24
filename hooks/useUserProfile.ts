@@ -12,6 +12,7 @@ query GetUserProfile($userId: String!) {
     bio
     avatarUrl
     location
+    hideLikeCount
     stats { followersCount followingCount postsCount }
     recentPosts {
       stats { savesCount likesCount commentsCount }
@@ -30,6 +31,7 @@ function normalizeUserProfile(raw: any): UserProfile | null {
 
   return {
     ...raw,
+    hideLikeCount: raw.hideLikeCount ?? false,
     stats: raw.stats
       ? {
           followersCount: Number(raw.stats.followersCount || 0),
@@ -84,18 +86,7 @@ export function useUserProfile(
 
       const data = await graphqlRequest(GET_USER_PROFILE, { userId });
 
-      console.log("USER PROFILE RAW:", data);
-      console.log("userID", userId);
-
-      const normalized = normalizeUserProfile(data?.userProfile);
-
-      console.log("USER PROFILE NORMALIZED:", normalized);
-
-      console.log("USER POSTS RAW FULL RESPONSE:", data);
-      console.log("USER POSTS NODE:", data?.userPosts);
-      console.log("USER POSTS ARRAY LENGTH:", data?.userPosts?.posts?.length);
-
-      return normalized;
+      return normalizeUserProfile(data?.userProfile);
     },
   });
 }

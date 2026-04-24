@@ -601,6 +601,7 @@ export type FeedPost = {
   id: Scalars['String']['output'];
   /** Image data array mapping */
   image: Maybe<ImageData>;
+  savedInFolders: Maybe<Array<BookmarkFolderType>>;
   scripture: Maybe<FeedPostScripture>;
   shareUrl: Scalars['String']['output'];
   stats: FeedPostStats;
@@ -1262,6 +1263,7 @@ export type MutationReviewReportArgs = {
 
 export type MutationSavePostArgs = {
   folderId?: InputMaybe<Scalars['String']['input']>;
+  folderName?: InputMaybe<Scalars['String']['input']>;
   postId: Scalars['String']['input'];
 };
 
@@ -1439,6 +1441,7 @@ export type Post = {
   id: Scalars['String']['output'];
   /** Media files array */
   media: Array<MediaFileType>;
+  savedInFolders: Maybe<Array<BookmarkFolderType>>;
   /** Attached scripture reference */
   scripture: Maybe<PostScripture>;
   shareUrl: Scalars['String']['output'];
@@ -1961,7 +1964,9 @@ export type SavePayload = {
   __typename: 'SavePayload';
   error: Maybe<ErrorType>;
   errorCode: Maybe<Scalars['String']['output']>;
+  folder: Maybe<BookmarkFolderType>;
   message: Maybe<Scalars['String']['output']>;
+  post: Maybe<FeedPost>;
   saved: Scalars['Boolean']['output'];
   stats: Maybe<PostStats>;
   success: Scalars['Boolean']['output'];

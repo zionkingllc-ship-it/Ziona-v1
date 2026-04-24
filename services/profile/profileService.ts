@@ -16,6 +16,7 @@ export async function updateProfile(input: {
   bio?: string;
   avatarUrl?: string;
   location?: string;
+  hideLikeCount?: boolean;
 }) {
   const cleanedAvatarUrl = cleanAvatarUrl(input.avatarUrl);
 
@@ -25,6 +26,7 @@ mutation UpdateProfile(
   $fullName: String
   $avatarUrl: String
   $location: String
+  $hideLikeCount: Boolean
   
 ) {
   updateProfile(
@@ -32,6 +34,7 @@ mutation UpdateProfile(
     fullName: $fullName
     avatarUrl: $avatarUrl
     location: $location
+    hideLikeCount: $hideLikeCount
   ) {
     success
     profile {
@@ -41,6 +44,7 @@ mutation UpdateProfile(
       username
       avatarUrl
       location
+      hideLikeCount
     }
     error { code message }
   }

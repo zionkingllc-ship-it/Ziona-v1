@@ -4,7 +4,6 @@ import { fixMediaUrl } from "./fixMediaUrl";
 export function normalizeMedia(p: any, base: any) {
   const caption = p.caption ?? "";
 
-  // Check for raw image.items from GraphQL
   if (p.image?.items?.length) {
     const media = p.image.items
       .map((i: any) => buildMediaItem({ ...i, type: "image" }))
@@ -24,7 +23,6 @@ export function normalizeMedia(p: any, base: any) {
     };
   }
 
-  // Check for raw video from GraphQL
   if (p.video?.url) {
     const url = fixMediaUrl(p.video.url);
     const rawThumbnail = fixMediaUrl(p.video.thumbnailUrl);
@@ -48,8 +46,8 @@ export function normalizeMedia(p: any, base: any) {
     return {
       ...base,
       type: "media",
-      caption,
       mediaType: "video",
+      caption,
       media: [
         {
           type: "video" as const,
@@ -60,7 +58,6 @@ export function normalizeMedia(p: any, base: any) {
     };
   }
 
-  // Check for pre-normalized media array
   if (Array.isArray(p.media) && p.media.length > 0) {
     const media = p.media.map(buildMediaItem).filter(Boolean);
 

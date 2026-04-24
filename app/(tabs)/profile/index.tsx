@@ -294,7 +294,7 @@ export default function ProfileScreen() {
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
               {profile?.stats?.followingCount ?? 0}
             </Text>
-            <Text fontFamily={"$body"} fontSize={"$3"} color={colors.gray}>
+            <Text fontFamily={"$body"} fontSize={13} color={colors.gray}>
               Following
             </Text>
           </YStack>

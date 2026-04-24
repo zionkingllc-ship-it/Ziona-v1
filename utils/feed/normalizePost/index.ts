@@ -14,7 +14,6 @@ export function normalizePost(p: any): FeedPost | null {
 
   const rawType = typeof p.type === "string" ? p.type.toUpperCase() : p.type;
 
-  // Map lowercase GraphQL types to uppercase
   const type = rawType === "IMAGE" || rawType === "VIDEO" ? "MEDIA" : rawType;
   console.log("[normalizePost] Processing post:", p.id, "Type:", p.type, "-> Normalized:", type);
 
@@ -22,12 +21,10 @@ export function normalizePost(p: any): FeedPost | null {
     return normalizeMedia(p, base);
   }
 
-  // For TEXT type posts (including text + bible), use normalizeText
   if (type === "TEXT") {
     return normalizeText(p, base);
   }
 
-  // For BIBLE type posts (dedicated bible flow), use normalizeBible
   if (type === "BIBLE") {
     return normalizeBible(p, base);
   }

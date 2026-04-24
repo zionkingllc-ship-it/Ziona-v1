@@ -5,15 +5,9 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  Pressable,
-} from "react-native";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, TextInput } from "react-native";
+import { Text, XStack, YStack } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
@@ -21,7 +15,7 @@ export default function CirclesScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [circles, setCircles] = useState<any[]>([]);
-  const [joinedIds, setJoinedIds] = useState<string[]>([]); // 🔥 CORE STATE
+  const [error, setError] = useState("");
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
@@ -29,66 +23,41 @@ export default function CirclesScreen() {
   }, []);
 
   async function loadCircles() {
-    const data = [
-      {
-        id: "1",
-        title: "Faith, Work & Purpose",
-        description:
-          "A community where Christians discuss career, business, finding purpose in work while honoring God.",
-        image: "https://images.unsplash.com/photo-1509099836639-18ba1795216d",
-        members: 120,
-      },
-      {
-        id: "2",
-        title: "Prayer & Intercession",
-        description: "Believers come together to pray for one another.",
-        image: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-        members: 120,
-      },
-      {
-        id: "3",
-        title: "Bible Study & Learning",
-        description: "Deep dive into scripture together.",
-        image: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-        members: 120,
-      },
-    ];
+    try {
+      const data = [
+        {
+          id: "1",
+          title: "Faith, Work & Purpose",
+          description:
+            "A community where Christians discuss career, business, finding purpose in work while honoring God.",
+          image: "https://images.unsplash.com/photo-1509099836639-18ba1795216d",
+          members: 120,
+          avatars: [
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+          ],
+        },
+        {
+          id: "2",
+          title: "Prayer & Intercession",
+          description: "Believers come together to pray for one another.",
+          image: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+          members: 120,
+          avatars: [
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+          ],
+        },
+      ];
 
-    setCircles(data);
+      setCircles(data);
+    } catch (err) {
+      console.error("Failed to load circles", err);
+      setError("Failed to load circles");
+    }
   }
-
-  /* =========================
-     DERIVED STATE
-  ========================= */
-
-  const joinedCircles = useMemo(
-    () => circles.filter((c) => joinedIds.includes(c.id)),
-    [circles, joinedIds]
-  );
-
-  const suggestedCircles = useMemo(
-    () => circles.filter((c) => !joinedIds.includes(c.id)),
-    [circles, joinedIds]
-  );
-
-  /* =========================
-     HANDLERS
-  ========================= */
-
-  const handleJoin = (circleId: string) => {
-    setJoinedIds((prev) => [...prev, circleId]);
-
-    // 🔥 go to about screen BEFORE feed (as per your rule)
-    router.push(`/circles/about/${circleId}`);
-  };
-
-  const openCircle = (circleId: string) => {
-    router.push(`/circles/${circleId}`);
-  };
-
-  /* =========================
-     GUARDS
-  ========================= */
 
   if (!isAuthenticated) {
     return (
@@ -106,14 +75,8 @@ export default function CirclesScreen() {
     return <CirclesIntro onClose={() => setShowIntro(false)} />;
   }
 
-  /* =========================
-     HEADER COMPONENT
-  ========================= */
-
-  const ListHeader = () => (
-    <YStack>
-
-      {/* SEARCH */}
+  return (
+    <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
       <XStack
         style={[
           styles.search,
@@ -123,68 +86,23 @@ export default function CirclesScreen() {
           },
         ]}
       >
-        <TextInput placeholder="Search" style={{ flex: 1 }} />
+        <TextInput placeholder="Search" />
       </XStack>
 
-      {/* 🔥 JOINED CIRCLES (ONLY IF EXISTS) */}
-      {joinedCircles.length > 0 && (
-        <>
-          <Text
-            fontWeight="600"
-            fontSize={13}
-            marginTop={hp(2)}
-            marginBottom={hp(1)}
-            paddingHorizontal={wp(5)}
-          >
-            My Circles
-          </Text>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ paddingLeft: wp(5) }}
-          >
-            {joinedCircles.map((circle) => (
-              <Pressable
-                key={circle.id}
-                onPress={() => openCircle(circle.id)}
-                style={{ marginRight: 12 }}
-              >
-                <Image
-                  source={{ uri: circle.image }}
-                  width={70}
-                  height={70}
-                  borderRadius={12}
-                />
-              </Pressable>
-            ))}
-          </ScrollView>
-        </>
-      )}
-
-      {/* 🔥 TITLE CHANGES BASED ON STATE */}
       <Text
+        fontFamily="$body"
         fontWeight="600"
         fontSize={14}
         marginTop={hp(2)}
         marginBottom={hp(1)}
         paddingHorizontal={wp(5)}
       >
-        {joinedCircles.length > 0 ? "Suggestions" : "All Circles"}
+        All Circles
       </Text>
-    </YStack>
-  );
 
-  /* =========================
-     RENDER
-  ========================= */
-
-  return (
-    <YStack flex={1} paddingTop={hp(2)} backgroundColor={colors.white}>
       <FlatList
-        data={suggestedCircles}
+        data={circles}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={ListHeader}
         contentContainerStyle={{
           paddingHorizontal: wp(5),
           paddingBottom: hp(10),
@@ -192,9 +110,7 @@ export default function CirclesScreen() {
         renderItem={({ item }) => (
           <CircleCard
             {...item}
-            isJoined={joinedIds.includes(item.id)}
-            onJoin={() => handleJoin(item.id)}
-            onPress={() => openCircle(item.id)}
+            onPress={() => router.push(`/circles/${item.id}`)}
           />
         )}
       />
@@ -204,6 +120,7 @@ export default function CirclesScreen() {
 
 const styles = StyleSheet.create({
   search: {
+    backgroundColor: "#F4F3F4",
     marginHorizontal: 20,
     padding: 12,
     borderRadius: 12,

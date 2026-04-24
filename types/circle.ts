@@ -18,3 +18,48 @@ export type CirclePost = FeedPost & {
   circleName?: string
   isAnchor?: boolean
 }
+export type CircleUser = {
+  id: string;
+  name: string;
+  avatar: string;
+};
+
+export type CircleContent =
+  | {
+      type: "text";
+      text: string;
+    }
+  | {
+      type: "image";
+      imageUrl: string;
+    }
+  | {
+      type: "video";
+      videoUrl: string;
+      thumbnail?: string;
+    };
+
+  export type AnchorPreview = {
+  type: CircleContent["type"];
+  previewText?: string;
+  previewImage?: string;
+};
+
+export type AnchorPost = {
+  id: string;
+  user: CircleUser;
+  createdAt: string;
+
+  text?: string;
+  image?: string;
+
+  anchor?: {
+    content: CircleContent;
+    preview: AnchorPreview;
+  };
+
+  stats: {
+    likes: number;
+    comments: number;
+  };
+}

@@ -1,9 +1,10 @@
 import Header from "@/components/layout/header";
 import PostThumbnail from "@/components/discover/PostThumbnail";
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
-import { useRouter } from "expo-router";
+import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
+import { useRouter, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Image, Pressable } from "react-native";
+import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Image, Pressable, BackHandler } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import colors from "@/constants/colors";
 import { FeedPost } from "@/types/feedTypes";
@@ -41,25 +42,29 @@ export default function BookmarksScreen() {
     if (foldersError) {
       console.log("Folders error:", foldersError);
     }
-    if (foldersLoading) {
-      console.log("Folders loading...");
-    }
-    if (folders) {
-      console.log("Folders loaded:", JSON.stringify(folders).slice(0, 500));
-    }
-  }, [foldersError, foldersLoading, folders]);
+  }, [foldersError]);
 
   const selectedFolder = useMemo(() => {
     if (!selectedFolderId || !folders) return null;
     return folders.find((f) => f.id === selectedFolderId);
   }, [selectedFolderId, folders]);
 
+  const {
+    data: folderPostsData,
+    fetchNextPage: fetchMorePosts,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: postsLoading,
+    refetch: refetchPosts,
+  } = useUserSavedPosts({
+    folderId: selectedFolderId || undefined,
+  });
+
   const folderPosts = useMemo(() => {
-    if (!selectedFolder?.posts) return [];
-    return selectedFolder.posts
-      .map((p: any) => normalizePost(p))
-      .filter((p): p is FeedPost => p !== null);
-  }, [selectedFolder]);
+    if (!folderPostsData) return [];
+    const posts = folderPostsData.pages.flatMap((page) => page.posts);
+    return posts.map((p: any) => normalizePost(p)).filter((p): p is FeedPost => p !== null);
+  }, [folderPostsData]);
 
   const handlePostPress = (postId: string, index: number) => {
     router.push({
@@ -72,7 +77,21 @@ export default function BookmarksScreen() {
     });
   };
 
+  const handleBack = () => {
+    setSelectedFolderId(null);
+  };
+
   const folderCardWidth = (width - wp(24) - wp(4)) / 2;
+
+  useEffect(() => {
+    if (!selectedFolderId) return;
+    const onBackPress = () => {
+      setSelectedFolderId(null);
+      return true;
+    };
+    BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+  }, [selectedFolderId]);
 
   if (!isAuthenticated) {
     return (
@@ -89,7 +108,7 @@ export default function BookmarksScreen() {
     );
   }
 
-  if (foldersLoading) {
+  if (foldersLoading && !folders) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
         <XStack padding={10}>
@@ -107,7 +126,7 @@ export default function BookmarksScreen() {
       <XStack padding={10} justifyContent="space-between" alignItems="center">
         <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} />
         {selectedFolderId && (
-          <Pressable onPress={() => setSelectedFolderId(null)}>
+          <Pressable onPress={handleBack}>
             <Text fontFamily="$body" color={colors.primary} fontSize={14}>
               Back to folders
             </Text>
@@ -115,14 +134,17 @@ export default function BookmarksScreen() {
         )}
       </XStack>
 
-      {/* FOLDER CONTENTS VIEW */}
       {selectedFolderId ? (
         <>
           <Text fontFamily="$body" fontWeight="600" fontSize={14} paddingHorizontal={wp(6)} marginBottom={hp(1)}>
             {selectedFolder?.name || "Folder"}
           </Text>
 
-          {folderPosts.length === 0 ? (
+          {postsLoading && folderPosts.length === 0 ? (
+            <YStack flex={1} justifyContent="center" alignItems="center">
+              <Text fontFamily="$body" color={colors.gray}>Loading posts...</Text>
+            </YStack>
+          ) : folderPosts.length === 0 ? (
             <YStack flex={1} justifyContent="center" alignItems="center">
               <Text fontFamily="$body" color={colors.gray}>
                 No posts in this folder
@@ -138,9 +160,12 @@ export default function BookmarksScreen() {
               keyExtractor={(item, index) => `${item.id}-${index}`}
               contentContainerStyle={{ paddingHorizontal: 2, paddingBottom: 20 }}
               columnWrapperStyle={{ gap: 2 }}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+              onEndReached={() => {
+                if (hasNextPage && !isFetchingNextPage) {
+                  fetchMorePosts();
+                }
+              }}
               renderItem={({ item, index }) => (
                 <PostThumbnail
                   post={item}
@@ -153,7 +178,6 @@ export default function BookmarksScreen() {
         </>
       ) : (
         <>
-          {/* FOLDERS GRID */}
           {folders && folders.length > 0 ? (
             <YStack paddingHorizontal={wp(6)} marginBottom={hp(2)}>
               <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
@@ -175,7 +199,10 @@ export default function BookmarksScreen() {
                       borderRadius: wp(3),
                       overflow: "hidden",
                     }}
-                    onPress={() => setSelectedFolderId(item.id)}
+                    onPress={() => {
+                      setSelectedFolderId(item.id);
+                      refetchPosts();
+                    }}
                   >
                     <YStack flex={1} padding={wp(3)} justifyContent="space-between">
                       <Image
