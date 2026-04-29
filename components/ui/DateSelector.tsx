@@ -23,7 +23,7 @@ const months = [
 const days = Array.from({ length: 31 }, (_, i) => i + 1);
 const years = Array.from({ length: 100 }, (_, i) => 2024 - i);
 
-export function DateSelector({ date, setDate }) {
+export function DateSelector({ date, setDate }: { date: Date; setDate: (date: Date) => void }) {
   return (
     <YStack position="relative" width="100%" alignItems="center">
       {/* Selection band */}

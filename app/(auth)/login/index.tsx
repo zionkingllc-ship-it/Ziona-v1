@@ -5,7 +5,7 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
 import { router } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 
@@ -31,15 +31,19 @@ export default function LoginIndex() {
   const { wp, hp, fs } = useResponsive();
 
   const { signInWithGoogle } = useGoogleAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     try {
+      setIsGoogleLoading(true);
       console.log("Google login pressed");
 
       await signInWithGoogle();
 
       router.replace("/(tabs)/feed");
     } catch (err) {
+      setIsGoogleLoading(false);
       console.log("Google login failed", err);
     }
   };
@@ -103,7 +107,14 @@ export default function LoginIndex() {
             color={colors.white}
             textSize={fs(14)}
             textWeight="400"
-            onPress={() => router.push("/(auth)/login/signin")}
+            onPress={() => {
+              if (isEmailLoading) return;
+              setIsEmailLoading(true);
+              router.push("/(auth)/login/signin");
+              setTimeout(() => setIsEmailLoading(false), 1000);
+            }}
+            loading={isEmailLoading}
+            disabled={isEmailLoading}
             startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
             style={{
               height: hp(6.5),
@@ -116,6 +127,8 @@ export default function LoginIndex() {
             textWeight="400"
             color={colors.white}
             onPress={handleGoogleSignIn}
+            loading={isGoogleLoading}
+            disabled={isGoogleLoading}
             startIcon={<Image source={google} width={wp(6)} height={wp(6)} />}
             style={{
               height: hp(6.5),

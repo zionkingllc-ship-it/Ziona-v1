@@ -6,7 +6,7 @@ import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
@@ -24,6 +24,8 @@ import { useToggleLike } from "@/hooks/useToggleLike";
 import { useToggleFollow } from "@/hooks/useFollow";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReportContent } from "@/hooks/useReportContent";
+import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 
 /* ICONS */
 const likeIcon = require("@/assets/images/likeIcon.png");
@@ -36,6 +38,7 @@ const shareIcon = require("@/assets/images/shareIcon.png");
 type Props = {
   post: FeedPost;
   isPlaying: boolean;
+  isActive?: boolean;
   screenHeight: number;
   onTogglePlay?: () => void;
   screenWidth: number;
@@ -45,6 +48,7 @@ type Props = {
 function PostCardComponent({
   post,
   isPlaying,
+  isActive,
   screenHeight,
   onTogglePlay,
   screenWidth,
@@ -59,6 +63,8 @@ function PostCardComponent({
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successTitle, setSuccessTitle] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [shareVisible, setShareVisible] = useState(false);
 
   const likedState = post.viewerState.liked;
@@ -101,6 +107,7 @@ function PostCardComponent({
   const followedUsers = usePostActionsStore((s) => s.followedUsers);
   const isFollowing = followedUsers[post.author?.id ?? ""] ?? post.viewerState?.followingAuthor ?? false;
   const { requireAuth, AuthModal } = useRequireAuth();
+  const reportMutation = useReportContent();
 
   /* RESET CAPTION ON POST CHANGE */
   useEffect(() => {
@@ -135,13 +142,14 @@ function PostCardComponent({
     () => ({
       post,
       isPlaying,
+      isActive: isActive ?? false,
       onTogglePlay,
       screenWidth,
       screenHeight,
       tabBarHeight,
       onLike: handleLike,
     }),
-    [post, isPlaying, screenWidth, screenHeight, tabBarHeight],
+    [post, isPlaying, screenWidth, screenHeight, tabBarHeight, isActive],
   );
 
   return (
@@ -287,7 +295,10 @@ function PostCardComponent({
       <OptionsModal
         visible={optionsVisible}
         onClose={() => setOptionsVisible(false)}
-        onReportPost={() => setConfirmVisible(true)}
+        onReportPost={() => {
+          setOptionsVisible(false);
+          setConfirmVisible(true);
+        }}
       />
       <ConfirmReportModal
         visible={confirmVisible}
@@ -300,9 +311,23 @@ function PostCardComponent({
       <ReportReasonsModal
         visible={reasonsVisible}
         onClose={() => setReasonsVisible(false)}
-        onSelectReason={() => {
+        onSelectReason={(reason) => {
           setReasonsVisible(false);
-          setSuccessVisible(true);
+          reportMutation.mutate(
+            { reason: reason as ReportReason, postId: post.id },
+            {
+              onSuccess: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Report Submitted");
+                setSuccessMessage("Thank you for your report. We'll review it shortly.");
+              },
+              onError: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Something went wrong");
+                setSuccessMessage("Please try again later.");
+              },
+            }
+          );
         }}
         onSelectOther={() => {}}
       />
@@ -314,6 +339,8 @@ function PostCardComponent({
       <SuccessModal
         visible={successVisible}
         onClose={() => setSuccessVisible(false)}
+        title={successTitle}
+        message={successMessage}
       />
       <BookmarkFoldersModal
         visible={foldersVisible}
@@ -329,8 +356,8 @@ function PostCardComponent({
         visible={createVisible}
         post={post}
         onClose={() => setCreateVisible(false)}
-        onSave={(name) => {
-          createFolder(name);
+        onSave={(name, cover) => {
+          createFolder(name, cover);
           setCreateVisible(false);
         }}
       />
@@ -343,8 +370,10 @@ function PostCardComponent({
 export const PostCard = React.memo(
   PostCardComponent,
   (prev, next) =>
-    prev.post === next.post &&
+    prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
+    prev.isActive === next.isActive &&
+    prev.post.viewerState?.liked === next.post.viewerState?.liked &&
     prev.screenHeight === next.screenHeight &&
     prev.screenWidth === next.screenWidth &&
     prev.tabBarHeight === next.tabBarHeight,

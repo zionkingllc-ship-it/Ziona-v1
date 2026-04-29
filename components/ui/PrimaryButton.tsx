@@ -1,7 +1,7 @@
 import colors from "@/constants/colors";
 import { ReactNode } from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import { Button, Text, View, XStack } from "tamagui"; 
+import { Button, Text, View, XStack, Spinner } from "tamagui"; 
 
 type AppButtonProps = {
   text: string;
@@ -16,6 +16,7 @@ type AppButtonProps = {
   iconSize?: number;
   fontfamily?:any
   disabled?: boolean;
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -30,35 +31,42 @@ export function PrimaryButton({
   endIcon,
   iconSize = 20,
   disabled = false,
+  loading = false,
   fontfamily="$body",
   style,
 }: AppButtonProps) {
+  const isDisabled = disabled || loading;
+
   return (
     <Button
       onPress={onPress}
-      disabled={disabled}
+      disabled={isDisabled}
       style={style}
-      backgroundColor={disabled ? colors.inactiveButton : color}
+      backgroundColor={isDisabled ? colors.inactiveButton : color}
       borderWidth={1}
       borderColor={colors.borderColor}
       pressStyle={{ opacity: 0.85 }}
       height={"$4"}
     >
-      <XStack width={"100%"}  justifyContent="space-between">
+      <XStack width={"100%"} justifyContent="space-between" alignItems="center">
         <View width={iconSize} height={iconSize} alignSelf="flex-start">
           {startIcon && startIcon}
         </View>
 
-        <Text
-          color={textColor ? textColor : "black"}
-          alignSelf="center"
-          textAlign="center"
-          fontSize={textSize}
-          fontFamily={fontfamily}
-          fontWeight={textWeight}
-        >
-          {text}
-        </Text>
+        {loading ? (
+          <Spinner color={textColor ?? "#F6EAFA"} size="small" />
+        ) : (
+          <Text
+            color={textColor ? textColor : "black"}
+            alignSelf="center"
+            textAlign="center"
+            fontSize={textSize}
+            fontFamily={fontfamily}
+            fontWeight={textWeight}
+          >
+            {text}
+          </Text>
+        )}
 
         <View width={iconSize} height={iconSize} alignSelf="flex-end">
           {endIcon && endIcon}

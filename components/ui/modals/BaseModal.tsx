@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import React, { useEffect, useCallback } from "react";
+import { BackHandler, Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface BaseModalProps {
@@ -17,6 +17,24 @@ export default function BaseModal({
 }: BaseModalProps) {
   const insets = useSafeAreaInsets();
 
+  const handleBackPress = useCallback(() => {
+    onClose();
+    return true;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [visible, handleBackPress]);
+
   return (
     <Modal
       visible={visible}
@@ -24,6 +42,7 @@ export default function BaseModal({
       animationType="fade"
       statusBarTranslucent
       presentationStyle="overFullScreen"
+      onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />

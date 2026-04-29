@@ -1,17 +1,33 @@
 import { ChevronRight, Lock, Bell, Bookmark, HelpCircle, FileText, User } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, TextInput, Pressable } from "react-native";
-import { Text, View, XStack, YStack, Avatar } from "tamagui";
+import { ScrollView, TextInput, Pressable, Image } from "react-native";
+import { Text, View, XStack, YStack } from "tamagui";
+import { LinearGradient } from "expo-linear-gradient";
 import colors from "@/constants/colors";
 import { SettingsSection, SettingsRow } from "@/components/settings";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useLogout } from "@/hooks/useAccountSettings";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useState, useEffect } from "react";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+
+  const userId = useAuthStore((s) => s.user?.id);
+  const { data: profile } = useUserProfile(userId);
+  const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Z";
+
+  useEffect(() => {
+    if (profile?.avatarUrl && profile.avatarUrl.trim() && !imageError) {
+      setAvatarSource({ uri: profile.avatarUrl });
+    } else {
+      setAvatarSource(null);
+    }
+  }, [profile?.avatarUrl, imageError]);
 
   const handleLogout = async () => {
     try {
@@ -47,14 +63,12 @@ export default function SettingsScreen() {
           <TextInput 
             placeholder="Search" 
             placeholderTextColor={colors.placeholderText}
-            fontFamily="$body"
           />
         </View>
 
         {/* PROFILE */}
         <Pressable 
-          onPress={() => router.push("/profile/edit")}
-          pressStyle={{ opacity: 0.7 }}
+          onPress={() => router.push("/profile/settings/AccountSetup")}
         >
           <XStack
             alignItems="center"
@@ -64,13 +78,26 @@ export default function SettingsScreen() {
             borderRadius={12}
           >
             <XStack alignItems="center" gap="$3">
-              <Avatar circular size={40}>
-                <Avatar.Image source={require("@/assets/images/emptyDP.png")} />
-                <Avatar.Fallback backgroundColor={colors.black} />
-              </Avatar>
+              {avatarSource ? (
+                <Image
+                  source={avatarSource}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#D396E8", "#9D4C76"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text color="white" fontSize={14} fontWeight="600" fontFamily="$body">
+                    {initials}
+                  </Text>
+                </LinearGradient>
+              )}
               <YStack>
                 <Text fontFamily="$body" fontWeight="600" fontSize={14}>
-                  {user?.fullName || "Ziona User"}
+                  {profile?.username || "Ziona User"}
                 </Text>
                 <Text fontFamily="$body" fontSize={12} color={colors.gray}>
                   Account set-up
@@ -84,6 +111,11 @@ export default function SettingsScreen() {
         {/* ACCOUNT SETTINGS */}
         <SettingsSection title="Account settings">
           <SettingsRow 
+            icon={<Lock size={18} color={colors.secondaryGray} />} 
+            label="Password and security" 
+            onPress={() => router.push("/profile/settings/ChangePassword")}
+          />
+          <SettingsRow 
             icon={<Bell size={18} color={colors.secondaryGray} />} 
             label="Notification" 
             onPress={() => router.push("/profile/settings/Notification")}
@@ -92,6 +124,11 @@ export default function SettingsScreen() {
             icon={<Lock size={18} color={colors.secondaryGray} />} 
             label="Account privacy" 
             onPress={() => router.push("/profile/settings/Privacy")}
+          />
+          <SettingsRow 
+            icon={<Bell size={18} color={colors.secondaryGray} />} 
+            label="Like counts visible" 
+            onPress={() => router.push("/profile/settings/LikeCountVisible")}
           />
         </SettingsSection>
 

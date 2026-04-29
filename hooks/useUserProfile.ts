@@ -12,8 +12,16 @@ query GetUserProfile($userId: String!) {
     bio
     avatarUrl
     location
+    hideLikeCount
     stats { followersCount followingCount postsCount }
-    viewerState { followingAuthor isOwner }
+    recentPosts {
+      stats { savesCount likesCount commentsCount }
+      textMessage
+      caption
+      shareUrl
+      scripture { verses { text number } verseEnd verseStart translation book chapter reference }
+    }
+    viewerState { isFollowing isFollowedBy isOwner }
   }
 }
 `;
@@ -23,6 +31,7 @@ function normalizeUserProfile(raw: any): UserProfile | null {
 
   return {
     ...raw,
+    hideLikeCount: raw.hideLikeCount ?? false,
     stats: raw.stats
       ? {
           followersCount: Number(raw.stats.followersCount || 0),
@@ -30,6 +39,32 @@ function normalizeUserProfile(raw: any): UserProfile | null {
           postsCount: Number(raw.stats.postsCount || 0),
         }
       : undefined,
+    recentPosts: raw.recentPosts?.map((post: any) => ({
+      stats: post.stats
+        ? {
+            savesCount: Number(post.stats.savesCount || 0),
+            likesCount: Number(post.stats.likesCount || 0),
+            commentsCount: Number(post.stats.commentsCount || 0),
+          }
+        : undefined,
+      textMessage: post.textMessage,
+      caption: post.caption,
+      shareUrl: post.shareUrl,
+      scripture: post.scripture
+        ? {
+            verses: post.scripture.verses?.map((v: any) => ({
+              text: v.text,
+              number: v.number,
+            })),
+            verseEnd: post.scripture.verseEnd,
+            verseStart: post.scripture.verseStart,
+            translation: post.scripture.translation,
+            book: post.scripture.book,
+            chapter: post.scripture.chapter,
+            reference: post.scripture.reference,
+          }
+        : undefined,
+    })),
   };
 }
 
@@ -51,18 +86,7 @@ export function useUserProfile(
 
       const data = await graphqlRequest(GET_USER_PROFILE, { userId });
 
-      console.log("USER PROFILE RAW:", data);
-      console.log("userID", userId);
-
-      const normalized = normalizeUserProfile(data?.userProfile);
-
-      console.log("USER PROFILE NORMALIZED:", normalized);
-
-      console.log("USER POSTS RAW FULL RESPONSE:", data);
-      console.log("USER POSTS NODE:", data?.userPosts);
-      console.log("USER POSTS ARRAY LENGTH:", data?.userPosts?.posts?.length);
-
-      return normalized;
+      return normalizeUserProfile(data?.userProfile);
     },
   });
 }

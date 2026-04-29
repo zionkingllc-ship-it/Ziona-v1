@@ -1,1 +1,54 @@
- 
+Implementing Silent Refresh
+1. The Strategy
+Instead of sending a user to the Login screen when a token expires, the app should be "smart" enough to fix the problem itself in the background.
+
+2. The Step-by-Step Logic
+App sends a request (e.g., Get Feed) with the Access Token.
+Server returns 401 Unauthorized (because the 1-hour token expired).
+App intercepts that error before it reaches the UI.
+App calls the Refresh Endpoint using the saved refreshToken.
+App saves the new tokens returned by the server.
+App retries the original request (the Get Feed call) with the new Access Token.
+The user sees nothing. The feed just loads half a second later.
+
+3. The Code Example (React Native / Javascript)
+If he is using Axios (most common), he should add this to his API client setup. He can copy-paste and adapt this:
+
+javascript
+import axios from 'axios';
+// 1. Create the API instance
+const api = axios.create({
+  baseURL: 'https://ziona-api-staging.onrender.com',
+});
+// 2. Add an Interceptor to handle "401 Expired" errors automatically
+api.interceptors.response.use(
+  (response) => response, // Standard success — just return the data
+  async (error) => {
+    const originalRequest = error.config;
+    // Check if the error is 401 (Expired) and hasn't been retried yet
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true; // Mark to prevent infinite loops
+      try {
+        // CALL THE REFRESH ENDPOINT
+        const refreshToken = await getStoredRefreshToken(); // Get from phone storage
+        const response = await axios.post('https://ziona-api-staging.onrender.com/api/auth/refresh', {
+          refresh_token: refreshToken
+        });
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+        // SAVE NEW TOKENS
+        await saveTokens(accessToken, newRefreshToken);
+        // RETRY THE ORIGINAL REQUEST WITH NEW ACCESS TOKEN
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails too, then (and ONLY then) log the user out
+        redirectToLogin();
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+4. The Result
+Without this code: He gets logged out every 60 minutes.
+With this code: He stays logged in for 30 days even if the server Access Token expires every hour.

@@ -1,9 +1,9 @@
 import { Image, Text, View, XStack } from "tamagui";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
-import { useSearchUsers } from "@/hooks/useFollow";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
+import { searchUsers } from "@/services/graphQL/queries/follow";
 
 interface MentionUser {
   id: string;
@@ -17,7 +17,21 @@ interface Props {
 }
 
 export function MentionSuggestions({ searchText, onSelectUser }: Props) {
-  const { data: users = [], isLoading } = useSearchUsers(searchText);
+  const [users, setUsers] = useState<MentionUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchText.length === 0) {
+      setUsers([]);
+      return;
+    }
+
+    setIsLoading(true);
+    searchUsers(searchText)
+      .then(setUsers)
+      .catch(() => setUsers([]))
+      .finally(() => setIsLoading(false));
+  }, [searchText]);
 
   const displayUsers = useMemo(() => {
     return users.slice(0, 8);

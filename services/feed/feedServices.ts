@@ -5,17 +5,18 @@ query GetForYouFeed($cursor: String, $limit: Int = 20) {
   forYouFeed(cursor: $cursor, limit: $limit) {
     hasMore
     nextCursor
-    emptyState { message suggestions { id username avatarUrl } }
+    emptyState { message suggestions { id username bio followersCount } }
     posts {
-      id type caption createdAt
-      category { id label slug icon bgColor bdColor textPostBg order }
+      id type caption createdAt shareUrl
+      category { slug textPostBg bgColor id label }
+      textMessage
+      bibleMessage
+      scripture { verses { text number } verseEnd verseStart translation book chapter reference }
       author { id username avatarUrl }
-      image { items { id url thumbnailUrl width height } }
-      video { url thumbnailUrl duration width height }
-      text
-      scripture { book chapter verseStart verseEnd translation text }
-      stats { likesCount commentsCount sharesCount savesCount }
-      viewerState { liked saved followingAuthor isOwner }
+      image { items { id url thumbnailUrl type } }
+      video { url thumbnailUrl }
+      stats { likesCount commentsCount savesCount sharesCount }
+      viewerState { liked saved followingAuthor followedByAuthor isOwner }
     }
   }
 }
@@ -27,15 +28,20 @@ query GetFollowingFeed($cursor: String, $limit: Int = 20) {
     hasMore
     nextCursor
     posts {
-      id type caption createdAt
-      category { id label slug icon bgColor bdColor order textPostBg}
+      id type caption createdAt shareUrl
+      category { slug textPostBg bgColor id label }
+      textMessage
+      bibleMessage
+      scripture { verses { text number } verseEnd verseStart translation book chapter reference }
       author { id username avatarUrl }
-      image { items { id url thumbnailUrl width height } }
-      video { url thumbnailUrl duration width height }
-      text
-      scripture { book chapter verseStart verseEnd translation text }
-      stats { likesCount commentsCount sharesCount savesCount }
-      viewerState { liked saved followingAuthor isOwner }
+      image { items { id url thumbnailUrl type } }
+      video { url thumbnailUrl }
+      stats { likesCount commentsCount savesCount sharesCount }
+      viewerState { liked saved followingAuthor followedByAuthor isOwner }
+    }
+    emptyState {
+      message
+      suggestions { id username bio followersCount }
     }
   }
 }
@@ -95,6 +101,10 @@ export async function fetchFollowingFeed({
   posts: any[];
   nextCursor?: string;
   hasMore: boolean;
+  emptyState?: {
+    message?: string;
+    suggestions?: { id: string; username: string; bio?: string; followersCount: number }[];
+  };
 }> {
   try {
     console.log("[FEED][FOLLOWING] 🚀 Request start", {
@@ -126,6 +136,12 @@ export async function fetchFollowingFeed({
       posts: Array.isArray(rawPosts) ? rawPosts : [],
       nextCursor: feed?.nextCursor ?? undefined,
       hasMore: Boolean(feed?.hasMore),
+      emptyState: feed?.emptyState
+        ? {
+            message: feed.emptyState.message,
+            suggestions: feed.emptyState.suggestions,
+          }
+        : undefined,
     };
   } catch (error) {
     console.error("[FEED][FOLLOWING] ❌ Request failed", error);

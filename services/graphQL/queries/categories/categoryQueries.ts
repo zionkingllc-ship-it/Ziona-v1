@@ -1,8 +1,7 @@
 export const GET_DISCOVER_CATEGORIES = `
 query DiscoverCategories {
   discoverCategories {
-    id
-    name
+    id 
     slug
     icon
     bdColor

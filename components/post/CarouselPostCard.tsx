@@ -1,7 +1,7 @@
 import colors from "@/constants/colors";
 import { FeedMediaPost } from "@/types/feedTypes";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useRef, useState } from "react";
+import React, { memo, useRef, useState } from "react";
 import {
   FlatList,
   NativeScrollEvent,
@@ -9,43 +9,40 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS } from "react-native-reanimated";
-import { Image, View, XStack } from "tamagui";
+import { Image, View } from "tamagui";
 
 interface Props {
   post: FeedMediaPost;
   onLike?: () => void;
-  heartStyle: any;
-  triggerHeart: () => void;
+  heartStyle?: any;
+  triggerHeart?: () => void;
   screenWidth: number;
   screenHeight: number;
 }
 
-export default function CarouselPostCard({
+function CarouselPostCardComponent({
   post,
+  screenWidth = 400,
+  screenHeight = 800,
   onLike,
-  heartStyle,
   triggerHeart,
-  screenWidth,
-  screenHeight,
 }: Props) {
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const likeIconActive = require("@/assets/images/likeIcon2.png");
-
-  // derive from actual media structure
-  const mediaItems = (post.media ?? []).filter(
-    (item) => item.type === "image" && item.url,
+  const mediaItems = (post?.media ?? []).filter(
+    (item) => item?.type === "image" && item?.url,
   );
 
-  const clamp = (value: number, min: number, max: number) =>
-    Math.min(Math.max(value, min), max);
-
-  const wp = (percent: number) => screenWidth * (percent / 100);
+  if (!mediaItems?.length) {
+    return (
+      <View width={screenWidth} height={screenHeight} backgroundColor="black" />
+    );
+  }
 
   const handleLike = () => {
     if (onLike) onLike();
-    triggerHeart();
+    if (triggerHeart) triggerHeart();
   };
 
   const doubleTap = Gesture.Tap()
@@ -59,17 +56,18 @@ export default function CarouselPostCard({
     setActiveIndex(index);
   };
 
-  if (!mediaItems.length) return null;
+  const renderImage = ({ item }: { item: any }) => (
+    <Image
+      source={{ uri: item.url }}
+      width={screenWidth}
+      height={screenHeight}
+      resizeMode="contain"
+    />
+  );
 
   return (
     <GestureDetector gesture={doubleTap}>
-      <Animated.View
-        style={{
-          flex: 1,
-          width: screenWidth,
-          height: screenHeight,
-        }}
-      >
+      <View width={screenWidth} height={screenHeight} backgroundColor="black">
         <FlatList
           ref={flatListRef}
           data={mediaItems}
@@ -78,71 +76,45 @@ export default function CarouselPostCard({
           showsHorizontalScrollIndicator={false}
           keyExtractor={(_, index) => index.toString()}
           onMomentumScrollEnd={onScrollEnd}
-          renderItem={({ item }) => (
-            <Image
-              source={{ uri: item.url }}
-              width={screenWidth}
-              height={screenHeight}
-              resizeMode="contain"
-            />
-          )}
+          renderItem={renderImage}
+          getItemLayout={(_, index) => ({
+            length: screenWidth,
+            offset: screenWidth * index,
+            index,
+          })}
         />
-
-        {/* LIKE ANIMATION */}
-        <Animated.View
-          style={[
-            {
-              position: "absolute",
-              alignSelf: "center",
-              top: screenHeight * 0.4,
-            },
-            heartStyle,
-          ]}
-        >
-          <Animated.Image
-            source={likeIconActive}
-            style={{
-              width: clamp(wp(22), 90, 170),
-              height: clamp(wp(22), 90, 170),
-            }}
-            resizeMode="contain"
-          />
-        </Animated.View>
-
-        {/* INDICATORS */}
         {mediaItems.length > 1 && (
-          <XStack
+          <View
             position="absolute"
-            bottom={wp(50)}
+            bottom={20}
             alignSelf="center"
-            gap={wp(2)}
+            flexDirection="row"
+            gap={6}
           >
-            {mediaItems.map((_, index) => (
+            {mediaItems.map((_, i) => (
               <View
-                key={index}
-                width={wp(2)}
-                height={wp(2)}
-                borderRadius={wp(1)}
+                key={i}
+                width={activeIndex === i ? 8 : 6}
+                height={activeIndex === i ? 8 : 6}
+                borderRadius={4}
                 backgroundColor={
-                  index === activeIndex ? colors.white : "rgba(255,255,255,0.4)"
+                  activeIndex === i ? colors.white : "rgba(255,255,255,0.5)"
                 }
               />
             ))}
-          </XStack>
+          </View>
         )}
-
-        {/* GRADIENT OVERLAY FOR TEXT VISIBILITY */}
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.7)"]}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 200,
-          }}
+          colors={["transparent", "rgba(0,0,0,0.3)"]}
+          style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100 }}
         />
-      </Animated.View>
+      </View>
     </GestureDetector>
   );
 }
+
+export default memo(CarouselPostCardComponent, (prev, next) =>
+  prev.post.id === next.post.id &&
+  prev.screenWidth === next.screenWidth &&
+  prev.screenHeight === next.screenHeight
+);

@@ -26,7 +26,6 @@ export function useForYouFeed() {
     [string],
     string | undefined
   >({
-    // ✅ FIXED: clean, explicit key
     queryKey: ["forYouFeed"],
 
     queryFn: ({ pageParam }) =>
@@ -36,6 +35,8 @@ export function useForYouFeed() {
 
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor : undefined,
+
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -51,7 +52,6 @@ export function useFollowingFeed() {
     [string],
     string | undefined
   >({
-    // clean, explicit key
     queryKey: ["followingFeed"],
 
     queryFn: ({ pageParam }) =>
@@ -61,5 +61,7 @@ export function useFollowingFeed() {
 
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor : undefined,
+
+    staleTime: 5 * 60 * 1000,
   });
 }

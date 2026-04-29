@@ -57,11 +57,13 @@ export default function Feed() {
 
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
-      queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
+      if (!query.data && !query.isLoading) {
+        queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
+        queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
+      }
 
       setActivePostId(null);
-    }, [queryClient]),
+    }, [queryClient, query.data, query.isLoading]),
   );
 
   useFocusEffect(
@@ -205,6 +207,7 @@ export default function Feed() {
           </View>
         ) : (
           <PostViewerEngine
+            key={feedType}
             posts={data}
             containerHeight={containerHeight}
             containerWidth={containerWidth}

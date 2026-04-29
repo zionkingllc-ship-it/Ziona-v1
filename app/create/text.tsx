@@ -5,6 +5,7 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
 import SuccessModal from "@/components/ui/modals/successModal";
+import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 
@@ -51,6 +52,7 @@ export default function CreateTextScreen() {
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
 
   const MAX_LENGTH = 500;
 
@@ -119,7 +121,7 @@ export default function CreateTextScreen() {
 
       await publishDraftPost(draft, queryClient);
 
-      feedback.showSuccess();
+      setShowProgress(true);
     } catch (error: any) {
       const networkFeedback = getNetworkModalCopy(
         error,
@@ -129,6 +131,11 @@ export default function CreateTextScreen() {
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleProgressComplete() {
+    setShowProgress(false);
+    feedback.showSuccess();
   }
 
   /* =========================
@@ -256,6 +263,10 @@ export default function CreateTextScreen() {
         message={feedback.message}
         type={feedback.type}
         autoClose
+      />
+      <PostProgressModal
+        visible={showProgress}
+        onComplete={handleProgressComplete}
       />
     </YStack>
   );

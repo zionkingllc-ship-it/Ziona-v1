@@ -1,0 +1,51 @@
+import React from "react";
+import { YStack, XStack, Text } from "tamagui";
+import { Dimensions } from "react-native";
+import { Video } from "expo-av";
+import { Ionicons } from "@expo/vector-icons";
+
+const { height } = Dimensions.get("window");
+
+export default function AnchorVideoViewer() {
+  return (
+    <YStack flex={1} backgroundColor="#000">
+      {/* Video */}
+      <Video
+        source={{ uri: "https://your-video-url.mp4" }}
+        style={{ width: "100%", height }}
+        resizeMode="cover"
+        shouldPlay
+        isLooping
+      />
+
+      {/* Bottom Overlay */}
+      <XStack
+        position="absolute"
+        bottom={30}
+        left={20}
+        right={20}
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        {/* Prayer Count */}
+        <XStack alignItems="center" gap="$2">
+          <Ionicons name="hand-left-outline" size={18} color="#FFF" />
+          <Text color="#FFF">1200</Text>
+        </XStack>
+
+        {/* Reflection CTA */}
+        <XStack
+          backgroundColor="#000"
+          paddingHorizontal="$3"
+          paddingVertical="$2"
+          borderRadius={20}
+          alignItems="center"
+          gap="$2"
+        >
+          <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
+          <Text color="#FFF">Your reflection...</Text>
+        </XStack>
+      </XStack>
+    </YStack>
+  );
+}

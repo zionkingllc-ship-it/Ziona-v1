@@ -38,6 +38,8 @@ export default function AuthIndex() {
   const setFlow = useSignupStore((s) => s.setFlow);
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messageType, setMessageType] = useState<
     "success" | "failed" | "warning" | "softwarning" | undefined
@@ -47,11 +49,11 @@ export default function AuthIndex() {
 
   const handleGoogleSignIn = async () => {
     try {
-      setIsLoading(false);
+      setIsGoogleLoading(true);
       const res = await signInWithGoogle();
 
       if (res.error) {
-        setIsLoading(false);
+        setIsGoogleLoading(false);
         setModalVisible(true);
         setMessageType("failed");
         setMessageTitle("Authentication Failed");
@@ -63,7 +65,7 @@ export default function AuthIndex() {
       }
       // check if username exists
       if (!res?.user?.username) {
-        setIsLoading(false);
+        setIsGoogleLoading(false);
         setFlow("google");
         router.replace("/(auth)/username");
         return;
@@ -72,7 +74,7 @@ export default function AuthIndex() {
       // already complete → go to app
       router.replace("/(tabs)/feed");
     } catch (err) {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
       console.log("Google login failed", err);
     }
   };
@@ -91,8 +93,8 @@ export default function AuthIndex() {
 
   return (
     <View flex={1}>
-      {isLoading  && <ActivityIndicator color={colors.primary} size={40} />}
-      <YStack flex={1} opacity={isLoading||modalVisible ? 0.5 : 1}>
+      {isGoogleLoading && <ActivityIndicator color={colors.primary} size={40} />}
+      <YStack flex={1} opacity={isGoogleLoading || modalVisible ? 0.5 : 1}>
         {/* ================= CAROUSEL ================= */}
         <MarqueeCarousel cards={cards} heightRatio={30} animationType="loop" />
 
@@ -136,7 +138,14 @@ export default function AuthIndex() {
               color={colors.white}
               textSize={fs(15)}
               textWeight="400"
-              onPress={() => router.push("/(auth)/email")}
+              onPress={() => {
+                if (isEmailLoading) return;
+                setIsEmailLoading(true);
+                router.push("/(auth)/email");
+                setTimeout(() => setIsEmailLoading(false), 1000);
+              }}
+              loading={isEmailLoading}
+              disabled={isEmailLoading}
               startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
             />
 
@@ -146,6 +155,8 @@ export default function AuthIndex() {
               textSize={fs(15)}
               textWeight="400"
               onPress={handleGoogleSignIn}
+              loading={isGoogleLoading}
+              disabled={isGoogleLoading}
               startIcon={<Image source={google} width={wp(6)} height={wp(6)} />}
             />
 

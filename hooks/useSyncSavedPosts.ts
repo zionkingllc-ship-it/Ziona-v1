@@ -1,21 +1,33 @@
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { useEffect } from "react";
 import { useSavedPosts } from "./useSavedPosts";
+import { SavedPost } from "@/services/graphQL/queries/actions/bookmarks";
 
 export function useSyncSavedPosts() {
   const { data: apiBookmarks, isLoading } = useSavedPosts();
   const { setBookmarks } = useBookmarksStore();
 
   useEffect(() => {
-    if (!apiBookmarks) return;
+    if (!apiBookmarks?.posts) return;
 
-    const mappedBookmarks = apiBookmarks.map((bookmark) => ({
+    const mappedBookmarks: SavedPost[] = apiBookmarks.posts.map((bookmark) => ({
       id: bookmark.id,
-      postId: bookmark.postId,
-      folderId: bookmark.folderId,
+      type: bookmark.type,
+      author: bookmark.author,
+      stats: bookmark.stats,
+      viewerState: bookmark.viewerState,
+      shareUrl: bookmark.shareUrl,
+      createdAt: bookmark.createdAt,
+      scripture: bookmark.scripture,
+      caption: bookmark.caption,
+      textMessage: bookmark.textMessage,
+      bibleMessage: bookmark.bibleMessage,
+      image: bookmark.image,
+      video: bookmark.video,
+      category: bookmark.category,
     }));
 
-    setBookmarks(mappedBookmarks);
+    setBookmarks(mappedBookmarks as any);
   }, [apiBookmarks, setBookmarks]);
 
   return { isLoading };

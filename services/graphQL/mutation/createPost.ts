@@ -2,36 +2,24 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 
 export async function createMediaPost(variables: {
   caption?: string | null;
-  category: string;
-  mediaUrls: string[];
+  mediaIds?: string[];
+  mediaUrls?: string[];
   mediaType?: string;
-  thumbnailUrl?: string;
-  width?: number;
-  height?: number;
-  duration?: number;
 }) {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
       $caption: String
-      $category: String
+      $mediaIds: [String!]
       $mediaUrls: [String!]
       $mediaType: MediaType
-      $thumbnailUrl: String
-      $width: Int
-      $height: Int
-      $duration: Int
     ) {
       createPost(
         postType: $postType
         caption: $caption
-        category: $category
+        mediaIds: $mediaIds
         mediaUrls: $mediaUrls
         mediaType: $mediaType
-        thumbnailUrl: $thumbnailUrl
-        width: $width
-        height: $height
-        duration: $duration
       ) {
         success
         post {
@@ -71,19 +59,37 @@ export async function createMediaPost(variables: {
 }
 
 export async function createTextPost(variables: {
-  caption?: string | null;
-  category: string;
+  textMessage?: string | null;
+  category?: string;
+  scriptureBook?: string;
+  scriptureChapter?: number;
+  scriptureVerseStart?: number;
+  scriptureVerseEnd?: number;
+  scriptureTranslation?: string;
+  bibleMessage?: string;
 }) {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
-      $caption: String
+      $textMessage: String
       $category: String
+      $scriptureBook: String
+      $scriptureChapter: Int
+      $scriptureVerseStart: Int
+      $scriptureVerseEnd: Int
+      $scriptureTranslation: String
+      $bibleMessage: String
     ) {
       createPost(
         postType: $postType
-        caption: $caption
+        textMessage: $textMessage
         category: $category
+        scriptureBook: $scriptureBook
+        scriptureChapter: $scriptureChapter
+        scriptureVerseStart: $scriptureVerseStart
+        scriptureVerseEnd: $scriptureVerseEnd
+        scriptureTranslation: $scriptureTranslation
+        bibleMessage: $bibleMessage
       ) {
         success
         post {
@@ -91,6 +97,11 @@ export async function createTextPost(variables: {
           type
           textMessage
           createdAt
+          scripture {
+            reference
+            text
+            translation
+          }
         }
         error {
           code
@@ -106,6 +117,8 @@ export async function createTextPost(variables: {
     postType: "TEXT",
   });
 
+  console.log("📝 CREATE TEXT POST RESPONSE:", JSON.stringify(data, null, 2));
+
   const res = data?.createPost;
 
   if (!res?.success) {
@@ -116,40 +129,43 @@ export async function createTextPost(variables: {
 }
 
 export async function createBiblePost(variables: {
-  caption?: string | null;
+  textMessage?: string | null;
   category: string;
   scriptureBook: string;
   scriptureChapter: number;
   scriptureVerseStart: number;
   scriptureVerseEnd?: number;
   scriptureTranslation: string;
+  bibleMessage?: string | null;
 }) {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
-      $caption: String
+      $textMessage: String
       $category: String
       $scriptureBook: String
       $scriptureChapter: Int
       $scriptureVerseStart: Int
       $scriptureVerseEnd: Int
       $scriptureTranslation: String
+      $bibleMessage: String
     ) {
       createPost(
         postType: $postType
-        caption: $caption
+        textMessage: $textMessage
         category: $category
         scriptureBook: $scriptureBook
         scriptureChapter: $scriptureChapter
         scriptureVerseStart: $scriptureVerseStart
         scriptureVerseEnd: $scriptureVerseEnd
         scriptureTranslation: $scriptureTranslation
+        bibleMessage: $bibleMessage
       ) {
         success
         post {
           id
           type
-          bibleMessage
+          textMessage
           createdAt
           scripture {
             reference

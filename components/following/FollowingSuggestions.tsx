@@ -30,54 +30,76 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <View style={styles.content}>
-        {!isLoading && (!creators || creators.length === 0) && (
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
+        <CenteredMessage text="Loading..." fontFamily={"$body"} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!creators || creators.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
+        <View style={styles.content}>
           <CenteredMessage
             fontFamily={"$body"}
             fontWeight={"400"}
             text="No suggestions right now"
             subtitle="Check back later for new creators to follow."
           />
-        )}
-        {isLoading ? (
-          <CenteredMessage text="Loading..." fontFamily={"$body"} />
-        ) : (
-          <FlatList
-            data={creators ?? []}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <FollowUserRow
-                id={item.id}
-                username={item.username}
-                avatarUrl={item.avatarUrl}
-                bio={item.bio}
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              <Text
-                fontFamily={"$body"}
-                fontWeight={"400"}
-                style={styles.header}
-              >
-                Suggested for you
-              </Text>
-            }
+        </View>
+        <View style={styles.footer}>
+          <SimpleButtonWithStyle
+            disabled={true}
+            text="Done"
+            style={{ alignSelf: "center", paddingHorizontal: 24 }}
+            color={colors.primary}
+            textColor={colors.white}
+            textWeight={"400"}
+            borderRadius={8}
+            onPress={onDone}
           />
-        )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <View style={styles.content}>
+        <FlatList
+          data={creators ?? []}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <FollowUserRow
+              id={item.id}
+              username={item.username}
+              avatarUrl={item.avatarUrl}
+              bio={item.bio}
+            />
+          )}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text
+              fontFamily={"$body"}
+              fontWeight={"400"}
+              style={styles.header}
+            >
+              Suggested for you
+            </Text>
+          }
+        />
       </View>
       <View style={styles.footer}>
         <SimpleButtonWithStyle
-        disabled={isLoading || !creators || creators.length === 0}
+        disabled={false}
           text="Done"
-          style={{ alignSelf: "center", paddingHorizontal: 24, }}
+          style={{ alignSelf: "center", paddingHorizontal: 24 }}
           color={colors.primary}
           textColor={colors.white}
           textWeight={"400"}
-          fontFamily={"$body"}
           borderRadius={8}
           onPress={onDone}
         />

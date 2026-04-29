@@ -9,7 +9,7 @@ import { Text, XStack, YStack } from "tamagui";
 import { useState } from "react";
 
 export default function DeactivateAccountScreen() {
-  const username = useAuthStore((s) => s.user?.username) || "username";
+  const username = useAuthStore((s) =>  s.user?.username) || "username";
   const deactivateAccount = useDeactivateAccount();
   const [modalVisible, setModalVisible] = useState(false);
   const [error, setError] = useState(false);

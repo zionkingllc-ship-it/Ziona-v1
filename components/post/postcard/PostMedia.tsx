@@ -1,5 +1,5 @@
 import { FeedPost } from "@/types/feedTypes";
-import React, { useCallback } from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import {
   useAnimatedStyle,
   useSharedValue,
@@ -13,6 +13,7 @@ import VideoPostCard from "../VideoPostCard";
 interface Props {
   post: FeedPost;
   isPlaying: boolean;
+  isActive: boolean;
   onTogglePlay?: () => void;
   onLike?: () => void;
   screenWidth: number;
@@ -23,6 +24,7 @@ interface Props {
 function PostMediaComponent({
   post,
   isPlaying,
+  isActive,
   onTogglePlay,
   onLike,
   screenWidth,
@@ -49,45 +51,35 @@ function PostMediaComponent({
     });
   }, []);
 
-  /* ================= MEDIA ================= */
-  if (post.type === "media") {
-    const media = post.media?.[0];
+  const mediaProps = useMemo(
+    () => ({
+      screenWidth,
+      screenHeight,
+      tabBarHeight,
+      heartStyle,
+      triggerHeart,
+    }),
+    [screenWidth, screenHeight, tabBarHeight],
+  );
 
-    // VIDEO
-    if (post.mediaType === "video") {
-      if (!media?.url) return null;
-
+  if (post.type === "media" && post.media?.[0]) {
+    if (post.mediaType === "video" && post.media[0].url) {
       return (
         <VideoPostCard
           post={post}
           isPlaying={isPlaying}
           onTogglePlay={onTogglePlay}
           onLike={onLike}
-          heartStyle={heartStyle}
-          triggerHeart={triggerHeart}
-          screenWidth={screenWidth}
-          screenHeight={screenHeight}
-          tabBarHeight={tabBarHeight}
+          {...mediaProps}
         />
       );
     }
 
-    // IMAGE
-    if (!post.media?.length) return null;
-
     return (
-      <CarouselPostCard
-        post={post}
-        onLike={onLike}
-        heartStyle={heartStyle}
-        triggerHeart={triggerHeart}
-        screenWidth={screenWidth}
-        screenHeight={screenHeight}
-      />
+      <CarouselPostCard post={post} onLike={onLike} {...mediaProps} />
     );
   }
 
-  /* ================= TEXT ================= */
   if (post.type === "text" || post.type === "bible") {
     return <TextPostCard post={post} onLike={onLike} />;
   }
@@ -95,13 +87,10 @@ function PostMediaComponent({
   return null;
 }
 
-/* 🔥 PREVENT RE-RENDERS */
-export default React.memo(
-  PostMediaComponent,
-  (prev, next) =>
-    prev.post === next.post &&
-    prev.isPlaying === next.isPlaying &&
-    prev.screenWidth === next.screenWidth &&
-    prev.screenHeight === next.screenHeight &&
-    prev.tabBarHeight === next.tabBarHeight
+export default memo(PostMediaComponent, (prev, next) =>
+  prev.post.id === next.post.id &&
+  prev.isPlaying === next.isPlaying &&
+  prev.isActive === next.isActive &&
+  prev.screenWidth === next.screenWidth &&
+  prev.screenHeight === next.screenHeight
 );

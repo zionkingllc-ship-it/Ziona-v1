@@ -28,7 +28,6 @@ export default function ChatInputScreen() {
             placeholderTextColor={colors.placeholderText}
             value={message}
             onChangeText={setMessage}
-            fontFamily="$body"
           />
         </View>
       </View>

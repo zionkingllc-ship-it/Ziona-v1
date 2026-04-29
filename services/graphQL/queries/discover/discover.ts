@@ -2,7 +2,7 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 
 /* =========================
    CATEGORIES
-========================= */
+ ========================= */
 
 export const GET_DISCOVER_CATEGORIES = `
   query GetDiscoverCategories {
@@ -12,19 +12,18 @@ export const GET_DISCOVER_CATEGORIES = `
       slug
       icon
       bgColor
-      bdColor
-      order
+      textPostBg
     }
   }
 `;
 
 /* =========================
    DISCOVER FEED (USE REAL SHAPE)
-========================= */
+ ========================= */
 
 export const GET_DISCOVER_FEED = `
-  query GetDiscoverFeed($cursor: String, $limit: Int = 20) {
-    forYouFeed(cursor: $cursor, limit: $limit) {
+  query GetDiscoverFeed($category: String, $cursor: String, $limit: Int = 20) {
+    discoverFeed(category: $category, cursor: $cursor, limit: $limit) {
       hasMore
       nextCursor
       posts {
@@ -32,14 +31,11 @@ export const GET_DISCOVER_FEED = `
         type
         caption
         createdAt
+        shareUrl
+        category { slug textPostBg bgColor id label }
 
-        category {
-          id
-          label
-          slug
-          bgColor
-          bdColor
-        }
+        textMessage
+        bibleMessage
 
         author {
           id
@@ -51,6 +47,7 @@ export const GET_DISCOVER_FEED = `
           items {
             url
             thumbnailUrl
+            type
           }
         }
 
@@ -59,38 +56,38 @@ export const GET_DISCOVER_FEED = `
           thumbnailUrl
         }
 
-        text
-
         scripture {
+          verses { text number }
+          verseEnd
+          verseStart
+          translation
           book
           chapter
-          verseStart
-          verseEnd
-          translation
-          text
+          reference
         }
 
         stats {
           likesCount
           commentsCount
-          sharesCount
           savesCount
+          sharesCount
         }
 
         viewerState {
           liked
           saved
           followingAuthor
+          followedByAuthor
           isOwner
         }
       }
     }
-  }
+}
 `;
 
 /* =========================
    FETCHERS
-========================= */
+ ========================= */
 
 export async function fetchDiscoverCategories() {
   const res = await graphqlRequest(GET_DISCOVER_CATEGORIES, {});
@@ -98,19 +95,22 @@ export async function fetchDiscoverCategories() {
 }
 
 export async function fetchDiscoverFeed({
+  category,
   cursor,
 }: {
+  category?: string;
   cursor?: string;
 }) {
   const res = await graphqlRequest(
     GET_DISCOVER_FEED,
     {
+      category,
       cursor,
       limit: 20,
     }
   );
 
-  return res?.forYouFeed ?? {
+  return res?.discoverFeed ?? {
     posts: [],
     nextCursor: undefined,
     hasMore: false,

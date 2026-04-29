@@ -9,7 +9,6 @@ type AppButtonProps = {
   onPress?: () => void;
   textSize?: any;
   textWeight?: any;
-  fontFamily?: string
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -27,7 +26,6 @@ export function SimpleButtonWithStyle({
   loading = false,
   style,
   borderRadius = 30,
-  fontFamily,
 }: AppButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -57,8 +55,6 @@ export function SimpleButtonWithStyle({
             textAlign="center"
             fontSize={textSize}
             fontWeight={textWeight}
-            
-            fontFamily={fontFamily}
           >
             {text}
           </Text>

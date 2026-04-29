@@ -1,21 +1,10 @@
-import { useEffect } from "react";
-import { Keyboard, Pressable, StyleSheet } from "react-native";
+import { Keyboard, View, StyleSheet } from "react-native";
 
 export function DismissKeyboard({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      // Keyboard opened
-    });
-
-    return () => {
-      showSubscription.remove();
-    };
-  }, []);
-
   return (
-    <Pressable style={styles.container} onPress={Keyboard.dismiss}>
+    <View style={styles.container} onTouchStart={() => Keyboard.dismiss}>
       {children}
-    </Pressable>
+    </View>
   );
 }
 

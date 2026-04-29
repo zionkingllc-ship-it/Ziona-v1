@@ -7,8 +7,8 @@ export function useBibleBooks() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    bibleRepository.getBooks().then((res) => {
-      setData(res);
+    bibleRepository.getBooks().then((res: BibleBook[] | undefined) => {
+      setData(res ?? []);
       setLoading(false);
     });
   }, []);

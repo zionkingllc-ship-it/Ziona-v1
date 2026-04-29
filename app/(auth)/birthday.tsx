@@ -102,7 +102,7 @@ export default function Birthday() {
             onPress={() => setShowPicker(true)}
             style={{
               width: "100%",
-              height: 51,
+              minHeight: 51,
               paddingHorizontal: 12,
               borderWidth: 1,
               borderColor: colors.borderColor,

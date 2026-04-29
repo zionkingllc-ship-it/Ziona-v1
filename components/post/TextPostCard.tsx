@@ -32,17 +32,19 @@ export default function TextPostCard({ post, onLike }: Props) {
   let verseText: string | undefined;
   let testimonyText: string | undefined;
 
-  if (post.scripture) {
+if (post.scripture) {
     const s = post.scripture;
-    scriptureText = `${s.book} ${s.chapter}:${s.verseStart}${
-      s.verseEnd ? `-${s.verseEnd}` : ""
-    }`;
+    scriptureText = s.reference;
     translation = s.translation;
-    verseText = s.text;
+    verseText = s.text ?? s.verses?.map(v => v.text).join(" ") ?? "";
   }
 
   if (post.type === "text") {
-    testimonyText = post.message;
+    testimonyText = post.textMessage;
+  }
+
+  if (post.type === "text") {
+    testimonyText = post.textMessage;
   }
 
   /* ================= HEART ANIMATION ================= */

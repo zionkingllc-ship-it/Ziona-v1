@@ -5,6 +5,7 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
 import SuccessModal from "@/components/ui/modals/successModal";
+import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 import colors from "@/constants/colors";
 import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -47,7 +48,8 @@ export default function CreateBiblePostScreen() {
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open
-  const [uploading, setUploading] = useState(false); 
+  const [uploading, setUploading] = useState(false);
+  const [showProgress, setShowProgress] = useState(false); 
   /* =========================
      TYPE SAFETY
   ========================= */
@@ -103,7 +105,7 @@ export default function CreateBiblePostScreen() {
     try {
       setUploading(true);
       await publishDraftPost(bibleDraft, queryClient);
-      feedback.showSuccess();
+      setShowProgress(true);
     } catch (error: any) {
       const networkFeedback = getNetworkModalCopy(
         error,
@@ -113,6 +115,11 @@ export default function CreateBiblePostScreen() {
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleProgressComplete() {
+    setShowProgress(false);
+    feedback.showSuccess();
   }
 
   return (
@@ -224,6 +231,10 @@ export default function CreateBiblePostScreen() {
         message={feedback.message}
         type={feedback.type}
         autoClose
+      />
+      <PostProgressModal
+        visible={showProgress}
+        onComplete={handleProgressComplete}
       />
     </YStack>
   );

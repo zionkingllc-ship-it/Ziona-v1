@@ -15,8 +15,8 @@ export function useBibleVerses(
 
     bibleRepository
       .getVerses(translation, book, chapter)
-      .then((res) => {
-        setVerses(res);
+      .then((res: BibleVerse[] | undefined) => {
+        setVerses(res ?? []);
         setLoading(false);
       });
   }, [translation, book, chapter]);

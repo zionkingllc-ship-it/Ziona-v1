@@ -43,7 +43,8 @@ export default function GuestProfileScreen() {
   } = useUserPosts(userId);
 
   const { data: profile, isLoading: isProfileLoading } = useUserProfile(userId);
-  const isFollowing = followedUsers[userId ?? ""] ?? profile?.viewerState?.followingAuthor ?? false;
+  const isFollowing = followedUsers[userId ?? ""] ?? profile?.viewerState?.isFollowing ?? false;
+  const isFollowedBy = profile?.viewerState?.isFollowedBy ?? false;
   const [profileAvatarSource, setProfileAvatarSource] = useState<{ uri: string } | null>(
     profile?.avatarUrl && profile.avatarUrl.trim()
       ? { uri: profile.avatarUrl }
@@ -183,15 +184,21 @@ export default function GuestProfileScreen() {
 
           {!profile.viewerState?.isOwner && isAuthenticated && (
             <TouchableOpacity
-              style={[styles.followBtn, isFollowing && styles.followingBtn]}
+              style={[
+                styles.followBtn,
+                (isFollowing || isFollowedBy) && styles.followingBtn
+              ]}
               onPress={handleFollow}
               disabled={isFollowPending}
             >
               <Text
                 fontFamily={"$body"}
-                style={[styles.followBtnText, isFollowing && styles.followingBtnText]}
+                style={[
+                  styles.followBtnText,
+                  (isFollowing || isFollowedBy) && styles.followingBtnText
+                ]}
               >
-                {isFollowing ? "Following" : "Follow"}
+                {isFollowing && isFollowedBy ? "Friends" : isFollowedBy && !isFollowing ? "Follow back" : isFollowing ? "Unfollow" : "Follow"}
               </Text>
             </TouchableOpacity>
           )}

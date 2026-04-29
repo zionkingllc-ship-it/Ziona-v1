@@ -47,7 +47,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
       try {
         console.log("[THUMB] ⚙️ Generating thumbnail...");
-        const generated = await generateVideoThumbnail(mediaUrl);
+        const generated = await generateVideoThumbnail(mediaUrl ?? "");
 
         if (generated && isMounted) {
           console.log("[THUMB] ✅ Generated thumbnail", generated);
@@ -136,14 +136,22 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
     /* TEXT / BIBLE */
     if (post.type === "text" || post.type === "bible") {
-      let text = "";
+      // For TEXT posts: show textMessage, or scripture.text if available
+      // For BIBLE posts: show scripture.text (already joined from verses in normalize)
+      let cardText = "";
 
       if (post.type === "text") {
-        text = post.message;
+        // TEXT + scripture posts
+        if (post.textMessage?.trim()) {
+          cardText = post.textMessage;
+        } else if (post.scripture?.text?.trim()) {
+          cardText = post.scripture.text;
+        }
       }
 
-      if (post.scripture?.text) {
-        text = post.scripture.text;
+      if (post.type === "bible") {
+        // BIBLE posts - scripture.text is set in normalizeBible
+        cardText = post.scripture?.text ?? post.textMessage ?? "";
       }
 
       return (
@@ -165,7 +173,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
               textAlign: "center",
             }}
           >
-            {text || "Text Post"}
+            {cardText || "Text Post"}
           </Text>
         </View>
       );

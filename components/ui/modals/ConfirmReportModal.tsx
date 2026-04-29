@@ -1,7 +1,4 @@
-// components/modals/ConfirmReportModal.tsx
-
 import colors from "@/constants/colors";
-import { AlertCircle } from "@tamagui/lucide-icons";
 import React from "react";
 import { Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Image, Text } from "tamagui";
@@ -11,12 +8,14 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  contentType?: "post" | "comment";
 }
 
 export default function ConfirmReportModal({
   visible,
   onClose,
   onConfirm,
+  contentType = "post",
 }: Props) {
   return (
     <BaseModal visible={visible} onClose={onClose}>
@@ -26,10 +25,15 @@ export default function ConfirmReportModal({
             ✕
           </Text>
         </TouchableOpacity>
-        <Image alignSelf="center" width={52} height={52} source={require("@/assets/images/alertSpecialIcon.png")}/>
+        <Image
+          alignSelf="center"
+          width={52}
+          height={52}
+          source={require("@/assets/images/alertSpecialIcon.png")}
+        />
 
         <Text fontFamily={"$body"} style={[styles.title]}>
-          Are you sure you want to report this post ?
+          Are you sure you want to report this {contentType}?
         </Text>
 
         <Text fontFamily={"$body"} style={styles.subtitle}>
@@ -39,7 +43,7 @@ export default function ConfirmReportModal({
         <Pressable style={styles.button} onPress={onConfirm}>
           <Text
             fontFamily={"$body"}
-            style={{ color: colors.primary, fontWeight: "600", marginBottom:20 }}
+            style={{ color: colors.primary, fontWeight: "600", marginBottom: 20 }}
           >
             Report
           </Text>
@@ -78,8 +82,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#777",
   },
-  button: { 
-    paddingVertical: 12, 
+  button: {
+    paddingVertical: 12,
     alignItems: "center",
     alignSelf: "center",
     marginTop: 10,

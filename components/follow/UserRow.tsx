@@ -14,8 +14,9 @@ interface FollowUserRowProps {
   username: string;
   avatarUrl?: string | null;
   bio?: string;
-  isFollowing?: boolean;
   showFollowButton?: boolean;
+  isFollowing?: boolean;
+  isFollowedBy?: boolean;
   onPress?: () => void;
 }
 
@@ -24,8 +25,9 @@ export default function FollowUserRow({
   username,
   avatarUrl,
   bio,
-  isFollowing: initialFollowing,
   showFollowButton = true,
+  isFollowing: propIsFollowing,
+  isFollowedBy: propIsFollowedBy,
   onPress,
 }: FollowUserRowProps) {
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -34,10 +36,31 @@ export default function FollowUserRow({
   const { requireAuth, AuthModal } = useRequireAuth();
 
   const isSelf = currentUserId === id;
-  const isFollowing = followedUsers[id] ?? initialFollowing ?? false;
+  const isFollowing = propIsFollowing ?? followedUsers[id] ?? false;
+  const isFollowedBy = propIsFollowedBy ?? false;
   const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(
     avatarUrl ? { uri: avatarUrl } : null,
   );
+
+  const getButtonText = () => {
+    if (isFollowing) return "Unfollow";
+    if (isFollowedBy) return "Follow back";
+    return "Follow";
+  };
+
+  const getButtonStyle = () => {
+    if (isFollowing || isFollowedBy) {
+      return [styles.followBtn, styles.followingBtn];
+    }
+    return styles.followBtn;
+  };
+
+  const getButtonTextStyle = () => {
+    if (isFollowing || isFollowedBy) {
+      return [styles.followBtnText, styles.followingBtnText];
+    }
+    return styles.followBtnText;
+  };
 
   const handlePress = () => {
     if (onPress) {
@@ -93,15 +116,12 @@ export default function FollowUserRow({
 
       {showFollowButton && !isSelf && (
         <TouchableOpacity
-          style={[styles.followBtn, isFollowing && styles.followingBtn]}
+          style={getButtonStyle()}
           onPress={handleToggleFollow}
           disabled={isPending}
         >
-          <Text
-            fontFamily={"$body"}
-            style={[styles.followBtnText, isFollowing && styles.followingBtnText]}
-          >
-            {isFollowing ? "Following" : "Follow"}
+          <Text style={getButtonTextStyle()}>
+            {getButtonText()}
           </Text>
         </TouchableOpacity>
       )}
@@ -152,6 +172,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    minWidth: 90,
+    alignItems: "center",
   },
   followBtnText: {
     color: colors.white,
@@ -165,5 +187,6 @@ const styles = StyleSheet.create({
   },
   followingBtnText: {
     color: colors.primary,
+    fontWeight: "600",
   },
 });

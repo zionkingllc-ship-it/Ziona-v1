@@ -1,11 +1,11 @@
-export function fixMediaUrl(url?: string): string | undefined {
-  if (!url) return undefined;
+export function fixMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
 
-  const base = "https://storage.googleapis.com/";
-  const parts = url.split(base);
-
-  if (parts.length > 2) {
-    return base + parts.pop();
+  if (url.includes(".gstatic.") || url.includes("google.")) {
+    const base = url.split("?")[0];
+    if (base.includes("/d/")) {
+      return base.replace(/\/d\/\d+\//, "/d/0/");
+    }
   }
 
   return url;

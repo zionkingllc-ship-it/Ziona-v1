@@ -9,6 +9,7 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { Eye, EyeClosed } from "@tamagui/lucide-icons";
 import { useState } from "react";
 import { Text, XStack, YStack, View } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function ChangePasswordScreen() {
@@ -55,8 +56,10 @@ export default function ChangePasswordScreen() {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
     <KeyboardAvoidingWrapper>
-      <Header heading="Change password" />
+      <XStack padding={10}>  <Header heading="Change password" /></XStack>
+    
 
       <YStack padding="$4" gap="$4" marginTop="$4">
 
@@ -183,6 +186,7 @@ export default function ChangePasswordScreen() {
         type="warning"
       />
     </KeyboardAvoidingWrapper>
+    </SafeAreaView>
   );
 }
 

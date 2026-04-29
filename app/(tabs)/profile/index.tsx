@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   TouchableOpacity,
@@ -92,7 +93,7 @@ export default function ProfileScreen() {
   const postActive = require("@/assets/images/postIconActive.png");
   const likedPostActive = require("@/assets/images/heartIconActive.png");
   const likedPostInActive = require("@/assets/images/heartIcon.png");
-  const settingIcon = require("@/assets/images/settingsIcon.png");
+  const settingIcon = require("@/assets/images/moreIcon.png");
   const profileShareIcon = require("@/assets/images/shareProfileIcon.png");
 
   /* ================= VIDEO THUMBNAILS ================= */
@@ -139,7 +140,7 @@ export default function ProfileScreen() {
     };
   }, [posts, videoThumbnails]);
 
-  /* ================= FILTER ================= */
+  /*================= FILTER =================*/
 
   const filteredPosts = useMemo(() => {
     if (activeTab === "liked") {
@@ -293,7 +294,7 @@ export default function ProfileScreen() {
             <Text fontFamily={"$body"} fontWeight="500" fontSize={"$4"}>
               {profile?.stats?.followingCount ?? 0}
             </Text>
-            <Text fontFamily={"$body"} fontSize={"$3"} color={colors.gray}>
+            <Text fontFamily={"$body"} fontSize={13} color={colors.gray}>
               Following
             </Text>
           </YStack>
@@ -310,22 +311,22 @@ export default function ProfileScreen() {
         padding={10}
       >
         <TouchableOpacity
-          style={{ width: "33.33%", height: "100%" }}
+          style={{ width: "33.33%", height: "100%", alignItems: "center" }}
           onPress={() => setActiveTab("posts")}
         >
           <Image
             source={activeTab === "posts" ? postActive : postInActive}
-            style={{ width: 24, height: 24, alignSelf: "flex-start" }}
+            style={{ width: 24, height: 24 }}
           />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ width: "33.33%", height: "100%" }}
+          style={{ width: "33.33%", height: "100%", alignItems: "center" }}
           onPress={() => setActiveTab("liked")}
         >
           <Image
             source={activeTab === "liked" ? likedPostActive : likedPostInActive}
-            style={{ width: 24, height: 24, alignSelf: "center" }}
+            style={{ width: 24, height: 24 }}
           />
         </TouchableOpacity>
       </XStack>
@@ -333,7 +334,9 @@ export default function ProfileScreen() {
       {/* CONTENT */}
       <YStack flex={1} marginTop={10}>
         {isLoading ? (
-          <CenteredMessage text="Loading..." fontFamily={"$body"} />
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </YStack>
         ) : filteredPosts.length === 0 ? (
           <YStack marginTop={"$7"}>
             <CenteredMessage

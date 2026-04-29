@@ -1,11 +1,45 @@
 import colors from "@/constants/colors";
 import { useScreenDimensions } from "@/context/ScreenDimensionsContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { Tabs } from "expo-router";
-import { useEffect } from "react";
-import { Image, Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Platform, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Text } from "tamagui";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // Visual height of tab bar only (safe area handled separately by OS)
 const TAB_BAR_VISUAL_HEIGHT = Platform.OS === "ios" ? 49 : 56;
+
+function ProfileTabIcon({ avatarUrl, username }: { avatarUrl?: string | null; username?: string }) {
+  const [imageError, setImageError] = useState(false);
+  const initials = username?.slice(0, 2)?.toUpperCase() || "U";
+
+  if (avatarUrl && !imageError) {
+    return (
+      <Image
+        source={{ uri: avatarUrl }}
+        style={{ width: 23, height: 23, borderRadius: 11.5 }}
+        onError={() => setImageError(true)}
+      />
+    );
+  }
+
+  return (
+    <View style={{ width: 23, height: 23, borderRadius: 11.5, overflow: "hidden" }}>
+      <LinearGradient
+        colors={["#D396E8", "#9D4C76"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+      >
+        <Text style={{ color: "white", fontSize: 9, fontWeight: "600" }}>
+          {initials}
+        </Text>
+      </LinearGradient>
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const homeActive = require("@/assets/images/homeTabB.png");
@@ -16,13 +50,12 @@ export default function TabsLayout() {
   const createInActive = require("@/assets/images/createTabsA.png");
   const circleInActive = require("@/assets/images/circleTabA.png");
   const circleActive = require("@/assets/images/circleTabB.png");
-  const profile = require("@/assets/images/profile.png");
 
+  const userId = useAuthStore((s) => s.user?.id);
+  const { data: profile } = useUserProfile(userId);
   const { setTabBarHeight } = useScreenDimensions();
 
   useEffect(() => {
-    // Report only the visual height, not including safe area
-    // The context adds bottomInset separately
     setTabBarHeight(TAB_BAR_VISUAL_HEIGHT);
   }, [setTabBarHeight]);
 
@@ -100,7 +133,7 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: () => (
-            <Image source={profile} style={{ width: 23, height: 23 }} />
+            <ProfileTabIcon avatarUrl={profile?.avatarUrl} username={profile?.username} />
           ),
         }}
       />

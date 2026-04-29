@@ -77,9 +77,14 @@ export function useDiscoverFeed(categoryId?: string) {
     query.data?.pages
       ?.flatMap((page) => page.posts)
       .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => !!p)
+      .reduce<FeedPost[]>((acc, post) => {
+        if (!acc.some((p) => p.id === post.id)) {
+          acc.push(post);
+        }
+        return acc;
+      }, [])
       .filter((p): p is FeedPost => {
-        if (!p) return false;
-
         const isAllCategory =
           categoryId === "all" || categoryId === "1";
 

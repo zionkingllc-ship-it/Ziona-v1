@@ -7,8 +7,8 @@ export function useBibleTranslations() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    bibleRepository.getTranslations().then((res) => {
-      setData(res)
+    bibleRepository.getTranslations().then((res: BibleTranslation[] | undefined) => {
+      setData(res ?? [])
       setLoading(false)
     })
   }, [])
