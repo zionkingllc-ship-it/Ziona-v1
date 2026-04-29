@@ -2,7 +2,7 @@ import { GET_USER_POSTS } from "@/hooks/useUserPost";
 import { queryClient } from "@/lib/queryClient";
 import { authApi } from "@/services/api/authApi";
 import { clearAuthTokens, setAuthTokens } from "@/services/api/client";
-import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { graphqlRequest, refreshWithRetry } from "@/services/graphQL/graphqlClient";
 import { AuthState, AuthTokens, User } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
@@ -19,6 +19,8 @@ type AuthStore = AuthState & {
   initializeAuth: () => Promise<void>;
   setHasHydrated: (state: boolean) => void;
   clearSession: () => Promise<void>;
+  onLogoutNavigate?: () => void;
+  _forceLogout?: number;
 };
 
 export const useAuthStore = create<AuthStore>()(
@@ -31,6 +33,7 @@ export const useAuthStore = create<AuthStore>()(
       _hasHydrated: false,
       isBootstrapping: true,
       isInitializing: false,
+      onLogoutNavigate: undefined,
 
       /* -------- LOGIN SUCCESS -------- */
 
@@ -78,11 +81,33 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: async () => {
+        // Mark logout time for conflict resolution during rehydration
+        const logoutTime = Date.now();
+
+        // Clear store IMMEDIATELY - don't wait for signOut
+        clearAuthTokens();
+        set({
+          user: null,
+          tokens: null,
+          isAuthenticated: false,
+          mode: "unauthenticated",
+          _hasHydrated: false,
+          _forceLogout: logoutTime,
+        });
+        queryClient.clear();
+
+        // Try signOut but don't block - it's ok if it fails
         try {
           await authApi.signOut();
-        } catch {}
+        } catch {
+          // Ignore signOut failures - we cleared the store anyway
+        }
 
-        await get().clearSession();
+        // Clean up persisted storage
+        await AsyncStorage.removeItem("auth-storage");
+
+        // Navigate to login
+        get().onLogoutNavigate?.();
       },
 
       /* -------- INIT AUTH -------- */
@@ -112,49 +137,79 @@ export const useAuthStore = create<AuthStore>()(
           return;
         }
 
-try {
-          const user = await authApi.getMe();
-
-          if (!user?.id) {
-            throw new Error("Invalid getMe response");
-          }
-
+        // Store user in memory immediately (even if getMe fails)
+        const storedUser = state.user;
+        if (storedUser?.id) {
           set({
-            user,
+            user: storedUser,
             isAuthenticated: true,
             mode: "authenticated",
           });
+        }
 
-          //  PREFETCH
-          await Promise.all([
-            queryClient.prefetchQuery({
-              queryKey: ["userProfile", user.id],
-              queryFn: () => authApi.getMe(),
-            }),
-            queryClient.prefetchInfiniteQuery({
-              queryKey: ["userPosts", user.id],
-              queryFn: async ({ pageParam }) => {
-                const data = await graphqlRequest(GET_USER_POSTS, {
-                  userId: user.id,
-                  cursor: pageParam,
-                  limit: 20,
+        const bootstrap = async () => {
+          // Silently retry getMe with token refresh
+          const maxAttempts = 5;
+          let lastError: any = null;
+
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+              // Refresh token first if needed
+              if (attempt > 0) {
+                const newToken = await refreshWithRetry(2);
+                if (!newToken) {
+                  // Refresh failed, wait and retry
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  continue;
+                }
+              }
+
+              const user = await authApi.getMe();
+
+              if (user?.id) {
+                set({
+                  user,
+                  isAuthenticated: true,
+                  mode: "authenticated",
                 });
 
-                const res = data?.userPosts;
+                await Promise.all([
+                  queryClient.prefetchQuery({
+                    queryKey: ["userProfile", user.id],
+                    queryFn: () => authApi.getMe(),
+                  }),
+                  queryClient.prefetchInfiniteQuery({
+                    queryKey: ["userPosts", user.id],
+                    queryFn: async ({ pageParam }) => {
+                      const data = await graphqlRequest(GET_USER_POSTS, {
+                        userId: user.id,
+                        cursor: pageParam,
+                        limit: 20,
+                      });
+                      const res = data?.userPosts;
+                      return {
+                        posts: res?.posts ?? [],
+                        nextCursor: res?.nextCursor,
+                        hasMore: res?.hasMore ?? false,
+                      };
+                    },
+                    initialPageParam: undefined,
+                  }),
+                ]);
+                return; // Success
+              }
+            } catch (err) {
+              lastError = err;
+              if (attempt < maxAttempts - 1) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          }
 
-                return {
-                  posts: res?.posts ?? [],
-                  nextCursor: res?.nextCursor,
-                  hasMore: res?.hasMore ?? false,
-                };
-              },
-              initialPageParam: undefined,
-            }),
-          ]);
-        } catch (err) {
-          console.log("Auth verification failed", err);
-          await get().clearSession();
-        }
+          console.log("Silent getMe refresh exhausted, keeping stored session");
+        };
+
+        bootstrap(); // Don't await - let it run silently
 
         set({
           isBootstrapping: false,
@@ -174,10 +229,25 @@ try {
         tokens: state.tokens,
         isAuthenticated: state.isAuthenticated,
         mode: state.mode,
+        _forceLogout: state._forceLogout,
       }),
 
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+
+        // Check if logout was triggered after this rehydration started
+        const storedForceLogout = state._forceLogout;
+        if (storedForceLogout && storedForceLogout > 0) {
+          // Clear everything - logout wins
+          state.user = null;
+          state.tokens = null;
+          state.isAuthenticated = false;
+          state.mode = "unauthenticated";
+          state._forceLogout = undefined;
+          clearAuthTokens();
+          queryClient.clear();
+          return;
+        }
 
         //  unwrap wrongly stored user
         if (state.user && (state.user as any).data) {

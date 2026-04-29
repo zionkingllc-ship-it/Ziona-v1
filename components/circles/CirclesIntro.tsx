@@ -24,6 +24,21 @@ export default function CirclesIntro({
   const imageWidth = isSmallDevice ? wp(38) : 169;
   const imageHeight = isSmallDevice ? wp(32) : 138;
 
+  // Different sizes for each image position
+  const topLeftSize = {
+    width: isSmallDevice ? wp(30) : 140,
+    height: isSmallDevice ? wp(25) : 115,
+  };
+  const topRightSize = {
+    width: isSmallDevice ? wp(35) : 155,
+    height: isSmallDevice ? wp(30) : 130,
+  };
+  const bottomSize = {
+    width: isSmallDevice ? wp(28) : 125,
+    height: isSmallDevice ? wp(22) : 100,
+  };
+  const borderRadius = 5;
+
   /* =========================
      FADE CONTROL
   ========================= */
@@ -137,9 +152,10 @@ export default function CirclesIntro({
                       position: "absolute",
                       top: hp(isSmallDevice ? 2 : 5),
                       left: wp(isSmallDevice ? 3 : 5),
-                      width: imageWidth,
-                      height: imageHeight,
-                      borderRadius: 12,
+                      width: topLeftSize.width,
+                      height: topLeftSize.height,
+                      borderRadius,
+                      marginBottom: hp(2),
                     },
                     style1,
                   ]}
@@ -148,7 +164,7 @@ export default function CirclesIntro({
                     source={{
                       uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
                     }}
-                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                    style={{ width: "100%", height: "100%", borderRadius }}
                   />
                 </Animated.View>
 
@@ -159,9 +175,9 @@ export default function CirclesIntro({
                       position: "absolute",
                       top: hp(isSmallDevice ? 25 : 30),
                       right: wp(5),
-                      width: imageWidth,
-                      height: imageHeight,
-                      borderRadius: 12,
+                      width: topRightSize.width,
+                      height: topRightSize.height,
+                      borderRadius,
                     },
                     style2,
                   ]}
@@ -170,7 +186,7 @@ export default function CirclesIntro({
                     source={{
                       uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
                     }}
-                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                    style={{ width: "100%", height: "100%", borderRadius }}
                   />
                 </Animated.View>
 
@@ -181,9 +197,9 @@ export default function CirclesIntro({
                       position: "absolute",
                       bottom: hp(isSmallDevice ? 5 : 8),
                       left: wp(isSmallDevice ? 35 : 40),
-                      width: imageWidth,
-                      height: imageHeight,
-                      borderRadius: 12,
+                      width: bottomSize.width,
+                      height: bottomSize.height,
+                      borderRadius,
                     },
                     style3,
                   ]}
@@ -192,7 +208,7 @@ export default function CirclesIntro({
                     source={{
                       uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
                     }}
-                    style={{ width: "100%", height: "100%", borderRadius: 12 }}
+                    style={{ width: "100%", height: "100%", borderRadius }}
                   />
                 </Animated.View>
               </View>

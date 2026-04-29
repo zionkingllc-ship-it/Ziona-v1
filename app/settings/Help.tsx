@@ -99,7 +99,7 @@ export default function HelpScreen() {
           text="Chat with us"
           color={colors.primary}
           textColor={colors.white}
-          onPress={() => router.push("/profile/settings/ChatInput")}
+          onPress={() => router.push("/settings/ChatInput")}
         />
       </View>
     </SafeAreaView>

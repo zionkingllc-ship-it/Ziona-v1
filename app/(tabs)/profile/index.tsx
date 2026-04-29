@@ -180,7 +180,7 @@ export default function ProfileScreen() {
           heading={`@${profile?.username || ""}`}
           imageAfter2={settingIcon}
           imageAfter={profileShareIcon}
-          imageAfter2Press={() => router.push("/(tabs)/profile/settings")}
+          imageAfter2Press={() => router.push("/settings")}
         />
       </XStack>
 

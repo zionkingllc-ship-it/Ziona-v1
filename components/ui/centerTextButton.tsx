@@ -1,6 +1,5 @@
-import { Button, XStack, Text, Spinner } from "tamagui";
-import { StyleProp, ViewStyle } from "react-native";
-import colors from "@/constants/colors"; 
+import { Button, XStack, Text, Spinner, ButtonProps } from "tamagui";
+import colors from "@/constants/colors";
 
 type AppButtonProps = {
   text: string;
@@ -10,10 +9,10 @@ type AppButtonProps = {
   textSize?: any;
   textWeight?: any;
   disabled?: boolean;
-  fontFamily?:any;
+  fontFamily?: any;
   loading?: boolean;
-  style?: StyleProp<ViewStyle>;
-};
+  borderRadius?: number;
+} & Omit<ButtonProps, "children">;
 
 export function SimpleButton({
   text,
@@ -22,37 +21,36 @@ export function SimpleButton({
   textWeight = "400",
   onPress,
   color,
-  fontFamily ="$body",
+  fontFamily = "$body",
   disabled = false,
   loading = false,
-  style,
-}: AppButtonProps) { 
+  borderRadius = 8,
+  ...buttonProps
+}: AppButtonProps) {
   const isDisabled = disabled || loading;
 
   return (
     <Button
       onPress={onPress}
-        
       disabled={isDisabled}
-      style={style}
       backgroundColor={isDisabled ? colors.inactiveButton : color}
-      borderWidth={1} 
+      borderWidth={1}
+      borderRadius={borderRadius}
       pressStyle={{ opacity: 0.85 }}
+      {...buttonProps}
     >
-      <XStack width="100%" justifyContent="center" alignItems="center">
-        {loading ? (
-          <Spinner color={textColor ?? "#F6EAFA"} size="small" />
-        ) : (
-          <Text
-            color={textColor ?? "black"}
-            fontFamily={fontFamily}
-            fontSize={textSize}
-            fontWeight={textWeight}
-          >
-            {text}
-          </Text>
-        )}
-      </XStack>
+      {loading ? (
+        <Spinner color={textColor ?? "#F6EAFA"} size="small" />
+      ) : (
+        <Text
+          color={textColor ?? "black"}
+          fontFamily={fontFamily}
+          fontSize={textSize}
+          fontWeight={textWeight}
+        >
+          {text}
+        </Text>
+      )}
     </Button>
   );
 }

@@ -28,17 +28,17 @@ export default function AccountSetupScreen() {
         <SettingsRow 
           icon={<Shield size={18} color={colors.secondaryGray} />}
           label="Password and security"
-          onPress={() => router.push("/profile/settings/ChangePassword")}
+          onPress={() => router.push("/settings/ChangePassword")}
         />
         <SettingsRow 
           icon={<Heart size={18} color={colors.secondaryGray} />}
           label="Like count"
-          onPress={() => router.push("/profile/settings/LikeCountVisible")}
+          onPress={() => router.push("/settings/LikeCountVisible")}
         />
         <SettingsRow 
           icon={<UserX size={18} color={colors.secondaryGray} />}
           label="Deactivate or delete account"
-          onPress={() => router.push("/profile/settings/DeactivateOrDelete")}
+          onPress={() => router.push("/settings/DeactivateOrDelete")}
         />
       </SettingsSection>
     </SafeAreaView>

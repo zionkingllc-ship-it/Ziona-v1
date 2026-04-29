@@ -1,25 +1,44 @@
-import { ChevronRight, Lock, Bell, Bookmark, HelpCircle, FileText, User } from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, TextInput, Pressable, Image } from "react-native";
-import { Text, View, XStack, YStack } from "tamagui";
-import { LinearGradient } from "expo-linear-gradient";
+import { SettingsRow, SettingsSection } from "@/components/settings";
 import colors from "@/constants/colors";
-import { SettingsSection, SettingsRow } from "@/components/settings";
 import { useLogout } from "@/hooks/useAccountSettings";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useState, useEffect } from "react";
+import {
+  Bell,
+  Bookmark,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  Lock,
+  User,
+} from "@tamagui/lucide-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Image, Pressable, ScrollView, TextInput } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View, XStack, YStack } from "tamagui";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const logout = useLogout();
+  const setOnLogoutNavigate = useAuthStore((s) => s.setHasHydrated);
 
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile } = useUserProfile(userId);
-  const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(null);
+  const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(
+    null,
+  );
   const [imageError, setImageError] = useState(false);
   const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Z";
+
+  useEffect(() => {
+    useAuthStore.setState({ onLogoutNavigate: () => router.replace("/(auth)") });
+
+    return () => {
+      useAuthStore.setState({ onLogoutNavigate: undefined });
+    };
+  }, []);
 
   useEffect(() => {
     if (profile?.avatarUrl && profile.avatarUrl.trim() && !imageError) {
@@ -39,19 +58,17 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+      {/* HEADER */}
+      <Text
+        fontFamily="$body"
+        fontSize={18}
+        fontWeight="600"
+        alignSelf="center"
+        marginBottom={10}
+      >
+        Settings
+      </Text>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        
-        {/* HEADER */}
-        <Text 
-          fontFamily="$body" 
-          fontSize={18} 
-          fontWeight="600" 
-          alignSelf="center" 
-          marginBottom={10}
-        >
-          Settings
-        </Text>
-
         {/* SEARCH */}
         <View
           backgroundColor={colors.lightGrayBg}
@@ -60,16 +77,14 @@ export default function SettingsScreen() {
           paddingVertical={8}
           marginBottom={15}
         >
-          <TextInput 
-            placeholder="Search" 
+          <TextInput
+            placeholder="Search"
             placeholderTextColor={colors.placeholderText}
           />
         </View>
 
         {/* PROFILE */}
-        <Pressable 
-          onPress={() => router.push("/profile/settings/AccountSetup")}
-        >
+        <Pressable onPress={() => router.push("/settings/AccountSetup")}>
           <XStack
             alignItems="center"
             justifyContent="space-between"
@@ -88,9 +103,20 @@ export default function SettingsScreen() {
                   colors={["#D396E8", "#9D4C76"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  <Text color="white" fontSize={14} fontWeight="600" fontFamily="$body">
+                  <Text
+                    color="white"
+                    fontSize={14}
+                    fontWeight="600"
+                    fontFamily="$body"
+                  >
                     {initials}
                   </Text>
                 </LinearGradient>
@@ -110,53 +136,53 @@ export default function SettingsScreen() {
 
         {/* ACCOUNT SETTINGS */}
         <SettingsSection title="Account settings">
-          <SettingsRow 
-            icon={<Lock size={18} color={colors.secondaryGray} />} 
-            label="Password and security" 
-            onPress={() => router.push("/profile/settings/ChangePassword")}
+          <SettingsRow
+            icon={<Lock size={18} color={colors.secondaryGray} />}
+            label="Password and security"
+            onPress={() => router.push("/settings/ChangePassword")}
           />
-          <SettingsRow 
-            icon={<Bell size={18} color={colors.secondaryGray} />} 
-            label="Notification" 
-            onPress={() => router.push("/profile/settings/Notification")}
+          <SettingsRow
+            icon={<Bell size={18} color={colors.secondaryGray} />}
+            label="Notification"
+            onPress={() => router.push("/settings/Notification")}
           />
-          <SettingsRow 
-            icon={<Lock size={18} color={colors.secondaryGray} />} 
-            label="Account privacy" 
-            onPress={() => router.push("/profile/settings/Privacy")}
+          <SettingsRow
+            icon={<Lock size={18} color={colors.secondaryGray} />}
+            label="Account privacy"
+            onPress={() => router.push("/settings/Privacy")}
           />
-          <SettingsRow 
-            icon={<Bell size={18} color={colors.secondaryGray} />} 
-            label="Like counts visible" 
-            onPress={() => router.push("/profile/settings/LikeCountVisible")}
+          <SettingsRow
+            icon={<Bell size={18} color={colors.secondaryGray} />}
+            label="Like counts visible"
+            onPress={() => router.push("/settings/LikeCountVisible")}
           />
         </SettingsSection>
 
         {/* ACTIVITY */}
         <SettingsSection title="Activity">
-          <SettingsRow 
-            icon={<Bookmark size={18} color={colors.secondaryGray} />} 
-            label="Bookmarks" 
-            onPress={() => router.push("/profile/settings/Bookmarks")}
+          <SettingsRow
+            icon={<Bookmark size={18} color={colors.secondaryGray} />}
+            label="Bookmarks"
+            onPress={() => router.push("/settings/Bookmarks")}
           />
         </SettingsSection>
 
         {/* SUPPORT */}
         <SettingsSection title="Support and more info">
-          <SettingsRow 
-            icon={<HelpCircle size={18} color={colors.secondaryGray} />} 
-            label="Help" 
-            onPress={() => router.push("/profile/settings/Help")}
+          <SettingsRow
+            icon={<HelpCircle size={18} color={colors.secondaryGray} />}
+            label="Help"
+            onPress={() => router.push("/settings/Help")}
           />
-          <SettingsRow 
-            icon={<FileText size={18} color={colors.secondaryGray} />} 
-            label="Terms and policies" 
-            onPress={() => router.push("/profile/settings/Terms")}
+          <SettingsRow
+            icon={<FileText size={18} color={colors.secondaryGray} />}
+            label="Terms and policies"
+            onPress={() => router.push("/settings/Terms")}
           />
-          <SettingsRow 
-            icon={<User size={18} color={colors.secondaryGray} />} 
-            label="About your account" 
-            onPress={() => router.push("/profile/settings/About")}
+          <SettingsRow
+            icon={<User size={18} color={colors.secondaryGray} />}
+            label="About your account"
+            onPress={() => router.push("/settings/About")}
           />
         </SettingsSection>
 

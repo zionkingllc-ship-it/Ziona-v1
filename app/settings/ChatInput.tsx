@@ -39,7 +39,7 @@ export default function ChatInputScreen() {
           textColor={colors.white}
           onPress={() =>
             router.push({
-              pathname: "/profile/settings/Chat",
+              pathname: "/settings/Chat",
               params: { message },
             })
           }

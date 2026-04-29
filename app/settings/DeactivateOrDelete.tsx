@@ -24,8 +24,8 @@ export default function DeactivateOrDeleteScreen() {
       <YStack paddingHorizontal={16} marginTop={20} gap="$6">
 
         {/* DEACTIVATE */}
-        <Pressable onPress={() => router.push("/profile/settings/DeactivateAccount")}>
-          <XStack justifyContent="space-between" alignItems="flex-start">
+        <Pressable onPress={() => router.push("/settings/DeactivateAccount")}>
+          <XStack justifyContent="space-between" alignItems="center">
             <YStack flex={1} paddingRight={10}>
               <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
                 Deactivate
@@ -41,8 +41,8 @@ export default function DeactivateOrDeleteScreen() {
         </Pressable>
 
         {/* DELETE */}
-        <Pressable onPress={() => router.push("/profile/settings/DeactivateReason")}>
-          <XStack justifyContent="space-between" alignItems="flex-start">
+        <Pressable onPress={() => router.push("/settings/DeleteReason")}>
+          <XStack justifyContent="space-between" alignItems="center">
             <YStack flex={1} paddingRight={10}>
               <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
                 Delete

@@ -65,7 +65,11 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      await authApi.signOut();
+      try {
+        await authApi.signOut();
+      } catch (err) {
+        console.log("signOut failed, continuing with local logout:", err);
+      }
     },
     onSuccess: async () => {
       await logout();

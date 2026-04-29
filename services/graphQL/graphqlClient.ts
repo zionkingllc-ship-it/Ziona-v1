@@ -17,45 +17,73 @@ function isAuthErrorMessage(message: string): boolean {
   return AUTH_ERROR_MESSAGES.some((authMsg) => lower.includes(authMsg));
 }
 
-async function refreshAccessToken() {
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
   const store = useAuthStore.getState();
   const refreshToken = store.tokens?.refreshToken;
 
   if (!refreshToken) return null;
 
-  try {
-    const res = await fetch(GRAPHQL_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: `
-          mutation RefreshToken($refreshToken: String!) {
-            refreshToken(refreshToken: $refreshToken) {
-              accessToken
-              refreshToken
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Add exponential backoff: 500ms, 1000ms, 2000ms
+      if (attempt > 0) {
+        const delay = 500 * Math.pow(2, attempt - 1);
+        console.log(`Refresh retry ${attempt + 1}/${maxRetries} after ${delay}ms...`);
+        await sleep(delay);
+      }
+
+      const res = await fetch(GRAPHQL_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `
+            mutation RefreshToken($refreshToken: String!) {
+              refreshToken(refreshToken: $refreshToken) {
+                accessToken
+                refreshToken
+              }
             }
-          }
-        `,
-        variables: { refreshToken },
-      }),
-    });
+          `,
+          variables: { refreshToken },
+        }),
+      });
 
-    const json = await res.json();
+      const json = await res.json();
+      const newTokens = json?.data?.refreshToken;
 
-    const newTokens = json?.data?.refreshToken;
+      if (newTokens?.accessToken) {
+        useAuthStore.getState().setTokens?.(newTokens);
+        console.log(`Token refreshed successfully on attempt ${attempt + 1}`);
+        return newTokens.accessToken;
+      }
 
-    if (newTokens?.accessToken) {
-      useAuthStore.getState().setTokens?.(newTokens);
-      return newTokens.accessToken;
+      lastError = json?.errors?.[0]?.message || "No tokens in response";
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "Network error";
+      console.warn(`Refresh attempt ${attempt + 1} failed:`, lastError);
     }
-
-    return null;
-  } catch {
-    return null;
   }
+
+  console.warn(`All ${maxRetries} refresh attempts failed. Last error:`, lastError);
+  return null;
 }
+
+// Convenience function - refresh on user interaction (option 3)
+export async function refreshTokenProactively(): Promise<boolean> {
+  const newToken = await refreshWithRetry(2); // 2 attempts for proactive refresh
+  return !!newToken;
+}
+
+// Alias for backward compatibility
+const refreshAccessToken = refreshWithRetry;
 
 export async function graphqlRequest(
   query: string,
@@ -94,9 +122,10 @@ export async function graphqlRequest(
     );
 
   if (isAuthError) {
-    console.warn("Token expired — attempting refresh");
+    console.warn("Token expired — attempting refresh with retry...");
 
-    const newAccessToken = await refreshAccessToken();
+    // Option 2: Retry with backoff (up to 3 times)
+    const newAccessToken = await refreshWithRetry(3);
 
     if (newAccessToken) {
       console.log("Token refreshed — retrying request");
@@ -111,14 +140,17 @@ export async function graphqlRequest(
         );
 
       if (stillHasAuthError) {
-        console.warn("Refresh still failing — logging out");
+        console.warn("Refresh still failing after retries — logging out");
         useAuthStore.getState().logout?.();
+        // Still allow app to function - return partial data or throw
         throw new Error("Session expired");
       }
     } else {
-      console.warn("Refresh failed — logging out");
-      useAuthStore.getState().logout?.();
-      throw new Error("Session expired");
+      // All retries failed - this handles Option 3 gracefully
+      // Log a warning but don't crash - let the calling function handle it
+      console.warn("Refresh failed after 3 attempts — API may need re-auth");
+      // Return partial success - caller should check if data is null
+      return json?.data;
     }
   }
 

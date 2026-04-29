@@ -3,9 +3,11 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import colors from "@/constants/colors";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable } from "react-native";
+import { Pressable as RNPressable } from "react-native";
 import { Text, XStack, YStack, TextArea } from "tamagui";
 import { useRouter } from "expo-router";
+import { useAuthStore } from "@/store/useAuthStore";
+import { authApi } from "@/services/api/authApi";
 
 type Reason =
   | "temporary"
@@ -14,19 +16,27 @@ type Reason =
   | "other"
   | null;
 
-export default function DeactivateReasonScreen() {
+export default function DeleteReasonScreen() {
   const router = useRouter();
+  const clearSession = useAuthStore((s) => s.clearSession);
   const [selected, setSelected] = useState<Reason>(null);
   const [otherText, setOtherText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isValid =
     selected &&
     (selected !== "other" || otherText.trim().length > 0);
 
-  const handleSubmit = () => {
-    // Optional: Send feedback to backend
-    // For now, just navigate to actual deactivation
-    router.push("/profile/settings/DeactivateAccount");
+  const handleDelete = async () => {
+    if (!isValid) return;
+    setIsDeleting(true);
+    try {
+      await authApi.deleteAccount();
+      clearSession();
+      router.replace("/(auth)");
+    } catch (error) {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -54,7 +64,7 @@ export default function DeactivateReasonScreen() {
         </Text>
 
         {/* OPTIONS */}
-        <Option label="It is a temporary decision" value="temporary" />
+        <Option label="It is a temporary decision" value="temporary" selected={selected} onSelect={setSelected} />
         
         {selected === "temporary" && (
           <YStack marginBottom={12} paddingLeft={26}>
@@ -63,15 +73,15 @@ export default function DeactivateReasonScreen() {
               instead. Deactivation lets you restore your account at any time.
             </Text>
 
-            <Pressable onPress={() => router.push("/profile/settings/DeactivateAccount")}>
+            <RNPressable onPress={() => router.push("/settings/DeactivateAccount")}>
               <Text fontFamily="$body" fontSize={12} color={colors.primary} marginTop={6}>
                 Deactivate account instead
               </Text>
-            </Pressable>
+            </RNPressable>
           </YStack>
         )}
 
-        <Option label="Safety or privacy concerns" value="safety" />
+        <Option label="Safety or privacy concerns" value="safety" selected={selected} onSelect={setSelected} />
 
         {selected === "safety" && (
           <YStack marginBottom={12} paddingLeft={26}>
@@ -93,9 +103,9 @@ export default function DeactivateReasonScreen() {
           </YStack>
         )}
 
-        <Option label="Trouble getting started" value="trouble" />
+        <Option label="Trouble getting started" value="trouble" selected={selected} onSelect={setSelected} />
 
-        <Option label="Another reason" value="other" />
+        <Option label="Another reason" value="other" selected={selected} onSelect={setSelected} />
 
         {selected === "other" && (
           <YStack marginTop={10}>
@@ -117,9 +127,9 @@ export default function DeactivateReasonScreen() {
       {/* BUTTON */}
       <YStack padding={16}>
         <SimpleButton
-          text="Deactivate account"
-          onPress={handleSubmit}
-          disabled={!isValid}
+          text="Delete account"
+          onPress={handleDelete}
+          disabled={!isValid || isDeleting}
           color={isValid ? colors.DEBIT_RED : colors.inactiveButton}
           textColor={colors.white}
         />
@@ -132,27 +142,29 @@ export default function DeactivateReasonScreen() {
 function Option({
   label,
   value,
+  selected,
+  onSelect,
 }: {
   label: string;
   value: Reason;
+  selected: Reason;
+  onSelect: (value: Reason) => void;
 }) {
-  const [selected, setSelected] = useState<Reason>(null);
-
-  const active = selected === value;
+  const isSelected = selected === value;
 
   return (
-    <Pressable onPress={() => setSelected(value)}>
+    <RNPressable onPress={() => onSelect(value)}>
       <XStack alignItems="center" gap="$3" marginBottom={14}>
         <XStack
           width={18}
           height={18}
           borderRadius={9}
           borderWidth={1}
-          borderColor={active ? colors.DEBIT_RED : colors.gray}
+          borderColor={isSelected ? colors.DEBIT_RED : colors.gray}
           alignItems="center"
           justifyContent="center"
         >
-          {active && (
+          {isSelected && (
             <XStack
               width={10}
               height={10}
@@ -166,6 +178,6 @@ function Option({
           {label}
         </Text>
       </XStack>
-    </Pressable>
+    </RNPressable>
   );
 }

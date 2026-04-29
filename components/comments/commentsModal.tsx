@@ -1,4 +1,5 @@
 import BaseModal from "@/components/ui/modals/BaseModal";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import colors from "@/constants/colors";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
@@ -296,26 +297,16 @@ function CommentItem({
   const shouldTruncate = comment.text.length > 80;
   const displayText = isExpanded || !shouldTruncate ? comment.text : comment.text.slice(0, 80) + "...";
 
-  const handleAvatarError = (url: string | undefined | null) => {
-    if (url) {
-      setFailedAvatarUrls((prev) => Array.from(new Set([...prev, url])));
-    }
-  };
-
   return (
     <View paddingVertical="$3" borderBottomWidth={1} borderBottomColor="#f0f0f0">
       <XStack justifyContent="space-between">
         <XStack gap="$2" flex={1}>
-          <Image
-            source={
-              comment.user?.avatarUrl && comment.user.avatarUrl.trim() && !failedAvatarUrls.includes(comment.user.avatarUrl)
-                ? { uri: comment.user.avatarUrl }
-                : { uri: "https://i.pravatar.cc/100?d=mp" }
-            }
-            width={36}
-            height={36}
-            borderRadius={18}
-            onError={() => handleAvatarError(comment.user?.avatarUrl)}
+          <AvatarWithInitials
+            uri={comment.user?.avatarUrl}
+            name={comment.user?.username}
+            size={36}
+            failedUris={failedAvatarUrls}
+            setFailedUris={setFailedAvatarUrls}
           />
           <YStack flex={1}>
             <XStack gap="$2" alignItems="center">
@@ -394,16 +385,12 @@ function ReplyItem({
 }) {
   return (
     <XStack gap="$2" marginTop="$2" alignItems="flex-start">
-      <Image
-        source={
-          reply.user?.avatarUrl && reply.user.avatarUrl.trim() && !failedAvatarUrls.includes(reply.user.avatarUrl)
-            ? { uri: reply.user.avatarUrl }
-            : { uri: "https://i.pravatar.cc/100?d=mp" }
-        }
-        width={28}
-        height={28}
-        borderRadius={14}
-        onError={() => reply.user?.avatarUrl && setFailedAvatarUrls((prev) => Array.from(new Set([...prev, reply.user.avatarUrl])))}
+      <AvatarWithInitials
+        uri={reply.user?.avatarUrl}
+        name={reply.user?.username}
+        size={28}
+        failedUris={failedAvatarUrls}
+        setFailedUris={setFailedAvatarUrls}
       />
       <YStack flex={1}>
         <XStack gap="$2" alignItems="center">
@@ -411,11 +398,6 @@ function ReplyItem({
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
         </XStack>
         <Text fontSize={12} fontFamily="$body" marginTop={2}>{reply.text}</Text>
-        <XStack marginTop={8} gap={12}>
-          <TouchableOpacity onPress={() => startReply(reply.id, reply.user?.username || "User")}>
-            <Text fontSize={11} fontFamily="$body" color="#836F8B">Reply</Text>
-          </TouchableOpacity>
-        </XStack>
       </YStack>
       <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
         {reply.viewerState?.liked ? (

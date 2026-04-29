@@ -2,6 +2,7 @@ import CircleCard from "@/components/circles/CircleCard";
 import CirclesIntro from "@/components/circles/CirclesIntro";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
+import { MOCK_CIRCLES } from "@/constants/mockCircles";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
@@ -10,7 +11,7 @@ import { FlatList, StyleSheet, TextInput } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function CirclesScreen() {
+export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -24,39 +25,22 @@ export default function CirclesScreen() {
 
   async function loadCircles() {
     try {
-      const data = [
-        {
-          id: "1",
-          title: "Faith, Work & Purpose",
-          description:
-            "A community where Christians discuss career, business, finding purpose in work while honoring God.",
-          image: "https://images.unsplash.com/photo-1509099836639-18ba1795216d",
-          members: 120,
-          avatars: [
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-          ],
-        },
-        {
-          id: "2",
-          title: "Prayer & Intercession",
-          description: "Believers come together to pray for one another.",
-          image: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-          members: 120,
-          avatars: [
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-            "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-          ],
-        },
-      ];
+      // Show all circles to test different anchor backgrounds
+      const data = MOCK_CIRCLES;
 
       setCircles(data);
     } catch (err) {
       console.error("Failed to load circles", err);
       setError("Failed to load circles");
     }
+  }
+
+  async function handleCirclePress(circleId: string) {
+    // Navigate to circle feed with circle ID
+    router.push({
+      pathname: "/(tabs)/circle/circleFeed",
+      params: { id: circleId },
+    });
   }
 
   if (!isAuthenticated) {
@@ -110,7 +94,7 @@ export default function CirclesScreen() {
         renderItem={({ item }) => (
           <CircleCard
             {...item}
-            onPress={() => router.push(`/circles/${item.id}`)}
+            onPress={() => handleCirclePress(item.id)}
           />
         )}
       />
