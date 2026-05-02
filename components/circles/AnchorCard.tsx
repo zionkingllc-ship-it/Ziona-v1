@@ -29,13 +29,13 @@ export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps
       case "image":
         router.push({
           pathname: "/CircleExtension/anchorImageView",
-          params: { ...params, image: anchor.anchorImage || "" },
+          params: { ...params, image: anchor.anchorImage || "", expiresAt: anchor.expiresAt || "" },
         });
         break;
       case "video":
         router.push({
           pathname: "/CircleExtension/anchorVideoView",
-          params: { ...params, video: anchor.anchorVideo || "" },
+          params: { ...params, video: anchor.anchorVideo || "", expiresAt: anchor.expiresAt || "" },
         });
         break;
       case "image_text":
@@ -46,6 +46,7 @@ export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps
             image: anchor.anchorImage || "",
             text: anchor.anchorImageText || "",
             colors: anchor.backgroundColors?.join(",") || "",
+            expiresAt: anchor.expiresAt || "",
           },
         });
         break;

@@ -22,10 +22,11 @@ import { Text } from "tamagui";
 
 export default function AnchorImageView() {
   const router = useRouter();
-  const { image, colors, likedCount } = useLocalSearchParams<{
+  const { image, colors, likedCount, expiresAt } = useLocalSearchParams<{
     image?: string;
     colors?: string;
     likedCount?: string;
+    expiresAt?: string;
   }>();
 
   const gradientColors: [string, string] = colors
