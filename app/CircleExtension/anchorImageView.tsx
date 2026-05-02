@@ -1,12 +1,24 @@
-import { useRouter } from "expo-router";
-import { useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AnchorFooter from "@/components/circles/AnchorFooter";
 import { LinearGradient } from "expo-linear-gradient";
-import { View, Image, TouchableOpacity, StyleSheet, Platform, SafeAreaView } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
-import { XStack, Text } from "tamagui";
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
+import { Text } from "tamagui";
 
 export default function AnchorImageView() {
   const router = useRouter();
@@ -15,14 +27,10 @@ export default function AnchorImageView() {
     colors?: string;
     likedCount?: string;
   }>();
-  const insets = useSafeAreaInsets();
 
   const gradientColors: [string, string] = colors
     ? (colors.split(",") as [string, string])
     : ["#A8D5A2", "#EDEDED"];
-
-  const bottomPadding =
-    Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
   const scaleAnim = useSharedValue(1);
 
@@ -31,19 +39,18 @@ export default function AnchorImageView() {
   }));
 
   React.useEffect(() => {
-    scaleAnim.value = withRepeat(
-      withTiming(1.2, { duration: 800 }),
-      -1,
-      true
-    );
+    scaleAnim.value = withRepeat(withTiming(1.2, { duration: 800 }), -1, true);
   }, [scaleAnim]);
-
-  const handleTap = () => {
-    router.push({ pathname: "/CircleExtension/anchorActionView", params: { colors: colors || "" } });
-  };
 
   const handleCancel = () => {
     router.back();
+  };
+
+    const handleContinue = () => {
+    router.push({
+      pathname: "/CircleExtension/anchorActionView",
+      params: { colors: colors || "", expiresAt: expiresAt || "" },
+    });
   };
 
   return (
@@ -69,38 +76,17 @@ export default function AnchorImageView() {
         </View>
 
         {/* Footer */}
-        <View style={[styles.footer, { bottom: 30 + bottomPadding }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.footerButton}
-          >
-            <Image
-              source={require("@/assets/images/AnchorPrayingHandDark.png")}
-              style={{ width: 22, height: 22 }}
-            />
-          </TouchableOpacity>
-          <XStack
-            backgroundColor="#000"
-            paddingHorizontal="$3"
-            paddingVertical="$2"
-            borderRadius={20}
-            alignItems="center"
-            gap="$2"
-          >
-            <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
-            <Text color="#FFF">Your reflection...</Text>
-          </XStack>
-        </View>
+        <AnchorFooter bottomOffset={-18} />
 
         {/* Animated Continue Button - Center Right */}
-        <TouchableOpacity 
-          style={styles.continueButton}
-          onPress={handleTap}
-        >
-          <Animated.View style={[styles.continueCircle, animatedStyle]}>
-            <Text style={styles.continueCircleText}>→</Text>
-          </Animated.View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={handleContinue}
+          >
+            <Animated.View style={[styles.continueCircle, animatedStyle]}>
+              <Text style={styles.continueCircleText}>→</Text>
+            </Animated.View>
+          </TouchableOpacity>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -119,11 +105,11 @@ const styles = StyleSheet.create({
   timerText: { color: "#333", fontSize: 16 },
   imageContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 16,
+    //justifyContent: "center",
+    //alignItems: "flex-start",
+    //paddingHorizontal: 16,
   },
-    footerButton: {
+  footerButton: {
     padding: 8,
   },
   image: { width: "100%", height: "80%", borderRadius: 24 },
@@ -165,11 +151,11 @@ const styles = StyleSheet.create({
     right: 16,
     top: "75%",
   },
-  continueCircle: {
-    width: 50,
-    height: 50,
+ continueCircle: {
+    width: 40,
+    height: 40,
     borderRadius: 25,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "center",
     alignItems: "center",
   },

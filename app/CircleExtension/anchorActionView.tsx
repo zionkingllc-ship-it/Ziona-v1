@@ -1,20 +1,52 @@
-import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AnchorFooter from "@/components/circles/AnchorFooter";
+import CircleCommentComposer from "@/app/CircleExtension/CircleCommentComposer";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 import { LinearGradient } from "expo-linear-gradient";
-import { View, StyleSheet, TouchableOpacity, Text, Platform } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Image } from "tamagui";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import themeColors from "@/constants/colors";
 
 type ActionType = "pray" | "encouraged" | "think" | null;
 
-type Props = {
-  colors?: string;
-};
-
-export default function AnchorActionView({ colors }: Props) {
+export default function AnchorActionView() {
   const router = useRouter();
+  const { colors, expiresAt, text: anchorText } = useLocalSearchParams<{
+    colors?: string;
+    expiresAt?: string;
+    text?: string;
+  }>();
   const insets = useSafeAreaInsets();
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isDone, setIsDone] = useState(false);
+  const [showComposer, setShowComposer] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
+
+  const progress = useSharedValue(0);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: progress.value * screenWidth,
+  }));
+
+  const progressPan = Gesture.Pan()
+    .onUpdate((e) => {
+      const newProgress = Math.max(0, Math.min(1, e.x / screenWidth));
+      progress.value = newProgress;
+    });
 
   const gradientColors: [string, string] = colors
     ? (colors.split(",") as [string, string])
@@ -23,6 +55,11 @@ export default function AnchorActionView({ colors }: Props) {
   const bottomPadding =
     Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
+  const handleSend = (text: string, image?: string | null) => {
+    setShowComposer(false);
+    setIsDone(true);
+  };
+
   const handleDone = () => {
     router.back();
   };
@@ -30,6 +67,19 @@ export default function AnchorActionView({ colors }: Props) {
   const handleSkip = () => {
     router.back();
   };
+
+  if (showComposer) {
+    return (
+      <CircleCommentComposer
+        mode="action"
+        user={{ name: "You", avatar: "https://i.pravatar.cc/100?img=1" }}
+        anchorPreview={anchorText}
+        prompt={selectedAction === "pray" ? "How can we pray for you?" : selectedAction === "encouraged" ? "What encouraged you?" : "What's on your mind?"}
+        onClose={() => setShowComposer(false)}
+        onSend={handleSend}
+      />
+    );
+  }
 
   if (isDone) {
     return (
@@ -41,11 +91,10 @@ export default function AnchorActionView({ colors }: Props) {
                 <Text style={styles.checkText}>✓</Text>
               </View>
               <Text style={styles.doneTitle}>Thank you!</Text>
-              <Text style={styles.doneMessage}>Your response has been recorded.</Text>
-              <TouchableOpacity
-                onPress={handleDone}
-                style={styles.doneButton}
-              >
+              <Text style={styles.doneMessage}>
+                Your response has been recorded.
+              </Text>
+              <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
@@ -57,13 +106,44 @@ export default function AnchorActionView({ colors }: Props) {
 
   return (
     <View style={styles.container}>
+      {/* PROGRESS BAR - top of screen */}
+      <View
+        position="absolute"
+        top={0}
+        width={screenWidth}
+        height={40}
+        backgroundColor="transparent"
+        pointerEvents="box-none"
+        zIndex={100}
+      >
+        <GestureDetector gesture={progressPan}>
+          <View width="100%" height={40} justifyContent="flex-end">
+            <View
+              width="100%"
+              height={6}
+              backgroundColor="rgba(255,255,255,0.3)"
+            >
+              <Animated.View
+                style={[
+                  { height: "100%", backgroundColor: themeColors.secondary },
+                  progressStyle,
+                ]}
+              />
+            </View>
+          </View>
+        </GestureDetector>
+      </View>
+
       <LinearGradient colors={gradientColors} style={styles.gradient}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleSkip}>
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
-          <Text style={styles.timerText}>23h: 10m: 23s</Text>
+          <CountdownTimer 
+            expiresAt={expiresAt || ""} 
+            style={styles.timerText}
+          />
         </View>
 
         {/* Action Content */}
@@ -71,7 +151,7 @@ export default function AnchorActionView({ colors }: Props) {
           <View style={styles.actionCard}>
             <Text style={styles.actionTitle}>Take a Moment to Respond</Text>
             <Text style={styles.actionSubtitle}>
-              Share how it met you — prayer, encouragement, or reflection.
+              Share how it met you — prayer,{"\n"} encouragement, or reflection.
             </Text>
 
             <View style={styles.actionCardsRow}>
@@ -80,42 +160,65 @@ export default function AnchorActionView({ colors }: Props) {
                   styles.actionCardItem,
                   selectedAction === "pray" && styles.actionCardItemSelected,
                 ]}
-                onPress={() => setSelectedAction("pray")}
+                onPress={() => {
+                  setSelectedAction("pray");
+                  setShowComposer(true);
+                }}
               >
-                <Text style={styles.actionIcon}>🙏</Text>
-                <Text style={[
-                  styles.actionCardTitle,
-                  selectedAction === "pray" && styles.actionCardTitleSelected,
-                ]}>
+                <Image
+                  source={require("@/assets/images/AnchorPrayingHandDark.png")}
+                  style={{ width: 22, height: 22 }}
+                />
+                <Text
+                  style={[
+                    styles.actionCardTitle,
+                    selectedAction === "pray" && styles.actionCardTitleSelected,
+                  ]}
+                >
                   Pray for Me
                 </Text>
-                <Text style={[
-                  styles.actionCardDesc,
-                  selectedAction === "pray" && styles.actionCardDescSelected,
-                ]}>
-                  Tell us how we can pray
+                <Text
+                  style={[
+                    styles.actionCardDesc,
+                    selectedAction === "pray" && styles.actionCardDescSelected,
+                  ]}
+                >
+                  Did this touch something personal? Tell us how we can pray.
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
                   styles.actionCardItem,
-                  selectedAction === "encouraged" && styles.actionCardItemSelected,
+                  selectedAction === "encouraged" &&
+                    styles.actionCardItemSelected,
                 ]}
-                onPress={() => setSelectedAction("encouraged")}
+                onPress={() => {
+                  setSelectedAction("encouraged");
+                  setShowComposer(true);
+                }}
               >
-                <Text style={styles.actionIcon}>✨</Text>
-                <Text style={[
-                  styles.actionCardTitle,
-                  selectedAction === "encouraged" && styles.actionCardTitleSelected,
-                ]}>
-                  Encouraged Me
+                <Image
+                  source={require("@/assets/images/star.png")}
+                  style={{ width: 22, height: 22 }}
+                />
+                <Text
+                  style={[
+                    styles.actionCardTitle,
+                    selectedAction === "encouraged" &&
+                      styles.actionCardTitleSelected,
+                  ]}
+                >
+                  This Encouraged Me
                 </Text>
-                <Text style={[
-                  styles.actionCardDesc,
-                  selectedAction === "encouraged" && styles.actionCardDescSelected,
-                ]}>
-                  Share what stood out
+                <Text
+                  style={[
+                    styles.actionCardDesc,
+                    selectedAction === "encouraged" &&
+                      styles.actionCardDescSelected,
+                  ]}
+                >
+                  Did this strengthen you today? Tell us what stood out.
                 </Text>
               </TouchableOpacity>
 
@@ -124,40 +227,46 @@ export default function AnchorActionView({ colors }: Props) {
                   styles.actionCardItem,
                   selectedAction === "think" && styles.actionCardItemSelected,
                 ]}
-                onPress={() => setSelectedAction("think")}
+                onPress={() => {
+                  setSelectedAction("think");
+                  setShowComposer(true);
+                }}
               >
-                <Text style={styles.actionIcon}>💭</Text>
-                <Text style={[
-                  styles.actionCardTitle,
-                  selectedAction === "think" && styles.actionCardTitleSelected,
-                ]}>
-                  Made Me Think
+                <Image
+                  source={require("@/assets/images/brain.png")}
+                  style={{ width: 22, height: 22 }}
+                />
+                <Text
+                  style={[
+                    styles.actionCardTitle,
+                    selectedAction === "think" &&
+                      styles.actionCardTitleSelected,
+                  ]}
+                >
+                  This Made Me Think
                 </Text>
-                <Text style={[
-                  styles.actionCardDesc,
-                  selectedAction === "think" && styles.actionCardDescSelected,
-                ]}>
-                  Write your thoughts
+                <Text
+                  style={[
+                    styles.actionCardDesc,
+                    selectedAction === "think" && styles.actionCardDescSelected,
+                  ]}
+                >
+                  What line stayed with you? Share it below.
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              onPress={() => setIsDone(true)}
-              style={styles.doneAllButton}
-            >
-              <Text style={styles.doneAllText}>Done ✓</Text>
-            </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            onPress={() => setIsDone(true)}
+            style={styles.doneAllButton}
+          >
+            <Text style={styles.doneAllText}>Done ✓</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Footer */}
-        <View style={[styles.footer, { bottom: 30 + bottomPadding }]}>
-          <Text style={styles.footerIcon}>🙏</Text>
-          <View style={styles.reflectionBox}>
-            <Text style={styles.reflectionText}>Your reflection...</Text>
-          </View>
-        </View>
+        {/* Footer - disabled on action screen */}
+        <AnchorFooter onReflectionPress={() => {}} />
+        <AnchorFooter />
       </LinearGradient>
     </View>
   );
@@ -186,41 +295,46 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 32,
+    justifyContent: "space-between",
+    padding: 16,
+    top: 50,
   },
   actionCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 24,
-    padding: 24,
     width: "100%",
     alignItems: "center",
-    gap: 20,
+    paddingTop: 24,
+    gap: 30,
   },
   actionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "600",
+    fontFamily: "$body",
     color: "#333",
     textAlign: "center",
   },
   actionSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
+    fontFamily: "$body",
+    fontWeight: "400",
     color: "#666",
     textAlign: "center",
+    top: -10,
   },
   actionCardsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 5,
     width: "100%",
   },
   actionCardItem: {
     flex: 1,
+    padding: 16,
     backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 4,
+    height: 139,
+    width: "33.3%",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
   },
   actionCardItemSelected: {
     backgroundColor: "#6C2BD9",
@@ -250,7 +364,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 48,
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 8,
+    bottom: "35%",
   },
   doneAllText: {
     color: "#FFF",

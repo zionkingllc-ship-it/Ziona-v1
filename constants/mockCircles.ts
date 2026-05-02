@@ -1,4 +1,4 @@
-export type Circle = {
+﻿export type Circle = {
   id: string;
   title: string;
   description: string;
@@ -23,6 +23,7 @@ export type CirclePost = {
   likedImage?: number;
   likeCount?: number;
   anchorLikedCount?: number;
+  prayedCount?: number;
   savedCount?: number;
   sharedCount?: number;
 };
@@ -43,6 +44,8 @@ export type ActiveAnchor = {
   anchorLikedCount?: number;
   anchorVerse?: string;
   anchorText?: string;
+  bibleReference?: string;
+  bibleText?: string;
   backgroundColors?: [string, string];
   backgroundImage?: string;
   anchorImage?: string;
@@ -51,6 +54,13 @@ export type ActiveAnchor = {
   anchorThumbnail?: string;
   createdAt: string;
   expiresAt?: string;
+  prayedCount?: number;
+};
+
+export type Rule = {
+  id: number;
+  title: string;
+  description: string;
 };
 
 export type CircleFeedData = {
@@ -64,6 +74,7 @@ export type CircleFeedData = {
   pastAnchors?: ActiveAnchor[];
   posts: CirclePost[];
   memberAvatars?: string[];
+  rules?: Rule[];
 };
 
 // All available circles
@@ -172,12 +183,41 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       content: "Work as unto the Lord",
       likedImage: 1,
       anchorLikedCount: 234,
-      anchorVerse: "Colossians 3:23",
+      bibleReference: "Colossians 3:23",
+      prayedCount: 62,
+      bibleText: "Whatever you do, work at it with all your heart, as working for the Lord, not for men. Since you know that you will receive an inheritance from the Lord as your reward.",
       anchorText: "Lord, help me to see my work as an act of worship unto you. When I feel discouraged or overwhelmed, remind me that you are with me. Give me patience with colleagues and joy in serving. May my labor be a testimony of your love in the workplace.",
       backgroundImage: "https://images.unsplash.com/photo-1509099836639-18ba1795216d",
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
+    rules: [
+      {
+        id: 1,
+        title: "Honor God in Your Work",
+        description: "Let your work reflect your faith. Use your professional life as a platform to glorify God and serve others with excellence.",
+      },
+      {
+        id: 2,
+        title: "Be Supportive",
+        description: "Encourage fellow members facing career challenges. Share wisdom, pray for one another, and celebrate successes together.",
+      },
+      {
+        id: 3,
+        title: "Keep It Professional Yet Faithful",
+        description: "Balance professional advice with biblical principles. Topics can range from business ethics to finding purpose in mundane tasks.",
+      },
+      {
+        id: 4,
+        title: "No Complaints Only Solutions",
+        description: "While venting is allowed, focus on constructive discussion and faith-based solutions to workplace challenges.",
+      },
+      {
+        id: 5,
+        title: "Respect Different Callings",
+        description: "Not everyone has the same career path. Respect diverse vocations - homemakers, entrepreneurs, employees all have value.",
+      },
+    ],
     pastAnchors: [
       {
         id: "anchor-1-past",
@@ -187,6 +227,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         anchorLikedCount: 156,
         backgroundColors: ["#A8D5A2", "#EDEDED"],
+      prayedCount: 65,
         anchorVerse: "Trust in the Lord with all your heart - Proverbs 3:5",
         anchorText: "Father, grant me wisdom for today.",
         createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
@@ -200,6 +241,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         anchorLikedCount: 89,
         anchorImage: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+      prayedCount: 63,
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         expiresAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       },
@@ -211,6 +253,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         anchorLikedCount: 234,
         anchorVideo: "https://storage.googleapis.com/ziona-media-dev/uploads/9232f97e-a63f-42a5-a7fe-eec5d153c89b/videos/efda4aab-a7a6-4816-827b-8221161cbfd0.mp4",
+      prayedCount: 84,
         createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
         expiresAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
       },
@@ -222,6 +265,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         anchorLikedCount: 312,
         backgroundColors: ["#4A90A4", "#1A4A5E"],
+      prayedCount: 14,
         anchorVerse: "Your word is a lamp to my feet - Psalm 119:105",
         anchorText: "Lord, shine your light on my path.",
         createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
@@ -235,6 +279,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         anchorLikedCount: 178,
         anchorImage: "https://images.unsplash.com/photo-1476681248696-466c012a3f1f",
+      prayedCount: 61,
         anchorImageText: "Let everything that has breath praise the Lord - Psalm 150:6",
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         expiresAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -251,6 +296,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         likeCount: 24,
         anchorLikedCount: 18,
+        prayedCount: 71,
       },
       {
         id: "2",
@@ -263,6 +309,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         likeCount: 18,
         anchorLikedCount: 12,
+        prayedCount: 49,
       },
       {
         id: "3",
@@ -274,6 +321,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         likeCount: 45,
         anchorLikedCount: 32,
+        prayedCount: 5,
       },
       {
         id: "4",
@@ -286,6 +334,7 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
         likedImage: 1,
         likeCount: 67,
         anchorLikedCount: 54,
+        prayedCount: 36,
       },
     ],
   },
@@ -310,12 +359,41 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       content: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
       likedImage: 1,
       anchorLikedCount: 156,
-      anchorVerse: "Proverbs 3:5-6",
-      anchorText: "Heavenly Father, we come before you today with hearts full of trust. Help us to lean not on our own understanding but to submit all our ways to you. Direct our paths and make them straight according to your will. We pray for wisdom in every decision we face today. In Jesus name, Amen.",
+      bibleReference: "Proverbs 3:5-6",
+      prayedCount: 76,
+      bibleText: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.",
+      anchorText: "Heavenly Father, we come before you today with hearts full of trust. Help us to lean not on our own understanding but to submit all our ways to you. Direct our paths and make them straight according to your will. We pray for wisdom in every decision we face today. Help us to remember that you are sovereign over all circumstances and that you have good plans for us. Teach us to trust you even when we cannot see the outcome. Give us the faith to believe that you are working all things together for our good. In Jesus name, Amen.",
       backgroundColors: ["#A8D5A2", "#EDEDED"],
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
+    rules: [
+      {
+        id: 1,
+        title: "Pray with Faith",
+        description: "Lift your prayers with belief that God hears and answers. Approach Him with reverence and expectation.",
+      },
+      {
+        id: 2,
+        title: "Pray for Others",
+        description: "This circle is for intercessory prayer. Lift up fellow members' needs as well as your own.",
+      },
+      {
+        id: 3,
+        title: "Be Confidential",
+        description: "Respect privacy. What's shared in prayer should stay confidential.",
+      },
+      {
+        id: 4,
+        title: "No Gossip",
+        description: "Prayer requests are not gossip fodder. Use them to bring before God, not to spread rumors.",
+      },
+      {
+        id: 5,
+        title: "Give Thanks",
+description: "Don't just ask - also give thanks for answered prayers and God's faithfulness.",
+      },
+    ],
     posts: [
       {
         id: "5",
@@ -355,10 +433,13 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       content: "Rooted in Love",
       likedImage: 1,
       anchorLikedCount: 89,
-      anchorVerse: "Ephesians 3:17-19",
-      anchorText: "Father, root us deeply in your love so that we may understand the width, length, height, and depth of your love. May our youth group be a place where everyone feels welcomed and valued. Help us to grow together in faith.",
+      bibleReference: "Ephesians 3:17-19",
+      prayedCount: 85,
+      bibleText: "That Christ may dwell in your hearts through faith, that you, being rooted and grounded in love, may be able to comprehend with all the saints what is the width and length, height and depth, and to know Christ's love which surpasses knowledge, that you may be filled with all the fullness of God.",
+      anchorText: "Father, root us deeply in your love so that we may understand the width, length, height, and depth of your love. May our youth group be a place where everyone feels welcomed and valued. Help us to grow together in faith and to love one another unconditionally.",
       backgroundColors: ["#E8F4FD", "#FFF5E6"],
       createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
     posts: [
       {
@@ -395,7 +476,9 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       likedImage: 1,
       anchorLikedCount: 412,
       backgroundColors: ["#F5E6D3", "#FFF8F0"],
-      anchorVerse: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose. - Romans 8:28",
+      prayedCount: 82,
+      bibleReference: "Romans 8:28",
+      bibleText: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose.",
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -422,16 +505,19 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       "https://i.pravatar.cc/150?img=32",
       "https://i.pravatar.cc/150?img=33",
     ],
-    activeAnchor: {
+activeAnchor: {
       id: "anchor-5",
       type: "image_text",
       title: "Sunday Worship",
       likedImage: 1,
       anchorLikedCount: 178,
       anchorImage: "https://images.unsplash.com/photo-1476681248696-466c012a3f1f",
+      prayedCount: 87,
       anchorImageText: "Let the word of Christ dwell in you richly, teaching and admonishing one another in all wisdom, and singing psalms and hymns and spiritual songs, with gratitude in your hearts to God. - Colossians 3:16",
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      anchorText: "Lord, fill our hearts with gratitude as we worship you. Help us to let your word dwell richly within us. May our songs be pleasing to you and our gatherings glorify your name.",
+      backgroundColors: ["#F5E6D3", "#FFF8F0"],
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
     posts: [
       {
@@ -457,13 +543,18 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
     ],
     activeAnchor: {
       id: "anchor-6",
-      type: "image",
-      title: "Family Devotion",
+      type: "text",
+      title: "Love in Action",
+      content: "Above all, love each other deeply, because love covers a multitude of sins.",
       likedImage: 1,
       anchorLikedCount: 234,
-      anchorImage: "https://images.unsplash.com/photo-1511632765486-a01980e01a18",
-      createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      bibleReference: "1 Peter 4:8",
+      prayedCount: 63,
+      bibleText: "Above all, love each other deeply, because love covers a multitude of sins. Be hospitable to one another without grumbling.",
+      anchorText: "Lord, help our marriage/family to love each other more deeply each day. Teach us to be patient and kind with one another, bearing with one another's weaknesses. Help us to cover each other's sins with love rather than keeping record of wrongs. Make our home a place of hospitality and warmth where others feel welcome. May our love for each other be a reflection of your love for us. Help us to serve one another in humility, putting each other's needs before our own. In Jesus name, Amen.",
+      backgroundColors: ["#FCE4EC", "#F8BBD9"],
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     },
     posts: [
       {
@@ -487,15 +578,17 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       "https://i.pravatar.cc/150?img=41",
       "https://i.pravatar.cc/150?img=42",
     ],
-    activeAnchor: {
+activeAnchor: {
       id: "anchor-7",
       type: "video",
       title: "Mission Trip Recap",
       likedImage: 1,
       anchorLikedCount: 156,
-      anchorVideo: "https://storage.googleapis.com/ziona-media-dev/uploads/9232f97e-a63f-42a5-a7fe-eec5d153c89b/videos/efda4aab-a7a6-4816-827b-8221161cbfd0.mp4",
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      anchorVideo: "https://storage.googleapis.com/ziona-media-dev/uploads/9f97e-a63f-42a5-a7fe-eec5d153c89b/videos/efda4aab-a7a6-4816-827b-82211cbfd0.mp4",
+      prayedCount: 65,
+      backgroundColors: ["#E8F4FD", "#FFF5E6"],
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date. now() + 24 * 60 * 60 * 1000).toISOString(),
     },
     posts: [
       {

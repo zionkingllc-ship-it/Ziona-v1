@@ -8,8 +8,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, TextInput } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, XStack, YStack } from "tamagui";
 
 export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
@@ -92,10 +92,7 @@ export default function CirclesSuggestion() {
           paddingBottom: hp(10),
         }}
         renderItem={({ item }) => (
-          <CircleCard
-            {...item}
-            onPress={() => handleCirclePress(item.id)}
-          />
+          <CircleCard {...item} onPress={() => handleCirclePress(item.id)} />
         )}
       />
     </YStack>

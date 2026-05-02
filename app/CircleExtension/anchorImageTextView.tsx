@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
@@ -21,14 +20,17 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
+import AnchorFooter from "@/components/circles/AnchorFooter";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 export default function AnchorImageTextView() {
   const router = useRouter();
-  const { image, text, colors, likedCount } = useLocalSearchParams<{
+  const { image, text, colors, likedCount, expiresAt } = useLocalSearchParams<{
     image?: string;
     text?: string;
     colors?: string;
     likedCount?: string;
+    expiresAt?: string;
   }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -53,7 +55,7 @@ export default function AnchorImageTextView() {
   const handleContinue = () => {
     router.push({
       pathname: "/CircleExtension/anchorActionView",
-      params: { colors: colors || "" },
+      params: { colors: colors || "", expiresAt: expiresAt || "" },
     });
   };
 
@@ -73,7 +75,10 @@ export default function AnchorImageTextView() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.timerText}>23h: 10m: 23s</Text>
+        <CountdownTimer 
+          expiresAt={expiresAt || ""} 
+          style={styles.timerText}
+        />
       </View>
 
       <View style={styles.contentContainer}>
@@ -82,25 +87,7 @@ export default function AnchorImageTextView() {
         </Text>
       </View>
 
-      <View style={[styles.footer, { bottom: 30 + bottomPadding }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Image
-            source={require("@/assets/images/AnchorPrayingHandLight.png")}
-            style={{ width: 22, height: 22 }}
-          />
-        </TouchableOpacity>
-        <XStack
-          backgroundColor="#000"
-          paddingHorizontal="$3"
-          paddingVertical="$2"
-          borderRadius={20}
-          alignItems="center"
-          gap="$2"
-        >
-          <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
-          <Text color="#FFF">Your reflection...</Text>
-        </XStack>
-      </View>
+      <AnchorFooter prayIcon={require("@/assets/images/AnchorPrayingHandLight.png")} />
 
       {/* Animated Continue Button - Center Right */}
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>

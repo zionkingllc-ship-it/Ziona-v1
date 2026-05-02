@@ -1,21 +1,35 @@
-import { useRouter } from "expo-router";
-import { useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, Image, TouchableOpacity, StyleSheet, Platform, useWindowDimensions, SafeAreaView } from "react-native";
-import { XStack, Text } from "tamagui";
-import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import AnchorFooter from "@/components/circles/AnchorFooter";
+import CountdownTimer from "@/components/ui/CountdownTimer";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
+import React, { useEffect, useState } from "react";
+import {
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions, 
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context/src/SafeAreaView";
+import { Text,View } from "tamagui";
 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import themeColors from "@/constants/colors";
 
 export default function AnchorVideoView() {
   const router = useRouter();
-  const { video, colors, likedCount } = useLocalSearchParams<{
+  const { video, colors: colorsParam, likedCount, expiresAt } = useLocalSearchParams<{
     video?: string;
     colors?: string;
     likedCount?: string;
+    expiresAt?: string;
   }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -32,11 +46,7 @@ export default function AnchorVideoView() {
   }));
 
   React.useEffect(() => {
-    scaleAnim.value = withRepeat(
-      withTiming(1.2, { duration: 800 }),
-      -1,
-      true
-    );
+    scaleAnim.value = withRepeat(withTiming(1.2, { duration: 800 }), -1, true);
   }, [scaleAnim]);
 
   const player = useVideoPlayer(video ?? "", (playerInstance) => {
@@ -45,16 +55,58 @@ export default function AnchorVideoView() {
     }
   });
 
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (!player) return;
+    try {
+      player.timeUpdateEventInterval = 0.5;
+      const sub = player.addListener("timeUpdate", ({ currentTime }) => {
+        const duration = player.duration;
+        if (duration > 0) {
+          progress.value = currentTime / duration;
+        }
+      });
+      return () => sub.remove();
+    } catch {}
+  }, [player]);
+
+  const seekTo = (position: number) => {
+    if (!player) return;
+    try {
+      const duration = player.duration;
+      if (!duration || duration <= 0) return;
+      player.currentTime = position * duration;
+    } catch {}
+  };
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: progress.value * width,
+  }));
+
+  const progressPan = Gesture.Pan()
+    .onUpdate((e) => {
+      const newProgress = Math.max(0, Math.min(1, e.x / width));
+      progress.value = newProgress;
+    })
+    .onEnd(() => {
+      seekTo(progress.value);
+    });
+
   useEffect(() => {
     if (player) {
-      try { player.play(); } catch (e) { console.log("Play error:", e); }
+      try {
+        player.play();
+      } catch (e) {
+        console.log("Play error:", e);
+      }
     }
   }, [player]);
 
   // Auto-show continue after video duration or 4 seconds fallback
   useEffect(() => {
     if (!player) return;
-    
+
     const checkEnd = () => {
       try {
         const duration = player.duration;
@@ -64,7 +116,7 @@ export default function AnchorVideoView() {
         }
       } catch {}
     };
-    
+
     const remove = player.addListener("timeUpdate", checkEnd as any);
     return () => remove.remove();
   }, [player, showContinue]);
@@ -79,33 +131,52 @@ export default function AnchorVideoView() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleCancel = () => {
-    router.back();
-  };
-
   const handleContinue = () => {
     if (!hasNavigated) {
       setHasNavigated(true);
-      router.push({ pathname: "/CircleExtension/anchorActionView", params: { colors: colors || "" } });
+      router.push({
+        pathname: "/CircleExtension/anchorActionView",
+        params: { colors: colorsParam || "", expiresAt: expiresAt || "" },
+      });
     }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#000" }]}>
-      {/* Header */}
+      {/* Header with Timer only */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={handleCancel}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.timerText}>23h: 10m: 23s</Text>
+        <View style={{ width: 60 }} />
+        <CountdownTimer expiresAt={expiresAt || ""} style={styles.timerText} />
       </View>
 
-      {/* Video Content - Full Screen */}
-      <TouchableOpacity 
-        style={[styles.videoContainer, { width, height: height * 0.6 }]}
-        onPress={showContinue ? handleContinue : undefined}
-        activeOpacity={showContinue ? 0.8 : 1}
+      {/* PROGRESS BAR - above video */}
+      <View
+        width={width}
+        height={40}
+        backgroundColor="transparent"
+        pointerEvents="box-none"
+        zIndex={100}
       >
+        <GestureDetector gesture={progressPan}>
+          <View width="100%" height={40} justifyContent="flex-end">
+            <View
+              width="100%"
+              height={6}
+              backgroundColor="rgba(255,255,255,0.3)"
+            >
+              <Animated.View
+                style={[
+                  { height: "100%", backgroundColor: themeColors.secondary },
+                  progressStyle,
+                ]}
+              />
+            </View>
+          </View>
+        </GestureDetector>
+      </View>
+
+      {/* Video Content */}
+      <View style={[styles.videoContainer, { width, height: height * 0.6 }]}>
         {video && player ? (
           <VideoView
             player={player}
@@ -118,11 +189,11 @@ export default function AnchorVideoView() {
             <Text style={styles.noVideoText}>No video available</Text>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
 
       {/* Animated Continue Button - Center Right */}
       {showContinue && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.continueButton}
           onPress={handleContinue}
         >
@@ -133,28 +204,7 @@ export default function AnchorVideoView() {
       )}
 
       {/* Footer */}
-        <View style={[styles.footer, { bottom: 30 + bottomPadding }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.footerButton}
-          >
-            <Image
-              source={require("@/assets/images/AnchorPrayingHandDark.png")}
-              style={{ width: 22, height: 22 }}
-            />
-          </TouchableOpacity>
-          <XStack
-            backgroundColor="#000"
-            paddingHorizontal="$3"
-            paddingVertical="$2"
-            borderRadius={20}
-            alignItems="center"
-            gap="$2"
-          >
-            <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
-            <Text color="#FFF">Your reflection...</Text>
-          </XStack>
-        </View>
+      <AnchorFooter />
     </SafeAreaView>
   );
 }
@@ -178,11 +228,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-    footerButton: {
+  footerButton: {
     padding: 8,
   },
   noVideoText: { color: "#FFF", fontSize: 16 },
-   continueButton: {
+  continueButton: {
     position: "absolute",
     right: 16,
     top: "75%",

@@ -10,7 +10,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+ 
 } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -22,34 +22,58 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { Text, XStack, YStack } from "tamagui";
+import { Text, XStack, YStack,View } from "tamagui";
+import AnchorFooter from "@/components/circles/AnchorFooter";
+import CountdownTimer from "@/components/ui/CountdownTimer";
 
 const { width } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
 const SEPARATOR_WIDTH = 16;
 const ITEM_WIDTH = SLIDE_WIDTH + SEPARATOR_WIDTH;
-const CHARS_PER_SLIDE = 500;
+const MIN_CHARS = 300;
+const MAX_CHARS = 800;
+
+function calculateChunkSize(textLength: number): number {
+  if (textLength <= 400) return 400;
+  if (textLength <= 600) return 500;
+  if (textLength <= 900) return 700;
+  return 800;
+}
 
 type SlideItem = {
   id: string;
   text?: string;
   referenceText?: string;
+  bibleReference?: string;
+  bibleText?: string;
   label: string;
 };
 
-function createSlides(referenceText?: string, text?: string): SlideItem[] {
+function createSlides(
+  referenceText?: string,
+  text?: string,
+  bibleReference?: string,
+  bibleText?: string,
+): SlideItem[] {
   const slides: SlideItem[] = [];
 
-  if (referenceText) {
-    slides.push({ id: "verse", referenceText, label: "Bible Verse" });
+  if (bibleReference) {
+    slides.push({
+      id: "verse",
+      bibleReference,
+      bibleText,
+      label: "Bible Verse",
+    });
   }
 
   if (text) {
+    const textLength = text.length;
+    const chunkSize = calculateChunkSize(textLength);
     const chunks: string[] = [];
     let remaining = text;
-    while (remaining.length > CHARS_PER_SLIDE) {
-      chunks.push(remaining.slice(0, CHARS_PER_SLIDE));
-      remaining = remaining.slice(CHARS_PER_SLIDE);
+    while (remaining.length > chunkSize) {
+      chunks.push(remaining.slice(0, chunkSize));
+      remaining = remaining.slice(chunkSize);
     }
     if (remaining.length > 0) chunks.push(remaining);
 
@@ -85,14 +109,23 @@ function PaginationDots({
 
 export default function AnchorTextView() {
   const router = useRouter();
-  const { verse, text, colors, backgroundImage, likedCount } =
-    useLocalSearchParams<{
-      verse?: string;
-      text?: string;
-      colors?: string;
-      backgroundImage?: string;
-      likedCount?: string;
-    }>();
+  const {
+    text,
+    colors,
+    backgroundImage,
+    bibleReference,
+    bibleText,
+    likedCount,
+    expiresAt,
+  } = useLocalSearchParams<{
+    text?: string;
+    colors?: string;
+    backgroundImage?: string;
+    bibleReference?: string;
+    bibleText?: string;
+    likedCount?: string;
+    expiresAt?: string;
+  }>();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -119,7 +152,10 @@ export default function AnchorTextView() {
     );
   };
 
-  const slides = useCallback(() => createSlides(verse, text), [verse, text])();
+  const slides = useCallback(
+    () => createSlides(undefined, text, bibleReference, bibleText),
+    [text, bibleReference, bibleText],
+  )();
 
   const handleScroll = useCallback(
     (event: any) => {
@@ -140,23 +176,20 @@ export default function AnchorTextView() {
       currentIndex === slides.length - 1 &&
       !hasNavigatedRef.current
     ) {
-      hasNavigatedRef.current = true;
+hasNavigatedRef.current = true;
       router.push({
         pathname: "/CircleExtension/anchorActionView",
-        params: { colors: colors || "" },
+        params: { colors: colors || "", expiresAt: expiresAt || "", text: text || "" },
       });
     }
-  };
-
+  }; 
+ 
   const handleContinue = () => {
     router.push({
       pathname: "/CircleExtension/anchorActionView",
-      params: { colors: colors || "" },
+      params: { colors: colors || "", expiresAt: expiresAt || "" },
     });
   };
-
-  const bottomPadding =
-    Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
   const scaleAnim = useSharedValue(1);
 
@@ -179,7 +212,10 @@ export default function AnchorTextView() {
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.timerText}>23h: 10m: 23s</Text>
+          <CountdownTimer 
+            expiresAt={expiresAt || ""} 
+            style={styles.timerText}
+          />
         </View>
 
         {/* Content */}
@@ -202,14 +238,21 @@ export default function AnchorTextView() {
                 }
               >
                 <View style={styles.slideContainer}>
-                  <View style={styles.slideCard}>
+                  <View style={styles.slideCard} >
                     <View style={styles.labelBadge}>
                       <Text style={styles.labelText}>{item.label}</Text>
                     </View>
-                    {item.referenceText && (
-                      <Text style={styles.referenceText}>
-                        {item.referenceText}
-                      </Text>
+                    {item.bibleReference && (
+                      <YStack alignItems="center" marginTop={30} gap={6}>
+                        {item.bibleText && (
+                          <Text style={styles.referenceText}>
+                            {item.bibleText}
+                          </Text>
+                        )}
+                        <Text style={[styles.referenceText, { fontSize: 13, fontWeight:"500", top: 60 }]}>
+                          {item.bibleReference}
+                        </Text>
+                      </YStack>
                     )}
                     {item.text && (
                       <Text style={styles.contentText}>{item.text}</Text>
@@ -245,28 +288,7 @@ export default function AnchorTextView() {
         </View>
 
         {/* Footer */}
-        <View style={[styles.footer, { bottom: bottomPadding-18 }]}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.footerButton}
-          >
-            <Image
-              source={require("@/assets/images/AnchorPrayingHandDark.png")}
-              style={{ width: 22, height: 22 }}
-            />
-          </TouchableOpacity>
-          <XStack
-            backgroundColor="#000"
-            paddingHorizontal="$3"
-            paddingVertical="$2"
-            borderRadius={20}
-            alignItems="center"
-            gap="$2"
-          >
-            <Ionicons name="chatbubble-outline" size={16} color="#FFF" />
-            <Text color="#FFF">Your reflection...</Text>
-          </XStack>
-        </View>
+        <AnchorFooter bottomOffset={-18} />
 
         {/* Animated Continue Button - Center Right - Only on last slide */}
         {currentIndex === slides.length - 1 && (
@@ -303,15 +325,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingTop: 20,
   },
   cancelText: { color: "#333", fontSize: 16 },
   timerText: { color: "#333", fontSize: 16 },
-  contentContainer: { flex: 1, justifyContent: "center" },
+  contentContainer: { flex: 1, justifyContent: "center", alignItems: "center", top: 30 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 20 },
   slideContainer: {
     width: SLIDE_WIDTH,
-    marginRight: SEPARATOR_WIDTH, 
+    marginRight: SEPARATOR_WIDTH,
     alignItems: "center",
     textAlign: "center",
   },
@@ -320,9 +342,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     alignItems: "center",
-    minHeight: 358,
-    maxHeight: 519, 
+    minHeight: 318, 
     width: "100%",
+    zIndex:999
   },
   labelBadge: {
     borderWidth: 1,
@@ -337,6 +359,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     color: "#333",
+    fontFamily: "$body",
+    fontWeight: "700",
     textAlign: "center",
     marginBottom: 16,
   },
@@ -348,8 +372,7 @@ const styles = StyleSheet.create({
   },
   dotsContainer: { flexDirection: "row", justifyContent: "center" },
   dot: { width: 8, height: 8, borderRadius: 4, marginHorizontal: 4 },
-  paginationContainer: {
-    position: "absolute",
+  paginationContainer: { 
     left: 0,
     right: 0,
     bottom: 180,

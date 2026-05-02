@@ -1,6 +1,6 @@
+import AnchorCard from "@/components/circles/AnchorCard";
 import CircleFeedFilterModal from "@/components/circles/CircleFeedFilterModal";
 import CircleFeedItem from "@/components/circles/CircleFeedItem";
-import AnchorCard from "@/components/circles/AnchorCard";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import colors from "@/constants/colors";
 import {
@@ -10,12 +10,18 @@ import {
   MOCK_CIRCLE_FEEDS,
 } from "@/constants/mockCircles";
 import { ChevronDown } from "@tamagui/lucide-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { FlatList, Image, StyleSheet, View, TouchableOpacity } from "react-native";
+import {
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, Text, XStack, YStack } from "tamagui";
+import { ScrollView, Text, XStack, YStack, Button } from "tamagui";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function CircleFeedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,7 +38,14 @@ export default function CircleFeedScreen() {
   const [anchorFilter, setAnchorFilter] = useState("Today");
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
 
-  const anchorFilterOptions = ["Today", "Yesterday", "2 days ago", "3 days ago", "4 days ago", "5 days ago"];
+  const anchorFilterOptions = [
+    "Today",
+    "Yesterday",
+    "2 days ago",
+    "3 days ago",
+    "4 days ago",
+    "5 days ago",
+  ];
 
   const getAnchorDaysAgo = (filter: string): number => {
     if (filter === "Today") return 0;
@@ -43,20 +56,22 @@ export default function CircleFeedScreen() {
   const getDisplayAnchor = () => {
     const daysAgo = getAnchorDaysAgo(anchorFilter);
     const now = new Date();
-    
+
     if (daysAgo === 0 && circle.activeAnchor) {
       return circle.activeAnchor;
     }
-    
+
     if (circle.pastAnchors && circle.pastAnchors.length > 0) {
       const pastAnchor = circle.pastAnchors.find((anchor) => {
         const created = new Date(anchor.createdAt);
-        const diffDays = Math.round((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+        const diffDays = Math.round(
+          (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000),
+        );
         return diffDays === daysAgo;
       });
       if (pastAnchor) return pastAnchor;
     }
-    
+
     return circle.activeAnchor;
   };
 
@@ -101,26 +116,18 @@ export default function CircleFeedScreen() {
             borderRadius={7}
           />
 
-          {circle.isJoined ? (
-            <SimpleButton
-              text="Joined"
-              onPress={toggleJoin}
-              color={colors.white}
-              textColor={colors.primary}
-              borderColor={colors.primary}
-              borderRadius={99}
-              style={{ width: 100, paddingVertical: 6 }}
-            />
-          ) : (
-            <SimpleButton
-              text="Join"
-              onPress={toggleJoin}
-              color={colors.primary}
-              textColor={colors.white}
-              borderRadius={99}
-              style={{ width: 100, paddingVertical: 6 }}
-            />
-          )}
+          <SimpleButton
+            text={circle.isJoined ? "Joined" : "Join"}
+            onPress={toggleJoin}
+            textSize={13}
+            fontFamily={"$body"}
+            fontWeight={"400"}
+            color={circle.isJoined ? colors.white : colors.primary}
+            textColor={circle.isJoined ? colors.primary : colors.white}
+            borderColor={ colors.primary }
+            borderRadius={99}
+            style={{ width: 90 }}
+          />
         </XStack>
 
         <XStack
@@ -143,7 +150,12 @@ export default function CircleFeedScreen() {
                 ))}
               </View>
             )}
-            <Text fontFamily="$body" fontWeight="400" fontSize={8} color={colors.gray}>
+            <Text
+              fontFamily="$body"
+              fontWeight="400"
+              fontSize={8}
+              color={colors.gray}
+            >
               +{circle.memberCount} members
             </Text>
           </YStack>
@@ -151,19 +163,35 @@ export default function CircleFeedScreen() {
 
         <YStack marginTop={4} width={"100%"} justifyContent="flex-start">
           <XStack>
-            <Text flex={1} fontFamily="$body" fontWeight="400" fontSize={13} color={colors.gray}>
+            <Text
+              flex={1}
+              fontFamily="$body"
+              fontWeight="400"
+              fontSize={13}
+              color={colors.gray}
+            >
               {circle.description.slice(0, 80)}
               {circle.description.length > 80 && "..."}
             </Text>
           </XStack>
-          {circle.description.length > 80 && (
+          {circle.description.length > 10 && (
             <Text
               fontFamily="$body"
               fontWeight="500"
               fontSize={13}
               marginTop={5}
               color={colors.errorText}
-              onPress={() => router.push("/(tabs)/circle/circleRules")}
+              onPress={() => {
+                const rulesParam = circle.rules ? JSON.stringify(circle.rules) : undefined;
+                router.push({
+                  pathname: "/(tabs)/circle/circleRules",
+                  params: {
+                    circleName: circle.name,
+                    circleDescription: circle.description,
+                    rules: rulesParam,
+                  },
+                });
+              }}
             >
               More info
             </Text>
@@ -171,9 +199,9 @@ export default function CircleFeedScreen() {
         </YStack>
 
         {displayAnchor && (
-          <YStack top={10} >
+          <YStack top={10}>
             <XStack justifyContent="space-between" alignItems="center">
-              <XStack alignItems="flex-start" gap={8} >
+              <XStack alignItems="flex-start" gap={8}>
                 <Image
                   source={require("@/assets/images/AnchorPin.png")}
                   style={{ width: 18, height: 18 }}
@@ -199,11 +227,13 @@ export default function CircleFeedScreen() {
                   </Text>
                 </YStack>
               </XStack>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.filterButton}
                 onPress={() => setShowAnchorDropdown(!showAnchorDropdown)}
               >
-                <Text fontFamily="$body" fontSize={11} color={colors.text}>{anchorFilter}</Text>
+                <Text fontFamily="$body" fontSize={11} color={colors.text}>
+                  {anchorFilter}
+                </Text>
                 <ChevronDown size={12} color={colors.text} />
               </TouchableOpacity>
             </XStack>
@@ -218,7 +248,14 @@ export default function CircleFeedScreen() {
                       setShowAnchorDropdown(false);
                     }}
                   >
-                    <Text fontFamily="$body" fontSize={10} fontWeight={"500"} color={colors.text}>{opt}</Text>
+                    <Text
+                      fontFamily="$body"
+                      fontSize={10}
+                      fontWeight={"500"}
+                      color={colors.text}
+                    >
+                      {opt}
+                    </Text>
                     {opt === anchorFilter && (
                       <Text style={{ fontSize: 13 }}>✓</Text>
                     )}
@@ -226,9 +263,7 @@ export default function CircleFeedScreen() {
                 ))}
               </View>
             )}
-            {displayAnchor && (
-              <AnchorCard anchor={displayAnchor} />
-)}
+            {displayAnchor && <AnchorCard anchor={displayAnchor} />}
           </YStack>
         )}
 
@@ -297,6 +332,35 @@ export default function CircleFeedScreen() {
           setShowFilterModal(false);
         }}
       />
+
+      {/* FAB - Create Post / Reflection */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: 20,
+          right: 20,
+          zIndex: 100,
+        }}
+      >
+        <Button
+          circular
+          size="$6"
+          backgroundColor={colors.primary}
+          onPress={() => {
+            router.push({
+              pathname: "/CircleExtension/CircleCommentComposer",
+              params: { circleId: circleId },
+            });
+          }}
+          elevation={4}
+          shadowColor="#000"
+          shadowOffset={{ width: 0, height: 2 }}
+          shadowOpacity={0.2}
+          shadowRadius={4}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </Button>
+      </View>
     </SafeAreaView>
   );
 }
@@ -320,7 +384,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16, 
+    borderRadius: 16,
     backgroundColor: colors.white,
   },
   dropdownContainer: {
@@ -328,7 +392,7 @@ const styles = StyleSheet.create({
     top: 40,
     right: 16,
     backgroundColor: colors.white,
-    borderRadius: 8, 
+    borderRadius: 8,
     paddingVertical: 4,
     zIndex: 100,
     minWidth: 120,

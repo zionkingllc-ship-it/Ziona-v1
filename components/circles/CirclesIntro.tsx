@@ -24,7 +24,6 @@ export default function CirclesIntro({
   const imageWidth = isSmallDevice ? wp(38) : 169;
   const imageHeight = isSmallDevice ? wp(32) : 138;
 
-  // Different sizes for each image position
   const topLeftSize = {
     width: isSmallDevice ? wp(30) : 140,
     height: isSmallDevice ? wp(25) : 115,
@@ -38,10 +37,6 @@ export default function CirclesIntro({
     height: isSmallDevice ? wp(22) : 100,
   };
   const borderRadius = 5;
-
-  /* =========================
-     FADE CONTROL
-  ========================= */
 
   const opacity = useSharedValue(1);
 
@@ -58,26 +53,18 @@ export default function CirclesIntro({
     opacity: opacity.value,
   }));
 
-  /* =========================
-     FLOATING ANIMATION
-  ========================= */
-
   const x1 = useSharedValue(0);
   const y1 = useSharedValue(0);
-
   const x2 = useSharedValue(0);
   const y2 = useSharedValue(0);
-
   const x3 = useSharedValue(0);
   const y3 = useSharedValue(0);
 
   useEffect(() => {
     x1.value = withRepeat(withTiming(10, { duration: 4000 }), -1, true);
     y1.value = withRepeat(withTiming(-10, { duration: 4000 }), -1, true);
-
     x2.value = withRepeat(withTiming(-12, { duration: 5000 }), -1, true);
     y2.value = withRepeat(withTiming(8, { duration: 5000 }), -1, true);
-
     x3.value = withRepeat(withTiming(8, { duration: 4500 }), -1, true);
     y3.value = withRepeat(withTiming(-6, { duration: 4500 }), -1, true);
   }, []);
@@ -94,16 +81,11 @@ export default function CirclesIntro({
     transform: [{ translateX: x3.value }, { translateY: y3.value }],
   }));
 
-  /* =========================
-     UI
-  ========================= */
-
   return (
     <Pressable style={{ flex: 1 }} onPress={handleClose}>
       <Animated.View style={[{ flex: 1 }, containerStyle]}>
         <GradientBackground>
           <YStack flex={1} paddingTop={hp(8)}>
-            {/* TEXT */}
             <YStack paddingHorizontal={wp(5)}>
               <Text
                 style={{
@@ -133,9 +115,7 @@ export default function CirclesIntro({
               </Text>
             </YStack>
 
-            {/* IMAGES */}
             <View style={{ flex: 1 }}>
-              {/* BACKGROUND IMAGE */}
               <Image
                 source={{
                   uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
@@ -143,9 +123,7 @@ export default function CirclesIntro({
                 style={[styles.backgroundImage, { top: hp(5) }]}
               />
 
-              {/* FLOATING IMAGES */}
               <View style={styles.floatingContainer}>
-                {/* TOP LEFT */}
                 <Animated.View
                   style={[
                     {
@@ -168,13 +146,12 @@ export default function CirclesIntro({
                   />
                 </Animated.View>
 
-                {/* TOP RIGHT */}
                 <Animated.View
                   style={[
                     {
                       position: "absolute",
-                      top: hp(isSmallDevice ? 25 : 30),
-                      right: wp(5),
+                      top: hp(isSmallDevice ? 25 : 20),
+                      right: wp(2),
                       width: topRightSize.width,
                       height: topRightSize.height,
                       borderRadius,
@@ -190,13 +167,12 @@ export default function CirclesIntro({
                   />
                 </Animated.View>
 
-                {/* BOTTOM */}
                 <Animated.View
                   style={[
                     {
                       position: "absolute",
                       bottom: hp(isSmallDevice ? 5 : 8),
-                      left: wp(isSmallDevice ? 35 : 40),
+                      left: wp(10),
                       width: bottomSize.width,
                       height: bottomSize.height,
                       borderRadius,
@@ -225,7 +201,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",
