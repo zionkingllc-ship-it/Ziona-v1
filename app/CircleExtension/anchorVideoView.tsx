@@ -143,13 +143,7 @@ export default function AnchorVideoView() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#000" }]}>
-      {/* Header with Timer only */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View style={{ width: 60 }} />
-        <CountdownTimer expiresAt={expiresAt || ""} style={styles.timerText} />
-      </View>
-
-      {/* PROGRESS BAR - above video */}
+      {/* PROGRESS BAR - topmost, against screen top (within safe area) */}
       <View
         width={width}
         height={40}
@@ -173,6 +167,12 @@ export default function AnchorVideoView() {
             </View>
           </View>
         </GestureDetector>
+      </View>
+
+      {/* Header with Timer only */}
+      <View style={[styles.header, { marginTop: 10 }]}>
+        <View style={{ width: 60 }} />
+        <CountdownTimer expiresAt={expiresAt || ""} style={styles.timerText} />
       </View>
 
       {/* Video Content */}

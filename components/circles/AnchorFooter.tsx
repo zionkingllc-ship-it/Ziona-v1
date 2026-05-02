@@ -92,5 +92,7 @@ const styles = StyleSheet.create({
   },
   footerButton: {
     padding: 8,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 20,
   },
 });
