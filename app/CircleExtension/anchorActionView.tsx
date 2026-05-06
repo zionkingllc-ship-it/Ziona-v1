@@ -52,8 +52,6 @@ export default function AnchorActionView() {
     ? (colors.split(",") as [string, string])
     : ["#A8D5A2", "#EDEDED"];
 
-  const bottomPadding =
-    Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
   const handleSend = (text: string, image?: string | null) => {
     setShowComposer(false);
@@ -264,8 +262,6 @@ export default function AnchorActionView() {
           </TouchableOpacity>
         </View>
 
-        {/* Footer - disabled on action screen */}
-        <AnchorFooter onReflectionPress={() => {}} />
         <AnchorFooter />
       </LinearGradient>
     </View>
@@ -298,7 +294,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    top: 50,
   },
   actionCard: {
     width: "100%",
@@ -364,7 +359,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 48,
     paddingVertical: 14,
     borderRadius: 12,
-    bottom: "35%",
   },
   doneAllText: {
     color: "#FFF",
