@@ -1,13 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
-import { Text, View, XStack, YStack } from "tamagui";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
+import BackButton from "@/components/ui/BackButton";
+import colors from "@/constants/colors";
 import { DEFAULT_CIRCLE_RULES } from "@/constants/defaultRules";
 import type { Rule } from "@/constants/mockCircles";
+import { Ionicons } from "@expo/vector-icons";
 import { ChevronLeft } from "@tamagui/lucide-icons";
-import colors from "@/constants/colors";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import { TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, XStack, YStack } from "tamagui";
 
 type CircleRulesScreenProps = {
   circleName?: string;
@@ -37,14 +38,12 @@ export default function CircleRulesScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#FFF" }}>
       <YStack flex={1} backgroundColor="#FFF" overflow="hidden">
         {/* Header */}
-        <YStack padding="$4" backgroundColor="#CFA3B5" alignItems="center">
-          <TouchableOpacity onPress={() => router.back()} style={{ position: "absolute", left: 16 }}>
-            <View width={28} height={28} borderRadius={99} backgroundColor={colors.gray}><ChevronLeft color={colors.white} size={24}/></View>
-          </TouchableOpacity>
+        <XStack padding="$4" backgroundColor="#CFA3B5" alignItems="center" gap={50}  >
+         <BackButton/> 
           <Text fontWeight="600" color="#FFF">
             {circleName || "Circle Rules"}
           </Text>
-        </YStack>
+        </XStack>
 
         {/* Body */}
         <YStack padding="$4" gap="$4">

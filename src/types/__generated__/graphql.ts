@@ -244,6 +244,16 @@ export type AdminUsersPaginatedType = {
   users: Array<AdminUserType>;
 };
 
+export type AnchorEngagementPayload = {
+  __typename: 'AnchorEngagementPayload';
+  anchorLikedCount: Maybe<Scalars['Int']['output']>;
+  error: Maybe<ErrorType>;
+  liked: Maybe<Scalars['Boolean']['output']>;
+  prayed: Maybe<Scalars['Boolean']['output']>;
+  prayedCount: Maybe<Scalars['Int']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type AnchorPageType = {
   __typename: 'AnchorPageType';
   content: Scalars['String']['output'];
@@ -283,8 +293,17 @@ export type AnchorResponseType = {
 
 export type AnchorType = {
   __typename: 'AnchorType';
+  anchorImage: Maybe<Scalars['String']['output']>;
+  anchorImageText: Maybe<Scalars['String']['output']>;
+  anchorLikedCount: Scalars['Int']['output'];
+  anchorText: Maybe<Scalars['String']['output']>;
+  anchorThumbnail: Maybe<Scalars['String']['output']>;
   anchorType: Scalars['String']['output'];
+  anchorVerse: Maybe<Scalars['String']['output']>;
+  anchorVideo: Maybe<Scalars['String']['output']>;
   author: Maybe<UserType>;
+  backgroundColors: Maybe<Array<Scalars['String']['output']>>;
+  backgroundImage: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   expiresAt: Scalars['DateTime']['output'];
@@ -292,11 +311,18 @@ export type AnchorType = {
   isActive: Scalars['Boolean']['output'];
   mediaUrl: Maybe<Scalars['String']['output']>;
   pages: Array<AnchorPageType>;
+  prayedCount: Scalars['Int']['output'];
   publishedAt: Scalars['DateTime']['output'];
   responseCount: Scalars['Int']['output'];
   scriptureReference: Maybe<ScriptureReference>;
   timeRemaining: Scalars['String']['output'];
   title: Scalars['String']['output'];
+};
+
+export type AppLinksType = {
+  __typename: 'AppLinksType';
+  androidUrl: Maybe<Scalars['String']['output']>;
+  iosUrl: Maybe<Scalars['String']['output']>;
 };
 
 export type AuthPayload = {
@@ -368,6 +394,12 @@ export type BulkRemovePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type CancelPayload = {
+  __typename: 'CancelPayload';
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type CategoryType = {
   __typename: 'CategoryType';
   bdColor: Scalars['String']['output'];
@@ -400,6 +432,12 @@ export type ChartDataType = {
   summary: Scalars['JSON']['output'];
 };
 
+export type CircleFeedResponse = {
+  __typename: 'CircleFeedResponse';
+  pageInfo: PageInfo;
+  posts: Array<CirclePostType>;
+};
+
 export type CircleMemberType = {
   __typename: 'CircleMemberType';
   avatarUrl: Scalars['String']['output'];
@@ -417,6 +455,34 @@ export type CircleMembersPaginatedType = {
   pageSize: Scalars['Int']['output'];
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
+};
+
+export type CirclePostAuthorType = {
+  __typename: 'CirclePostAuthorType';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  name: Maybe<Scalars['String']['output']>;
+};
+
+export type CirclePostEngagementPayload = {
+  __typename: 'CirclePostEngagementPayload';
+  error: Maybe<ErrorType>;
+  prayed: Maybe<Scalars['Boolean']['output']>;
+  prayedCount: Maybe<Scalars['Int']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type CirclePostType = {
+  __typename: 'CirclePostType';
+  anchorLikedCount: Scalars['Int']['output'];
+  commentsCount: Scalars['Int']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['String']['output'];
+  image: Maybe<Scalars['String']['output']>;
+  likesCount: Scalars['Int']['output'];
+  prayedCount: Scalars['Int']['output'];
+  text: Maybe<Scalars['String']['output']>;
+  user: CirclePostAuthorType;
 };
 
 export type CircleReportPayload = {
@@ -442,6 +508,7 @@ export type CircleSummaryType = {
 export type CircleType = {
   __typename: 'CircleType';
   activeAnchor: Maybe<AnchorType>;
+  bannerImage: Maybe<Scalars['String']['output']>;
   coverImage: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   description: Scalars['String']['output'];
@@ -450,6 +517,7 @@ export type CircleType = {
   memberCount: Scalars['Int']['output'];
   memberPreviews: Array<UserType>;
   name: Scalars['String']['output'];
+  profileImage: Maybe<Scalars['String']['output']>;
   rules: Array<CircleRule>;
 };
 
@@ -502,6 +570,25 @@ export type CommentsResponse = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type CompanyStatsType = {
+  __typename: 'CompanyStatsType';
+  activeUsers: Scalars['String']['output'];
+  downloads: Scalars['String']['output'];
+  lastUpdated: Scalars['String']['output'];
+};
+
+export enum ContactBrand {
+  Ziona = 'ZIONA',
+  Zionking = 'ZIONKING'
+}
+
+export type ContactPayload = {
+  __typename: 'ContactPayload';
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+  ticketId: Maybe<Scalars['String']['output']>;
+};
+
 export type ContactReplyType = {
   __typename: 'ContactReplyType';
   id: Scalars['String']['output'];
@@ -530,6 +617,13 @@ export type CreateAnchorPayload = {
   __typename: 'CreateAnchorPayload';
   anchor: Maybe<AnchorType>;
   error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type CreateCirclePostPayload = {
+  __typename: 'CreateCirclePostPayload';
+  error: Maybe<ErrorType>;
+  post: Maybe<CirclePostType>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -573,6 +667,27 @@ export type DeleteFolderPayload = {
   movedPostsCount: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
 };
+
+export type DonationConfirmationType = {
+  __typename: 'DonationConfirmationType';
+  amount: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  donorName: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type DonationPayload = {
+  __typename: 'DonationPayload';
+  clientSecret: Maybe<Scalars['String']['output']>;
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+  transactionId: Maybe<Scalars['String']['output']>;
+};
+
+export enum DonationTypeEnum {
+  Monthly = 'MONTHLY',
+  OneTime = 'ONE_TIME'
+}
 
 export type EmptyState = {
   __typename: 'EmptyState';
@@ -745,6 +860,26 @@ export type JoinCirclePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type LegalDocumentPayload = {
+  __typename: 'LegalDocumentPayload';
+  document: Maybe<LegalDocumentType>;
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type LegalDocumentType = {
+  __typename: 'LegalDocumentType';
+  content: Scalars['String']['output'];
+  lastUpdated: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export enum LegalDocumentTypeEnum {
+  CommunityGuidelines = 'COMMUNITY_GUIDELINES',
+  PrivacyPolicy = 'PRIVACY_POLICY',
+  TermsOfService = 'TERMS_OF_SERVICE'
+}
+
 export type LikePayload = {
   __typename: 'LikePayload';
   error: Maybe<ErrorType>;
@@ -827,6 +962,8 @@ export type Mutation = {
   adminUpdateContactStatus: AdminContactPayload;
   /** Remove multiple bookmarks at once */
   bulkRemoveBookmarks: BulkRemovePayload;
+  /** Cancel an active Stripe subscription. */
+  cancelSubscription: CancelPayload;
   /** Change password for authenticated user. Requires current password. Can optionally sign out all other devices. */
   changePassword: ChangePasswordPayload;
   /** Check if a username is available */
@@ -836,8 +973,11 @@ export type Mutation = {
   createAnchor: CreateAnchorPayload;
   /** Create a bookmark folder */
   createBookmarkFolder: BookmarkFolderPayload;
+  createCirclePost: CreateCirclePostPayload;
   /** Create a nested or top-level text comment on a Post payload. */
   createComment: CommentPayload;
+  /** Create a one-time or monthly donation via Stripe. */
+  createDonation: DonationPayload;
   /** Create a new multimedia app post. Supports Text, Media, and Bible variants. */
   createPost: CreatePostPayload;
   /** Delete a bookmark folder */
@@ -860,7 +1000,10 @@ export type Mutation = {
   /** Hide a post from the current user's feed */
   hidePost: HidePostPayload;
   joinCircle: JoinCirclePayload;
+  /** Add an email to the ZIONA or ZIONKING waitlist. */
+  joinWaitlist: WaitlistPayload;
   leaveCircle: JoinCirclePayload;
+  likeAnchor: AnchorEngagementPayload;
   /** Like a comment */
   likeComment: LikePayload;
   /** Optimistically toggle a 'like' on a specific post. */
@@ -869,6 +1012,8 @@ export type Mutation = {
   login: AuthPayload;
   markAllNotificationsAsRead: SuccessResponse;
   markNotificationAsRead: SuccessResponse;
+  prayForAnchor: AnchorEngagementPayload;
+  prayForCirclePost: CirclePostEngagementPayload;
   reactToResponse: ReactionPayload;
   /** Reactivate a user (admin only). */
   reactivateUser: ModerationActionPayload;
@@ -897,6 +1042,8 @@ export type Mutation = {
   sharePostDirect: SharePayload;
   /** Share a post externally (generate link) */
   sharePostExternal: SharePayload;
+  /** Submit a contact form message for ZIONA or ZIONKING. */
+  submitContact: ContactPayload;
   /** Public: submit a contact/support message (no auth required). */
   submitContactMessage: SubmitContactPayload;
   /** Get username suggestions based on a name */
@@ -911,6 +1058,8 @@ export type Mutation = {
   unlikePost: LikePayload;
   /** Unsave/remove a bookmark */
   unsavePost: SavePayload;
+  /** Publish a new version of a legal document. Admin only. */
+  updateLegalDocument: LegalDocumentPayload;
   updateNotificationPreferences: NotificationPreferencesType;
   /** Edit the caption of an existing post. Only accessible by post owner. */
   updatePost: PostPayload;
@@ -1038,6 +1187,11 @@ export type MutationBulkRemoveBookmarksArgs = {
 };
 
 
+export type MutationCancelSubscriptionArgs = {
+  subscriptionId: Scalars['String']['input'];
+};
+
+
 export type MutationChangePasswordArgs = {
   currentPassword: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
@@ -1078,10 +1232,28 @@ export type MutationCreateBookmarkFolderArgs = {
 };
 
 
+export type MutationCreateCirclePostArgs = {
+  circleId: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
+  mediaUrl?: InputMaybe<Scalars['String']['input']>;
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+
 export type MutationCreateCommentArgs = {
   parentCommentId?: InputMaybe<Scalars['String']['input']>;
   postId: Scalars['String']['input'];
   text: Scalars['String']['input'];
+};
+
+
+export type MutationCreateDonationArgs = {
+  amount: Scalars['Int']['input'];
+  email: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  paymentMethodId: Scalars['String']['input'];
+  planId?: InputMaybe<Scalars['String']['input']>;
+  type?: DonationTypeEnum;
 };
 
 
@@ -1162,8 +1334,19 @@ export type MutationJoinCircleArgs = {
 };
 
 
+export type MutationJoinWaitlistArgs = {
+  brand: WaitlistBrand;
+  email: Scalars['String']['input'];
+};
+
+
 export type MutationLeaveCircleArgs = {
   circleId: Scalars['String']['input'];
+};
+
+
+export type MutationLikeAnchorArgs = {
+  anchorId: Scalars['String']['input'];
 };
 
 
@@ -1185,6 +1368,16 @@ export type MutationLoginArgs = {
 
 export type MutationMarkNotificationAsReadArgs = {
   notificationId: Scalars['ID']['input'];
+};
+
+
+export type MutationPrayForAnchorArgs = {
+  anchorId: Scalars['String']['input'];
+};
+
+
+export type MutationPrayForCirclePostArgs = {
+  postId: Scalars['String']['input'];
 };
 
 
@@ -1256,6 +1449,8 @@ export type MutationRespondToAnchorArgs = {
 
 
 export type MutationReviewReportArgs = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  internalNotes?: InputMaybe<Scalars['String']['input']>;
   reportId: Scalars['String']['input'];
   status: Scalars['String']['input'];
 };
@@ -1296,6 +1491,15 @@ export type MutationSharePostExternalArgs = {
 };
 
 
+export type MutationSubmitContactArgs = {
+  brand: ContactBrand;
+  email: Scalars['String']['input'];
+  honeypot?: Scalars['String']['input'];
+  message: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+};
+
+
 export type MutationSubmitContactMessageArgs = {
   email: Scalars['String']['input'];
   message: Scalars['String']['input'];
@@ -1331,6 +1535,13 @@ export type MutationUnlikePostArgs = {
 
 export type MutationUnsavePostArgs = {
   postId: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateLegalDocumentArgs = {
+  content: Scalars['String']['input'];
+  type: LegalDocumentTypeEnum;
+  version: Scalars['String']['input'];
 };
 
 
@@ -1425,6 +1636,13 @@ export type OtpPayload = {
   resendAfter: Maybe<Scalars['Int']['output']>;
   /** Whether the OTP was sent successfully */
   success: Scalars['Boolean']['output'];
+};
+
+export type PageInfo = {
+  __typename: 'PageInfo';
+  currentPage: Scalars['Int']['output'];
+  hasNextPage: Scalars['Boolean']['output'];
+  totalCount: Scalars['Int']['output'];
 };
 
 export type Post = {
@@ -1574,6 +1792,8 @@ export type Query = {
   anchorByDate: Maybe<AnchorType>;
   anchorHistory: Array<AnchorType>;
   anchorResponses: Array<AnchorResponseType>;
+  /** Returns active iOS and Android app store URLs. */
+  appDownloadLinks: AppLinksType;
   /** Filter hierarchical mapping structure list of volumes cleanly. */
   bibleBooks: Array<BibleBook>;
   /** Extract canonical list representing available supported free translations. */
@@ -1581,12 +1801,19 @@ export type Query = {
   /** Get bookmark folders */
   bookmarkFolders: Array<BookmarkFolderType>;
   circle: Maybe<CircleType>;
+  circleFeed: CircleFeedResponse;
   /** Get paginated replies for a specific comment (beyond the inline 3-reply preview). */
   commentReplies: CommentsResponse;
+  /** Returns the currently active Community Guidelines. */
+  communityGuidelines: LegalDocumentType;
+  /** Returns public platform statistics (updated hourly). */
+  companyStats: CompanyStatsType;
   /** Get all discovery categories securely formatted for algorithmic content filtering. */
   discoverCategories: Array<CategoryType>;
   /** Get the Discover feed by category */
   discoverFeed: FeedResponse;
+  /** Retrieve donation confirmation by transaction ID. */
+  donationConfirmation: Maybe<DonationConfirmationType>;
   /** Get the public or personalized feed. Works with or without authentication. */
   feed: FeedResponse;
   /** Get hierarchical chronologically descending array of all User Nodes following a Profile. */
@@ -1616,6 +1843,8 @@ export type Query = {
   post: Maybe<Post>;
   /** Get hierarchical chronological array of comments bounded to an entity. */
   postComments: CommentsResponse;
+  /** Returns the currently active Privacy Policy. */
+  privacyPolicy: LegalDocumentType;
   responseReplies: Array<AnchorResponseType>;
   /** Get saved/bookmarked posts */
   savedPosts: SavedPostsResponse;
@@ -1628,6 +1857,8 @@ export type Query = {
   suggestedCircles: Array<CircleType>;
   /** Get highly validated creators algorithmically dynamically curated for the authenticating user. */
   suggestedCreators: Array<SuggestedCreatorType>;
+  /** Returns the currently active Terms of Service. */
+  termsOfService: LegalDocumentType;
   unreadNotificationCount: Scalars['Int']['output'];
   /** Get paginated list of posts authored by the targeted user. */
   userPosts: ProfilePostResponseListDto;
@@ -1746,6 +1977,13 @@ export type QueryCircleArgs = {
 };
 
 
+export type QueryCircleFeedArgs = {
+  circleId: Scalars['String']['input'];
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+};
+
+
 export type QueryCommentRepliesArgs = {
   commentId: Scalars['String']['input'];
   cursor?: InputMaybe<Scalars['String']['input']>;
@@ -1758,6 +1996,11 @@ export type QueryDiscoverFeedArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   limit?: Scalars['Int']['input'];
   mediaType?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryDonationConfirmationArgs = {
+  transactionId: Scalars['String']['input'];
 };
 
 
@@ -2150,4 +2393,16 @@ export type VideoData = {
   thumbnailUrl: Maybe<Scalars['String']['output']>;
   url: Scalars['String']['output'];
   width: Maybe<Scalars['Int']['output']>;
+};
+
+export enum WaitlistBrand {
+  Ziona = 'ZIONA',
+  Zionking = 'ZIONKING'
+}
+
+export type WaitlistPayload = {
+  __typename: 'WaitlistPayload';
+  alreadyRegistered: Scalars['Boolean']['output'];
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
 };

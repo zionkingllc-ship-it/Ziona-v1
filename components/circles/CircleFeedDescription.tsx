@@ -12,7 +12,7 @@ const CircleFeedDescription = ({ circle }: CircleFeedDescriptionProps) => {
   const router = useRouter();
 
   return (
-    <YStack marginTop={4} width={'100%'} justifyContent="flex-start">
+    <YStack width={'100%'} justifyContent="flex-start">
       <XStack>
         <Text
           flex={1}

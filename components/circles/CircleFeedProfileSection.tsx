@@ -11,7 +11,7 @@ interface CircleFeedProfileSectionProps {
 }
 
 const CircleFeedProfileSection = ({ circle, onToggleJoin }: CircleFeedProfileSectionProps) => (
-  <XStack justifyContent="space-between" alignItems="center" marginTop={10}>
+  <XStack justifyContent="space-between" alignItems="center">
     <Image
       source={{ uri: circle.profileImage }}
       style={{ width: 87, height: 80, borderRadius: 7 }}
@@ -35,7 +35,7 @@ const CircleFeedNameRow = ({ circle, memberAvatars }: {
   circle: CircleFeedData;
   memberAvatars?: string[];
 }) => (
-  <XStack justifyContent="space-between" alignItems="center" marginTop={10}>
+  <XStack justifyContent="space-between" alignItems="center" marginTop={4}>
     <Text
       fontSize={16}
       fontFamily="$body"

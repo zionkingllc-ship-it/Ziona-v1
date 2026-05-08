@@ -4,7 +4,7 @@ import { XStack, YStack, Text } from 'tamagui';
 import { ChevronDown } from '@tamagui/lucide-icons';
 import colors from '@/constants/colors';
 import AnchorCard from './AnchorCard';
-import { CircleFeedData, CircleAnchor } from '@/constants/mockCircles';
+import { CircleFeedData, ActiveAnchor } from '@/constants/mockCircles';
 
 interface CircleFeedAnchorSectionProps {
   circle: CircleFeedData;
@@ -27,7 +27,7 @@ const getAnchorDaysAgo = (filter: string): number => {
   return match ? parseInt(match[1]) : 0;
 };
 
-const getDisplayAnchor = (circle: CircleFeedData, filter: string): CircleAnchor | undefined => {
+const getDisplayAnchor = (circle: CircleFeedData, filter: string): ActiveAnchor | undefined => {
   const daysAgo = getAnchorDaysAgo(filter);
   const now = new Date();
 
