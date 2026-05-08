@@ -5,6 +5,9 @@ import { useLocalSearchParams } from "expo-router";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import CircleFeedItem from "@/components/circles/CircleFeedItem";
 import colors from "@/constants/colors";
+import { fetchCircleDetail, fetchCircleFeed, fetchActiveAnchor } from "@/services/graphQL/queries/circles";
+import { joinCircle, leaveCircle } from "@/services/graphQL/mutation/circles";
+import { useEffect, useState } from "react";
 
 type CirclePost = {
   id: string;
@@ -15,78 +18,90 @@ type CirclePost = {
   createdAt: string;
   text?: string;
   image?: string;
-  anchor?: {
-    type: "text" | "image" | "video";
-    preview: string;
-  };
   likes: number;
   comments: number;
 };
 
-// Mock data - will be replaced with API
-const MOCK_CIRCLE = {
-  id: "1",
-  name: "Faith, Work & Purpose",
-  description: "A community where Christians discuss career, business, and finding purpose in work while honoring God.",
-  bannerImage: "https://images.unsplash.com/photo-1509099836639-18ba1795216d",
-  profileImage: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-  memberCount: 120,
-  isJoined: false,
-  activeAnchor: {
-    title: "Today's Prayer Point",
-    content: "Father, I pray for wisdom in my career decisions. Guide me to honor you in all that I do.",
-    scripture: "Proverbs 3:5-6",
-    author: "Pastor John",
-  },
-};
-
-const MOCK_POSTS: CirclePost[] = [
-  {
-    id: "1",
-    user: { name: "Sarah Kim", avatar: "https://i.pravatar.cc/100?img=1" },
-    createdAt: "2h ago",
-    text: "God is so good! I just got a promotion at work! All glory to Him! 🙏",
-    likes: 24,
-    comments: 5,
-  },
-  {
-    id: "2",
-    user: { name: "Mike Ross", avatar: "https://i.pravatar.cc/100?img=2" },
-    createdAt: "4h ago",
-    text: "Anyone looking for a job prayer? I've been searching for 3 months now. Please keep me in your prayers.",
-    likes: 18,
-    comments: 12,
-  },
-  {
-    id: "3",
-    user: { name: "Grace Lee", avatar: "https://i.pravatar.cc/100?img=3" },
-    createdAt: "6h ago",
-    text: "Today's devotional: 'Whatever you do, work at it with your whole being as for the Lord...' Colossians 3:23",
-    likes: 45,
-    comments: 8,
-  },
-  {
-    id: "4",
-    user: { name: "James Chen", avatar: "https://i.pravatar.cc/100?img=4" },
-    createdAt: "Yesterday",
-    text: "Thank you all for the prayers! I got the job! God is faithful!",
-    image: "https://images.unsplash.com/photo-1519389950473-63b5a5b7f5e3",
-    likes: 67,
-    comments: 23,
-  },
-];
-
 export default function CircleDetailScreen() {
   const { id: circleId } = useLocalSearchParams<{ id: string }>();
-  const [circle, setCircle] = useState(MOCK_CIRCLE);
-  const [posts, setPosts] = useState<CirclePost[]>(MOCK_POSTS);
+  const [circle, setCircle] = useState<any>(null);
+  const [posts, setPosts] = useState<CirclePost[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const toggleJoin = () => {
-    setCircle((prev) => ({
-      ...prev,
-      isJoined: !prev.isJoined,
-      memberCount: prev.isJoined ? prev.memberCount - 1 : prev.memberCount + 1,
-    }));
+  useEffect(() => {
+    loadData();
+  }, [circleId]);
+
+  async function loadData() {
+    try {
+      setLoading(true);
+      const [circleDetail, feedData, activeAnchorData] = await Promise.all([
+        fetchCircleDetail(circleId!),
+        fetchCircleFeed(circleId!, 1, 20),
+        fetchActiveAnchor(circleId!),
+      ]);
+
+      if (circleDetail) {
+        setCircle({
+          id: circleDetail.id,
+          name: circleDetail.name,
+          description: circleDetail.description,
+          bannerImage: circleDetail.coverImage,
+          profileImage: circleDetail.coverImage,
+          memberCount: circleDetail.memberCount,
+          isJoined: circleDetail.isSubscribed,
+          activeAnchor: activeAnchorData ? {
+            title: activeAnchorData.title,
+            content: activeAnchorData.content,
+            scripture: activeAnchorData.scriptureReference?.reference,
+            author: activeAnchorData.author?.username,
+          } : null,
+        });
+      }
+
+      if (feedData?.posts) {
+        setPosts(feedData.posts.map((post: any) => ({
+          id: post.id,
+          text: post.text,
+          image: post.image,
+          createdAt: new Date(post.createdAt).toLocaleDateString(),
+          likes: post.likesCount || 0,
+          comments: post.commentsCount || 0,
+          user: {
+            name: post.user?.name || "Anonymous",
+            avatar: post.user?.avatarUrl || "",
+          },
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to load circle data", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const toggleJoin = async () => {
+    try {
+      const wasJoined = circle?.isJoined;
+      setCircle((prev: any) => prev ? {
+        ...prev,
+        isJoined: !prev.isJoined,
+        memberCount: prev.isJoined ? prev.memberCount - 1 : prev.memberCount + 1,
+      } : null);
+
+      if (wasJoined) {
+        await leaveCircle(circleId!);
+      } else {
+        await joinCircle(circleId!);
+      }
+    } catch (err) {
+      console.error("Failed to toggle join", err);
+      setCircle((prev: any) => prev ? {
+        ...prev,
+        isJoined: !prev.isJoined,
+        memberCount: prev.isJoined ? prev.memberCount - 1 : prev.memberCount + 1,
+      } : null);
+    }
   };
 
   return (

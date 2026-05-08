@@ -10,19 +10,15 @@ import CircleFeedProfileSection, {
 
 import colors from "@/constants/colors";
 
-import {
-  CircleFeedData,
-  CirclePost,
-  DEFAULT_CIRCLE_FEED,
-  MOCK_CIRCLE_FEEDS,
-} from "@/constants/mockCircles";
+import { fetchCircleFeed, fetchCircleDetail, fetchActiveAnchor, joinCircle, leaveCircle } from "@/services/graphQL/queries/circles";
+import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Animated,
@@ -52,16 +48,78 @@ export default function CircleFeedScreen() {
 
   const circleId = id || "1";
 
-  const circleData =
-    MOCK_CIRCLE_FEEDS[circleId] ||
-    DEFAULT_CIRCLE_FEED;
+  const [circle, setCircle] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [circle, setCircle] =
-    useState<CircleFeedData>(circleData);
+  useEffect(() => {
+    loadCircleData();
+  }, [circleId]);
 
-  const [posts] = useState<CirclePost[]>(
-    circleData.posts || []
-  );
+  async function loadCircleData() {
+    try {
+      setLoading(true);
+      const [circleDetail, feedData, activeAnchorData] = await Promise.all([
+        fetchCircleDetail(circleId),
+        fetchCircleFeed(circleId, 1, 20),
+        fetchActiveAnchor(circleId),
+      ]);
+
+      if (circleDetail) {
+        setCircle({
+          id: circleDetail.id,
+          name: circleDetail.name,
+          description: circleDetail.description,
+          bannerImage: circleDetail.coverImage,
+          profileImage: circleDetail.coverImage,
+          memberCount: circleDetail.memberCount,
+          isJoined: circleDetail.isSubscribed,
+          memberAvatars: circleDetail.memberPreviews?.map((m: any) => m.avatarUrl).filter(Boolean) || [],
+          rules: circleDetail.rules || [],
+          activeAnchor: activeAnchorData ? {
+            id: activeAnchorData.id,
+            type: activeAnchorData.anchorType?.toLowerCase() || "text",
+            title: activeAnchorData.title,
+            content: activeAnchorData.content,
+            createdAt: activeAnchorData.createdAt,
+            expiresAt: activeAnchorData.expiresAt,
+            bibleReference: activeAnchorData.scriptureReference?.reference,
+            bibleText: activeAnchorData.scriptureReference?.text,
+            anchorText: activeAnchorData.content,
+            backgroundImage: activeAnchorData.mediaUrl,
+            likedImage: 1,
+            anchorLikedCount: activeAnchorData.responseCount || 0,
+            prayedCount: 0,
+          } : undefined,
+        });
+      }
+
+      if (feedData?.posts) {
+        setPosts(feedData.posts.map((post: any) => ({
+          id: post.id,
+          text: post.text,
+          image: post.image,
+          createdAt: post.createdAt,
+          likes: post.likesCount || 0,
+          comments: post.commentsCount || 0,
+          likedImage: 1,
+          likeCount: post.likesCount || 0,
+          anchorLikedCount: post.anchorLikedCount || 0,
+          prayedCount: post.prayedCount || 0,
+          user: {
+            name: post.user?.name || "Anonymous",
+            avatar: post.user?.avatarUrl || "",
+          },
+        })));
+      }
+    } catch (err: any) {
+      console.error("Failed to load circle data", err);
+      setError("Failed to load circle data");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const [showFilterModal, setShowFilterModal] =
     useState(false);
@@ -135,15 +193,34 @@ export default function CircleFeedScreen() {
       JOIN / LEAVE
   ========================= */
 
-  const toggleJoin = () => {
-    setCircle((prev) => ({
-      ...prev,
-      isJoined: !prev.isJoined,
+  const toggleJoin = async () => {
+    try {
+      const wasJoined = circle?.isJoined;
+      // Optimistic update
+      setCircle((prev: any) => prev ? {
+        ...prev,
+        isJoined: !prev.isJoined,
+        memberCount: prev.isJoined
+          ? prev.memberCount - 1
+          : prev.memberCount + 1,
+      } : null);
 
-      memberCount: prev.isJoined
-        ? prev.memberCount - 1
-        : prev.memberCount + 1,
-    }));
+      if (wasJoined) {
+        await leaveCircleMutation(circleId);
+      } else {
+        await joinCircleMutation(circleId);
+      }
+    } catch (err) {
+      console.error("Failed to toggle join", err);
+      // Revert on error
+      setCircle((prev: any) => prev ? {
+        ...prev,
+        isJoined: !prev.isJoined,
+        memberCount: prev.isJoined
+          ? prev.memberCount - 1
+          : prev.memberCount + 1,
+      } : null);
+    }
   };
 
   /* =========================

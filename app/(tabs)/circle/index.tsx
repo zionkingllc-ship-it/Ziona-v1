@@ -2,7 +2,7 @@ import CircleCard from "@/components/circles/CircleCard";
 import CirclesIntro from "@/components/circles/CirclesIntro";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
-import { MOCK_CIRCLES } from "@/constants/mockCircles";
+import { fetchAllCircles, fetchMyCircles, fetchSuggestedCircles } from "@/services/graphQL/queries/circles";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
@@ -18,6 +18,7 @@ export default function CirclesSuggestion() {
   const [circles, setCircles] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [showIntro, setShowIntro] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadCircles();
@@ -25,13 +26,26 @@ export default function CirclesSuggestion() {
 
   async function loadCircles() {
     try {
-      // Show all circles to test different anchor backgrounds
-      const data = MOCK_CIRCLES;
+      setLoading(true);
+      const data = await fetchAllCircles();
 
-      setCircles(data);
+      // Map backend fields to UI expectations
+      const mappedCircles = data.map((circle: any) => ({
+        id: circle.id,
+        title: circle.name,
+        description: circle.description,
+        image: circle.coverImage,
+        members: circle.memberCount,
+        isJoined: circle.isSubscribed,
+        avatars: circle.memberPreviews?.map((m: any) => m.avatarUrl).filter(Boolean) || [],
+      }));
+
+      setCircles(mappedCircles);
     } catch (err) {
       console.error("Failed to load circles", err);
       setError("Failed to load circles");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -59,42 +73,70 @@ export default function CirclesSuggestion() {
     return <CirclesIntro onClose={() => setShowIntro(false)} />;
   }
 
-  return (
-    <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
-      <XStack
-        style={[
-          styles.search,
-          {
-            backgroundColor: colors.borderBackground,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <TextInput placeholder="Search" />
-      </XStack>
-
+  const renderEmptyState = () => (
+    <YStack flex={1} justifyContent="center" alignItems="center" paddingVertical={hp(10)}>
       <Text
         fontFamily="$body"
-        fontWeight="600"
-        fontSize={14}
-        marginTop={hp(2)}
+        fontWeight="400"
+        fontSize={16}
+        color={colors.gray}
         marginBottom={hp(1)}
-        paddingHorizontal={wp(5)}
       >
-        All Circles
+        No suggested circles at the moment
       </Text>
+      <Text
+        fontFamily="$body"
+        fontWeight="400"
+        fontSize={12}
+        color={colors.gray}
+      >
+        Check back later for new circles to join
+      </Text>
+    </YStack>
+  );
 
-      <FlatList
-        data={circles}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{
-          paddingHorizontal: wp(5),
-          paddingBottom: hp(10),
-        }}
-        renderItem={({ item }) => (
-          <CircleCard {...item} onPress={() => handleCirclePress(item.id)} />
-        )}
-      />
+  return (
+    <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
+      {circles.length === 0 ? (
+        renderEmptyState()
+      ) : (
+        <>
+          <XStack
+            style={[
+              styles.search,
+              {
+                backgroundColor: colors.borderBackground,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <TextInput placeholder="Search" />
+          </XStack>
+
+          <Text
+            fontFamily="$body"
+            fontWeight="600"
+            fontSize={14}
+            marginTop={hp(2)}
+            marginBottom={hp(1)}
+            paddingHorizontal={wp(5)}
+          >
+            All Circles
+          </Text>
+
+          <FlatList
+            data={circles}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingHorizontal: wp(5),
+              paddingBottom: hp(10),
+            }}
+            renderItem={({ item }) => (
+              <CircleCard {...item} onPress={() => handleCirclePress(item.id)} />
+            )}
+          />
+        </>
+      )}
     </YStack>
   );
 }
