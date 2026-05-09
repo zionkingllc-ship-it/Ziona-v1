@@ -71,11 +71,6 @@ export const GET_CIRCLE_DETAIL = `
         title
         description
       }
-      memberPreviews {
-        id
-        username
-        avatarUrl
-      }
       activeAnchor {
         id
         title
@@ -84,21 +79,6 @@ export const GET_CIRCLE_DETAIL = `
         mediaUrl
         createdAt
         expiresAt
-        scriptureReference {
-          book
-          chapter
-          verseStart
-          verseEnd
-          reference
-          text
-        }
-        pages {
-          pageNumber
-          contentType
-          textContent
-          mediaUrl
-          bibleVerse
-        }
       }
     }
   }
@@ -148,15 +128,13 @@ export const GET_ACTIVE_ANCHOR = `
         chapter
         verseStart
         verseEnd
-        reference
         text
       }
       pages {
         pageNumber
-        contentType
-        textContent
+        content
         mediaUrl
-        bibleVerse
+        title
       }
     }
   }
@@ -222,9 +200,22 @@ export async function fetchCircleDetail(id: string) {
   return res?.circle ?? null;
 }
 
-export async function fetchCircleFeed(circleId: string, page = 1, pageSize = 20) {
-  const res = await graphqlRequest(GET_CIRCLE_FEED, { circleId, page, pageSize });
-  return res?.circleFeed ?? { pageInfo: { currentPage: 1, hasNextPage: false, totalCount: 0 }, posts: [] };
+export async function fetchCircleFeed(
+  circleId: string,
+  page = 1,
+  pageSize = 20,
+) {
+  const res = await graphqlRequest(GET_CIRCLE_FEED, {
+    circleId,
+    page,
+    pageSize,
+  });
+  return (
+    res?.circleFeed ?? {
+      pageInfo: { currentPage: 1, hasNextPage: false, totalCount: 0 },
+      posts: [],
+    }
+  );
 }
 
 export async function fetchActiveAnchor(circleId: string) {

@@ -4,11 +4,49 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import { useReportContent } from "@/hooks/useReportContent";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
-import type { CirclePost } from "@/constants/mockCircles";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
 import SuccessModal from "../ui/modals/successModal";
+
+const formatTimeAgo = (dateString: string): string => {
+  if (!dateString) return "";
+  
+  // Handle ISO format: "2026-05-03T21:52:10.574485+00:00"
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  // Format as "May 3"
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
+type CirclePost = {
+  id: string;
+  text?: string;
+  image?: string;
+  createdAt: string;
+  likes: number;
+  comments: number;
+  likedImage?: number;
+  likeCount?: number;
+  anchorLikedCount?: number;
+  prayedCount?: number;
+  user: {
+    name: string;
+    avatar: string;
+  };
+};
 
 type Props = {
   post: CirclePost;
@@ -22,23 +60,35 @@ export default function CircleFeedItem({ post }: Props) {
 
   const reportMutation = useReportContent();
 
+  const avatarUri = post.user.avatar || "";
+  const imageUri = post.image || "";
+
   return (
     <YStack padding="$3" gap={4} backgroundColor="#FFF">
       {/* HEADER */}
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$2">
-          <Image
-            source={{ uri: post.user.avatar }}
-            width={36}
-            height={36}
-            borderRadius={18}
-          />
+          {avatarUri ? (
+            <Image
+              source={{ uri: avatarUri }}
+              width={36}
+              height={36}
+              borderRadius={18}
+            />
+          ) : (
+            <Image
+              source={require("@/assets/images/emptyDP.png")}
+              width={36}
+              height={36}
+              borderRadius={18}
+            />
+          )}
           <XStack gap={6} alignItems="center">
             <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
               {post.user.name}
             </Text>
             <Text fontSize={12} color="#888">
-              {post.createdAt}
+              {formatTimeAgo(post.createdAt)}
             </Text>
           </XStack>
         </XStack>
@@ -56,9 +106,9 @@ export default function CircleFeedItem({ post }: Props) {
         )}
 
         {/* IMAGE */}
-        {post.image && (
+        {imageUri && (
           <Image
-            source={{ uri: post.image }}
+            source={{ uri: imageUri }}
             width="100%"
             height={139}
             borderRadius={14}

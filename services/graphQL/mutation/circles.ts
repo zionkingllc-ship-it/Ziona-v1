@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $text: String!, $mediaId: String) {
-    createCirclePost(circleId: $circleId, text: $text, mediaId: $mediaId) {
+  mutation CreateCirclePost($circleId: String!, $text: String!, $mediaUrl: String) {
+    createCirclePost(circleId: $circleId, text: $text, mediaUrl: $mediaUrl) {
       success
       error {
         code
@@ -81,8 +81,8 @@ export const PRAY_FOR_CIRCLE_POST = `
 `;
 
 export const RESPOND_TO_ANCHOR = `
-  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaId: String) {
-    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaId: $mediaId) {
+  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaUrl: String) {
+    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaUrl: $mediaUrl) {
       success
       error {
         code
@@ -131,8 +131,8 @@ export async function leaveCircle(circleId: string) {
   return res?.leaveCircle;
 }
 
-export async function createCirclePost(circleId: string, text: string, mediaId?: string) {
-  const res = await graphqlRequest(CREATE_CIRCLE_POST, { circleId, text, mediaId });
+export async function createCirclePost(circleId: string, text: string, mediaUrl?: string) {
+  const res = await graphqlRequest(CREATE_CIRCLE_POST, { circleId, text, mediaUrl });
   return res?.createCirclePost;
 }
 
@@ -141,8 +141,8 @@ export async function prayForCirclePost(postId: string) {
   return res?.prayForCirclePost;
 }
 
-export async function respondToAnchor(anchorId: string, content: string, responseType: string, mediaId?: string) {
-  const res = await graphqlRequest(RESPOND_TO_ANCHOR, { anchorId, content, responseType, mediaId });
+export async function respondToAnchor(anchorId: string, content: string, responseType: string, mediaUrl?: string, mediaType?: string) {
+  const res = await graphqlRequest(RESPOND_TO_ANCHOR, { anchorId, content, responseType, mediaUrl, mediaType });
   return res?.respondToAnchor;
 }
 

@@ -1,8 +1,10 @@
 import { useAuthStore } from "@/store/useAuthStore";
+import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -32,29 +34,70 @@ export default function CircleCommentComposer({
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [posting, setPosting] = useState(false);
   const user = useAuthStore((state) => state.user);
   const userName = user?.username || "You";
   const userAvatar = user?.avatarUrl || "https://i.pravatar.cc/100?img=1";
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId } = useLocalSearchParams<{ circleId?: string }>();
+  const { circleId, fromScreen } = useLocalSearchParams<{ circleId?: string; fromScreen?: string }>();
 
-  const handleSend = () => {
-    if (!text.trim()) return;
+  const handleSend = async () => {
+    if (!text.trim() || posting) return;
 
-    if (onSend) {
-      onSend(text, image);
-    }
+    setPosting(true);
 
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      if (onClose) {
-        onClose();
-      } else {
-        router.back();
+    try {
+      // If we have a circleId, create a circle post
+      if (circleId) {
+        console.log("📤 [Composer] Creating post for circle:", circleId, "text:", text.trim());
+        const result = await createCirclePost(circleId, text.trim(), undefined);
+        console.log("✅ [Composer] Post created result:", result);
+      } else if (onSend) {
+        // Otherwise use the callback
+        onSend(text, image);
       }
-    }, 1500);
+
+      if (result?.error?.code === "NOT_MEMBER") {
+        console.log("❌ [Composer] User is not a member");
+        Alert.alert("Join First", "You need to join this circle to post. Tap the Join button on the circle feed.");
+        setPosting(false);
+        return;
+      }
+
+      if (!result?.success) {
+        console.log("❌ [Composer] Failed to create post:", result?.error);
+        Alert.alert("Error", result?.error?.message || "Failed to create post");
+        setPosting(false);
+        return;
+      }
+
+      setShowSuccess(true);
+      
+      // If coming from circleFeed, reload the feed after posting
+      if (fromScreen === "circleFeed") {
+        setTimeout(() => {
+          router.replace({
+            pathname: "/(tabs)/circle/circleFeed",
+            params: { id: circleId, t: Date.now().toString() },
+          });
+        }, 1500);
+        return;
+      }
+      
+      setTimeout(() => {
+        setShowSuccess(false);
+        if (onClose) {
+          onClose();
+        } else {
+          router.back();
+        }
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to create post:", error);
+    } finally {
+      setPosting(false);
+    }
   };
 
   return (

@@ -34,39 +34,46 @@ const CircleFeedProfileSection = ({ circle, onToggleJoin }: CircleFeedProfileSec
 const CircleFeedNameRow = ({ circle, memberAvatars }: {
   circle: CircleFeedData;
   memberAvatars?: string[];
-}) => (
-  <XStack justifyContent="space-between" alignItems="center" marginTop={4}>
-    <Text
-      fontSize={16}
-      fontFamily="$body"
-      fontWeight="600"
-      color={colors.text}
-    >
-      {circle.name}
-    </Text>
-    {memberAvatars && memberAvatars.length > 0 && (
+}) => {
+  const memberCount = circle?.memberCount ?? 0;
+  const avatars = memberAvatars && memberAvatars.length > 0 
+    ? memberAvatars.slice(0, 4) 
+    : [];
+  
+  return (
+    <XStack justifyContent="space-between" alignItems="center" marginTop={4}>
+      <Text
+        fontSize={16}
+        fontFamily="$body"
+        fontWeight="600"
+        color={colors.text}
+      >
+        {circle.name}
+      </Text>
       <YStack alignItems="center">
-        <View style={styles.avatarStack}>
-          {memberAvatars.slice(0, 4).map((_, index) => (
-            <Image
-              key={index}
-              source={require('@/assets/images/profile.png')}
-              style={[styles.memberAvatar, { left: index * 12 }]}
-            />
-          ))}
-        </View>
+        {avatars.length > 0 && (
+          <View style={styles.avatarStack}>
+            {avatars.map((avatar, index) => (
+              <Image
+                key={index}
+                source={avatar ? { uri: avatar } : require('@/assets/images/emptyDP.png')}
+                style={[styles.memberAvatar, { left: index * 12 }]}
+              />
+            ))}
+          </View>
+        )}
         <Text
           fontFamily="$body"
           fontWeight="400"
           fontSize={8}
           color={colors.gray}
         >
-          +{circle.memberCount} members
+          {memberCount} members
         </Text>
       </YStack>
-    )}
-  </XStack>
-);
+    </XStack>
+  );
+};
 
 const styles = StyleSheet.create({
   avatarStack: {

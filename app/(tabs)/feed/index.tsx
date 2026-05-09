@@ -104,7 +104,11 @@ export default function Feed() {
   const data: FeedPost[] = useMemo(() => {
     if (!pages.length) return [];
 
-    return pages
+    // Deduplicate posts by ID to prevent duplicate key error
+    const seenIds = new Set<string>();
+    const uniquePosts: FeedPost[] = [];
+
+    pages
       .flatMap((page) => page.posts ?? [])
       .map((p) => normalizePost(p))
       .filter((p): p is FeedPost => {
@@ -116,13 +120,20 @@ export default function Feed() {
 
         return true;
       })
-      .map((post) =>
-        mergePostState(post, {
-          likedPosts: likedMap,
-          savedPosts: savedMap,
-          followedUsers: followedMap,
-        }),
-      );
+      .forEach((post) => {
+        if (!seenIds.has(post.id)) {
+          seenIds.add(post.id);
+          uniquePosts.push(post);
+        }
+      });
+
+    return uniquePosts.map((post) =>
+      mergePostState(post, {
+        likedPosts: likedMap,
+        savedPosts: savedMap,
+        followedUsers: followedMap,
+      }),
+    );
   }, [pages, likedMap, savedMap, followedMap]);
 
   const viewabilityConfig = useRef({

@@ -16,7 +16,7 @@ import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
 
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -40,13 +40,32 @@ import {
 
 const HIDE_ANCHOR_THRESHOLD = 220;
 
+type CirclePost = {
+  id: string;
+  text?: string;
+  image?: string;
+  createdAt: string;
+  likes: number;
+  comments: number;
+  likedImage?: number;
+  likeCount?: number;
+  anchorLikedCount?: number;
+  prayedCount?: number;
+  user: {
+    name: string;
+    avatar: string;
+  };
+};
+
 export default function CircleFeedScreen() {
-  const { id } =
-    useLocalSearchParams<{ id: string }>();
+  const { id, t } =
+    useLocalSearchParams<{ id: string; t?: string }>();
 
   const router = useRouter();
 
+  console.log("📍 [CircleFeed] Route params - id:", id, "t:", t);
   const circleId = id || "1";
+  console.log("📍 [CircleFeed] Using circleId:", circleId);
 
   const [circle, setCircle] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
@@ -54,17 +73,32 @@ export default function CircleFeedScreen() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    console.log("🎯 [CircleFeed] useEffect triggered, circleId:", circleId, "t:", t);
     loadCircleData();
-  }, [circleId]);
+  }, [circleId, t]);
+
+  // Refetch posts when screen comes into focus (e.g., after posting a comment)
+  useFocusEffect(
+    useCallback(() => {
+      console.log("👁️ [CircleFeed] Screen focused, reloading...");
+      loadCircleData();
+    }, [])
+  );
 
   async function loadCircleData() {
     try {
       setLoading(true);
+      console.log("🔄 [CircleFeed] Loading data for circleId:", circleId);
+      
       const [circleDetail, feedData, activeAnchorData] = await Promise.all([
         fetchCircleDetail(circleId),
         fetchCircleFeed(circleId, 1, 20),
         fetchActiveAnchor(circleId),
       ]);
+
+      console.log("📦 [CircleFeed] circleDetail:", circleDetail);
+      console.log("📦 [CircleFeed] feedData:", feedData);
+      console.log("📦 [CircleFeed] activeAnchorData:", activeAnchorData);
 
       if (circleDetail) {
         setCircle({
@@ -73,8 +107,8 @@ export default function CircleFeedScreen() {
           description: circleDetail.description,
           bannerImage: circleDetail.coverImage,
           profileImage: circleDetail.coverImage,
-          memberCount: circleDetail.memberCount,
-          isJoined: circleDetail.isSubscribed,
+          memberCount: circleDetail.memberCount ?? 0,
+          isJoined: circleDetail.isSubscribed ?? false,
           memberAvatars: circleDetail.memberPreviews?.map((m: any) => m.avatarUrl).filter(Boolean) || [],
           rules: circleDetail.rules || [],
           activeAnchor: activeAnchorData ? {
@@ -95,8 +129,10 @@ export default function CircleFeedScreen() {
         });
       }
 
+      console.log("📝 [CircleFeed] raw posts:", feedData?.posts);
+      
       if (feedData?.posts) {
-        setPosts(feedData.posts.map((post: any) => ({
+        const mappedPosts = feedData.posts.map((post: any) => ({
           id: post.id,
           text: post.text,
           image: post.image,
@@ -111,10 +147,15 @@ export default function CircleFeedScreen() {
             name: post.user?.name || "Anonymous",
             avatar: post.user?.avatarUrl || "",
           },
-        })));
+        }));
+        console.log("✅ [CircleFeed] mapped posts:", mappedPosts);
+        setPosts(mappedPosts);
+      } else {
+        console.log("⚠️ [CircleFeed] No posts found in feedData");
+        setPosts([]);
       }
     } catch (err: any) {
-      console.error("Failed to load circle data", err);
+      console.error("❌ [CircleFeed] Failed to load circle data", err);
       setError("Failed to load circle data");
     } finally {
       setLoading(false);
@@ -163,6 +204,8 @@ export default function CircleFeedScreen() {
   };
 
   const getDisplayAnchor = () => {
+    if (!circle) return undefined;
+    
     const daysAgo = getAnchorDaysAgo(anchorFilter);
     const now = new Date();
 
@@ -331,6 +374,16 @@ export default function CircleFeedScreen() {
   /* =========================
       RENDER
   ========================= */
+
+  if (loading || !circle) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text fontFamily="$body" fontSize={14} color={colors.gray}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -571,29 +624,31 @@ export default function CircleFeedScreen() {
       />
 
       {/* =========================
-          FAB
+          FAB (only show when joined)
       ========================= */}
 
-      <View style={styles.fabContainer}>
-        <Button
-          circular
-          size="$6"
-          backgroundColor={colors.primary}
-          onPress={() => {
-            router.push({
-              pathname: "/CircleExtension/CircleCommentComposer",
-              params: { circleId: circleId },
-            });
-          }}
-          elevation={4}
-          shadowColor="#000"
-          shadowOffset={{ width: 0, height: 2 }}
-          shadowOpacity={0.2}
-          shadowRadius={4}
-        >
-          <Ionicons name="add" size={28} color="#FFF" />
-        </Button>
-      </View>
+      {circle?.isJoined && (
+        <View style={styles.fabContainer}>
+          <Button
+            circular
+            size="$6"
+            backgroundColor={colors.primary}
+            onPress={() => {
+              router.push({
+                pathname: "/CircleExtension/CircleCommentComposer",
+                params: { circleId: circleId, fromScreen: "circleFeed" },
+              });
+            }}
+            elevation={4}
+            shadowColor="#000"
+            shadowOffset={{ width: 0, height: 2 }}
+            shadowOpacity={0.2}
+            shadowRadius={4} 
+          >
+            <Ionicons name="add" size={28} color="#FFF" />
+          </Button>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

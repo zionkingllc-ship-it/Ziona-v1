@@ -1,13 +1,17 @@
-export {};
-import { YStack, XStack, Text, ScrollView, Image } from "tamagui";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
-import { SimpleButton } from "@/components/ui/centerTextButton";
-import CircleFeedItem from "@/components/circles/CircleFeedItem";
-import colors from "@/constants/colors";
-import { fetchCircleDetail, fetchCircleFeed, fetchActiveAnchor } from "@/services/graphQL/queries/circles";
-import { joinCircle, leaveCircle } from "@/services/graphQL/mutation/circles";
-import { useEffect, useState } from "react";
+export { };
+  import CircleFeedItem from "@/components/circles/CircleFeedItem";
+  import { SimpleButton } from "@/components/ui/centerTextButton";
+  import colors from "@/constants/colors";
+  import { joinCircle, leaveCircle } from "@/services/graphQL/mutation/circles";
+  import {
+    fetchActiveAnchor,
+    fetchCircleDetail,
+    fetchCircleFeed,
+  } from "@/services/graphQL/queries/circles";
+  import { useLocalSearchParams } from "expo-router";
+  import { useEffect, useState } from "react";
+  import { SafeAreaView } from "react-native-safe-area-context";
+  import { Image, ScrollView, Text, XStack, YStack } from "tamagui";
 
 type CirclePost = {
   id: string;
@@ -50,28 +54,32 @@ export default function CircleDetailScreen() {
           profileImage: circleDetail.coverImage,
           memberCount: circleDetail.memberCount,
           isJoined: circleDetail.isSubscribed,
-          activeAnchor: activeAnchorData ? {
-            title: activeAnchorData.title,
-            content: activeAnchorData.content,
-            scripture: activeAnchorData.scriptureReference?.reference,
-            author: activeAnchorData.author?.username,
-          } : null,
+          activeAnchor: activeAnchorData
+            ? {
+                title: activeAnchorData.title,
+                content: activeAnchorData.content,
+                scripture: activeAnchorData.scriptureReference?.reference,
+                author: activeAnchorData.author?.username,
+              }
+            : null,
         });
       }
 
       if (feedData?.posts) {
-        setPosts(feedData.posts.map((post: any) => ({
-          id: post.id,
-          text: post.text,
-          image: post.image,
-          createdAt: new Date(post.createdAt).toLocaleDateString(),
-          likes: post.likesCount || 0,
-          comments: post.commentsCount || 0,
-          user: {
-            name: post.user?.name || "Anonymous",
-            avatar: post.user?.avatarUrl || "",
-          },
-        })));
+        setPosts(
+          feedData.posts.map((post: any) => ({
+            id: post.id,
+            text: post.text,
+            image: post.image,
+            createdAt: new Date(post.createdAt).toLocaleDateString(),
+            likes: post.likesCount || 0,
+            comments: post.commentsCount || 0,
+            user: {
+              name: post.user?.name || "Anonymous",
+              avatar: post.user?.avatarUrl || "",
+            },
+          })),
+        );
       }
     } catch (err) {
       console.error("Failed to load circle data", err);
@@ -83,11 +91,17 @@ export default function CircleDetailScreen() {
   const toggleJoin = async () => {
     try {
       const wasJoined = circle?.isJoined;
-      setCircle((prev: any) => prev ? {
-        ...prev,
-        isJoined: !prev.isJoined,
-        memberCount: prev.isJoined ? prev.memberCount - 1 : prev.memberCount + 1,
-      } : null);
+      setCircle((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              isJoined: !prev.isJoined,
+              memberCount: prev.isJoined
+                ? prev.memberCount - 1
+                : prev.memberCount + 1,
+            }
+          : null,
+      );
 
       if (wasJoined) {
         await leaveCircle(circleId!);
@@ -96,16 +110,25 @@ export default function CircleDetailScreen() {
       }
     } catch (err) {
       console.error("Failed to toggle join", err);
-      setCircle((prev: any) => prev ? {
-        ...prev,
-        isJoined: !prev.isJoined,
-        memberCount: prev.isJoined ? prev.memberCount - 1 : prev.memberCount + 1,
-      } : null);
+      setCircle((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              isJoined: !prev.isJoined,
+              memberCount: prev.isJoined
+                ? prev.memberCount - 1
+                : prev.memberCount + 1,
+            }
+          : null,
+      );
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.white }}
+      edges={["top"]}
+    >
       <ScrollView stickyHeaderIndices={[1]}>
         {/* BANNER IMAGE */}
         <Image
@@ -116,9 +139,17 @@ export default function CircleDetailScreen() {
         />
 
         {/* HEADER SECTION */}
-        <YStack backgroundColor={colors.white} paddingHorizontal={16} paddingBottom={16}>
+        <YStack
+          backgroundColor={colors.white}
+          paddingHorizontal={16}
+          paddingBottom={16}
+        >
           {/* PROFILE ROW */}
-          <XStack justifyContent="space-between" alignItems="flex-end" marginTop={-40}>
+          <XStack
+            justifyContent="space-between"
+            alignItems="flex-end"
+            marginTop={-40}
+          >
             <Image
               source={{ uri: circle.profileImage }}
               width={80}
@@ -153,7 +184,11 @@ export default function CircleDetailScreen() {
           </XStack>
 
           {/* NAME & MEMBERS */}
-          <XStack justifyContent="space-between" alignItems="center" marginTop={12}>
+          <XStack
+            justifyContent="space-between"
+            alignItems="center"
+            marginTop={12}
+          >
             <YStack>
               <Text fontFamily="$body" fontWeight="700" fontSize={20}>
                 {circle.name}
@@ -187,7 +222,12 @@ export default function CircleDetailScreen() {
               >
                 {circle.activeAnchor.title}
               </Text>
-              <Text fontFamily="$body" fontSize={15} color={colors.white} fontWeight="600">
+              <Text
+                fontFamily="$body"
+                fontSize={15}
+                color={colors.white}
+                fontWeight="600"
+              >
                 {circle.activeAnchor.content}
               </Text>
               {circle.activeAnchor.scripture && (
@@ -209,7 +249,12 @@ export default function CircleDetailScreen() {
 
         {/* POSTS SECTION */}
         <YStack padding={16}>
-          <Text fontFamily="$body" fontWeight="600" fontSize={16} marginBottom={12}>
+          <Text
+            fontFamily="$body"
+            fontWeight="600"
+            fontSize={16}
+            marginBottom={12}
+          >
             Posts
           </Text>
 
