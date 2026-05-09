@@ -101,6 +101,8 @@ export default function CircleFeedScreen() {
       console.log("📦 [CircleFeed] activeAnchorData:", activeAnchorData);
 
       if (circleDetail) {
+        console.log("🔍 [CircleFeed] isSubscribed from backend:", circleDetail.isSubscribed);
+        
         setCircle({
           id: circleDetail.id,
           name: circleDetail.name,
@@ -239,6 +241,8 @@ export default function CircleFeedScreen() {
   const toggleJoin = async () => {
     try {
       const wasJoined = circle?.isJoined;
+      console.log("🔄 [CircleFeed] toggleJoin - wasJoined:", wasJoined);
+      
       // Optimistic update
       setCircle((prev: any) => prev ? {
         ...prev,
@@ -249,12 +253,26 @@ export default function CircleFeedScreen() {
       } : null);
 
       if (wasJoined) {
-        await leaveCircleMutation(circleId);
+        console.log("📤 [CircleFeed] Calling leaveCircleMutation...");
+        const result = await leaveCircleMutation(circleId);
+        console.log("✅ [CircleFeed] leaveCircle result:", result);
       } else {
-        await joinCircleMutation(circleId);
+        console.log("📤 [CircleFeed] Calling joinCircleMutation...");
+        const result = await joinCircleMutation(circleId);
+        console.log("✅ [CircleFeed] joinCircle result:", result);
+        
+        if (result?.error) {
+          console.log("❌ [CircleFeed] Join failed:", result.error);
+          // Revert on error
+          setCircle((prev: any) => prev ? {
+            ...prev,
+            isJoined: false,
+            memberCount: prev.memberCount - 1,
+          } : null);
+        }
       }
-    } catch (err) {
-      console.error("Failed to toggle join", err);
+    } catch (err: any) {
+      console.error("❌ [CircleFeed] Failed to toggle join:", err);
       // Revert on error
       setCircle((prev: any) => prev ? {
         ...prev,

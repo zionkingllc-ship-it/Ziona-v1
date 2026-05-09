@@ -2,6 +2,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
   Alert,
@@ -41,6 +42,7 @@ export default function CircleCommentComposer({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { circleId, fromScreen } = useLocalSearchParams<{ circleId?: string; fromScreen?: string }>();
+  const queryClient = useQueryClient();
 
   const handleSend = async () => {
     if (!text.trim() || posting) return;
@@ -74,8 +76,9 @@ export default function CircleCommentComposer({
 
       setShowSuccess(true);
       
-      // If coming from circleFeed, reload the feed after posting
-      if (fromScreen === "circleFeed") {
+      // Reload circle feed to show new post
+      if (fromScreen === "circleFeed" && circleId) {
+        console.log("🔄 [Composer] Reloading circle feed after post...");
         setTimeout(() => {
           router.replace({
             pathname: "/(tabs)/circle/circleFeed",
