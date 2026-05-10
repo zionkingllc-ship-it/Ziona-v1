@@ -219,7 +219,9 @@ export async function fetchCircleFeed(
 }
 
 export async function fetchActiveAnchor(circleId: string) {
+  console.log("🔍 [queries] fetchActiveAnchor called for circleId:", circleId);
   const res = await graphqlRequest(GET_ACTIVE_ANCHOR, { circleId });
+  console.log("🔍 [queries] fetchActiveAnchor result:", res?.activeAnchor);
   return res?.activeAnchor ?? null;
 }
 

@@ -10,7 +10,7 @@ import CircleFeedProfileSection, {
 
 import colors from "@/constants/colors";
 
-import { fetchCircleFeed, fetchCircleDetail, fetchActiveAnchor, joinCircle, leaveCircle } from "@/services/graphQL/queries/circles";
+import { fetchCircleFeed, fetchCircleDetail, joinCircle, leaveCircle } from "@/services/graphQL/queries/circles";
 import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -90,18 +90,27 @@ export default function CircleFeedScreen() {
       setLoading(true);
       console.log("🔄 [CircleFeed] Loading data for circleId:", circleId);
       
-      const [circleDetail, feedData, activeAnchorData] = await Promise.all([
+      const [circleDetail, feedData] = await Promise.all([
         fetchCircleDetail(circleId),
         fetchCircleFeed(circleId, 1, 20),
-        fetchActiveAnchor(circleId),
       ]);
 
       console.log("📦 [CircleFeed] circleDetail:", circleDetail);
+      
+      if (!circleDetail) {
+        console.log("❌ [CircleFeed] circleDetail is null - check backend response");
+      }
+      
+      console.log("📦 [CircleFeed] circleDetail.activeAnchor:", circleDetail?.activeAnchor);
       console.log("📦 [CircleFeed] feedData:", feedData);
-      console.log("📦 [CircleFeed] activeAnchorData:", activeAnchorData);
+      console.log("📦 [CircleFeed] anchorFilter:", anchorFilter);
 
       if (circleDetail) {
+        console.log("🔍 [CircleFeed] circleDetail keys:", Object.keys(circleDetail));
         console.log("🔍 [CircleFeed] isSubscribed from backend:", circleDetail.isSubscribed);
+        
+        const anchorFromDetail = circleDetail.activeAnchor;
+        console.log("🔍 [CircleFeed] anchorFromDetail:", anchorFromDetail);
         
         setCircle({
           id: circleDetail.id,
@@ -113,19 +122,16 @@ export default function CircleFeedScreen() {
           isJoined: circleDetail.isSubscribed ?? false,
           memberAvatars: circleDetail.memberPreviews?.map((m: any) => m.avatarUrl).filter(Boolean) || [],
           rules: circleDetail.rules || [],
-          activeAnchor: activeAnchorData ? {
-            id: activeAnchorData.id,
-            type: activeAnchorData.anchorType?.toLowerCase() || "text",
-            title: activeAnchorData.title,
-            content: activeAnchorData.content,
-            createdAt: activeAnchorData.createdAt,
-            expiresAt: activeAnchorData.expiresAt,
-            bibleReference: activeAnchorData.scriptureReference?.reference,
-            bibleText: activeAnchorData.scriptureReference?.text,
-            anchorText: activeAnchorData.content,
-            backgroundImage: activeAnchorData.mediaUrl,
+          activeAnchor: anchorFromDetail ? {
+            id: anchorFromDetail.id,
+            type: anchorFromDetail.anchorType?.toLowerCase() || "text",
+            title: anchorFromDetail.title,
+            content: anchorFromDetail.content,
+            createdAt: anchorFromDetail.createdAt,
+            expiresAt: anchorFromDetail.expiresAt,
+            backgroundImage: anchorFromDetail.mediaUrl,
             likedImage: 1,
-            anchorLikedCount: activeAnchorData.responseCount || 0,
+            anchorLikedCount: 0,
             prayedCount: 0,
           } : undefined,
         });
@@ -230,6 +236,9 @@ export default function CircleFeedScreen() {
   };
 
   const displayAnchor = getDisplayAnchor();
+  console.log("🔍 [CircleFeed] displayAnchor:", displayAnchor ? "exists" : "undefined/null");
+  console.log("🔍 [CircleFeed] circle:", circle ? "exists" : "null");
+  console.log("🔍 [CircleFeed] circle.activeAnchor:", circle?.activeAnchor ? "exists" : "null");
 
   const flatListRef =
     useRef<FlatList>(null);
@@ -238,24 +247,38 @@ export default function CircleFeedScreen() {
       JOIN / LEAVE
   ========================= */
 
+  const [joining, setJoining] = useState(false);
+
   const toggleJoin = async () => {
+    if (joining) return;
+    
     try {
+      setJoining(true);
       const wasJoined = circle?.isJoined;
       console.log("🔄 [CircleFeed] toggleJoin - wasJoined:", wasJoined);
       
-      // Optimistic update
-      setCircle((prev: any) => prev ? {
-        ...prev,
-        isJoined: !prev.isJoined,
-        memberCount: prev.isJoined
-          ? prev.memberCount - 1
-          : prev.memberCount + 1,
-      } : null);
+      // Optimistic update - only if not already joined (don't toggle if already joined)
+      if (!wasJoined) {
+        setCircle((prev: any) => prev ? {
+          ...prev,
+          isJoined: true,
+          memberCount: (prev.memberCount ?? 0) + 1,
+        } : null);
+      }
 
       if (wasJoined) {
         console.log("📤 [CircleFeed] Calling leaveCircleMutation...");
         const result = await leaveCircleMutation(circleId);
         console.log("✅ [CircleFeed] leaveCircle result:", result);
+        
+        if (result?.error) {
+          console.log("❌ [CircleFeed] Leave failed:", result.error);
+          // Revert on error
+          setCircle((prev: any) => prev ? {
+            ...prev,
+            isJoined: true,
+          } : null);
+        }
       } else {
         console.log("📤 [CircleFeed] Calling joinCircleMutation...");
         const result = await joinCircleMutation(circleId);
@@ -267,7 +290,7 @@ export default function CircleFeedScreen() {
           setCircle((prev: any) => prev ? {
             ...prev,
             isJoined: false,
-            memberCount: prev.memberCount - 1,
+            memberCount: Math.max(0, (prev.memberCount ?? 1) - 1),
           } : null);
         }
       }
@@ -276,11 +299,10 @@ export default function CircleFeedScreen() {
       // Revert on error
       setCircle((prev: any) => prev ? {
         ...prev,
-        isJoined: !prev.isJoined,
-        memberCount: prev.isJoined
-          ? prev.memberCount - 1
-          : prev.memberCount + 1,
+        isJoined: circle?.isJoined, // revert to original
       } : null);
+    } finally {
+      setJoining(false);
     }
   };
 
