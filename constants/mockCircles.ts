@@ -7,7 +7,7 @@
   avatars?: string[];
 };
 
-export type AnchorType = "text" | "image" | "video" | "image_text";
+export type AnchorType = "text" | "image" | "video";
 
 export type CirclePost = {
   id: string;
@@ -50,7 +50,6 @@ export type ActiveAnchor = {
   backgroundImage?: string;
   anchorImage?: string;
   anchorVideo?: string;
-  anchorImageText?: string;
   anchorThumbnail?: string;
   createdAt: string;
   expiresAt?: string;
@@ -273,14 +272,13 @@ export const MOCK_CIRCLE_FEEDS: Record<string, CircleFeedData> = {
       },
       {
         id: "anchor-1-5days",
-        type: "image_text",
+        type: "image",
         title: "5 Days Ago",
-        content: "Image with text",
+        content: "Worship image",
         likedImage: 1,
         anchorLikedCount: 178,
         anchorImage: "https://images.unsplash.com/photo-1476681248696-466c012a3f1f",
-      prayedCount: 61,
-        anchorImageText: "Let everything that has breath praise the Lord - Psalm 150:6",
+        prayedCount: 61,
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         expiresAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       },
@@ -507,14 +505,12 @@ description: "Don't just ask - also give thanks for answered prayers and God's f
     ],
 activeAnchor: {
       id: "anchor-5",
-      type: "image_text",
+      type: "image",
       title: "Sunday Worship",
       likedImage: 1,
       anchorLikedCount: 178,
       anchorImage: "https://images.unsplash.com/photo-1476681248696-466c012a3f1f",
       prayedCount: 87,
-      anchorImageText: "Let the word of Christ dwell in you richly, teaching and admonishing one another in all wisdom, and singing psalms and hymns and spiritual songs, with gratitude in your hearts to God. - Colossians 3:16",
-      anchorText: "Lord, fill our hearts with gratitude as we worship you. Help us to let your word dwell richly within us. May our songs be pleasing to you and our gatherings glorify your name.",
       backgroundColors: ["#F5E6D3", "#FFF8F0"],
       createdAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
