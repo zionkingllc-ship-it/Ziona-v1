@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $text: String!, $mediaUrl: String) {
-    createCirclePost(circleId: $circleId, text: $text, mediaUrl: $mediaUrl) {
+  mutation CreateCirclePost($circleId: String!, $text: String, $image: String, $mediaUrl: String) {
+    createCirclePost(circleId: $circleId, text: $text, image: $image, mediaUrl: $mediaUrl) {
       success
       error {
         code
@@ -53,12 +53,20 @@ export const CREATE_CIRCLE_POST = `
         text
         image
         createdAt
+        likes
         likesCount
+        likeCount
+        likedImage
+        comments
         commentsCount
         prayedCount
+        anchorLikedCount
+        savedCount
+        sharedCount
         user {
           id
           name
+          avatar
           avatarUrl
         }
       }
@@ -81,8 +89,8 @@ export const PRAY_FOR_CIRCLE_POST = `
 `;
 
 export const RESPOND_TO_ANCHOR = `
-  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaUrl: String) {
-    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaUrl: $mediaUrl) {
+  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaType: String, $mediaUrl: String) {
+    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaType: $mediaType, mediaUrl: $mediaUrl) {
       success
       error {
         code
@@ -106,8 +114,8 @@ export const RESPOND_TO_ANCHOR = `
 `;
 
 export const REPORT_CIRCLE_CONTENT = `
-  mutation ReportCircleContent($circleId: String!, $contentId: String!, $reason: String!, $description: String) {
-    reportCircleContent(circleId: $circleId, contentId: $contentId, reason: $reason, description: $description) {
+  mutation ReportCircleContent($circleId: String!, $targetId: String!, $reason: String!, $targetType: String!) {
+    reportCircleContent(circleId: $circleId, targetId: $targetId, reason: $reason, targetType: $targetType) {
       success
       error {
         code
@@ -131,8 +139,18 @@ export async function leaveCircle(circleId: string) {
   return res?.leaveCircle;
 }
 
-export async function createCirclePost(circleId: string, text: string, mediaUrl?: string) {
-  const res = await graphqlRequest(CREATE_CIRCLE_POST, { circleId, text, mediaUrl });
+export async function createCirclePost(
+  circleId: string,
+  text?: string,
+  image?: string,
+  mediaUrl?: string
+) {
+  const res = await graphqlRequest(CREATE_CIRCLE_POST, {
+    circleId,
+    text,
+    image,
+    mediaUrl,
+  });
   return res?.createCirclePost;
 }
 
@@ -141,12 +159,34 @@ export async function prayForCirclePost(postId: string) {
   return res?.prayForCirclePost;
 }
 
-export async function respondToAnchor(anchorId: string, content: string, responseType: string, mediaUrl?: string, mediaType?: string) {
-  const res = await graphqlRequest(RESPOND_TO_ANCHOR, { anchorId, content, responseType, mediaUrl, mediaType });
+export async function respondToAnchor(
+  anchorId: string,
+  content: string,
+  responseType: string,
+  mediaType?: string,
+  mediaUrl?: string
+) {
+  const res = await graphqlRequest(RESPOND_TO_ANCHOR, {
+    anchorId,
+    content,
+    responseType,
+    mediaType,
+    mediaUrl,
+  });
   return res?.respondToAnchor;
 }
 
-export async function reportCircleContent(circleId: string, contentId: string, reason: string, description?: string) {
-  const res = await graphqlRequest(REPORT_CIRCLE_CONTENT, { circleId, contentId, reason, description });
+export async function reportCircleContent(
+  circleId: string,
+  targetId: string,
+  reason: string,
+  targetType: string
+) {
+  const res = await graphqlRequest(REPORT_CIRCLE_CONTENT, {
+    circleId,
+    targetId,
+    reason,
+    targetType,
+  });
   return res?.reportCircleContent;
 }

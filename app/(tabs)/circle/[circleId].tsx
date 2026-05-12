@@ -1,17 +1,17 @@
-export { };
-  import CircleFeedItem from "@/components/circles/CircleFeedItem";
-  import { SimpleButton } from "@/components/ui/centerTextButton";
-  import colors from "@/constants/colors";
-  import { joinCircle, leaveCircle } from "@/services/graphQL/mutation/circles";
-  import {
-    fetchActiveAnchor,
-    fetchCircleDetail,
-    fetchCircleFeed,
-  } from "@/services/graphQL/queries/circles";
-  import { useLocalSearchParams } from "expo-router";
-  import { useEffect, useState } from "react";
-  import { SafeAreaView } from "react-native-safe-area-context";
-  import { Image, ScrollView, Text, XStack, YStack } from "tamagui";
+export {};
+import CircleFeedItem from "@/components/circles/CircleFeedItem";
+import { SimpleButton } from "@/components/ui/centerTextButton";
+import colors from "@/constants/colors";
+import { joinCircle, leaveCircle } from "@/services/graphQL/mutation/circles";
+import {
+  fetchActiveAnchor,
+  fetchCircleDetail,
+  fetchCircleFeed,
+} from "@/services/graphQL/queries/circles";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, ScrollView, Text, XStack, YStack } from "tamagui";
 
 type CirclePost = {
   id: string;

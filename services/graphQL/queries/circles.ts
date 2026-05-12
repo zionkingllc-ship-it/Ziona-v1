@@ -11,9 +11,20 @@ export const GET_ALL_CIRCLES = `
       name
       description
       coverImage
+      bannerImage
+      profileImage
       memberCount
+      isJoined
       isSubscribed
       createdAt
+      avatars
+      memberAvatars
+      members
+      memberPreviews {
+        id
+        username
+        avatarUrl
+      }
       rules {
         ruleNumber
         title
@@ -30,9 +41,20 @@ export const GET_MY_CIRCLES = `
       name
       description
       coverImage
+      bannerImage
+      profileImage
       memberCount
+      isJoined
       isSubscribed
       createdAt
+      avatars
+      memberAvatars
+      members
+      memberPreviews {
+        id
+        username
+        avatarUrl
+      }
       rules {
         ruleNumber
         title
@@ -49,9 +71,20 @@ export const GET_SUGGESTED_CIRCLES = `
       name
       description
       coverImage
+      bannerImage
+      profileImage
       memberCount
+      isJoined
       isSubscribed
       createdAt
+      avatars
+      memberAvatars
+      members
+      memberPreviews {
+        id
+        username
+        avatarUrl
+      }
     }
   }
 `;
@@ -63,9 +96,22 @@ export const GET_CIRCLE_DETAIL = `
       name
       description
       coverImage
+      bannerImage
+      profileImage
+      title
+      image
       memberCount
+      isJoined
       isSubscribed
       createdAt
+      avatars
+      memberAvatars
+      members
+      memberPreviews {
+        id
+        username
+        avatarUrl
+      }
       rules {
         ruleNumber
         title
@@ -76,9 +122,47 @@ export const GET_CIRCLE_DETAIL = `
         title
         content
         anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorImageText
+        anchorLikedCount
+        anchorVerse
         mediaUrl
         createdAt
         expiresAt
+        timeRemaining
+        responseCount
+        prayedCount
+        likedImage
+        isActive
+        publishedAt
+        type
+        backgroundColors
+        backgroundImage
+        bibleReference
+        bibleText
+        scripture
+        author {
+          id
+          username
+          avatarUrl
+        }
+        scriptureReference {
+          book
+          chapter
+          verseStart
+          verseEnd
+          text
+          translation
+        }
+        pages {
+          pageNumber
+          content
+          mediaUrl
+          title
+        }
       }
     }
   }
@@ -97,15 +181,117 @@ export const GET_CIRCLE_FEED = `
         text
         image
         createdAt
+        likes
         likesCount
+        likeCount
+        likedImage
+        comments
         commentsCount
         prayedCount
         anchorLikedCount
+        savedCount
+        sharedCount
         user {
           id
           name
+          avatar
           avatarUrl
         }
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_FEED_DATA = `
+  query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int) {
+    circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize) {
+      name
+      description
+      bannerImage
+      profileImage
+      memberCount
+      isJoined
+      memberAvatars
+      activeAnchor {
+        id
+        title
+        content
+        anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorLikedCount
+        mediaUrl
+        createdAt
+        expiresAt
+        timeRemaining
+        responseCount
+        prayedCount
+        likedImage
+        type
+        backgroundColors
+        backgroundImage
+        bibleReference
+        bibleText
+        scripture
+        author {
+          id
+          username
+          avatarUrl
+        }
+        scriptureReference {
+          book
+          chapter
+          verseStart
+          verseEnd
+          text
+          translation
+        }
+        pages {
+          pageNumber
+          content
+          mediaUrl
+          title
+        }
+      }
+      pastAnchors {
+        id
+        title
+        content
+        anchorType
+        anchorImage
+        createdAt
+        expiresAt
+        responseCount
+        timeRemaining
+      }
+      posts {
+        id
+        text
+        image
+        createdAt
+        likes
+        likesCount
+        likeCount
+        likedImage
+        comments
+        commentsCount
+        prayedCount
+        anchorLikedCount
+        savedCount
+        sharedCount
+        user {
+          id
+          name
+          avatar
+          avatarUrl
+        }
+      }
+      rules {
+        ruleNumber
+        title
+        description
       }
     }
   }
@@ -118,17 +304,40 @@ export const GET_ACTIVE_ANCHOR = `
       title
       content
       anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorImageText
+      anchorLikedCount
+      anchorVerse
       mediaUrl
       createdAt
       expiresAt
       timeRemaining
       responseCount
+      prayedCount
+      likedImage
+      isActive
+      publishedAt
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      author {
+        id
+        username
+        avatarUrl
+      }
       scriptureReference {
         book
         chapter
         verseStart
         verseEnd
         text
+        translation
       }
       pages {
         pageNumber
@@ -147,10 +356,42 @@ export const GET_ANCHOR_HISTORY = `
       title
       content
       anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
       mediaUrl
       createdAt
       expiresAt
       responseCount
+      timeRemaining
+      prayedCount
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      author {
+        id
+        username
+        avatarUrl
+      }
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
     }
   }
 `;
@@ -216,6 +457,21 @@ export async function fetchCircleFeed(
       posts: [],
     }
   );
+}
+
+export async function fetchCircleFeedData(
+  circleId: string,
+  historyLimit?: number,
+  page = 1,
+  pageSize = 20
+) {
+  const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
+    circleId,
+    historyLimit: historyLimit ?? 10,
+    page,
+    pageSize,
+  });
+  return res?.circleFeedData ?? null;
 }
 
 export async function fetchActiveAnchor(circleId: string) {
