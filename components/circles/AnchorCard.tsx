@@ -38,18 +38,6 @@ export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps
           params: { ...params, video: anchor.anchorVideo || "", expiresAt: anchor.expiresAt || "" },
         });
         break;
-      case "image_text":
-        router.push({
-          pathname: "/CircleExtension/anchorImageTextView",
-          params: {
-            ...params,
-            image: anchor.anchorImage || "",
-            text: anchor.anchorImageText || "",
-            colors: anchor.backgroundColors?.join(",") || "",
-            expiresAt: anchor.expiresAt || "",
-          },
-        });
-        break;
       case "text":
         router.push({
           pathname: "/CircleExtension/anchorTextView",

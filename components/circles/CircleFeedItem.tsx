@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
@@ -50,9 +51,11 @@ type CirclePost = {
 
 type Props = {
   post: CirclePost;
+  circleId?: string;
 };
 
-export default function CircleFeedItem({ post }: Props) {
+export default function CircleFeedItem({ post, circleId }: Props) {
+  const router = useRouter();
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
@@ -63,117 +66,129 @@ export default function CircleFeedItem({ post }: Props) {
   const avatarUri = post.user.avatar || "";
   const imageUri = post.image || "";
 
+  const handlePostPress = () => {
+    router.push({
+      pathname: "/(tabs)/circle/post/[postId]",
+      params: {
+        postId: post.id,
+        circleId: circleId || "",
+      },
+    });
+  };
+
   return (
-    <YStack padding="$3" gap={4} backgroundColor="#FFF">
-      {/* HEADER */}
-      <XStack justifyContent="space-between" alignItems="center">
-        <XStack alignItems="center" gap="$2">
-          {avatarUri ? (
+    <Pressable onPress={handlePostPress}>
+      <YStack padding="$3" gap={4} backgroundColor="#FFF">
+        {/* HEADER */}
+        <XStack justifyContent="space-between" alignItems="center">
+          <XStack alignItems="center" gap="$2">
+            {avatarUri ? (
+              <Image
+                source={{ uri: avatarUri }}
+                width={36}
+                height={36}
+                borderRadius={18}
+              />
+            ) : (
+              <Image
+                source={require("@/assets/images/emptyDP.png")}
+                width={36}
+                height={36}
+                borderRadius={18}
+              />
+            )}
+            <XStack gap={6} alignItems="center">
+              <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
+                {post.user.name}
+              </Text>
+              <Text fontSize={12} color="#888">
+                {formatTimeAgo(post.createdAt)}
+              </Text>
+            </XStack>
+          </XStack>
+
+          <Pressable onPress={() => setOptionsVisible(true)}>
+            <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
+          </Pressable>
+        </XStack>
+        <YStack paddingLeft={50} gap={6}>
+          {/* TEXT */}
+          {post.text && (
+            <Text fontSize={15} color="#333" lineHeight={20}>
+              {post.text}
+            </Text>
+          )}
+
+          {/* IMAGE */}
+          {imageUri && (
             <Image
-              source={{ uri: avatarUri }}
-              width={36}
-              height={36}
-              borderRadius={18}
-            />
-          ) : (
-            <Image
-              source={require("@/assets/images/emptyDP.png")}
-              width={36}
-              height={36}
-              borderRadius={18}
+              source={{ uri: imageUri }}
+              width="100%"
+              height={139}
+              borderRadius={14}
+              resizeMode="cover"
             />
           )}
-          <XStack gap={6} alignItems="center">
-            <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
-              {post.user.name}
-            </Text>
-            <Text fontSize={12} color="#888">
-              {formatTimeAgo(post.createdAt)}
-            </Text>
-          </XStack>
-        </XStack>
 
-        <Pressable onPress={() => setOptionsVisible(true)}>
-          <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
-        </Pressable>
-      </XStack>
-      <YStack paddingLeft={50} gap={6}>
-        {/* TEXT */}
-        {post.text && (
-          <Text fontSize={15} color="#333" lineHeight={20}>
-            {post.text}
-          </Text>
-        )}
+          {/* ACTIONS */}
+          <XStack gap="$4" marginTop="$1">
+            <XStack alignItems="center" gap="$1">
+              {post.likedImage ? (
+                <Ionicons name="heart" size={18} />
+              ) : (
+                <Ionicons name="heart-outline" size={18} />
+              )}
+              <Text>{post.likeCount ?? post.likes}</Text>
+            </XStack>
 
-        {/* IMAGE */}
-        {imageUri && (
-          <Image
-            source={{ uri: imageUri }}
-            width="100%"
-            height={139}
-            borderRadius={14}
-            resizeMode="cover"
-          />
-        )}
-
-        {/* ACTIONS */}
-        <XStack gap="$4" marginTop="$1">
-          <XStack alignItems="center" gap="$1">
-            {post.likedImage ? (
-              <Ionicons name="heart" size={18} />
-            ) : (
-              <Ionicons name="heart-outline" size={18} />
-            )}
-            <Text>{post.likeCount ?? post.likes}</Text>
-          </XStack>
-
-          <XStack alignItems="center" gap="$1">
-            <Ionicons name="chatbubble-outline" size={18} />
-            <Text>{post.comments}</Text>
-          </XStack>
+            <XStack alignItems="center" gap="$1">
+              <Ionicons name="chatbubble-outline" size={18} />
+              <Text>{post.comments}</Text>
+            </XStack>
    
-        </XStack>
-      </YStack>
+          </XStack>
+        </YStack>
 
-      {/* MODALS */}
-      <OptionsModal
-        visible={optionsVisible}
-        onClose={() => setOptionsVisible(false)}
-        onReportPost={() => {
-          setOptionsVisible(false);
-          setConfirmVisible(true);
-        }}
-      />
-      <ConfirmReportModal
-        visible={confirmVisible}
-        onClose={() => setConfirmVisible(false)}
-        onConfirm={() => {
-          setConfirmVisible(false);
-          setReasonsVisible(true);
-        }}
-      />
-      <ReportReasonsModal
-        visible={reasonsVisible}
-        onClose={() => setReasonsVisible(false)}
-        onSelectReason={(reason) => {
-          setReasonsVisible(false);
-          reportMutation.mutate(
-            { reason: reason as ReportReason, postId: post.id },
-            {
-              onSuccess: () => {
-                setSuccessVisible(true);
-              },
-            }
-          );
-        }}
-        onSelectOther={() => {}}
-      />
-      <SuccessModal
-        visible={successVisible}
-        onClose={() => setSuccessVisible(false)}
-        title="Report Submitted"
-        message="Thank you for your report. We'll review it shortly."
-      />
-    </YStack>
+        {/* MODALS */}
+        <OptionsModal
+          visible={optionsVisible}
+          onClose={() => setOptionsVisible(false)}
+          onReportPost={() => {
+            setOptionsVisible(false);
+            setConfirmVisible(true);
+          }}
+        />
+        <ConfirmReportModal
+          visible={confirmVisible}
+          onClose={() => setConfirmVisible(false)}
+          onConfirm={() => {
+            setConfirmVisible(false);
+            setReasonsVisible(true);
+          }}
+        />
+        <ReportReasonsModal
+          visible={reasonsVisible}
+          onClose={() => setReasonsVisible(false)}
+          onSelectReason={(reason) => {
+            setReasonsVisible(false);
+            reportMutation.mutate(
+              { reason: reason as ReportReason, postId: post.id },
+              {
+                onSuccess: () => {
+                  setSuccessVisible(true);
+                },
+              }
+            );
+          }}
+          onSelectOther={() => {}}
+        />
+        <SuccessModal
+          visible={successVisible}
+          onClose={() => setSuccessVisible(false)}
+          title="Report Submitted"
+          message="Thank you for your report. We'll review it shortly."
+        />
+      </YStack>
+    </Pressable>
   );
 }
