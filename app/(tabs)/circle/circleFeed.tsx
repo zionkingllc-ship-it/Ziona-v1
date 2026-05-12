@@ -10,7 +10,7 @@ import CircleFeedProfileSection, {
 
 import colors from "@/constants/colors";
 
-import { fetchCircleFeed, fetchCircleDetail, joinCircle, leaveCircle } from "@/services/graphQL/queries/circles";
+import { fetchCircleFeed, fetchCircleDetail } from "@/services/graphQL/queries/circles";
 import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -222,7 +222,7 @@ export default function CircleFeedScreen() {
     }
 
     if (circle.pastAnchors && circle.pastAnchors.length > 0) {
-      const pastAnchor = circle.pastAnchors.find((anchor) => {
+      const pastAnchor = circle.pastAnchors.find((anchor: any) => {
         const created = new Date(anchor.createdAt);
         const diffDays = Math.round(
           (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000)

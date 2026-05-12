@@ -50,10 +50,11 @@ export default function CircleCommentComposer({
     setPosting(true);
 
     try {
+      let result: any = null;
       // If we have a circleId, create a circle post
       if (circleId) {
         console.log("📤 [Composer] Creating post for circle:", circleId, "text:", text.trim());
-        const result = await createCirclePost(circleId, text.trim(), undefined);
+        result = await createCirclePost(circleId, text.trim(), undefined);
         console.log("✅ [Composer] Post created result:", result);
       } else if (onSend) {
         // Otherwise use the callback
