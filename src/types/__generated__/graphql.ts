@@ -304,19 +304,24 @@ export type AnchorType = {
   author: Maybe<UserType>;
   backgroundColors: Maybe<Array<Scalars['String']['output']>>;
   backgroundImage: Maybe<Scalars['String']['output']>;
+  bibleReference: Maybe<Scalars['String']['output']>;
+  bibleText: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
   isActive: Scalars['Boolean']['output'];
+  likedImage: Maybe<Scalars['Int']['output']>;
   mediaUrl: Maybe<Scalars['String']['output']>;
   pages: Array<AnchorPageType>;
   prayedCount: Scalars['Int']['output'];
   publishedAt: Scalars['DateTime']['output'];
   responseCount: Scalars['Int']['output'];
+  scripture: Maybe<Scalars['String']['output']>;
   scriptureReference: Maybe<ScriptureReference>;
   timeRemaining: Scalars['String']['output'];
   title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type AppLinksType = {
@@ -432,6 +437,21 @@ export type ChartDataType = {
   summary: Scalars['JSON']['output'];
 };
 
+export type CircleFeedDataType = {
+  __typename: 'CircleFeedDataType';
+  activeAnchor: Maybe<AnchorType>;
+  bannerImage: Maybe<Scalars['String']['output']>;
+  description: Scalars['String']['output'];
+  isJoined: Scalars['Boolean']['output'];
+  memberAvatars: Array<Scalars['String']['output']>;
+  memberCount: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
+  pastAnchors: Array<AnchorType>;
+  posts: Array<CirclePostType>;
+  profileImage: Maybe<Scalars['String']['output']>;
+  rules: Array<CircleRule>;
+};
+
 export type CircleFeedResponse = {
   __typename: 'CircleFeedResponse';
   pageInfo: PageInfo;
@@ -459,6 +479,7 @@ export type CircleMembersPaginatedType = {
 
 export type CirclePostAuthorType = {
   __typename: 'CirclePostAuthorType';
+  avatar: Maybe<Scalars['String']['output']>;
   avatarUrl: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
   name: Maybe<Scalars['String']['output']>;
@@ -475,12 +496,18 @@ export type CirclePostEngagementPayload = {
 export type CirclePostType = {
   __typename: 'CirclePostType';
   anchorLikedCount: Scalars['Int']['output'];
+  comments: Scalars['Int']['output'];
   commentsCount: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
   image: Maybe<Scalars['String']['output']>;
+  likeCount: Scalars['Int']['output'];
+  likedImage: Maybe<Scalars['Int']['output']>;
+  likes: Scalars['Int']['output'];
   likesCount: Scalars['Int']['output'];
   prayedCount: Scalars['Int']['output'];
+  savedCount: Scalars['Int']['output'];
+  sharedCount: Scalars['Int']['output'];
   text: Maybe<Scalars['String']['output']>;
   user: CirclePostAuthorType;
 };
@@ -494,6 +521,7 @@ export type CircleReportPayload = {
 export type CircleRule = {
   __typename: 'CircleRule';
   description: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
   ruleNumber: Scalars['Int']['output'];
   title: Scalars['String']['output'];
 };
@@ -508,17 +536,23 @@ export type CircleSummaryType = {
 export type CircleType = {
   __typename: 'CircleType';
   activeAnchor: Maybe<AnchorType>;
+  avatars: Array<Scalars['String']['output']>;
   bannerImage: Maybe<Scalars['String']['output']>;
   coverImage: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
   description: Scalars['String']['output'];
   id: Scalars['String']['output'];
+  image: Scalars['String']['output'];
+  isJoined: Scalars['Boolean']['output'];
   isSubscribed: Scalars['Boolean']['output'];
+  memberAvatars: Array<Scalars['String']['output']>;
   memberCount: Scalars['Int']['output'];
   memberPreviews: Array<UserType>;
+  members: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   profileImage: Maybe<Scalars['String']['output']>;
   rules: Array<CircleRule>;
+  title: Scalars['String']['output'];
 };
 
 export type CommentAuthor = {
@@ -1212,7 +1246,15 @@ export type MutationConfirmPasswordResetArgs = {
 
 
 export type MutationCreateAnchorArgs = {
+  anchorImage?: Scalars['String']['input'];
+  anchorImageText?: Scalars['String']['input'];
+  anchorText?: Scalars['String']['input'];
+  anchorThumbnail?: Scalars['String']['input'];
   anchorType: Scalars['String']['input'];
+  anchorVerse?: Scalars['String']['input'];
+  anchorVideo?: Scalars['String']['input'];
+  backgroundColors?: InputMaybe<Array<Scalars['String']['input']>>;
+  backgroundImage?: Scalars['String']['input'];
   circleId: Scalars['String']['input'];
   content?: Scalars['String']['input'];
   mediaUrl?: Scalars['String']['input'];
@@ -1802,6 +1844,8 @@ export type Query = {
   bookmarkFolders: Array<BookmarkFolderType>;
   circle: Maybe<CircleType>;
   circleFeed: CircleFeedResponse;
+  circleFeedData: Maybe<CircleFeedDataType>;
+  circlePosts: CircleFeedResponse;
   /** Get paginated replies for a specific comment (beyond the inline 3-reply preview). */
   commentReplies: CommentsResponse;
   /** Returns the currently active Community Guidelines. */
@@ -1949,6 +1993,7 @@ export type QueryAnchorByDateArgs = {
 export type QueryAnchorHistoryArgs = {
   circleId: Scalars['String']['input'];
   cursor?: InputMaybe<Scalars['String']['input']>;
+  includeActive?: Scalars['Boolean']['input'];
   limit?: Scalars['Int']['input'];
 };
 
@@ -1978,6 +2023,21 @@ export type QueryCircleArgs = {
 
 
 export type QueryCircleFeedArgs = {
+  circleId: Scalars['String']['input'];
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+};
+
+
+export type QueryCircleFeedDataArgs = {
+  circleId: Scalars['String']['input'];
+  historyLimit?: Scalars['Int']['input'];
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+};
+
+
+export type QueryCirclePostsArgs = {
   circleId: Scalars['String']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];

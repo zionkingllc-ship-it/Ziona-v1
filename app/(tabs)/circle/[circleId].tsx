@@ -1,4 +1,5 @@
 export {};
+import React, { useState } from "react";
 import { YStack, XStack, Text, ScrollView, Image } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";

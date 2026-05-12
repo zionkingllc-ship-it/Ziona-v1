@@ -22,9 +22,10 @@ import { ChevronDown } from "@tamagui/lucide-icons";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Pressable,
@@ -42,6 +43,8 @@ import {
   YStack,
 } from "tamagui";
 
+import { fetchCircleFeedData } from "@/services/graphQL/queries/circles";
+
 const HIDE_ANCHOR_THRESHOLD = 220;
 
 export default function CircleFeedScreen() {
@@ -52,6 +55,9 @@ export default function CircleFeedScreen() {
 
   const circleId = id || "1";
 
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const circleData =
     MOCK_CIRCLE_FEEDS[circleId] ||
     DEFAULT_CIRCLE_FEED;
@@ -59,9 +65,121 @@ export default function CircleFeedScreen() {
   const [circle, setCircle] =
     useState<CircleFeedData>(circleData);
 
-  const [posts] = useState<CirclePost[]>(
+  const [posts, setPosts] = useState<CirclePost[]>(
     circleData.posts || []
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadData = async () => {
+      setLoading(true);
+      setApiError(null);
+      try {
+        const data = await fetchCircleFeedData(circleId, 10, 1, 20);
+        if (!mounted) return;
+
+        if (data) {
+          // Map API data to CircleFeedData structure
+          const mappedCircle: CircleFeedData = {
+            bannerImage: data.bannerImage || circleData.bannerImage,
+            profileImage: data.profileImage || circleData.profileImage,
+            name: data.name || circleData.name,
+            description: data.description || circleData.description,
+            memberCount: data.memberCount ?? circleData.memberCount,
+            isJoined: data.isJoined ?? circleData.isJoined,
+            activeAnchor: data.activeAnchor
+              ? {
+                  id: data.activeAnchor.id,
+                  type: data.activeAnchor.anchorType as "text" | "image" | "video",
+                  title: data.activeAnchor.title,
+                  content: data.activeAnchor.content,
+                  scripture: data.activeAnchor.scripture || undefined,
+                  likedImage: data.activeAnchor.likedImage || undefined,
+                  anchorLikedCount: data.activeAnchor.anchorLikedCount,
+                  anchorVerse: data.activeAnchor.anchorVerse || undefined,
+                  anchorText: data.activeAnchor.anchorText || undefined,
+                  anchorImage: data.activeAnchor.anchorImage || undefined,
+                  anchorVideo: data.activeAnchor.anchorVideo || undefined,
+                  anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+                  bibleReference: data.activeAnchor.bibleReference || undefined,
+                  bibleText: data.activeAnchor.bibleText || undefined,
+                  backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
+                  backgroundImage: data.activeAnchor.backgroundImage || undefined,
+                  prayedCount: data.activeAnchor.prayedCount || undefined,
+                  createdAt: data.activeAnchor.createdAt,
+                  expiresAt: data.activeAnchor.expiresAt || undefined,
+                }
+              : circleData.activeAnchor,
+            pastAnchors: data.pastAnchors
+              ? data.pastAnchors.map((a: { id: string; anchorType: string; title: string; content: string; scripture?: string | null; likedImage?: number | null; anchorLikedCount: number; anchorVerse?: string | null; anchorText?: string | null; anchorImage?: string | null; anchorVideo?: string | null; anchorThumbnail?: string | null; bibleReference?: string | null; bibleText?: string | null; backgroundColors?: Array<string> | null; backgroundImage?: string | null; prayedCount: number; createdAt: string; expiresAt?: string | null }) => ({
+                  id: a.id,
+                  type: a.anchorType as "text" | "image" | "video",
+                  title: a.title,
+                  content: a.content,
+                  scripture: a.scripture || undefined,
+                  likedImage: a.likedImage || undefined,
+                  anchorLikedCount: a.anchorLikedCount,
+                  anchorVerse: a.anchorVerse || undefined,
+                  anchorText: a.anchorText || undefined,
+                  anchorImage: a.anchorImage || undefined,
+                  anchorVideo: a.anchorVideo || undefined,
+                  anchorThumbnail: a.anchorThumbnail || undefined,
+                  bibleReference: a.bibleReference || undefined,
+                  bibleText: a.bibleText || undefined,
+                  backgroundColors: a.backgroundColors as [string, string] | undefined,
+                  backgroundImage: a.backgroundImage || undefined,
+                  prayedCount: a.prayedCount || undefined,
+                  createdAt: a.createdAt,
+                  expiresAt: a.expiresAt || undefined,
+                }))
+              : circleData.pastAnchors,
+            posts: data.posts
+              ? data.posts.map((p: { id: string; text?: string | null; image?: string | null; createdAt: string; likes: number; comments: number; likedImage?: number | null; likeCount: number; anchorLikedCount: number; prayedCount: number; user: { name?: string | null; avatar?: string | null; avatarUrl?: string | null } }) => ({
+                  id: p.id,
+                  text: p.text || undefined,
+                  image: p.image || undefined,
+                  createdAt: p.createdAt,
+                  likes: p.likes,
+                  comments: p.comments,
+                  likedImage: p.likedImage || undefined,
+                  likeCount: p.likeCount,
+                  anchorLikedCount: p.anchorLikedCount,
+                  prayedCount: p.prayedCount,
+                  user: {
+                    name: p.user.name || "",
+                    avatar: p.user.avatar || "",
+                  },
+                }))
+              : circleData.posts,
+            memberAvatars: data.memberAvatars || circleData.memberAvatars,
+            rules: data.rules
+              ? data.rules.map((r: { ruleNumber: number; title: string; description: string }) => ({
+                  id: r.ruleNumber,
+                  title: r.title,
+                  description: r.description,
+                }))
+              : circleData.rules,
+          };
+          setCircle(mappedCircle);
+          setPosts(mappedCircle.posts);
+        }
+      } catch (err) {
+        console.error("Failed to load circle feed:", err);
+        if (mounted) {
+          setApiError("Failed to load. Using cached data.");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [circleId]);
 
   const [showFilterModal, setShowFilterModal] =
     useState(false);

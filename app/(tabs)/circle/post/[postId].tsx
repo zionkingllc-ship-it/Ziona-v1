@@ -76,8 +76,8 @@ export default function CirclePostDetailScreen() {
     );
   };
 
-  const handleLikeComment = (commentId: string) => {
-    toggleCommentLikeMutation.mutate({ commentId });
+  const handleLikeComment = (commentId: string, currentLiked: boolean) => {
+    toggleCommentLikeMutation.mutate({ commentId, currentLiked });
   };
 
   const handleLoadMore = () => {
@@ -206,7 +206,11 @@ export default function CirclePostDetailScreen() {
                   {/* Comment Header */}
                   <XStack alignItems="center" gap="$2">
                     <Image
-                      source={{ uri: comment.user.avatarUrl }}
+                      source={
+                        comment.user.avatarUrl
+                          ? { uri: comment.user.avatarUrl }
+                          : require("@/assets/images/emptyDP.png")
+                      }
                       width={32}
                       height={32}
                       borderRadius={16}
@@ -229,7 +233,7 @@ export default function CirclePostDetailScreen() {
                   {/* Comment Actions */}
                   <XStack gap="$3" paddingLeft="$4" alignItems="center">
                     <TouchableOpacity
-                      onPress={() => handleLikeComment(comment.id)}
+                      onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
                     >
                       <XStack alignItems="center" gap="$1">
                         <Ionicons
