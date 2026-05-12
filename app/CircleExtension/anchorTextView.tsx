@@ -1,25 +1,17 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
-import {
-  Dimensions,
-  Image,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, YStack } from "tamagui";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
+import { getGradientColors } from "@/lib/anchorUtils";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams } from "expo-router";
+import React, { useCallback, useRef, useState } from "react";
+import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, YStack } from "tamagui";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
 const ITEM_WIDTH = SLIDE_WIDTH + 16;
-
-const DEFAULT_GRADIENT_PRIMARY = "#C7EBCB";
-const DEFAULT_GRADIENT_SECONDARY = "#FFFFFF";
 
 function calculateChunkSize(textLength: number): number {
   if (textLength <= 400) return 400;
@@ -44,12 +36,18 @@ function createSlides(
   bibleReference?: string,
   bibleText?: string,
   colors?: string,
-  expiresAt?: string
+  expiresAt?: string,
 ): SlideItem[] {
   const slides: SlideItem[] = [];
 
   if (bibleReference) {
-    slides.push({ id: "verse", type: "text", bibleReference, bibleText, label: "Bible Verse" });
+    slides.push({
+      id: "verse",
+      type: "text",
+      bibleReference,
+      bibleText,
+      label: "Bible Verse",
+    });
   }
 
   if (text) {
@@ -64,48 +62,46 @@ function createSlides(
     if (remaining.length > 0) chunks.push(remaining);
 
     chunks.forEach((chunk, index) => {
-      slides.push({ id: `word-${index}`, type: "text", text: chunk, label: "Word" });
+      slides.push({
+        id: `word-${index}`,
+        type: "text",
+        text: chunk,
+        label: "Word",
+      });
     });
   }
 
-  slides.push({ id: "action", type: "action", label: "Action", colors, expiresAt });
+  slides.push({
+    id: "action",
+    type: "action",
+    label: "Action",
+    colors,
+    expiresAt,
+  });
 
   return slides;
 }
 
 export default function AnchorTextView() {
-  const router = useRouter();
-  const {
-    text,
-    colors,
-    backgroundImage,
-    bibleReference,
-    bibleText,
-    expiresAt,
-  } = useLocalSearchParams<{
-    text?: string;
-    colors?: string;
-    backgroundImage?: string;
-    bibleReference?: string;
-    bibleText?: string;
-    expiresAt?: string;
-  }>();
+  const { text, colors, bibleReference, bibleText, expiresAt } =
+    useLocalSearchParams<{
+      text?: string;
+      colors?: string;
+      bibleReference?: string;
+      bibleText?: string;
+      expiresAt?: string;
+    }>();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const getGradientColors = (colorsParam?: string): [string, string] => {
-    if (!colorsParam) {
-      return [DEFAULT_GRADIENT_PRIMARY, DEFAULT_GRADIENT_SECONDARY];
-    }
-    const parts = colorsParam.split(",");
-    if (parts.length >= 2) {
-      return [parts[0], parts[1]] as [string, string];
-    }
-    return [parts[0], DEFAULT_GRADIENT_SECONDARY] as [string, string];
-  };
-
   const gradientColors = getGradientColors(colors);
-  const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt);
+  const slides = createSlides(
+    text,
+    bibleReference,
+    bibleText,
+    colors,
+    expiresAt,
+  );
 
   const handleScroll = useCallback(
     (event: any) => {
@@ -115,13 +111,16 @@ export default function AnchorTextView() {
         setCurrentIndex(index);
       }
     },
-    [currentIndex, slides.length]
+    [currentIndex, slides.length],
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={gradientColors}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
 
       <View style={styles.timerContainer}>
@@ -159,17 +158,42 @@ export default function AnchorTextView() {
                   {item.bibleReference && (
                     <YStack alignItems="center" marginTop={30} gap={6}>
                       {item.bibleText && (
-                        <Text style={styles.referenceText}>{item.bibleText}</Text>
+                        <Text style={styles.referenceText}>
+                          {item.bibleText}
+                        </Text>
                       )}
-                      <Text style={[styles.referenceText, { fontSize: 13, fontWeight: "500", top: 60 }]}>
+                      <Text
+                        style={[
+                          styles.referenceText,
+                          { fontSize: 13, fontWeight: "500", top: 60 },
+                        ]}
+                      >
                         {item.bibleReference}
                       </Text>
                     </YStack>
                   )}
-                  {item.text && <Text style={styles.contentText}>{item.text}</Text>}
+                  {item.text && (
+                    <Text style={styles.contentText}>{item.text}</Text>
+                  )}
                 </View>
-                <YStack style={{ marginTop: -30, width: SLIDE_WIDTH - 18, height: 50, borderRadius: 24, backgroundColor: "rgb(255, 255, 255)" }} />
-                <YStack style={{ marginTop: -40, width: SLIDE_WIDTH - 30, height: 50, borderRadius: 24, backgroundColor: "rgb(255, 255, 255)" }} />
+                <YStack
+                  style={{
+                    marginTop: -30,
+                    width: SLIDE_WIDTH - 18,
+                    height: 50,
+                    borderRadius: 24,
+                    backgroundColor: "rgb(255, 255, 255)",
+                  }}
+                />
+                <YStack
+                  style={{
+                    marginTop: -40,
+                    width: SLIDE_WIDTH - 30,
+                    height: 50,
+                    borderRadius: 24,
+                    backgroundColor: "rgb(255, 255, 255)",
+                  }}
+                />
               </View>
             )}
           </View>
@@ -178,7 +202,13 @@ export default function AnchorTextView() {
 
       <View style={styles.dots}>
         {slides.map((_, i) => (
-          <View key={i} style={[styles.dot, { backgroundColor: i === currentIndex ? "#742092" : "#D9C7F5" }]} />
+          <View
+            key={i}
+            style={[
+              styles.dot,
+              { backgroundColor: i === currentIndex ? "#742092" : "#D9C7F5" },
+            ]}
+          />
         ))}
       </View>
 
@@ -200,7 +230,7 @@ const styles = StyleSheet.create({
   timerText: { color: "#333", fontSize: 14 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 100, paddingBottom: 100 },
   slide: { width: SLIDE_WIDTH, marginRight: 16, alignItems: "center" },
-  actionSlide: { width: SLIDE_WIDTH, height: height - 200 },
+  actionSlide: { width: SLIDE_WIDTH, height: height - 350 },
   textSlide: { width: SLIDE_WIDTH, alignItems: "center" },
   slideCard: {
     backgroundColor: "#FFF",
@@ -229,10 +259,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
   },
-  contentText: { fontSize: 16, lineHeight: 26, color: "#333", textAlign: "center" },
+  contentText: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: "#333",
+    textAlign: "center",
+  },
   dots: {
     position: "absolute",
-    bottom: 100,
+    bottom: 150,
     left: 0,
     right: 0,
     flexDirection: "row",

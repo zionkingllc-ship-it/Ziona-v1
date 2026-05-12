@@ -210,7 +210,7 @@ export default function CircleFeedScreen() {
     item: CirclePost;
   }) => (
     <YStack >
-      <CircleFeedItem post={item} />
+      <CircleFeedItem post={item} circleId={circleId} />
 
       <YStack
         height={1}

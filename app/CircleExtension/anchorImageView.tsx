@@ -12,13 +12,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CountdownTimer from "@/components/ui/CountdownTimer";
+import { getGradientColors } from "@/lib/anchorUtils";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width;
 const ITEM_WIDTH = SLIDE_WIDTH;
-
-const DEFAULT_GRADIENT_PRIMARY = "#C7EBCB";
-const DEFAULT_GRADIENT_SECONDARY = "#FFFFFF";
 
 type SlideItem = {
   id: string;
@@ -48,17 +46,6 @@ export default function AnchorImageView() {
     colors?: string;
     expiresAt?: string;
   }>();
-
-  const getGradientColors = (colorsParam?: string): [string, string] => {
-    if (!colorsParam) {
-      return [DEFAULT_GRADIENT_PRIMARY, DEFAULT_GRADIENT_SECONDARY];
-    }
-    const parts = colorsParam.split(",");
-    if (parts.length >= 2) {
-      return [parts[0], parts[1]] as [string, string];
-    }
-    return [parts[0], DEFAULT_GRADIENT_SECONDARY] as [string, string];
-  };
 
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(image, colors, expiresAt);
@@ -143,7 +130,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   slide: {
     width: SLIDE_WIDTH,
-    height: height - 100,
+    top: 40,
+    height: height - 180,
   },
   imageWrapper: {
     flex: 1,

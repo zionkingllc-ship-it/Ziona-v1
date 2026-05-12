@@ -20,12 +20,10 @@ export default function AnchorVideoView() {
   const {
     video,
     colors: colorsParam,
-    likedCount,
     expiresAt,
   } = useLocalSearchParams<{
     video?: string;
     colors?: string;
-    likedCount?: string;
     expiresAt?: string;
   }>();
   const insets = useSafeAreaInsets();
@@ -119,20 +117,10 @@ export default function AnchorVideoView() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#000" }]}>
-      <View
-        width={width}
-        height={40}
-        backgroundColor="transparent"
-        pointerEvents="box-none"
-        zIndex={100}
-      >
+      <View style={styles.progressBar}>
         <GestureDetector gesture={progressPan}>
-          <View width="100%" height={40} justifyContent="flex-end">
-            <View
-              width="100%"
-              height={6}
-              backgroundColor="rgba(255,255,255,0.3)"
-            >
+          <View style={styles.progressTrackContainer}>
+            <View style={styles.progressTrack}>
               <Animated.View
                 style={[
                   { height: "100%", backgroundColor: themeColors.secondary },
@@ -171,6 +159,23 @@ export default function AnchorVideoView() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  progressBar: {
+    width: "100%",
+    height: 40,
+    backgroundColor: "transparent",
+    pointerEvents: "box-none",
+    zIndex: 100,
+  },
+  progressTrackContainer: {
+    width: "100%",
+    height: 40,
+    justifyContent: "flex-end",
+  },
+  progressTrack: {
+    width: "100%",
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -178,7 +183,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  cancelText: { color: "#FFF", fontSize: 16 },
   timerText: { color: "#FFF", fontSize: 16 },
   videoContainer: { justifyContent: "center", alignItems: "center" },
   noVideo: {
@@ -188,17 +192,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  footerButton: { padding: 8 },
   noVideoText: { color: "#FFF", fontSize: 16 },
-  reflectionBox: {
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  reflectionIcon: { fontSize: 16 },
-  reflectionText: { color: "#FFF", fontSize: 14 },
 });

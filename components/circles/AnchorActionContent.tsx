@@ -1,13 +1,9 @@
 import CircleCommentComposer from "@/app/CircleExtension/CircleCommentComposer";
 import themeColors from "@/constants/colors";
+import { getGradientColors } from "@/lib/anchorUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "tamagui";
 
 type ActionType = "pray" | "encouraged" | "think" | null;
@@ -18,20 +14,6 @@ type AnchorActionContentProps = {
   text?: string;
   onDone?: () => void;
   fullScreen?: boolean;
-};
-
-const DEFAULT_GRADIENT_PRIMARY = "#C7EBCB";
-const DEFAULT_GRADIENT_SECONDARY = "#FFFFFF";
-
-const getGradientColors = (colorsParam?: string): [string, string] => {
-  if (!colorsParam) {
-    return [DEFAULT_GRADIENT_PRIMARY, DEFAULT_GRADIENT_SECONDARY];
-  }
-  const parts = colorsParam.split(",");
-  if (parts.length >= 2) {
-    return [parts[0], parts[1]] as [string, string];
-  }
-  return [parts[0], DEFAULT_GRADIENT_SECONDARY] as [string, string];
 };
 
 export default function AnchorActionContent({
@@ -46,7 +28,7 @@ export default function AnchorActionContent({
 
   const gradientColors = getGradientColors(colors);
 
-  const handleSend = () => {
+  const handleSend = (text: string, image?: string | null) => {
     setShowComposer(false);
     setIsDone(true);
   };
@@ -61,14 +43,13 @@ export default function AnchorActionContent({
     return (
       <CircleCommentComposer
         mode="action"
-        user={{ name: "You", avatar: "https://i.pravatar.cc/100?img=1" }}
         anchorPreview={text}
         prompt={
           selectedAction === "pray"
             ? "How can we pray for you?"
             : selectedAction === "encouraged"
-            ? "What encouraged you?"
-            : "What's on your mind?"
+              ? "What encouraged you?"
+              : "What's on your mind?"
         }
         onClose={() => setShowComposer(false)}
         onSend={handleSend}
@@ -79,9 +60,7 @@ export default function AnchorActionContent({
   if (isDone) {
     return (
       <View style={styles.container}>
-        <View style={StyleSheet.absoluteFill}>
-          <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
-        </View>
+        <View style={StyleSheet.absoluteFill}></View>
         <View style={styles.doneContainer}>
           <View style={styles.doneCard}>
             <View style={styles.checkIcon}>
@@ -152,7 +131,8 @@ export default function AnchorActionContent({
             <Text
               style={[
                 styles.actionCardTitle,
-                selectedAction === "encouraged" && styles.actionCardTitleSelected,
+                selectedAction === "encouraged" &&
+                  styles.actionCardTitleSelected,
               ]}
             >
               This Encouraged Me
@@ -160,7 +140,8 @@ export default function AnchorActionContent({
             <Text
               style={[
                 styles.actionCardDesc,
-                selectedAction === "encouraged" && styles.actionCardDescSelected,
+                selectedAction === "encouraged" &&
+                  styles.actionCardDescSelected,
               ]}
             >
               Did this strengthen you today? Tell us what stood out.
@@ -220,9 +201,7 @@ export default function AnchorActionContent({
   if (fullScreen) {
     return (
       <View style={styles.fullScreenContainer}>
-        <View style={StyleSheet.absoluteFill}>
-          <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
-        </View>
+        <View style={StyleSheet.absoluteFill}></View>
         {renderContent()}
       </View>
     );
@@ -231,7 +210,10 @@ export default function AnchorActionContent({
   return (
     <View style={styles.compactContainer}>
       <View style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={gradientColors} style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={gradientColors}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
       {renderContent()}
     </View>
@@ -313,9 +295,9 @@ const styles = StyleSheet.create({
     backgroundColor: themeColors.inActiveButton,
   },
   doneAllText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
-  doneContainer: { 
-    flex: 1, 
-    justifyContent: "center", 
+  doneContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
   },

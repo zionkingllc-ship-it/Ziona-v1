@@ -200,7 +200,7 @@ export default function CircleDetailScreen() {
 
           {posts.map((post) => (
             <YStack key={post.id} marginBottom={16}>
-              <CircleFeedItem post={post} />
+              <CircleFeedItem post={post} circleId={circleId} />
             </YStack>
           ))}
         </YStack>
