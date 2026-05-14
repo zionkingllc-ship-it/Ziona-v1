@@ -569,6 +569,9 @@ export default function CircleFeedScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
+        windowSize={7}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={true}
         contentContainerStyle={{
           paddingTop: 129 + (showFixedAnchor ? anchorSectionHeight : 0),
           paddingBottom: 16,

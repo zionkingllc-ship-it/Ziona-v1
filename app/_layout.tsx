@@ -56,8 +56,9 @@ export default function RootLayout() {
   /* -------- FORCE BLACK ANDROID NAVIGATION BAR -------- */
 
   useEffect(() => {
-    // NavigationBar.setBackgroundColorAsync("#ffffff");
-    NavigationBar.setButtonStyleAsync("dark");
+    if (Platform.OS === "android") {
+      NavigationBar.setButtonStyleAsync("dark");
+    }
   }, []);
 
   /* -------- HIDE SPLASH AFTER FONTS -------- */

@@ -176,6 +176,9 @@ export default function CirclesSuggestion() {
           <FlatList
             data={circles}
             keyExtractor={(item) => item.id}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={true}
             contentContainerStyle={{
               paddingHorizontal: wp(5),
               paddingBottom: hp(10),

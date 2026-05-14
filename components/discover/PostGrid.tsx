@@ -18,6 +18,8 @@ export default function PostGrid({ posts, onPress }: Props) {
       data={posts}
       keyExtractor={(item) => item.id}
       numColumns={3}
+      windowSize={5}
+      maxToRenderPerBatch={10}
       renderItem={({ item }) => (
         <PostThumbnail
           post={item}

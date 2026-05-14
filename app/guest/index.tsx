@@ -248,6 +248,9 @@ export default function GuestProfileScreen() {
             data={posts}
             style={{ flex: 1 }}
             keyExtractor={(item) => item.id}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={true}
             renderItem={({ item, index }) => (
               <PostThumbnail
                 post={item}

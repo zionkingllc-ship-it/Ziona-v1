@@ -120,6 +120,9 @@ export default function ActivityScreen() {
             renderItem={renderNotification}
             contentContainerStyle={{ paddingHorizontal: 12 }}
             showsVerticalScrollIndicator={false}
+            windowSize={5}
+            maxToRenderPerBatch={15}
+            removeClippedSubviews={true}
           />
         )}
       </YStack>

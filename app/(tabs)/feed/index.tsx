@@ -30,6 +30,7 @@ import {
   ViewToken,
 } from "react-native";
 import { View } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -192,31 +193,32 @@ export default function Feed() {
   };
 
   return (
-    <View flex={1}>
-      <View width="100%" marginTop={35}>
-        <FeedHeader
-          feedType={feedType}
-          onChangeFeedType={setFeedType}
-          emptyFollowing={data.length === 0}
-          onBellPress={handleBellPress}
-        />
-      </View>
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <View flex={1}>
+        <View width="100%">
+          <FeedHeader
+            feedType={feedType}
+            onChangeFeedType={setFeedType}
+            emptyFollowing={data.length === 0}
+            onBellPress={handleBellPress}
+          />
+        </View>
 
-      <View
-        style={{ flex: 1 }}
-        onLayout={(e) => {
-          const { height, width } = e.nativeEvent.layout;
-          if (height !== containerHeight) setContainerHeight(height);
-          if (width !== containerWidth) setContainerWidth(width);
-        }}
-      >
-        {feedType === "following" && data.length === 0 && !query.isLoading ? (
-          <FollowSuggestions onDone={() => setFeedType("forYou")} />
-        ) : data.length === 0 ? (
-          <View flex={1} justifyContent="center" alignItems="center">
-            <Text style={{ color: colors.text }}>No posts yet</Text>
-          </View>
-        ) : (
+        <View
+          style={{ flex: 1 }}
+          onLayout={(e) => {
+            const { height, width } = e.nativeEvent.layout;
+            if (height !== containerHeight) setContainerHeight(height);
+            if (width !== containerWidth) setContainerWidth(width);
+          }}
+        >
+          {feedType === "following" && data.length === 0 && !query.isLoading ? (
+            <FollowSuggestions onDone={() => setFeedType("forYou")} />
+          ) : data.length === 0 ? (
+            <View flex={1} justifyContent="center" alignItems="center">
+              <Text style={{ color: colors.text }}>No posts yet</Text>
+            </View>
+          ) : (
           <PostViewerEngine
             key={feedType}
             posts={data}
@@ -245,6 +247,6 @@ export default function Feed() {
           query.refetch();
         }}
       />
-    </View>
+    </View></SafeAreaView>
   );
 }

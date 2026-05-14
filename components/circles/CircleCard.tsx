@@ -2,6 +2,7 @@ import { View, Text, YStack, XStack } from "tamagui";
 import { Image, StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import colors from "@/constants/colors";
+import React, { memo } from "react";
 
 interface Props {
   id: string;
@@ -13,7 +14,7 @@ interface Props {
   onPress?: () => void;
 }
 
-export default function CircleCard({
+const CircleCard = memo(function CircleCard({
   title,
   description,
   image,
@@ -27,7 +28,7 @@ export default function CircleCard({
 
         {/* IMAGE */}
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: image }} style={styles.image} />
+          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
 
           {/* GRADIENT OVERLAY */}
           <LinearGradient
@@ -62,7 +63,9 @@ export default function CircleCard({
       </YStack>
     </Pressable>
   );
-}
+});
+
+export default CircleCard;
 
 const styles = StyleSheet.create({
   container: {

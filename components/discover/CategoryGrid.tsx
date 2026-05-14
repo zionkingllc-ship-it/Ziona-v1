@@ -13,6 +13,8 @@ export default function CategoryGrid({ categories, onCategoryPress }: Props) {
       data={categories}
       keyExtractor={(item) => item.id}
       numColumns={2}
+      windowSize={5}
+      maxToRenderPerBatch={10}
       contentContainerStyle={{ paddingHorizontal: 8 }}
       renderItem={({ item }) => (
         <CategoryCard

@@ -30,12 +30,12 @@ export default function CircleFeedBanner({
       Animated.timing(overlayOpacity, {
         toValue: isCompact ? 0.4 : 0,
         duration: 300,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
       Animated.timing(compactHeaderOpacity, {
         toValue: isCompact ? 1 : 0,
         duration: 300,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }),
     ]).start();
   }, [isCompact]);

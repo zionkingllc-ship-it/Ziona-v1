@@ -8,7 +8,7 @@ import { useSignupStore } from "@/store/useSignupStore";
 import { useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { InteractionManager, Platform, Pressable } from "react-native";
+import { InteractionManager, Pressable } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 
 export default function Birthday() {
@@ -33,7 +33,7 @@ export default function Birthday() {
       })
     : null;
 
-  const pickerVisible = showPicker && Platform.OS === "android";
+  const pickerVisible = showPicker;
 
   useEffect(() => {
     if (isFocused) {

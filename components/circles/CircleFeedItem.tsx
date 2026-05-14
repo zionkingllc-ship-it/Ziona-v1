@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
@@ -56,7 +56,7 @@ type Props = {
   circleId?: string;
 };
 
-export default function CircleFeedItem({ post, circleId }: Props) {
+const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
   const router = useRouter();
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -208,4 +208,6 @@ export default function CircleFeedItem({ post, circleId }: Props) {
       </YStack>
     </Pressable>
   );
-}
+});
+
+export default CircleFeedItem;
