@@ -11,25 +11,10 @@ export const GET_ALL_CIRCLES = `
       name
       description
       coverImage
-      bannerImage
-      profileImage
       memberCount
       isJoined
       isSubscribed
-      createdAt
       avatars
-      memberAvatars
-      members
-      memberPreviews {
-        id
-        username
-        avatarUrl
-      }
-      rules {
-        ruleNumber
-        title
-        description
-      }
     }
   }
 `;
@@ -41,25 +26,10 @@ export const GET_MY_CIRCLES = `
       name
       description
       coverImage
-      bannerImage
-      profileImage
       memberCount
       isJoined
       isSubscribed
-      createdAt
       avatars
-      memberAvatars
-      members
-      memberPreviews {
-        id
-        username
-        avatarUrl
-      }
-      rules {
-        ruleNumber
-        title
-        description
-      }
     }
   }
 `;
@@ -71,20 +41,10 @@ export const GET_SUGGESTED_CIRCLES = `
       name
       description
       coverImage
-      bannerImage
-      profileImage
       memberCount
       isJoined
       isSubscribed
-      createdAt
       avatars
-      memberAvatars
-      members
-      memberPreviews {
-        id
-        username
-        avatarUrl
-      }
     }
   }
 `;
@@ -103,15 +63,8 @@ export const GET_CIRCLE_DETAIL = `
       memberCount
       isJoined
       isSubscribed
-      createdAt
       avatars
       memberAvatars
-      members
-      memberPreviews {
-        id
-        username
-        avatarUrl
-      }
       rules {
         ruleNumber
         title
@@ -144,11 +97,6 @@ export const GET_CIRCLE_DETAIL = `
         bibleReference
         bibleText
         scripture
-        author {
-          id
-          username
-          avatarUrl
-        }
         scriptureReference {
           book
           chapter
@@ -235,11 +183,6 @@ export const GET_CIRCLE_FEED_DATA = `
         bibleReference
         bibleText
         scripture
-        author {
-          id
-          username
-          avatarUrl
-        }
         scriptureReference {
           book
           chapter
@@ -326,11 +269,6 @@ export const GET_ACTIVE_ANCHOR = `
       bibleReference
       bibleText
       scripture
-      author {
-        id
-        username
-        avatarUrl
-      }
       scriptureReference {
         book
         chapter
@@ -373,11 +311,6 @@ export const GET_ANCHOR_HISTORY = `
       bibleReference
       bibleText
       scripture
-      author {
-        id
-        username
-        avatarUrl
-      }
       scriptureReference {
         book
         chapter
@@ -408,11 +341,6 @@ export const GET_ANCHOR_RESPONSES = `
       reactionCount
       replyCount
       viewerReactionType
-      author {
-        id
-        username
-        avatarUrl
-      }
     }
   }
 `;

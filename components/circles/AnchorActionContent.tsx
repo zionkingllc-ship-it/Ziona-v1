@@ -1,4 +1,3 @@
-import CircleCommentComposer from "@/app/CircleExtension/CircleCommentComposer";
 import themeColors from "@/constants/colors";
 import { getGradientColors } from "@/lib/anchorUtils";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +13,7 @@ type AnchorActionContentProps = {
   text?: string;
   onDone?: () => void;
   fullScreen?: boolean;
+  onActionSelected?: (action: string, anchorText?: string) => void;
 };
 
 export default function AnchorActionContent({
@@ -21,17 +21,12 @@ export default function AnchorActionContent({
   text,
   onDone,
   fullScreen = false,
+  onActionSelected,
 }: AnchorActionContentProps) {
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isDone, setIsDone] = useState(false);
-  const [showComposer, setShowComposer] = useState(false);
 
   const gradientColors = getGradientColors(colors);
-
-  const handleSend = (text: string, image?: string | null) => {
-    setShowComposer(false);
-    setIsDone(true);
-  };
 
   const handleDone = () => {
     if (onDone) {
@@ -39,23 +34,15 @@ export default function AnchorActionContent({
     }
   };
 
-  if (showComposer) {
-    return (
-      <CircleCommentComposer
-        mode="action"
-        anchorPreview={text}
-        prompt={
-          selectedAction === "pray"
-            ? "How can we pray for you?"
-            : selectedAction === "encouraged"
-              ? "What encouraged you?"
-              : "What's on your mind?"
-        }
-        onClose={() => setShowComposer(false)}
-        onSend={handleSend}
-      />
-    );
-  }
+  const handleActionDone = () => {
+    if (selectedAction && onActionSelected) {
+      onActionSelected(selectedAction, text);
+    } else if (selectedAction) {
+      setIsDone(true);
+    } else if (onDone) {
+      onDone();
+    }
+  };
 
   if (isDone) {
     return (
@@ -179,13 +166,7 @@ export default function AnchorActionContent({
         </View>
       </View>
       <TouchableOpacity
-        onPress={() => {
-          if (selectedAction) {
-            setShowComposer(true);
-          } else if (onDone) {
-            onDone();
-          }
-        }}
+        onPress={handleActionDone}
         style={[
           styles.doneAllButton,
           !selectedAction && styles.doneAllButtonDisabled,

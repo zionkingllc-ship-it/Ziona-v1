@@ -4,7 +4,9 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
+import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
@@ -62,9 +64,20 @@ export default function CircleFeedItem({ post, circleId }: Props) {
   const [successVisible, setSuccessVisible] = useState(false);
 
   const reportMutation = useReportContent();
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
 
-  const avatarUri = post.user.avatar || "";
   const imageUri = post.image || "";
+
+  const { isLiked, likeCount: localLikeCount, handleToggleLike, togglingLike } = useCirclePostLike(
+    post.id,
+    !!post.likedImage,
+    post.likeCount ?? post.likes,
+  );
+
+  const handleLike = (e: any) => {
+    e.stopPropagation?.();
+    handleToggleLike();
+  };
 
   const handlePostPress = () => {
     router.push({
@@ -72,6 +85,14 @@ export default function CircleFeedItem({ post, circleId }: Props) {
       params: {
         postId: post.id,
         circleId: circleId || "",
+        userName: post.user.name,
+        userAvatar: post.user.avatar,
+        postText: post.text || "",
+        postImage: post.image || "",
+        postLikes: String(localLikeCount),
+        postLiked: isLiked ? "1" : "0",
+        postComments: String(post.comments),
+        postCreatedAt: post.createdAt,
       },
     });
   };
@@ -82,21 +103,13 @@ export default function CircleFeedItem({ post, circleId }: Props) {
         {/* HEADER */}
         <XStack justifyContent="space-between" alignItems="center">
           <XStack alignItems="center" gap="$2">
-            {avatarUri ? (
-              <Image
-                source={{ uri: avatarUri }}
-                width={36}
-                height={36}
-                borderRadius={18}
-              />
-            ) : (
-              <Image
-                source={require("@/assets/images/emptyDP.png")}
-                width={36}
-                height={36}
-                borderRadius={18}
-              />
-            )}
+            <AvatarWithInitials
+              uri={post.user.avatar}
+              name={post.user.name}
+              size={36}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
+            />
             <XStack gap={6} alignItems="center">
               <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
                 {post.user.name}
@@ -132,19 +145,23 @@ export default function CircleFeedItem({ post, circleId }: Props) {
 
           {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">
-            <XStack alignItems="center" gap="$1">
-              {post.likedImage ? (
-                <Ionicons name="heart" size={18} />
-              ) : (
-                <Ionicons name="heart-outline" size={18} />
-              )}
-              <Text>{post.likeCount ?? post.likes}</Text>
-            </XStack>
+            <Pressable onPress={handleLike} disabled={togglingLike}>
+              <XStack alignItems="center" gap="$1">
+                <Ionicons
+                  name={isLiked ? "heart" : "heart-outline"}
+                  size={18}
+                  color={isLiked ? "#742092" : undefined}
+                />
+                <Text>{localLikeCount}</Text>
+              </XStack>
+            </Pressable>
 
-            <XStack alignItems="center" gap="$1">
-              <Ionicons name="chatbubble-outline" size={18} />
-              <Text>{post.comments}</Text>
-            </XStack>
+            <Pressable onPress={handlePostPress}>
+              <XStack alignItems="center" gap="$1">
+                <Ionicons name="chatbubble-outline" size={18} />
+                <Text>{post.comments}</Text>
+              </XStack>
+            </Pressable>
    
           </XStack>
         </YStack>

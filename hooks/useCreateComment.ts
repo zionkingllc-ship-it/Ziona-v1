@@ -24,8 +24,10 @@ export function useCreateComment() {
 
       if (!user) return { previousComments };
 
+      const tempId = `temp-${Date.now()}`;
+
       const optimisticComment = {
-        id: `temp-${Date.now()}`,
+        id: tempId,
         text,
         createdAt: new Date().toISOString(),
         parentCommentId,
@@ -80,7 +82,7 @@ export function useCreateComment() {
         });
       }
 
-      return { previousComments };
+      return { previousComments, tempId };
     },
 
     onError: (_err, { postId }, context) => {
@@ -89,9 +91,22 @@ export function useCreateComment() {
       }
     },
 
-    onSuccess: (_newComment, { postId }) => {
-      queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
-      queryClient.invalidateQueries({ queryKey: ["feed"], exact: false });
+    onSuccess: (response: any, { postId }, context) => {
+      const realComment = response?.comment;
+      if (!realComment || !context?.tempId) return;
+
+      queryClient.setQueryData(["postComments", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            comments: page.comments.map((c: any) =>
+              c.id === context.tempId ? { ...c, ...realComment, id: realComment.id } : c
+            ),
+          })),
+        };
+      });
     },
   });
 }

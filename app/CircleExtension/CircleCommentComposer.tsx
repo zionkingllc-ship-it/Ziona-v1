@@ -15,7 +15,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { Text, XStack, YStack, Image } from "tamagui";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 
 type Props = {
   mode?: "action" | "comment";
@@ -26,9 +27,9 @@ type Props = {
 };
 
 export default function CircleCommentComposer({
-  mode = "comment",
-  anchorPreview,
-  prompt,
+  mode: propMode,
+  anchorPreview: propAnchorPreview,
+  prompt: propPrompt,
   onClose,
   onSend,
 }: Props) {
@@ -36,12 +37,17 @@ export default function CircleCommentComposer({
   const [image, setImage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const user = useAuthStore((state) => state.user);
   const userName = user?.username || "You";
-  const userAvatar = user?.avatarUrl || "https://i.pravatar.cc/100?img=1";
+  const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId, fromScreen } = useLocalSearchParams<{ circleId?: string; fromScreen?: string }>();
+  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string }>();
+
+  const mode = propMode || (routeMode as "action" | "comment") || "comment";
+  const anchorPreview = propAnchorPreview || routeAnchorPreview;
+  const prompt = propPrompt || routePrompt;
   const queryClient = useQueryClient();
 
   const handleSend = async () => {
@@ -130,11 +136,12 @@ export default function CircleCommentComposer({
             </XStack>
 
             <XStack alignItems="center" gap="$2" marginTop="$2">
-              <Image
-                source={{ uri: userAvatar }}
-                width={36}
-                height={36}
-                borderRadius={18}
+              <AvatarWithInitials
+                uri={userAvatar}
+                name={userName}
+                size={36}
+                failedUris={failedAvatarUrls}
+                setFailedUris={setFailedAvatarUrls}
               />
               <Text fontWeight="600">{userName}</Text>
             </XStack>

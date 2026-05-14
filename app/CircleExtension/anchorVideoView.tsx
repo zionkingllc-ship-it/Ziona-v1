@@ -21,10 +21,12 @@ export default function AnchorVideoView() {
     video,
     colors: colorsParam,
     expiresAt,
+    circleId,
   } = useLocalSearchParams<{
     video?: string;
     colors?: string;
     expiresAt?: string;
+    circleId?: string;
   }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -96,7 +98,11 @@ export default function AnchorVideoView() {
       setTimeout(() => {
         router.push({
           pathname: "/CircleExtension/anchorActionView",
-          params: { colors: colorsParam || "", expiresAt: expiresAt || "" },
+          params: {
+            colors: colorsParam || "",
+            expiresAt: expiresAt || "",
+            ...(circleId ? { circleId } : {}),
+          },
         });
       }, 2000);
     };

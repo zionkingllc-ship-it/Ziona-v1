@@ -103,11 +103,6 @@ export const RESPOND_TO_ANCHOR = `
         mediaType
         mediaUrl
         createdAt
-        author {
-          id
-          username
-          avatarUrl
-        }
       }
     }
   }

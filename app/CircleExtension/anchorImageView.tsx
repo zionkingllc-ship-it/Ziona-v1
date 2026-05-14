@@ -41,16 +41,34 @@ function createSlides(
 
 export default function AnchorImageView() {
   const router = useRouter();
-  const { image, colors, expiresAt } = useLocalSearchParams<{
+  const { image, colors, expiresAt, circleId } = useLocalSearchParams<{
     image?: string;
     colors?: string;
     expiresAt?: string;
+    circleId?: string;
   }>();
 
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(image, colors, expiresAt);
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    const prompt =
+      action === "pray"
+        ? "How can we pray for you?"
+        : action === "encouraged"
+          ? "What encouraged you?"
+          : "What's on your mind?";
+    router.push({
+      pathname: "/CircleExtension/anchorResponse",
+      params: {
+        action,
+        text: anchorText || "",
+        ...(circleId ? { circleId } : {}),
+      },
+    });
+  };
 
   const handleScroll = useCallback(
     (event: any) => {
@@ -90,7 +108,7 @@ export default function AnchorImageView() {
                 colors={item.colors || gradientColors.join(",")}
                 expiresAt={item.expiresAt}
                 fullScreen={true}
-                onDone={() => router.back()}
+                onActionSelected={handleActionSelected}
               />
             ) : (
               <View style={styles.imageWrapper}>

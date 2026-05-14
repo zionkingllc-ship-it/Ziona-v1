@@ -16,34 +16,52 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
-import type { CirclePost } from "@/constants/mockCircles";
+import { useCirclePostLike } from "@/hooks/useCirclePostLike";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import themeColors from "@/constants/colors";
 
-// Temporary: Use mock data. In production, fetch from API
-const MOCK_CIRCLE_POST: CirclePost = {
-  id: "post-1",
-  user: {
-    name: "Sarah Johnson",
-    avatar: "https://i.pravatar.cc/150?img=1",
-  },
-  createdAt: "2 hours ago",
-  text: "Just finished an amazing Bible study on faith and trust. God's word is so powerful and transformative. Feeling grateful for this circle of believers 🙏",
-  image: undefined,
-  likes: 24,
-  comments: 8,
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return dateString;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
 export default function CirclePostDetailScreen() {
   const router = useRouter();
-  const { postId, circleId } = useLocalSearchParams<{
+  const {
+    postId,
+    circleId,
+    userName,
+    userAvatar,
+    postText,
+    postImage,
+    postLikes,
+    postLiked,
+    postComments,
+    postCreatedAt,
+  } = useLocalSearchParams<{
     postId?: string;
     circleId?: string;
+    userName?: string;
+    userAvatar?: string;
+    postText?: string;
+    postImage?: string;
+    postLikes?: string;
+    postLiked?: string;
+    postComments?: string;
+    postCreatedAt?: string;
   }>();
 
   const [commentText, setCommentText] = useState("");
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
 
-  // Fetch comments
+  const { isLiked, likeCount, handleToggleLike, togglingLike } = useCirclePostLike(
+    postId || "",
+    postLiked === "1",
+    Number(postLikes) || 0,
+  );
+
   const {
     data: commentsData,
     isLoading: isLoadingComments,
@@ -52,10 +70,7 @@ export default function CirclePostDetailScreen() {
     isFetchingNextPage,
   } = usePostComments(postId || "");
 
-  // Create comment mutation
   const createCommentMutation = useCreateComment();
-
-  // Like comment mutation
   const toggleCommentLikeMutation = useToggleCommentLike();
 
   const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
@@ -88,7 +103,6 @@ export default function CirclePostDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      {/* Header */}
       <XStack
         paddingHorizontal="$3"
         paddingVertical="$2"
@@ -111,37 +125,34 @@ export default function CirclePostDetailScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Post Content */}
           <YStack padding="$3" gap="$3" borderBottomWidth={1} borderBottomColor="#EEE">
-            {/* Post Header */}
             <XStack alignItems="center" gap="$2">
-              <Image
-                source={{ uri: MOCK_CIRCLE_POST.user.avatar }}
-                width={40}
-                height={40}
-                borderRadius={20}
+              <AvatarWithInitials
+                uri={userAvatar}
+                name={userName}
+                size={40}
+                failedUris={failedAvatarUrls}
+                setFailedUris={setFailedAvatarUrls}
               />
               <YStack gap={2}>
                 <Text fontSize={14} fontWeight="600">
-                  {MOCK_CIRCLE_POST.user.name}
+                  {userName}
                 </Text>
                 <Text fontSize={12} color="#888">
-                  {MOCK_CIRCLE_POST.createdAt}
+                  {formatDate(postCreatedAt)}
                 </Text>
               </YStack>
             </XStack>
 
-            {/* Post Text */}
-            {MOCK_CIRCLE_POST.text && (
+            {postText && (
               <Text fontSize={14} color="#333" lineHeight={20}>
-                {MOCK_CIRCLE_POST.text}
+                {postText}
               </Text>
             )}
 
-            {/* Post Image */}
-            {MOCK_CIRCLE_POST.image && (
+            {postImage && (
               <Image
-                source={{ uri: MOCK_CIRCLE_POST.image }}
+                source={{ uri: postImage }}
                 width="100%"
                 height={200}
                 borderRadius={12}
@@ -149,46 +160,40 @@ export default function CirclePostDetailScreen() {
               />
             )}
 
-            {/* Stats */}
             <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
-              <XStack alignItems="center" gap="$1">
-                <Ionicons name="heart" size={16} color={themeColors.primary} />
-                <Text fontSize={12} color="#666">
-                  {MOCK_CIRCLE_POST.likes} likes
-                </Text>
-              </XStack>
+              <TouchableOpacity onPress={handleToggleLike} disabled={togglingLike}>
+                <XStack alignItems="center" gap="$1">
+                  <Ionicons
+                    name={isLiked ? "heart" : "heart-outline"}
+                    size={16}
+                    color={isLiked ? themeColors.primary : "#666"}
+                  />
+                  <Text fontSize={12} color="#666">
+                    {likeCount} {likeCount === 1 ? "like" : "likes"}
+                  </Text>
+                </XStack>
+              </TouchableOpacity>
               <XStack alignItems="center" gap="$1">
                 <Ionicons name="chatbubble" size={16} color="#666" />
                 <Text fontSize={12} color="#666">
-                  {MOCK_CIRCLE_POST.comments} comments
+                  {postComments} {Number(postComments) === 1 ? "comment" : "comments"}
                 </Text>
               </XStack>
             </XStack>
           </YStack>
 
-          {/* Comments Section Header */}
           <YStack paddingHorizontal="$3" paddingVertical="$2">
             <Text fontSize={14} fontWeight="600" color="#333">
               Comments
             </Text>
           </YStack>
 
-          {/* Comments List */}
           {isLoadingComments ? (
-            <YStack
-              flex={1}
-              justifyContent="center"
-              alignItems="center"
-              paddingVertical="$4"
-            >
+            <YStack flex={1} justifyContent="center" alignItems="center" paddingVertical="$4">
               <ActivityIndicator color={themeColors.primary} size="large" />
             </YStack>
           ) : comments.length === 0 ? (
-            <YStack
-              paddingHorizontal="$3"
-              paddingVertical="$4"
-              alignItems="center"
-            >
+            <YStack paddingHorizontal="$3" paddingVertical="$4" alignItems="center">
               <Text fontSize={14} color="#999">
                 No comments yet. Be the first to comment!
               </Text>
@@ -203,68 +208,47 @@ export default function CirclePostDetailScreen() {
                   borderBottomWidth={1}
                   borderBottomColor="#F0F0F0"
                 >
-                  {/* Comment Header */}
                   <XStack alignItems="center" gap="$2">
-                    <Image
-                      source={
-                        comment.user.avatarUrl
-                          ? { uri: comment.user.avatarUrl }
-                          : require("@/assets/images/emptyDP.png")
-                      }
-                      width={32}
-                      height={32}
-                      borderRadius={16}
+                    <AvatarWithInitials
+                      uri={comment.user.avatarUrl}
+                      name={comment.user.username}
+                      size={32}
+                      failedUris={failedAvatarUrls}
+                      setFailedUris={setFailedAvatarUrls}
                     />
                     <YStack gap={2} flex={1}>
                       <Text fontSize={12} fontWeight="600">
                         {comment.user.username}
                       </Text>
                       <Text fontSize={11} color="#999">
-                        {comment.createdAt}
+                        {formatDate(comment.createdAt)}
                       </Text>
                     </YStack>
                   </XStack>
 
-                  {/* Comment Text */}
                   <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
                     {comment.text}
                   </Text>
 
-                  {/* Comment Actions */}
                   <XStack gap="$3" paddingLeft="$4" alignItems="center">
                     <TouchableOpacity
                       onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
                     >
                       <XStack alignItems="center" gap="$1">
                         <Ionicons
-                          name={
-                            comment.viewerState?.liked
-                              ? "heart"
-                              : "heart-outline"
-                          }
+                          name={comment.viewerState?.liked ? "heart" : "heart-outline"}
                           size={14}
-                          color={
-                            comment.viewerState?.liked
-                              ? themeColors.primary
-                              : "#999"
-                          }
+                          color={comment.viewerState?.liked ? themeColors.primary : "#999"}
                         />
                         <Text fontSize={11} color="#999">
                           {comment.stats.likesCount}
                         </Text>
                       </XStack>
                     </TouchableOpacity>
-
-                    {comment.stats.repliesCount > 0 && (
-                      <Text fontSize={11} color={themeColors.primary}>
-                        {comment.stats.repliesCount} replies
-                      </Text>
-                    )}
                   </XStack>
                 </YStack>
               ))}
 
-              {/* Load More Button */}
               {hasNextPage && (
                 <TouchableOpacity
                   onPress={handleLoadMore}
@@ -283,11 +267,9 @@ export default function CirclePostDetailScreen() {
             </YStack>
           )}
 
-          {/* Spacing for input */}
           <View style={{ height: 20 }} />
         </ScrollView>
 
-        {/* Comment Input */}
         <View style={styles.inputContainer}>
           <XStack
             paddingHorizontal="$3"
@@ -297,10 +279,6 @@ export default function CirclePostDetailScreen() {
             borderTopWidth={1}
             borderTopColor="#EEE"
           >
-            <TouchableOpacity style={{ paddingBottom: 4 }}>
-              <Ionicons name="add-circle-outline" size={24} color="#999" />
-            </TouchableOpacity>
-
             <YStack
               flex={1}
               borderRadius={20}
@@ -327,9 +305,7 @@ export default function CirclePostDetailScreen() {
               <Ionicons
                 name="send"
                 size={20}
-                color={
-                  commentText.trim() ? themeColors.primary : "#DDD"
-                }
+                color={commentText.trim() ? themeColors.primary : "#DDD"}
               />
             </TouchableOpacity>
           </XStack>

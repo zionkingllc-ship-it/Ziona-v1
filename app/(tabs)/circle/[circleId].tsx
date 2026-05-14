@@ -10,6 +10,7 @@ import {
 } from "@/services/graphQL/queries/circles";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, ScrollView, Text, XStack, YStack } from "tamagui";
 
@@ -129,6 +130,14 @@ export default function CircleDetailScreen() {
       style={{ flex: 1, backgroundColor: colors.white }}
       edges={["top"]}
     >
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text fontFamily="$body" fontSize={14} color={colors.gray} marginTop={12}>
+            Loading circle...
+          </Text>
+        </View>
+      ) : (
       <ScrollView stickyHeaderIndices={[1]}>
         {/* BANNER IMAGE */}
         <Image
@@ -265,6 +274,7 @@ export default function CircleDetailScreen() {
           ))}
         </YStack>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

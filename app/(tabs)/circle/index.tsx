@@ -6,10 +6,14 @@ import { fetchAllCircles, fetchMyCircles, fetchSuggestedCircles } from "@/servic
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet, TextInput } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
+import { storage } from "@/utils/storage";
+
+const CIRCLES_CACHE_KEY = "allCircles";
 
 export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
@@ -22,7 +26,16 @@ export default function CirclesSuggestion() {
 
   useEffect(() => {
     loadCircles();
+    loadCachedCircles();
   }, []);
+
+  async function loadCachedCircles() {
+    const cached = await storage.get<any[]>(CIRCLES_CACHE_KEY);
+    if (cached && cached.length > 0) {
+      setCircles(cached);
+      setLoading(false);
+    }
+  }
 
   async function loadCircles() {
     try {
@@ -37,10 +50,11 @@ export default function CirclesSuggestion() {
         image: circle.coverImage,
         members: circle.memberCount,
         isJoined: circle.isSubscribed,
-        avatars: circle.memberPreviews?.map((m: any) => m.avatarUrl).filter(Boolean) || [],
+        avatars: circle.avatars || [],
       }));
 
       setCircles(mappedCircles);
+      storage.set(CIRCLES_CACHE_KEY, mappedCircles);
     } catch (err) {
       console.error("Failed to load circles", err);
       setError("Failed to load circles");
@@ -75,29 +89,64 @@ export default function CirclesSuggestion() {
 
   const renderEmptyState = () => (
     <YStack flex={1} justifyContent="center" alignItems="center" paddingVertical={hp(10)}>
-      <Text
-        fontFamily="$body"
-        fontWeight="400"
-        fontSize={16}
-        color={colors.gray}
-        marginBottom={hp(1)}
-      >
-        No suggested circles at the moment
-      </Text>
-      <Text
-        fontFamily="$body"
-        fontWeight="400"
-        fontSize={12}
-        color={colors.gray}
-      >
-        Check back later for new circles to join
-      </Text>
+      {error ? (
+        <>
+          <Ionicons name="cloud-offline-outline" size={40} color={colors.gray} />
+          <Text
+            fontFamily="$body"
+            fontWeight="400"
+            fontSize={16}
+            color={colors.gray}
+            marginTop={hp(1)}
+            marginBottom={hp(1)}
+            textAlign="center"
+            paddingHorizontal={wp(10)}
+          >
+            {error}
+          </Text>
+          <TouchableOpacity onPress={loadCircles} style={{ marginTop: hp(2) }}>
+            <XStack gap={6} alignItems="center">
+              <Ionicons name="refresh" size={16} color={colors.primary} />
+              <Text fontFamily="$body" fontWeight="500" fontSize={14} color={colors.primary}>
+                Tap to retry
+              </Text>
+            </XStack>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text
+            fontFamily="$body"
+            fontWeight="400"
+            fontSize={16}
+            color={colors.gray}
+            marginBottom={hp(1)}
+          >
+            No suggested circles at the moment
+          </Text>
+          <Text
+            fontFamily="$body"
+            fontWeight="400"
+            fontSize={12}
+            color={colors.gray}
+          >
+            Check back later for new circles to join
+          </Text>
+        </>
+      )}
     </YStack>
   );
 
   return (
     <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
-      {circles.length === 0 ? (
+      {loading ? (
+        <YStack flex={1} justifyContent="center" alignItems="center">
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text fontFamily="$body" fontSize={14} color={colors.gray} marginTop={12}>
+            Loading circles...
+          </Text>
+        </YStack>
+      ) : circles.length === 0 ? (
         renderEmptyState()
       ) : (
         <>

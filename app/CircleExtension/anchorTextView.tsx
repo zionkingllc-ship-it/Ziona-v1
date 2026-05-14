@@ -3,7 +3,7 @@ import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import { getGradientColors } from "@/lib/anchorUtils";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -83,25 +83,38 @@ function createSlides(
 }
 
 export default function AnchorTextView() {
-  const { text, colors, bibleReference, bibleText, expiresAt } =
+  const router = useRouter();
+  const { text, colors, bibleReference, bibleText, expiresAt, circleId } =
     useLocalSearchParams<{
       text?: string;
       colors?: string;
       bibleReference?: string;
       bibleText?: string;
       expiresAt?: string;
+      circleId?: string;
     }>();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const gradientColors = getGradientColors(colors);
-  const slides = createSlides(
-    text,
-    bibleReference,
-    bibleText,
-    colors,
-    expiresAt,
-  );
+  const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt);
+
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    const prompt =
+      action === "pray"
+        ? "How can we pray for you?"
+        : action === "encouraged"
+          ? "What encouraged you?"
+          : "What's on your mind?";
+    router.push({
+      pathname: "/CircleExtension/anchorResponse",
+      params: {
+        action,
+        text: anchorText || "",
+        ...(circleId ? { circleId } : {}),
+      },
+    });
+  };
 
   const handleScroll = useCallback(
     (event: any) => {
@@ -147,6 +160,7 @@ export default function AnchorTextView() {
                   expiresAt={item.expiresAt}
                   text={text}
                   fullScreen={true}
+                  onActionSelected={handleActionSelected}
                 />
               </View>
             ) : (

@@ -10,7 +10,13 @@ import CircleFeedProfileSection, {
 
 import colors from "@/constants/colors";
 
-import { fetchCircleFeed, fetchCircleDetail } from "@/services/graphQL/queries/circles";
+import {
+  CircleFeedData,
+  DEFAULT_CIRCLE_FEED,
+  MOCK_CIRCLE_FEEDS,
+} from "@/constants/mockCircles";
+
+import { fetchCircleFeedData } from "@/services/graphQL/queries/circles";
 import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -22,7 +28,6 @@ import React, { useEffect, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   Pressable,
   StyleSheet,
@@ -39,7 +44,9 @@ import {
   YStack,
 } from "tamagui";
 
-import { fetchCircleFeedData } from "@/services/graphQL/queries/circles";
+import { storage } from "@/utils/storage";
+
+const CACHE_KEY = "circleFeed";
 
 const HIDE_ANCHOR_THRESHOLD = 220;
 
@@ -66,16 +73,14 @@ export default function CircleFeedScreen() {
 
   const router = useRouter();
 
-  console.log("📍 [CircleFeed] Route params - id:", id, "t:", t);
   const circleId = id || "1";
-  console.log("📍 [CircleFeed] Using circleId:", circleId);
-
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const circleData =
     MOCK_CIRCLE_FEEDS[circleId] ||
     DEFAULT_CIRCLE_FEED;
+
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [circle, setCircle] =
     useState<CircleFeedData>(circleData);
@@ -84,11 +89,20 @@ export default function CircleFeedScreen() {
     circleData.posts || []
   );
 
+  const cacheKey = `${CACHE_KEY}_${circleId}`;
+
   useEffect(() => {
     let mounted = true;
 
+    const loadCached = async () => {
+      const cached = await storage.get<{ circle: CircleFeedData; posts: CirclePost[] }>(cacheKey);
+      if (!mounted || !cached) return;
+      setCircle(cached.circle);
+      setPosts(cached.posts);
+      setLoading(false);
+    };
+
     const loadData = async () => {
-      setLoading(true);
       setApiError(null);
       try {
         const data = await fetchCircleFeedData(circleId, 10, 1, 20);
@@ -177,6 +191,7 @@ export default function CircleFeedScreen() {
           };
           setCircle(mappedCircle);
           setPosts(mappedCircle.posts);
+          storage.set(cacheKey, { circle: mappedCircle, posts: mappedCircle.posts });
         }
       } catch (err) {
         console.error("Failed to load circle feed:", err);
@@ -188,6 +203,7 @@ export default function CircleFeedScreen() {
       }
     };
 
+    loadCached();
     loadData();
 
     return () => {
@@ -261,9 +277,6 @@ export default function CircleFeedScreen() {
   };
 
   const displayAnchor = getDisplayAnchor();
-  console.log("🔍 [CircleFeed] displayAnchor:", displayAnchor ? "exists" : "undefined/null");
-  console.log("🔍 [CircleFeed] circle:", circle ? "exists" : "null");
-  console.log("🔍 [CircleFeed] circle.activeAnchor:", circle?.activeAnchor ? "exists" : "null");
 
   const flatListRef =
     useRef<FlatList>(null);
@@ -280,9 +293,7 @@ export default function CircleFeedScreen() {
     try {
       setJoining(true);
       const wasJoined = circle?.isJoined;
-      console.log("🔄 [CircleFeed] toggleJoin - wasJoined:", wasJoined);
       
-      // Optimistic update - only if not already joined (don't toggle if already joined)
       if (!wasJoined) {
         setCircle((prev: any) => prev ? {
           ...prev,
@@ -292,26 +303,18 @@ export default function CircleFeedScreen() {
       }
 
       if (wasJoined) {
-        console.log("📤 [CircleFeed] Calling leaveCircleMutation...");
         const result = await leaveCircleMutation(circleId);
-        console.log("✅ [CircleFeed] leaveCircle result:", result);
         
         if (result?.error) {
-          console.log("❌ [CircleFeed] Leave failed:", result.error);
-          // Revert on error
           setCircle((prev: any) => prev ? {
             ...prev,
             isJoined: true,
           } : null);
         }
       } else {
-        console.log("📤 [CircleFeed] Calling joinCircleMutation...");
         const result = await joinCircleMutation(circleId);
-        console.log("✅ [CircleFeed] joinCircle result:", result);
         
         if (result?.error) {
-          console.log("❌ [CircleFeed] Join failed:", result.error);
-          // Revert on error
           setCircle((prev: any) => prev ? {
             ...prev,
             isJoined: false,
@@ -320,11 +323,10 @@ export default function CircleFeedScreen() {
         }
       }
     } catch (err: any) {
-      console.error("❌ [CircleFeed] Failed to toggle join:", err);
-      // Revert on error
+      console.error("Failed to toggle join:", err);
       setCircle((prev: any) => prev ? {
         ...prev,
-        isJoined: circle?.isJoined, // revert to original
+        isJoined: circle?.isJoined,
       } : null);
     } finally {
       setJoining(false);
@@ -340,33 +342,24 @@ export default function CircleFeedScreen() {
 
     setShowChevron(scrollY > 200);
 
-    /* COMPACT HEADER: show when scrolled past header height */
-    const headerHeight = 390; // approx height of full header section
+    const headerHeight = 390;
     if (scrollY >= headerHeight && !hasScrolledPastHeader) {
       setHasScrolledPastHeader(true);
     }
 
-    /* FADE OUT compact header when near top */
-    if (hasScrolledPastHeader && scrollY < 100) {
-      const opacity = Math.max(0, scrollY / 100);
-    }
-
-    /* HIDE compact header only when fully at top */
     if (scrollY <= 10 && hasScrolledPastHeader) {
       setHasScrolledPastHeader(false);
     }
 
-    /* STICKY ANCHOR: show fixed anchor when scrolled past anchor section */
     if (anchorStickyThreshold.current > 0) {
       if (scrollY >= anchorStickyThreshold.current && !showFixedAnchor) {
         setShowFixedAnchor(true);
-        setAnchorCardVisible(false); // Reset anchor card visibility when sticky appears
+        setAnchorCardVisible(false);
       } else if (scrollY < anchorStickyThreshold.current && showFixedAnchor) {
         setShowFixedAnchor(false);
       }
     }
 
-    /* HIDE ANCHOR */
     if (scrollY > HIDE_ANCHOR_THRESHOLD && showAnchorCard) {
       setShowAnchorCard(false);
     } else if (scrollY <= HIDE_ANCHOR_THRESHOLD && !showAnchorCard) {
@@ -394,7 +387,7 @@ export default function CircleFeedScreen() {
   }: {
     item: CirclePost;
   }) => (
-    <YStack >
+    <YStack>
       <CircleFeedItem post={item} circleId={circleId} />
 
       <YStack
@@ -444,7 +437,16 @@ export default function CircleFeedScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text fontFamily="$body" fontSize={14} color={colors.gray}>Loading...</Text>
+          {apiError ? (
+            <Text fontFamily="$body" fontSize={14} color={colors.gray}>{apiError}</Text>
+          ) : (
+            <>
+              <ActivityIndicator color={colors.primary} size="large" />
+              <Text fontFamily="$body" fontSize={14} color={colors.gray} marginTop={12}>
+                Loading...
+              </Text>
+            </>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -480,9 +482,9 @@ export default function CircleFeedScreen() {
       {showFixedAnchor && displayAnchor && (
         <View style={styles.fixedAnchor}>
           <YStack paddingHorizontal={16}>
-            <XStack justifyContent="space-between" alignItems="center" backgroundColor={anchorCardVisible?"#fff" : "#E4C0F180"} padding={10} borderRadius={8}>
-             <Pressable onPress={()=>setAnchorCardVisible(!anchorCardVisible)}>
-              <XStack alignItems="flex-start" gap={8} >
+            <XStack justifyContent="space-between" alignItems="center" backgroundColor={anchorCardVisible ? "#fff" : "#E4C0F180"} padding={10} borderRadius={8}>
+             <Pressable onPress={() => setAnchorCardVisible(!anchorCardVisible)}>
+              <XStack alignItems="flex-start" gap={8}>
                 <Ionicons name="sparkles-outline" size={16} color={colors.black} />
                 <YStack>
                   <Text
@@ -543,9 +545,8 @@ export default function CircleFeedScreen() {
               </View>
             )}
             
-            {anchorCardVisible && <AnchorCard anchor={displayAnchor} />
-}
-            {/* FILTER ROW - sticks with anchor */}
+            {anchorCardVisible && <AnchorCard anchor={displayAnchor} circleId={circleId} />}
+
             <CircleFeedFilterRow
               filterSort={filterSort}
               filterView={filterView}
@@ -588,10 +589,8 @@ export default function CircleFeedScreen() {
               <CircleFeedDescription circle={circle} />
             </YStack>
 
-            {/* ANCHOR SECTION - scrolls with content, hides when fixed version shows */}
             {displayAnchor && !showFixedAnchor && (
               <YStack onLayout={(e) => {
-                // Capture the Y position relative to scroll content
                 anchorStickyThreshold.current = e.nativeEvent.layout.y;
                 setAnchorSectionHeight(e.nativeEvent.layout.height);
               }}>
@@ -655,9 +654,8 @@ export default function CircleFeedScreen() {
                     ))}
                   </View>
                 )}
-                <AnchorCard anchor={displayAnchor} />
+                <AnchorCard anchor={displayAnchor} circleId={circleId} />
 
-                {/* FILTER ROW */}
                 <CircleFeedFilterRow
                   filterSort={filterSort}
                   filterView={filterView}
@@ -708,7 +706,7 @@ export default function CircleFeedScreen() {
             shadowColor="#000"
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={0.2}
-            shadowRadius={4} 
+            shadowRadius={4}
           >
             <Ionicons name="add" size={28} color="#FFF" />
           </Button>
@@ -730,14 +728,13 @@ const styles = StyleSheet.create({
 
   fixedAnchor: {
     position: "absolute",
-    top: 100, // banner height
+    top: 100,
     left: 0,
     right: 0,
     zIndex: 40,
-    paddingTop:10,
-    backgroundColor: colors.white, // opaque white background
+    paddingTop: 10,
+    backgroundColor: colors.white,
   },
-
 
   fabContainer: {
     position: "absolute",
@@ -778,5 +775,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+
+  errorBanner: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+    zIndex: 200,
   },
 });

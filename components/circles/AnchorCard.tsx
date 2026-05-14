@@ -9,9 +9,10 @@ import { Ionicons } from "@expo/vector-icons";
 interface AnchorCardProps {
   anchor: ActiveAnchor;
   disabled?: boolean;
+  circleId?: string;
 }
 
-export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps) {
+export default function AnchorCard({ anchor, disabled = false, circleId }: AnchorCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -23,6 +24,7 @@ export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps
     const params: Record<string, string> = {
       id: anchor.id || "",
       likedCount: anchor.anchorLikedCount?.toString() || "0",
+      ...(circleId ? { circleId } : {}),
     };
 
     switch (anchor.type) {
@@ -55,7 +57,7 @@ export default function AnchorCard({ anchor, disabled = false }: AnchorCardProps
     }
     
     setTimeout(() => setLoading(false), 500);
-  }, [disabled, loading, anchor, router]);
+  }, [disabled, loading, anchor, router, circleId]);
 
   const thumbnail = anchor.anchorThumbnail || anchor.anchorImage || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac"
   const gradientColors = anchor.backgroundColors || ["#A8D5A2", "#EDEDED"];
