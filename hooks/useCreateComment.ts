@@ -92,8 +92,7 @@ export function useCreateComment() {
     },
 
     onSuccess: (response: any, { postId }, context) => {
-      const realComment = response?.comment;
-      if (!realComment || !context?.tempId) return;
+      if (!response?.id || !context?.tempId) return;
 
       queryClient.setQueryData(["postComments", postId], (old: any) => {
         if (!old) return old;
@@ -102,11 +101,14 @@ export function useCreateComment() {
           pages: old.pages.map((page: any) => ({
             ...page,
             comments: page.comments.map((c: any) =>
-              c.id === context.tempId ? { ...c, ...realComment, id: realComment.id } : c
+              c.id === context.tempId ? { ...c, ...response, id: response.id } : c
             ),
           })),
         };
       });
+    },
+    onSettled: (_data, _err, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
     },
   });
 }

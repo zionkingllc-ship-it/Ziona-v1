@@ -61,6 +61,10 @@ type CirclePost = {
   likeCount?: number;
   anchorLikedCount?: number;
   prayedCount?: number;
+  viewerState?: {
+    liked: boolean;
+    prayed: boolean;
+  };
   user: {
     name: string;
     avatar: string;
@@ -81,6 +85,7 @@ export default function CircleFeedScreen() {
 
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [navigating, setNavigating] = useState(false);
 
   const [circle, setCircle] =
     useState<CircleFeedData>(circleData);
@@ -116,7 +121,7 @@ export default function CircleFeedScreen() {
             description: data.description || circleData.description,
             memberCount: data.memberCount ?? circleData.memberCount,
             isJoined: data.isJoined ?? circleData.isJoined,
-            activeAnchor: data.activeAnchor
+                activeAnchor: data.activeAnchor
               ? {
                   id: data.activeAnchor.id,
                   type: data.activeAnchor.anchorType as "text" | "image" | "video",
@@ -137,6 +142,7 @@ export default function CircleFeedScreen() {
                   prayedCount: data.activeAnchor.prayedCount || undefined,
                   createdAt: data.activeAnchor.createdAt,
                   expiresAt: data.activeAnchor.expiresAt || undefined,
+                  viewerState: data.activeAnchor.viewerState || undefined,
                 }
               : circleData.activeAnchor,
             pastAnchors: data.pastAnchors
@@ -174,6 +180,7 @@ export default function CircleFeedScreen() {
                   likeCount: p.likeCount,
                   anchorLikedCount: p.anchorLikedCount,
                   prayedCount: p.prayedCount,
+                  viewerState: p.viewerState || undefined,
                   user: {
                     name: p.user.name || "",
                     avatar: p.user.avatar || "",
@@ -394,6 +401,7 @@ export default function CircleFeedScreen() {
         height={1}
         backgroundColor={colors.border}
         width={"90%"}
+        alignSelf="center"
       />
     </YStack>
   );
@@ -579,6 +587,7 @@ export default function CircleFeedScreen() {
               <CircleFeedProfileSection
                 circle={circle}
                 onToggleJoin={toggleJoin}
+                joining={joining}
               />
 
               <CircleFeedNameRow
@@ -695,20 +704,27 @@ export default function CircleFeedScreen() {
           <Button
             circular
             size="$6"
-            backgroundColor={colors.primary}
+            backgroundColor={navigating ? colors.inActiveButton : colors.primary}
             onPress={() => {
+              if (navigating) return;
+              setNavigating(true);
               router.push({
                 pathname: "/CircleExtension/CircleCommentComposer",
                 params: { circleId: circleId, fromScreen: "circleFeed" },
               });
             }}
+            disabled={navigating}
             elevation={4}
             shadowColor="#000"
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={0.2}
             shadowRadius={4}
           >
-            <Ionicons name="add" size={28} color="#FFF" />
+            {navigating ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Ionicons name="add" size={28} color="#FFF" />
+            )}
           </Button>
         </View>
       )}

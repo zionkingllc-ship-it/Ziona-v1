@@ -96,6 +96,7 @@ export async function getPostComments(
 
   const result = data?.postComments;
   if (!result) {
+    console.warn("⚠️ [getPostComments] No data returned for postId:", postId, "response:", JSON.stringify(data));
     throw new Error("Failed to fetch comments");
   }
 

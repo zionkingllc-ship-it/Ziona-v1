@@ -145,6 +145,10 @@ export const GET_CIRCLE_FEED = `
           avatar
           avatarUrl
         }
+        viewerState {
+          liked
+          prayed
+        }
       }
     }
   }
@@ -197,6 +201,10 @@ export const GET_CIRCLE_FEED_DATA = `
           mediaUrl
           title
         }
+        viewerState {
+          liked
+          prayed
+        }
       }
       pastAnchors {
         id
@@ -229,6 +237,10 @@ export const GET_CIRCLE_FEED_DATA = `
           name
           avatar
           avatarUrl
+        }
+        viewerState {
+          liked
+          prayed
         }
       }
       rules {
@@ -282,6 +294,10 @@ export const GET_ACTIVE_ANCHOR = `
         content
         mediaUrl
         title
+      }
+      viewerState {
+        liked
+        prayed
       }
     }
   }
@@ -341,6 +357,83 @@ export const GET_ANCHOR_RESPONSES = `
       reactionCount
       replyCount
       viewerReactionType
+    }
+  }
+`;
+
+export const GET_ANCHOR = `
+  query GetAnchor($id: String!) {
+    anchor(id: $id) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      likedImage
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_POST = `
+  query GetCirclePost($id: String!) {
+    circlePost(id: $id) {
+      id
+      text
+      image
+      createdAt
+      likes
+      likesCount
+      likeCount
+      likedImage
+      comments
+      commentsCount
+      prayedCount
+      savedCount
+      sharedCount
+      user {
+        id
+        name
+        avatar
+        avatarUrl
+      }
+      viewerState {
+        liked
+        prayed
+      }
     }
   }
 `;
@@ -417,4 +510,14 @@ export async function fetchAnchorHistory() {
 export async function fetchAnchorResponses(anchorId: string) {
   const res = await graphqlRequest(GET_ANCHOR_RESPONSES, { anchorId });
   return res?.anchorResponses ?? [];
+}
+
+export async function fetchAnchor(id: string) {
+  const res = await graphqlRequest(GET_ANCHOR, { id });
+  return res?.anchor ?? null;
+}
+
+export async function fetchCirclePost(id: string) {
+  const res = await graphqlRequest(GET_CIRCLE_POST, { id });
+  return res?.circlePost ?? null;
 }

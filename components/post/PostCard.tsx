@@ -126,7 +126,7 @@ function PostCardComponent({
   };
 
   const handleFollow = () => {
-    if (!post.author?.id) return;
+    if (!post.author?.id || toggleFollowMutation.isPending) return;
     requireAuth(() => {
       if (post.author) {
         toggleFollowMutation.mutate({

@@ -399,7 +399,7 @@ function ReplyItem({
         </XStack>
         <Text fontSize={12} fontFamily="$body" marginTop={2}>{reply.text}</Text>
       </YStack>
-      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
+      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)} disabled={toggleLikeMutation.isPending}>
         {reply.viewerState?.liked ? (
           <Image source={likeIconActive} width={16} height={16} />
         ) : (

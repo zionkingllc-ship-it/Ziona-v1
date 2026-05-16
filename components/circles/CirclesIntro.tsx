@@ -116,12 +116,14 @@ export default function CirclesIntro({
             </YStack>
 
             <View style={{ flex: 1 }}>
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-                }}
-                style={[styles.backgroundImage, { top: hp(5) }]}
-              />
+              <View style={[styles.backgroundImage, { top: hp(5), backgroundColor: "#E8D5F0" }]}>
+                <Image
+                  source={{
+                    uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
+                  }}
+                  style={{ width: "100%", height: "100%" }}
+                />
+              </View>
 
               <View style={styles.floatingContainer}>
                 <Animated.View
@@ -138,12 +140,14 @@ export default function CirclesIntro({
                     style1,
                   ]}
                 >
-                  <Image
-                    source={{
-                      uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-                    }}
-                    style={{ width: "100%", height: "100%", borderRadius }}
-                  />
+                  <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#E8D5F0" }}>
+                    <Image
+                      source={{
+                        uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
+                      }}
+                      style={{ width: "100%", height: "100%", borderRadius }}
+                    />
+                  </View>
                 </Animated.View>
 
                 <Animated.View
@@ -159,12 +163,14 @@ export default function CirclesIntro({
                     style2,
                   ]}
                 >
-                  <Image
-                    source={{
-                      uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
-                    }}
-                    style={{ width: "100%", height: "100%", borderRadius }}
-                  />
+                  <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#D5E8F0" }}>
+                    <Image
+                      source={{
+                        uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
+                      }}
+                      style={{ width: "100%", height: "100%", borderRadius }}
+                    />
+                  </View>
                 </Animated.View>
 
                 <Animated.View
@@ -180,12 +186,14 @@ export default function CirclesIntro({
                     style3,
                   ]}
                 >
-                  <Image
-                    source={{
-                      uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-                    }}
-                    style={{ width: "100%", height: "100%", borderRadius }}
-                  />
+                  <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#F0E8D5" }}>
+                    <Image
+                      source={{
+                        uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
+                      }}
+                      style={{ width: "100%", height: "100%", borderRadius }}
+                    />
+                  </View>
                 </Animated.View>
               </View>
             </View>

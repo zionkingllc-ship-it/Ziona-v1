@@ -322,6 +322,13 @@ export type AnchorType = {
   timeRemaining: Scalars['String']['output'];
   title: Scalars['String']['output'];
   type: Scalars['String']['output'];
+  viewerState: Maybe<AnchorViewerState>;
+};
+
+export type AnchorViewerState = {
+  __typename: 'AnchorViewerState';
+  liked: Scalars['Boolean']['output'];
+  prayed: Scalars['Boolean']['output'];
 };
 
 export type AppLinksType = {
@@ -510,6 +517,13 @@ export type CirclePostType = {
   sharedCount: Scalars['Int']['output'];
   text: Maybe<Scalars['String']['output']>;
   user: CirclePostAuthorType;
+  viewerState: Maybe<CirclePostViewerState>;
+};
+
+export type CirclePostViewerState = {
+  __typename: 'CirclePostViewerState';
+  liked: Scalars['Boolean']['output'];
+  prayed: Scalars['Boolean']['output'];
 };
 
 export type CircleReportPayload = {
@@ -914,6 +928,14 @@ export enum LegalDocumentTypeEnum {
   TermsOfService = 'TERMS_OF_SERVICE'
 }
 
+export type LikeCirclePostPayload = {
+  __typename: 'LikeCirclePostPayload';
+  error: Maybe<ErrorType>;
+  liked: Maybe<Scalars['Boolean']['output']>;
+  likesCount: Maybe<Scalars['Int']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type LikePayload = {
   __typename: 'LikePayload';
   error: Maybe<ErrorType>;
@@ -1038,6 +1060,8 @@ export type Mutation = {
   joinWaitlist: WaitlistPayload;
   leaveCircle: JoinCirclePayload;
   likeAnchor: AnchorEngagementPayload;
+  /** Toggle a like on a CirclePost. Returns the new like state and count. */
+  likeCirclePost: LikeCirclePostPayload;
   /** Like a comment */
   likeComment: LikePayload;
   /** Optimistically toggle a 'like' on a specific post. */
@@ -1389,6 +1413,11 @@ export type MutationLeaveCircleArgs = {
 
 export type MutationLikeAnchorArgs = {
   anchorId: Scalars['String']['input'];
+};
+
+
+export type MutationLikeCirclePostArgs = {
+  postId: Scalars['String']['input'];
 };
 
 
@@ -1831,6 +1860,8 @@ export type Query = {
   /** List users with search and filter. */
   adminUsers: AdminUsersPaginatedType;
   allCircles: Array<CircleType>;
+  /** Fetch a single Anchor by ID. Use this for deep-link/push-notification screens. */
+  anchor: Maybe<AnchorType>;
   anchorByDate: Maybe<AnchorType>;
   anchorHistory: Array<AnchorType>;
   anchorResponses: Array<AnchorResponseType>;
@@ -1845,6 +1876,8 @@ export type Query = {
   circle: Maybe<CircleType>;
   circleFeed: CircleFeedResponse;
   circleFeedData: Maybe<CircleFeedDataType>;
+  /** Fetch a single CirclePost by ID. Use this for post detail screens. */
+  circlePost: Maybe<CirclePostType>;
   circlePosts: CircleFeedResponse;
   /** Get paginated replies for a specific comment (beyond the inline 3-reply preview). */
   commentReplies: CommentsResponse;
@@ -1984,6 +2017,11 @@ export type QueryAllCirclesArgs = {
 };
 
 
+export type QueryAnchorArgs = {
+  id: Scalars['String']['input'];
+};
+
+
 export type QueryAnchorByDateArgs = {
   circleId: Scalars['String']['input'];
   date: Scalars['String']['input'];
@@ -2034,6 +2072,11 @@ export type QueryCircleFeedDataArgs = {
   historyLimit?: Scalars['Int']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
+};
+
+
+export type QueryCirclePostArgs = {
+  id: Scalars['String']['input'];
 };
 
 

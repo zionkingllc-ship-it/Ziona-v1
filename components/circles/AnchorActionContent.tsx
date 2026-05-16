@@ -1,5 +1,6 @@
 import themeColors from "@/constants/colors";
 import { getGradientColors } from "@/lib/anchorUtils";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -14,6 +15,9 @@ type AnchorActionContentProps = {
   onDone?: () => void;
   fullScreen?: boolean;
   onActionSelected?: (action: string, anchorText?: string) => void;
+  anchorType?: string;
+  anchorImage?: string | null;
+  anchorColors?: string;
 };
 
 export default function AnchorActionContent({
@@ -22,6 +26,9 @@ export default function AnchorActionContent({
   onDone,
   fullScreen = false,
   onActionSelected,
+  anchorType,
+  anchorImage,
+  anchorColors,
 }: AnchorActionContentProps) {
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isDone, setIsDone] = useState(false);
@@ -73,6 +80,30 @@ export default function AnchorActionContent({
         <Text style={styles.actionSubtitle}>
           Share how it met you — prayer,{"\n"} encouragement, or reflection.
         </Text>
+
+        {anchorType && (anchorType !== "text" || text) && (
+          anchorType === "image" && anchorImage ? (
+            <View style={{ width: "100%", height: 120, borderRadius: 12, overflow: "hidden" }}>
+              <Image source={{ uri: anchorImage }} width="100%" height={120} borderRadius={12} />
+            </View>
+          ) : anchorType === "video" ? (
+            <View style={{ width: "100%", height: 120, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
+              <Ionicons name="videocam" size={28} color="#FFF" />
+              <Text style={{ color: "#FFF", fontSize: 12 }}>Reply to Anchor Video</Text>
+            </View>
+          ) : text ? (
+            <View style={{ width: "100%", height: 120, borderRadius: 12, overflow: "hidden" }}>
+              <LinearGradient
+                colors={getGradientColors(anchorColors || colors || "#6C2BD9,#9B59B6")}
+                style={{ flex: 1, padding: 16, justifyContent: "center" }}
+              >
+                <Text style={{ color: "#FFF", fontSize: 14 }} numberOfLines={4}>
+                  {text}
+                </Text>
+              </LinearGradient>
+            </View>
+          ) : null
+        )}
 
         <View style={styles.actionCardsRow}>
           <TouchableOpacity

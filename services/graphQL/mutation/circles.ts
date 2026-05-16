@@ -154,6 +154,44 @@ export async function prayForCirclePost(postId: string) {
   return res?.prayForCirclePost;
 }
 
+export const LIKE_CIRCLE_POST = `
+  mutation LikeCirclePost($postId: String!) {
+    likeCirclePost(postId: $postId) {
+      success
+      liked
+      likesCount
+      error {
+        code
+        message
+      }
+    }
+  }
+`;
+
+export async function likeCirclePost(postId: string) {
+  const res = await graphqlRequest(LIKE_CIRCLE_POST, { postId });
+  return res?.likeCirclePost;
+}
+
+export const LIKE_ANCHOR = `
+  mutation LikeAnchor($anchorId: String!) {
+    likeAnchor(anchorId: $anchorId) {
+      success
+      liked
+      anchorLikedCount
+      error {
+        code
+        message
+      }
+    }
+  }
+`;
+
+export async function likeAnchor(anchorId: string) {
+  const res = await graphqlRequest(LIKE_ANCHOR, { anchorId });
+  return res?.likeAnchor;
+}
+
 export async function respondToAnchor(
   anchorId: string,
   content: string,

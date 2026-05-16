@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +19,8 @@ import { useCreateComment } from "@/hooks/useCreateComment";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
+import { useAuthStore } from "@/store/useAuthStore";
+import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
 
 const formatDate = (dateString?: string): string => {
@@ -40,6 +43,10 @@ export default function CirclePostDetailScreen() {
     postLiked,
     postComments,
     postCreatedAt,
+    anchorType,
+    anchorTitle,
+    anchorContent,
+    anchorMediaUrl,
   } = useLocalSearchParams<{
     postId?: string;
     circleId?: string;
@@ -51,10 +58,17 @@ export default function CirclePostDetailScreen() {
     postLiked?: string;
     postComments?: string;
     postCreatedAt?: string;
+    anchorType?: string;
+    anchorTitle?: string;
+    anchorContent?: string;
+    anchorMediaUrl?: string;
   }>();
 
   const [commentText, setCommentText] = useState("");
+  const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const currentUser = useAuthStore((state) => state.user);
 
   const { isLiked, likeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     postId || "",
@@ -76,7 +90,8 @@ export default function CirclePostDetailScreen() {
   const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
 
   const handleCreateComment = async () => {
-    if (!commentText.trim()) return;
+    if (!commentText.trim() || posting) return;
+    setPosting(true);
 
     createCommentMutation.mutate(
       {
@@ -84,6 +99,9 @@ export default function CirclePostDetailScreen() {
         text: commentText,
       },
       {
+        onSettled: () => {
+          setPosting(false);
+        },
         onSuccess: () => {
           setCommentText("");
         },
@@ -92,6 +110,7 @@ export default function CirclePostDetailScreen() {
   };
 
   const handleLikeComment = (commentId: string, currentLiked: boolean) => {
+    if (toggleCommentLikeMutation.isPending) return;
     toggleCommentLikeMutation.mutate({ commentId, currentLiked });
   };
 
@@ -158,6 +177,39 @@ export default function CirclePostDetailScreen() {
                 borderRadius={12}
                 resizeMode="cover"
               />
+            )}
+
+            {anchorType && (
+              <View style={styles.anchorRefCard}>
+                <Text fontSize={11} color="#999" marginBottom={4}>
+                  From {anchorTitle || "Anchor"}
+                </Text>
+                {anchorType === "image" && anchorMediaUrl ? (
+                  <Image
+                    source={{ uri: anchorMediaUrl }}
+                    width="100%"
+                    height={140}
+                    borderRadius={8}
+                    resizeMode="cover"
+                  />
+                ) : anchorType === "video" && anchorMediaUrl ? (
+                  <View style={styles.anchorMediaPlaceholder}>
+                    <Ionicons name="play-circle" size={32} color="#742092" />
+                    <Text fontSize={12} color="#666">Video</Text>
+                  </View>
+                ) : null}
+                {anchorContent && (
+                  <Text
+                    fontSize={13}
+                    color="#555"
+                    lineHeight={18}
+                    numberOfLines={3}
+                    style={{ marginTop: anchorType === "text" ? 0 : 8 }}
+                  >
+                    {anchorContent}
+                  </Text>
+                )}
+              </View>
             )}
 
             <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
@@ -233,6 +285,7 @@ export default function CirclePostDetailScreen() {
                   <XStack gap="$3" paddingLeft="$4" alignItems="center">
                     <TouchableOpacity
                       onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
+                      disabled={toggleCommentLikeMutation.isPending}
                     >
                       <XStack alignItems="center" gap="$1">
                         <Ionicons
@@ -272,41 +325,75 @@ export default function CirclePostDetailScreen() {
 
         <View style={styles.inputContainer}>
           <XStack
-            paddingHorizontal="$3"
+            paddingHorizontal="$2"
             paddingVertical="$2"
             gap="$2"
             alignItems="flex-end"
             borderTopWidth={1}
             borderTopColor="#EEE"
           >
-            <YStack
-              flex={1}
-              borderRadius={20}
-              borderWidth={1}
-              borderColor="#DDD"
-              paddingHorizontal="$3"
-              paddingVertical="$1"
-              backgroundColor="#F9F9F9"
+            <Pressable
+              onPress={async () => {
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ["images"],
+                  allowsEditing: true,
+                  quality: 0.8,
+                });
+                if (!result.canceled && result.assets?.[0]?.uri) {
+                  setCommentImage(result.assets[0].uri);
+                }
+              }}
+              style={{ paddingVertical: 8 }}
             >
-              <TextInput
-                placeholder="Add a comment..."
-                placeholderTextColor="#999"
-                value={commentText}
-                onChangeText={setCommentText}
-                style={styles.textInput}
-                numberOfLines={1}
-              />
-            </YStack>
+              {currentUser?.avatarUrl ? (
+                <AvatarWithInitials
+                  uri={currentUser?.avatarUrl}
+                  name={currentUser?.username}
+                  size={28}
+                  failedUris={failedAvatarUrls}
+                  setFailedUris={setFailedAvatarUrls}
+                />
+              ) : (
+                <AvatarWithInitials
+                  uri={null}
+                  name={currentUser?.username || "You"}
+                  size={28}
+                  failedUris={failedAvatarUrls}
+                  setFailedUris={setFailedAvatarUrls}
+                />
+              )}
+            </Pressable>
+
+            <TextInput
+              placeholder="Add a comment..."
+              placeholderTextColor="#999"
+              value={commentText}
+              onChangeText={setCommentText}
+              style={styles.textInput}
+              multiline
+            />
 
             <TouchableOpacity
               onPress={handleCreateComment}
-              disabled={!commentText.trim() || createCommentMutation.isPending}
+              disabled={!commentText.trim() || posting}
+              style={{ paddingVertical: 8 }}
             >
-              <Ionicons
-                name="send"
-                size={20}
-                color={commentText.trim() ? themeColors.primary : "#DDD"}
-              />
+              <View
+                style={{
+                  backgroundColor: commentText.trim() && !posting ? themeColors.primary : "#CCC",
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                }}
+              >
+                {posting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text color="#FFF" fontSize={13}>
+                    Post
+                  </Text>
+                )}
+              </View>
             </TouchableOpacity>
           </XStack>
         </View>
@@ -327,13 +414,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   textInput: {
+    flex: 1,
     fontSize: 14,
     color: "#333",
     paddingVertical: 8,
+    minHeight: 36,
+    maxHeight: 120,
   },
   loadMoreButton: {
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  anchorRefCard: {
+    backgroundColor: "#F5F3F7",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E4C0F1",
+    maxHeight: 200,
+    overflow: "hidden",
+  },
+
+  anchorMediaPlaceholder: {
+    height: 100,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F0ECF3",
+    borderRadius: 8,
+    gap: 4,
   },
 });

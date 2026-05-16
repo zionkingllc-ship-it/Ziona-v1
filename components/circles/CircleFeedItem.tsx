@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
+import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
@@ -56,12 +57,13 @@ type Props = {
   circleId?: string;
 };
 
-export default function CircleFeedItem({ post, circleId }: Props) {
+const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
   const router = useRouter();
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
 
   const reportMutation = useReportContent();
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
@@ -73,6 +75,8 @@ export default function CircleFeedItem({ post, circleId }: Props) {
     !!post.likedImage,
     post.likeCount ?? post.likes,
   );
+
+  useState(() => { getAnchorRef(post.id).then(setAnchorRef); });
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
@@ -93,6 +97,12 @@ export default function CircleFeedItem({ post, circleId }: Props) {
         postLiked: isLiked ? "1" : "0",
         postComments: String(post.comments),
         postCreatedAt: post.createdAt,
+        ...(anchorRef ? {
+          anchorType: anchorRef.type,
+          anchorTitle: anchorRef.title,
+          anchorContent: anchorRef.content || "",
+          anchorMediaUrl: anchorRef.mediaUrl || "",
+        } : {}),
       },
     });
   };
@@ -208,4 +218,6 @@ export default function CircleFeedItem({ post, circleId }: Props) {
       </YStack>
     </Pressable>
   );
-}
+});
+
+export default CircleFeedItem;

@@ -75,10 +75,7 @@ export default function CircleFeedBanner({
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between',  alignItems:"center"}}>
        
-            <BackButton/>
-            {/* <TouchableOpacity onPress={onBack} style={{ padding: 4, backgroundColor:"#000", opacity:0.1}}>
-              <Ionicons name="chevron-back" size={20} color={colors.white} />
-            </TouchableOpacity> */}
+            <BackButton/> 
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.white }}>
               {circleName}
             </Text>
@@ -88,7 +85,7 @@ export default function CircleFeedBanner({
             onPress={onToggleJoin}
             style={{
               borderRadius: 100,
-              backgroundColor: isJoined ? colors.border : colors.primary,
+              backgroundColor: isJoined ? "#EEEBEF " : colors.primary,
               paddingHorizontal: 16,
               paddingVertical: 8,
             }}

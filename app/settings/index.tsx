@@ -70,7 +70,7 @@ export default function SettingsScreen() {
       </Text>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* SEARCH */}
-        <View
+        {/* <View
           backgroundColor={colors.lightGrayBg}
           borderRadius={10}
           paddingHorizontal={12}
@@ -81,7 +81,7 @@ export default function SettingsScreen() {
             placeholder="Search"
             placeholderTextColor={colors.placeholderText}
           />
-        </View>
+        </View> */}
 
         {/* PROFILE */}
         <Pressable onPress={() => router.push("/settings/AccountSetup")}>
