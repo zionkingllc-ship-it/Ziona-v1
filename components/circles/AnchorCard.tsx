@@ -150,7 +150,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId }: Ancho
             source={hasBgImage||anchor.type === "video"||anchor.type === "image" ? require("@/assets/images/AnchorPrayingHandLight.png") : require("@/assets/images/AnchorPrayingHandDark.png")}
             style={{ width: 18, height: 18 }}
           />
-          <Text style={hasBgImage||anchor.type === "video"||anchor.type === "image" ? styles.count : styles.countDark}>{anchor.anchorLikedCount}</Text>
+          <Text style={hasBgImage||anchor.type === "video"||anchor.type === "image" ? styles.count : styles.countDark}>{anchor.anchorLikedCount ?? 0}</Text>
         </YStack>
       </View>
     </TouchableOpacity>

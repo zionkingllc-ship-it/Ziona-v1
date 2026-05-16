@@ -28,6 +28,7 @@ const CircleFeedProfileSection = ({ circle, onToggleJoin, joining }: CircleFeedP
       textColor={circle.isJoined ? colors.primary : colors.white}
       borderColor={colors.primary}
       borderRadius={99}
+      paddingVertical={4}
       style={{ width: 90 }}
     />
   </XStack>

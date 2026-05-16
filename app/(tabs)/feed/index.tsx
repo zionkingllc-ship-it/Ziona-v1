@@ -50,6 +50,14 @@ export default function Feed() {
   const followingQuery = useFollowingFeed();
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
   const isFocused = useIsFocused();
+  const [refreshingFeed, setRefreshingFeed] = useState(false);
+
+  const onRefreshFeed = useCallback(async () => {
+    setRefreshingFeed(true);
+    const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
+    await queryClient.invalidateQueries({ queryKey: [key] });
+    setRefreshingFeed(false);
+  }, [feedType, queryClient]);
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
@@ -227,6 +235,8 @@ export default function Feed() {
             fetchNextPage={query.fetchNextPage}
             hasNextPage={query.hasNextPage}
             isFetchingNextPage={query.isFetchingNextPage}
+            refreshing={refreshingFeed}
+            onRefresh={onRefreshFeed}
           />
         )}
       </View>

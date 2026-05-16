@@ -117,6 +117,7 @@ export const GET_CIRCLE_DETAIL = `
 `;
 
 export const GET_CIRCLE_FEED = `
+  # Backend TODO: add $sortBy: String, $authorId: String params and pass them to circleFeed
   query GetCircleFeed($circleId: String!, $page: Int, $pageSize: Int) {
     circleFeed(circleId: $circleId, page: $page, pageSize: $pageSize) {
       pageInfo {
@@ -155,6 +156,7 @@ export const GET_CIRCLE_FEED = `
 `;
 
 export const GET_CIRCLE_FEED_DATA = `
+  # Backend TODO: add $sortBy: String, $authorId: String params and pass to circleFeedData
   query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int) {
     circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize) {
       name
@@ -466,11 +468,16 @@ export async function fetchCircleFeed(
   circleId: string,
   page = 1,
   pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
 ) {
   const res = await graphqlRequest(GET_CIRCLE_FEED, {
     circleId,
     page,
     pageSize,
+    // Backend TODO: uncomment when API supports sortBy/authorId
+    // sortBy: sortBy || undefined,
+    // authorId: authorId || undefined,
   });
   return (
     res?.circleFeed ?? {
@@ -484,13 +491,18 @@ export async function fetchCircleFeedData(
   circleId: string,
   historyLimit?: number,
   page = 1,
-  pageSize = 20
+  pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
 ) {
   const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
     circleId,
     historyLimit: historyLimit ?? 10,
     page,
     pageSize,
+    // Backend TODO: uncomment when API supports sortBy/authorId
+    // sortBy: sortBy || undefined,
+    // authorId: authorId || undefined,
   });
   return res?.circleFeedData ?? null;
 }

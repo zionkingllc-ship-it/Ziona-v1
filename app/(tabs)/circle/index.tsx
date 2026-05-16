@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 import { storage } from "@/utils/storage";
@@ -26,10 +26,17 @@ export default function CirclesSuggestion() {
   const [error, setError] = useState("");
   const [showIntro, setShowIntro] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadAllData();
     loadCachedCircles();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData();
+    setRefreshing(false);
   }, []);
 
   async function loadCachedCircles() {
@@ -68,12 +75,20 @@ export default function CirclesSuggestion() {
 
       // Fetch active anchors for each joined circle
       if (mappedMine.length > 0) {
+        console.log("📡 [Anchor] Fetching anchors for", mappedMine.length, "circles");
         const anchorResults = await Promise.allSettled(
           mappedMine.map((c: any) =>
             fetchCircleDetail(c.id).then((detail: any) => {
-              if (!detail?.activeAnchor) return null;
+              if (!detail?.activeAnchor) {
+                console.log("📡 [Anchor] No activeAnchor for circle:", c.title);
+                return null;
+              }
               const expires = detail.activeAnchor.expiresAt;
-              if (expires && new Date(expires).getTime() <= Date.now()) return null;
+              if (expires && new Date(expires).getTime() <= Date.now()) {
+                console.log("📡 [Anchor] Expired anchor for circle:", c.title);
+                return null;
+              }
+              console.log("📡 [Anchor] Found anchor for circle:", c.title, "type:", detail.activeAnchor.anchorType);
               return {
                 ...detail.activeAnchor,
                 circleId: c.id,
@@ -82,10 +97,16 @@ export default function CirclesSuggestion() {
             })
           )
         );
-        const valid = anchorResults
-          .filter((r) => r.status === "fulfilled" && r.value)
+        const fulfilled = anchorResults.filter((r) => r.status === "fulfilled");
+        const rejected = anchorResults.filter((r) => r.status === "rejected");
+        if (rejected.length > 0) console.warn("📡 [Anchor] Failed to fetch", rejected.length, "anchors");
+        const valid = fulfilled
+          .filter((r) => (r as PromiseFulfilledResult<any>).value)
           .map((r) => (r as PromiseFulfilledResult<any>).value);
+        console.log("📡 [Anchor] Valid anchors found:", valid.length, JSON.stringify(valid, null, 2));
         setActiveAnchors(valid);
+      } else {
+        console.log("📡 [Anchor] No joined circles, skipping anchor fetch");
       }
     } catch (err) {
       console.error("Failed to load circles", err);
@@ -165,8 +186,12 @@ export default function CirclesSuggestion() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: hp(10) }}>
-        <YStack paddingTop={hp(6)} paddingHorizontal={wp(5)}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: hp(10) }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+      >
+        <YStack paddingTop={hp(2)} paddingHorizontal={wp(5)}>
           {/* SEARCH */}
           {/* <XStack style={[styles.search, { backgroundColor: colors.borderBackground, borderColor: colors.border }]}>
             <TextInput placeholder="Search" />

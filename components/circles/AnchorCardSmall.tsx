@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { memo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useCountdown } from "@/hooks/useCountdown";
 
@@ -16,7 +16,6 @@ type AnchorCardSmallProps = {
     anchorText?: string;
     content?: string;
     backgroundColors?: [string, string];
-    backgroundImage?: string;
     bibleText?: string;
     bibleReference?: string;
     expiresAt?: string;
@@ -25,46 +24,17 @@ type AnchorCardSmallProps = {
   circleName?: string;
 };
 
-export default function AnchorCardSmall({ anchor, circleId, circleName }: AnchorCardSmallProps) {
+const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circleName }: AnchorCardSmallProps) {
   const router = useRouter();
   const anchorType = anchor.anchorType || anchor.type || "text";
+  const hasExpiry = !!anchor.expiresAt;
   const { formatted, isExpired } = useCountdown(anchor.expiresAt || "");
 
   const handlePress = () => {
-    const params: Record<string, string> = {
-      id: anchor.id || "",
-      circleId,
-    };
-
-    const colors = anchor.backgroundColors?.join(",") || "";
-
-    switch (anchorType) {
-      case "image":
-        router.push({
-          pathname: "/CircleExtension/anchorImageView",
-          params: { ...params, image: anchor.anchorImage || "", colors, expiresAt: anchor.expiresAt || "" },
-        });
-        break;
-      case "video":
-        router.push({
-          pathname: "/CircleExtension/anchorVideoView",
-          params: { ...params, video: anchor.anchorVideo || "", colors, expiresAt: anchor.expiresAt || "" },
-        });
-        break;
-      case "text":
-        router.push({
-          pathname: "/CircleExtension/anchorTextView",
-          params: {
-            ...params,
-            text: anchor.anchorText || anchor.content || "",
-            colors,
-            bibleReference: anchor.bibleReference || "",
-            bibleText: anchor.bibleText || "",
-            expiresAt: anchor.expiresAt || "",
-          },
-        });
-        break;
-    }
+    router.push({
+      pathname: "/(tabs)/circle/circleFeed",
+      params: { id: circleId },
+    });
   };
 
   const gradientColors = anchor.backgroundColors || ["#6C2BD9", "#9B59B6"];
@@ -95,20 +65,19 @@ export default function AnchorCardSmall({ anchor, circleId, circleName }: Anchor
         </LinearGradient>
       )}
 
-      <View style={styles.countdownBadge}>
-        <Ionicons name="time-outline" size={10} color="#FFF" />
-        <Text style={styles.countdownText}>{isExpired ? "Expired" : formatted}</Text>
-      </View>
-
-      <Text style={styles.circleName} numberOfLines={1}>
-        {circleName || "Circle"}
-      </Text>
+      {hasExpiry && (
+        <View style={styles.countdownBadge}>
+          <Ionicons name="time-outline" size={10} color="#FFF" />
+          <Text style={styles.countdownText}>{isExpired ? "Expired" : formatted}</Text>
+        </View>
+      )}
+ 
     </Pressable>
   );
-}
+});
 
 const CARD_WIDTH = 120;
-const CARD_HEIGHT = 150;
+const CARD_HEIGHT = 100;
 const IMAGE_HEIGHT = 100;
 
 const styles = StyleSheet.create({
@@ -179,3 +148,5 @@ const styles = StyleSheet.create({
     padding: 6,
   },
 });
+
+export default AnchorCardSmall;

@@ -23,6 +23,8 @@ type Props = {
   fetchNextPage?: () => void;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 };
 
 function PostViewerEngineComponent({
@@ -35,6 +37,8 @@ function PostViewerEngineComponent({
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
+  refreshing,
+  onRefresh,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
   const lastScrollTime = useRef(0);
@@ -212,6 +216,8 @@ function PostViewerEngineComponent({
         onScroll={onScroll}
         onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
       {isScrollingFast && (
         <YStack

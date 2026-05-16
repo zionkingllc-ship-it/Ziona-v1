@@ -21,7 +21,7 @@ export default function CircleFeedBanner({
   onToggleJoin,
   onBack,
 }: CircleFeedBannerProps) {
-  const bannerHeight = useRef(new Animated.Value(100)).current;
+  const bannerHeight = useRef(new Animated.Value(80)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const compactHeaderOpacity = useRef(new Animated.Value(0)).current;
 
@@ -85,7 +85,7 @@ export default function CircleFeedBanner({
             onPress={onToggleJoin}
             style={{
               borderRadius: 100,
-              backgroundColor: isJoined ? "#EEEBEF " : colors.primary,
+              backgroundColor: isJoined ? "#EEEBEF" : colors.primary,
               paddingHorizontal: 16,
               paddingVertical: 8,
             }}

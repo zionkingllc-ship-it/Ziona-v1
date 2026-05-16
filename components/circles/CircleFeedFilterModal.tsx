@@ -77,6 +77,13 @@ export default function CircleFeedFilterModal({
           <Text fontWeight="600">View</Text>
 
           <OptionRow
+            label="All"
+            icon="people-outline"
+            active={view === "All"}
+            onPress={() => setView("All")}
+          />
+
+          <OptionRow
             label="My post"
             icon="person-outline"
             active={view === "My post"}

@@ -85,14 +85,16 @@ export function useCreateComment() {
       return { previousComments, tempId };
     },
 
-    onError: (_err, { postId }, context) => {
-      if (context?.previousComments) {
-        queryClient.setQueryData(["postComments", postId], context.previousComments);
-      }
-    },
-
     onSuccess: (response: any, { postId }, context) => {
-      if (!response?.id || !context?.tempId) return;
+      if (!response?.id) {
+        console.warn("⚠️ [useCreateComment] onSuccess missing id in response:", response);
+        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+        return;
+      }
+      if (!context?.tempId) {
+        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+        return;
+      }
 
       queryClient.setQueryData(["postComments", postId], (old: any) => {
         if (!old) return old;
@@ -107,7 +109,10 @@ export function useCreateComment() {
         };
       });
     },
-    onSettled: (_data, _err, { postId }) => {
+    onError: (_err, { postId }, context) => {
+      if (context?.previousComments) {
+        queryClient.setQueryData(["postComments", postId], context.previousComments);
+      }
       queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
     },
   });

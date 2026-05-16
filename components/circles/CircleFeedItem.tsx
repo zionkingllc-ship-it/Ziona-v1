@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
+import { getGradientColors } from "@/lib/anchorUtils";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
@@ -111,8 +113,8 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
     <Pressable onPress={handlePostPress}>
       <YStack padding="$3" gap={4} backgroundColor="#FFF">
         {/* HEADER */}
-        <XStack justifyContent="space-between" alignItems="center">
-          <XStack alignItems="center" gap="$2">
+        <XStack justifyContent="space-between" alignItems="flex-start">
+          <XStack alignItems="flex-start" gap="$2">
             <AvatarWithInitials
               uri={post.user.avatar}
               name={post.user.name}
@@ -120,11 +122,11 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
               failedUris={failedAvatarUrls}
               setFailedUris={setFailedAvatarUrls}
             />
-            <XStack gap={6} alignItems="center">
-              <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
+            <XStack gap={6} alignItems="flex-start">
+              <Text fontFamily="$body" fontSize={13} fontWeight="600">
                 {post.user.name}
               </Text>
-              <Text fontSize={12} color="#888">
+              <Text fontFamily="$body" fontSize={12} color="#888">
                 {formatTimeAgo(post.createdAt)}
               </Text>
             </XStack>
@@ -137,7 +139,7 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
         <YStack paddingLeft={50} gap={6}>
           {/* TEXT */}
           {post.text && (
-            <Text fontSize={15} color="#333" lineHeight={20}>
+            <Text fontFamily="$body" fontSize={13} color="#333" lineHeight={20}>
               {post.text}
             </Text>
           )}
@@ -153,6 +155,32 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
             />
           )}
 
+          {/* ANCHOR QUOTE */}
+          {anchorRef && (
+            <View onStartShouldSetResponder={() => true} onResponderGrant={() => {
+              router.push({ pathname: "/(tabs)/circle/circleFeed", params: { id: circleId || "" } });
+            }}>
+              {anchorRef.type === "image" && anchorRef.mediaUrl ? (
+                <View style={{ height: 100, borderRadius: 10, overflow: "hidden", marginTop: 6, borderWidth: 1, borderColor: "#E4C0F1" }}>
+                  <Image source={{ uri: anchorRef.mediaUrl }} width="100%" height={100} borderRadius={10} resizeMode="cover" />
+                </View>
+              ) : anchorRef.type === "video" ? (
+                <View style={{ height: 100, borderRadius: 10, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6, borderWidth: 1, borderColor: "#E4C0F1" }}>
+                  <Ionicons name="videocam" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
+                </View>
+              ) : (
+                <View style={{ height: 100, borderRadius: 10, marginTop: 6, overflow: "hidden", borderWidth: 1, borderColor: "#E4C0F1" }}>
+                  <LinearGradient colors={getGradientColors("#6C2BD9,#9B59B6")} style={{ flex: 1, padding: 12, justifyContent: "center" }}>
+                    <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                      {anchorRef.content || anchorRef.title || ""}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">
             <Pressable onPress={handleLike} disabled={togglingLike}>
@@ -162,14 +190,14 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
                   size={18}
                   color={isLiked ? "#742092" : undefined}
                 />
-                <Text>{localLikeCount}</Text>
+                <Text fontFamily="$body">{localLikeCount}</Text>
               </XStack>
             </Pressable>
 
             <Pressable onPress={handlePostPress}>
               <XStack alignItems="center" gap="$1">
                 <Ionicons name="chatbubble-outline" size={18} />
-                <Text>{post.comments}</Text>
+                <Text fontFamily="$body">{post.comments}</Text>
               </XStack>
             </Pressable>
    

@@ -54,6 +54,10 @@ export type ActiveAnchor = {
   createdAt: string;
   expiresAt?: string;
   prayedCount?: number;
+  viewerState?: {
+    liked: boolean;
+    prayed: boolean;
+  };
 };
 
 export type Rule = {

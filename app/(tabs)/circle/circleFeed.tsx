@@ -24,7 +24,8 @@ import { ChevronDown } from "@tamagui/lucide-icons";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 import {
   ActivityIndicator,
@@ -65,6 +66,7 @@ type CirclePost = {
     liked: boolean;
     prayed: boolean;
   };
+  userId?: string;
   user: {
     name: string;
     avatar: string;
@@ -86,6 +88,7 @@ export default function CircleFeedScreen() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
+  const [refreshingFeed, setRefreshingFeed] = useState(false);
 
   const [circle, setCircle] =
     useState<CircleFeedData>(circleData);
@@ -94,7 +97,67 @@ export default function CircleFeedScreen() {
     circleData.posts || []
   );
 
-  const cacheKey = `${CACHE_KEY}_${circleId}`;
+  const cacheKey = `${CACHE_KEY}_${circleId}_${filterSort}_${filterView}`;
+  const userId = useAuthStore((s) => s.user?.id);
+
+  const onRefreshFeed = useCallback(async () => {
+    setRefreshingFeed(true);
+    setApiError(null);
+    try {
+      const data = await fetchCircleFeedData(circleId, 10, 1, 20);
+      if (data) {
+        const mappedCircle: CircleFeedData = {
+          bannerImage: data.bannerImage || circleData.bannerImage,
+          profileImage: data.profileImage || circleData.profileImage,
+          name: data.name || circleData.name,
+          description: data.description || circleData.description,
+          memberCount: data.memberCount ?? circleData.memberCount,
+          isJoined: data.isJoined ?? circleData.isJoined,
+          activeAnchor: data.activeAnchor ? {
+            id: data.activeAnchor.id, type: data.activeAnchor.anchorType as "text" | "image" | "video",
+            title: data.activeAnchor.title, content: data.activeAnchor.content,
+            scripture: data.activeAnchor.scripture || undefined, likedImage: data.activeAnchor.likedImage || undefined,
+            anchorLikedCount: data.activeAnchor.anchorLikedCount, anchorVerse: data.activeAnchor.anchorVerse || undefined,
+            anchorText: data.activeAnchor.anchorText || undefined, anchorImage: data.activeAnchor.anchorImage || undefined,
+            anchorVideo: data.activeAnchor.anchorVideo || undefined, anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+            bibleReference: data.activeAnchor.bibleReference || undefined, bibleText: data.activeAnchor.bibleText || undefined,
+            backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
+            backgroundImage: data.activeAnchor.backgroundImage || undefined,
+            prayedCount: data.activeAnchor.prayedCount || undefined,
+            createdAt: data.activeAnchor.createdAt, expiresAt: data.activeAnchor.expiresAt || undefined,
+            viewerState: data.activeAnchor.viewerState || undefined,
+          } : circleData.activeAnchor,
+          pastAnchors: data.pastAnchors ? data.pastAnchors.map((a: any) => ({
+            id: a.id, type: a.anchorType as "text" | "image" | "video", title: a.title, content: a.content,
+            scripture: a.scripture || undefined, likedImage: a.likedImage || undefined,
+            anchorLikedCount: a.anchorLikedCount, anchorVerse: a.anchorVerse || undefined,
+            anchorText: a.anchorText || undefined, anchorImage: a.anchorImage || undefined,
+            anchorVideo: a.anchorVideo || undefined, anchorThumbnail: a.anchorThumbnail || undefined,
+            bibleReference: a.bibleReference || undefined, bibleText: a.bibleText || undefined,
+            backgroundColors: a.backgroundColors as [string, string] | undefined,
+            backgroundImage: a.backgroundImage || undefined, prayedCount: a.prayedCount || undefined,
+            createdAt: a.createdAt, expiresAt: a.expiresAt || undefined,
+          })) : circleData.pastAnchors,
+          posts: data.posts ? data.posts.map((p: any) => ({
+            id: p.id, text: p.text || undefined, image: p.image || undefined, createdAt: p.createdAt,
+            likes: p.likes, comments: p.comments, likedImage: p.likedImage || undefined,
+            likeCount: p.likeCount, anchorLikedCount: p.anchorLikedCount, prayedCount: p.prayedCount,
+            viewerState: p.viewerState || undefined, userId: p.user?.id,
+            user: { name: p.user.name || "", avatar: p.user.avatar || "" },
+          })) : circleData.posts,
+          memberAvatars: data.memberAvatars || circleData.memberAvatars,
+          rules: data.rules ? data.rules.map((r: any) => ({ id: r.ruleNumber, title: r.title, description: r.description })) : circleData.rules,
+        };
+        setCircle(mappedCircle);
+        setPosts(mappedCircle.posts);
+        storage.set(cacheKey, { circle: mappedCircle, posts: mappedCircle.posts });
+      }
+    } catch (err) {
+      console.error("Failed to refresh feed:", err);
+    } finally {
+      setRefreshingFeed(false);
+    }
+  }, [circleId]);
 
   useEffect(() => {
     let mounted = true;
@@ -110,7 +173,9 @@ export default function CircleFeedScreen() {
     const loadData = async () => {
       setApiError(null);
       try {
-        const data = await fetchCircleFeedData(circleId, 10, 1, 20);
+        const sortBy = filterSort === "New" ? "NEW" : "TRENDING";
+        const authorId = filterView === "My post" ? userId : undefined;
+        const data = await fetchCircleFeedData(circleId, 10, 1, 20, sortBy, authorId);
         if (!mounted) return;
 
         if (data) {
@@ -181,6 +246,7 @@ export default function CircleFeedScreen() {
                   anchorLikedCount: p.anchorLikedCount,
                   prayedCount: p.prayedCount,
                   viewerState: p.viewerState || undefined,
+                  userId: p.user?.id,
                   user: {
                     name: p.user.name || "",
                     avatar: p.user.avatar || "",
@@ -216,7 +282,7 @@ export default function CircleFeedScreen() {
     return () => {
       mounted = false;
     };
-  }, [circleId]);
+  }, [circleId, filterSort, filterView, userId]);
 
   const [showFilterModal, setShowFilterModal] =
     useState(false);
@@ -228,6 +294,18 @@ export default function CircleFeedScreen() {
 
   const [filterView, setFilterView] =
     useState<"All" | "My post">("All");
+
+  // Local sort fallback for "New" order (works even if backend ignores sortBy)
+  const displayedPosts = useMemo(() => {
+    let filtered = posts;
+    if (filterView === "My post" && userId) {
+      filtered = posts.filter((p) => p.userId === userId);
+    }
+    if (filterSort === "New") {
+      return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return filtered;
+  }, [posts, filterSort, filterView, userId]);
 
   const [showChevron, setShowChevron] =
     useState(false);
@@ -570,15 +648,17 @@ export default function CircleFeedScreen() {
 
       <FlatList
         ref={flatListRef}
-        data={posts}
+        data={displayedPosts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}
         onScroll={handleScroll}
+        refreshing={refreshingFeed}
+        onRefresh={onRefreshFeed}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: 129 + (showFixedAnchor ? anchorSectionHeight : 0),
+          paddingTop: 110 + (showFixedAnchor ? anchorSectionHeight : 0),
           paddingBottom: 16,
         }}
         ListHeaderComponent={
@@ -744,7 +824,7 @@ const styles = StyleSheet.create({
 
   fixedAnchor: {
     position: "absolute",
-    top: 100,
+    top: 80,
     left: 0,
     right: 0,
     zIndex: 40,
