@@ -10,8 +10,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ActivityIndicator, AppState, FlatList, ViewToken } from "react-native";
-import { YStack } from "tamagui";
+import { AppState, FlatList, ViewToken } from "react-native";
 
 type Props = {
   posts: FeedPost[];
@@ -41,13 +40,10 @@ function PostViewerEngineComponent({
   onRefresh,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedPost>>(null);
-  const lastScrollTime = useRef(0);
-  const lastScrollOffset = useRef(0);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const [isScrollingFast, setIsScrollingFast] = useState(false);
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
@@ -110,13 +106,8 @@ function PostViewerEngineComponent({
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (!viewableItems?.length) return;
-      const now = Date.now();
-      if (now - lastScrollTime.current < 100) return;
-
       const current = viewableItems[0]?.item;
       if (!current?.id) return;
-
-      lastScrollTime.current = now;
       setActivePostId(current.id);
       setPausedPostId(null);
     },
@@ -165,26 +156,6 @@ function PostViewerEngineComponent({
 
   const keyExtractor = useCallback((item: FeedPost) => item.id, []);
 
-  const onScrollBeginDrag = useCallback(() => {
-    lastScrollOffset.current = 0;
-  }, []);
-
-  const onScroll = useCallback(
-    (e: any) => {
-      const currentOffset = e.nativeEvent.contentOffset.y;
-      const delta = Math.abs(currentOffset - lastScrollOffset.current);
-      if (delta > containerHeight * 0.5) {
-        setIsScrollingFast(true);
-      }
-      lastScrollOffset.current = currentOffset;
-    },
-    [containerHeight],
-  );
-
-  const onMomentumScrollEnd = useCallback(() => {
-    setIsScrollingFast(false);
-  }, []);
-
   if (!containerHeight || !isReady) {
     return null;
   }
@@ -212,25 +183,10 @@ function PostViewerEngineComponent({
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         scrollsToTop={false}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onScroll={onScroll}
-        onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
-      {isScrollingFast && (
-        <YStack
-          position="absolute"
-          top={containerHeight / 2 - 20}
-          left={0}
-          right={0}
-          alignItems="center"
-          zIndex={200}
-        >
-          <ActivityIndicator size="large" color="#FFF" />
-        </YStack>
-      )}
     </>
   );
 }

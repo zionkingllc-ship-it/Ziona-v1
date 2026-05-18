@@ -135,7 +135,7 @@ export default function LoginIndex() {
             }}
           />
 
-          <PrimaryButton
+          {/* <PrimaryButton
             text="Continue with Facebook"
             textSize={fs(14)}
             textWeight="400"
@@ -145,7 +145,7 @@ export default function LoginIndex() {
             style={{
               height: hp(6.5),
             }}
-          />
+          /> */}
         </YStack>
 
         {/* Footer */}
@@ -175,16 +175,18 @@ export default function LoginIndex() {
               By continuing, you agree to Ziona’s{" "}
             </Text>
 
-            <InlineUnderlineText
-              color={colors.termsButton}
-              fontFamily={"$body"}
-              weight="500"
-              fontSize={fs(13)}
-              thickness={1}
-              offset={-1}
-            >
-              Terms of use
-            </InlineUnderlineText>
+            <Pressable onPress={() => router.push("/settings/terms/use")}>
+              <InlineUnderlineText
+                color={colors.termsButton}
+                fontFamily={"$body"}
+                weight="500"
+                fontSize={fs(13)}
+                thickness={1}
+                offset={-1}
+              >
+                Terms of use
+              </InlineUnderlineText>
+            </Pressable>
             <Text
               fontSize={fs(13)}
               textAlign="center"
@@ -196,13 +198,7 @@ export default function LoginIndex() {
               {" "}
               and confirm that you have read Ziona’s{" "}
             </Text>
-            <Pressable
-              onPress={() =>
-                router.push(
-                  "https://www.privacypolicies.com/live/db459a7c-78ec-4d12-8d82-cf20f7e716a6",
-                )
-              }
-            >
+            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}

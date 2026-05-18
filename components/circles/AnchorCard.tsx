@@ -1,8 +1,7 @@
 import { useRouter } from "expo-router";
 import { Image, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import type { ActiveAnchor } from "@/constants/mockCircles";
-import { XStack, YStack } from "tamagui";
+import { YStack } from "tamagui";
 import React, { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -10,11 +9,15 @@ interface AnchorCardProps {
   anchor: ActiveAnchor;
   disabled?: boolean;
   circleId?: string;
+  expired?: boolean;
 }
 
-export default function AnchorCard({ anchor, disabled = false, circleId }: AnchorCardProps) {
+const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
+
+export default function AnchorCard({ anchor, disabled = false, circleId, expired = false }: AnchorCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handlePress = useCallback(() => {
     if (disabled || loading) return;
@@ -24,108 +27,72 @@ export default function AnchorCard({ anchor, disabled = false, circleId }: Ancho
     const params: Record<string, string> = {
       id: anchor.id || "",
       likedCount: anchor.anchorLikedCount?.toString() || "0",
+      expired: expired ? "1" : "0",
       ...(circleId ? { circleId } : {}),
     };
 
-    switch (anchor.type) {
-      case "image":
-        router.push({
-          pathname: "/CircleExtension/anchorImageView",
-          params: { ...params, image: anchor.anchorImage || "", expiresAt: anchor.expiresAt || "" },
-        });
-        break;
-      case "video":
-        router.push({
-          pathname: "/CircleExtension/anchorVideoView",
-          params: { ...params, video: anchor.anchorVideo || "", expiresAt: anchor.expiresAt || "" },
-        });
-        break;
-      case "text":
-        router.push({
-          pathname: "/CircleExtension/anchorTextView",
-          params: {
-            ...params,
-            text: anchor.anchorText || "",
-            colors: anchor.backgroundColors?.join(",") || "",
-            backgroundImage: anchor.backgroundImage || "",
-            bibleReference: anchor.bibleReference || "",
-            bibleText: anchor.bibleText || "",
-            expiresAt: anchor.expiresAt || "",
-          },
-        });
-        break;
+    if (anchor.type === "image_text") {
+      router.push({
+        pathname: "/CircleExtension/anchorTextView",
+        params: {
+          ...params,
+          text: anchor.content || anchor.bibleText || "",
+          anchorImage: anchor.mediaUrl || "",
+          colors: anchor.backgroundColors?.join(",") || "",
+          bibleReference: anchor.bibleReference || "",
+          bibleText: anchor.bibleText || "",
+          expiresAt: anchor.expiresAt || "",
+        },
+      });
+    } else if (anchor.type === "image") {
+      router.push({
+        pathname: "/CircleExtension/anchorImageView",
+        params: { ...params, image: anchor.mediaUrl || anchor.anchorImage || "", expiresAt: anchor.expiresAt || "" },
+      });
+    } else if (anchor.type === "video") {
+      router.push({
+        pathname: "/CircleExtension/anchorVideoView",
+        params: { ...params, video: anchor.anchorVideo || "", expiresAt: anchor.expiresAt || "" },
+      });
+    } else if (anchor.type === "text") {
+      router.push({
+        pathname: "/CircleExtension/anchorTextView",
+        params: {
+          ...params,
+          text: anchor.anchorText || "",
+          colors: anchor.backgroundColors?.join(",") || "",
+          backgroundImage: anchor.backgroundImage || "",
+          bibleReference: anchor.bibleReference || "",
+          bibleText: anchor.bibleText || "",
+          expiresAt: anchor.expiresAt || "",
+        },
+      });
     }
     
     setTimeout(() => setLoading(false), 500);
   }, [disabled, loading, anchor, router, circleId]);
 
-  const thumbnail = anchor.anchorThumbnail || anchor.anchorImage || "https://images.unsplash.com/photo-1529156069898-49953e39b3ac"
-  const gradientColors = anchor.backgroundColors || ["#A8D5A2", "#EDEDED"];
-  
-  const renderCenterIcon = () => {
-    if (anchor.type === "video") {
-      return (
-        <View style={styles.playButton}>
-          <Ionicons name="play" size={16} color="#6C2BD9" style={styles.playIcon} />
-        </View>
-      );
-    }
-    return null;
-  };
+  const isImageType = anchor.type === "image" || anchor.type === "image_text";
 
-  const hasBgImage = anchor.backgroundImage && anchor.backgroundImage.length > 0;
+  const imageSource = () => {
+    if (imageError) return FALLBACK_IMAGE;
 
-  const renderContent = () => {
     if (anchor.type === "text") {
-      const hasAnchorText = anchor.anchorText && anchor.anchorText.length > 0;
-      const hasBibleText = anchor.bibleText && anchor.bibleText.length > 0;
-      const hasBibleReference = anchor.bibleReference && anchor.bibleReference.length > 0;
-      
-      let previewText = "";
-      if (hasAnchorText) {
-        previewText = anchor.anchorText!;
-      } else if (hasBibleText) {
-        previewText = anchor.bibleText!;
-      } else if (hasBibleReference) {
-        previewText = anchor.bibleReference!;
-      } else {
-        previewText = anchor.content || "";
-      }
-      
-      if (hasBgImage) {
-        return (
-          <View style={styles.imageWrapper}>
-            <Image source={{ uri: anchor.backgroundImage }} style={styles.image} resizeMode="cover" />
-            <View style={styles.imageOverlay}>
-              <Text style={styles.previewTextLight} numberOfLines={3}>
-                {previewText}
-              </Text>
-            </View>
-          </View>
-        );
-      }
-      
-      return (
-        <LinearGradient colors={gradientColors as [string, string]} style={styles.gradientBackground}>
-          <View style={styles.textContentDark}>
-            <Text style={styles.previewTextDark} numberOfLines={3}>
-              {previewText}
-            </Text>
-          </View>
-        </LinearGradient>
-      );
+      if (anchor.backgroundImage) return { uri: anchor.backgroundImage };
+      return FALLBACK_IMAGE;
     }
-    
-    return (
-      <View style={styles.imageWrapper}>
-        <Image source={{ uri: thumbnail }} style={styles.image} resizeMode="cover" />
-        <View style={styles.centerOverlay}>
-          {renderCenterIcon()}
-        </View>
-        <View style={styles.imageOverlay} />
-      </View>
-    );
+
+    const uri = anchor.mediaUrl || anchor.anchorThumbnail || anchor.anchorImage;
+    if (uri) return { uri };
+    return FALLBACK_IMAGE;
   };
+
+  let previewText = "";
+  if (isImageType) {
+    previewText = anchor.content || anchor.bibleText || anchor.bibleReference || "";
+  } else if (anchor.type === "text") {
+    previewText = anchor.anchorText || anchor.bibleText || anchor.bibleReference || anchor.content || "";
+  }
 
   return (
     <TouchableOpacity 
@@ -139,20 +106,51 @@ export default function AnchorCard({ anchor, disabled = false, circleId }: Ancho
           <ActivityIndicator size="small" color="#6C2BD9" />
         </View>
       ) : (
-        renderContent()
-      )}
-
-      <View style={styles.overlay}>
-        <Text style={hasBgImage||anchor.type === "video"||anchor.type === "image" ? styles.label : styles.labelDark}>Anchor of the day</Text>
-        
-        <YStack style={styles.statsRow}>
+        <View style={styles.imageWrapper}>
           <Image
-            source={hasBgImage||anchor.type === "video"||anchor.type === "image" ? require("@/assets/images/AnchorPrayingHandLight.png") : require("@/assets/images/AnchorPrayingHandDark.png")}
-            style={{ width: 18, height: 18 }}
+            source={imageSource()}
+            style={styles.image}
+            resizeMode="cover"
+            onError={() => setImageError(true)}
           />
-          <Text style={hasBgImage||anchor.type === "video"||anchor.type === "image" ? styles.count : styles.countDark}>{anchor.anchorLikedCount ?? 0}</Text>
-        </YStack>
-      </View>
+
+          <View style={styles.darkOverlay} />
+
+          {expired && (
+            <View style={styles.expiredBadge}>
+              <Text style={styles.expiredText}>Expired</Text>
+            </View>
+          )}
+
+          <View style={styles.topRow}>
+            <Text style={styles.label}>Anchor of the day</Text>
+          </View>
+
+          {anchor.type === "video" && (
+            <View style={styles.playOverlay}>
+              <Ionicons name="play-circle" size={28} color="#FFF" />
+            </View>
+          )}
+
+          {(anchor.type === "image_text" || anchor.type === "text") && previewText ? (
+            <View style={styles.textArea}>
+              <Text style={styles.previewText} numberOfLines={4}>
+                {previewText}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.bottomRow}>
+            <YStack style={styles.statsRow}>
+              <Image
+                source={require("@/assets/images/AnchorPrayingHandLight.png")}
+                style={{ width: 18, height: 18 }}
+              />
+              <Text style={styles.count}>{anchor.anchorLikedCount ?? 0}</Text>
+            </YStack>
+          </View>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -178,85 +176,73 @@ const styles = StyleSheet.create({
     height: 130,
     width: "100%",
   },
-  gradientBackground: {
-    height: 130,
-    width: "100%",
-    padding: 10,
-  },
   image: {
     width: "100%",
     height: "100%",
   },
-  textContent: {
-    flex: 1, 
-    paddingTop:15, 
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  textContentDark: {
-    flex: 1,
-    paddingTop:15,
+  expiredBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    zIndex: 10,
+  },
+  expiredText: {
+    color: "#FF6B6B",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  topRow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
+  },
+  playOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  textArea: {
+    position: "absolute",
+    top: 24,
+    left: 12,
+    right: 12,
+    bottom: 36,
+    justifyContent: "center",
   },
   previewText: {
     fontSize: 14,
     fontWeight: "400",
-    color: "rgba(0, 0, 0, 0.8)",
-    lineHeight: 20,
-  },
-  previewTextDark: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "rgba(0, 0, 0, 0.8)",
-    lineHeight: 20,
-  },
-  previewTextLight: {
-    fontSize: 14,
-    bottom: 10,
-    fontWeight: "400",
     color: "#FFF",
     lineHeight: 20,
   },
-  imageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-  },
-  overlay: {
+  bottomRow: {
     position: "absolute",
     bottom: 0,
-    top: 0,
     left: 0,
     right: 0,
-    padding: 8, 
-    justifyContent: "space-between",
-  },
-  overlayTop: { 
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 8,
   },
   label: {
     fontSize: 11,
     fontWeight: "600",
     color: "rgba(255, 255, 255, 0.9)",
-   
   },
-  labelDark: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "rgba(0, 0, 0, 0.7)",
-    
-  },
-  statsRow: { 
-    top: 5, 
+  statsRow: {
     alignItems: "center",
     gap: 4,
   },
@@ -264,45 +250,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500",
     color: "rgba(255, 255, 255, 0.9)",
-  },
-  countDark: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: "rgba(0, 0, 0, 0.7)",
-  },
-  centerOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playButton: {
-    position: "absolute",
-    zIndex: 99,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playIcon: {
-    fontSize: 16,
-    marginLeft: 2,
-  },
-  playButtonSmall: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playIconSmall: {
-    fontSize: 12,
-    marginLeft: 2,
   },
 });

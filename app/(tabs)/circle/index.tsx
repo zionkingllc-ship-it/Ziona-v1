@@ -186,17 +186,18 @@ export default function CirclesSuggestion() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
+      <YStack paddingHorizontal={wp(5)} paddingTop={hp(2)}>
+        <Text fontFamily="$body" fontWeight="600" fontSize={18}>
+          Circles
+        </Text>
+      </YStack>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: hp(10) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
       >
-        <YStack paddingTop={hp(2)} paddingHorizontal={wp(5)}>
-          {/* SEARCH */}
-          {/* <XStack style={[styles.search, { backgroundColor: colors.borderBackground, borderColor: colors.border }]}>
-            <TextInput placeholder="Search" />
-          </XStack> */}
-
+        <YStack paddingHorizontal={wp(5)}>
           {/* ANCHOR OF THE DAY */}
           {activeAnchors.length > 0 && (
             <YStack marginTop={hp(2)}>
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   compactCardWrapper: {
-    width: 260,
+    width: 220,
     marginRight: 10,
   },
 });

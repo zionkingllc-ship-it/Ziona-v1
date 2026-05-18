@@ -1,14 +1,12 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
-import * as WebBrowser from "expo-web-browser";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
 import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function PrivacyScreen() {
-  const openPrivacyPolicy = () => {
-    WebBrowser.openBrowserAsync("https://ziona-app.web.app/privacy");
-  };
+  const router = useRouter();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
@@ -21,7 +19,7 @@ export default function PrivacyScreen() {
           Manage your privacy settings and control who can see your content.
         </Text>
 
-        <Pressable onPress={openPrivacyPolicy}>
+        <Pressable onPress={() => router.push("/settings/terms/privacy")}>
           <View 
             backgroundColor={colors.sectionBackground} 
             borderRadius={12} 

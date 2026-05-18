@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable, View } from "react-native";
@@ -9,10 +8,10 @@ import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
-import { getGradientColors } from "@/lib/anchorUtils";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
+import OtherReportModal from "@/components/ui/modals/OtherReportModal";
 import SuccessModal from "../ui/modals/successModal";
 
 const formatTimeAgo = (dateString: string): string => {
@@ -64,6 +63,7 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
 
@@ -156,31 +156,25 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
           )}
 
           {/* ANCHOR QUOTE */}
-          {anchorRef && (
-            <View onStartShouldSetResponder={() => true} onResponderGrant={() => {
-              router.push({ pathname: "/(tabs)/circle/circleFeed", params: { id: circleId || "" } });
-            }}>
+          {anchorRef && (<>
               {anchorRef.type === "image" && anchorRef.mediaUrl ? (
-                <View style={{ height: 100, borderRadius: 10, overflow: "hidden", marginTop: 6, borderWidth: 1, borderColor: "#E4C0F1" }}>
-                  <Image source={{ uri: anchorRef.mediaUrl }} width="100%" height={100} borderRadius={10} resizeMode="cover" />
+                <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                  <Image source={{ uri: anchorRef.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
                 </View>
               ) : anchorRef.type === "video" ? (
-                <View style={{ height: 100, borderRadius: 10, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6, borderWidth: 1, borderColor: "#E4C0F1" }}>
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
                   <Ionicons name="videocam" size={24} color="#FFF" />
                   <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
                 </View>
               ) : (
-                <View style={{ height: 100, borderRadius: 10, marginTop: 6, overflow: "hidden", borderWidth: 1, borderColor: "#E4C0F1" }}>
-                  <LinearGradient colors={getGradientColors("#6C2BD9,#9B59B6")} style={{ flex: 1, padding: 12, justifyContent: "center" }}>
-                    <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                      {anchorRef.content || anchorRef.title || ""}
-                    </Text>
-                  </LinearGradient>
+                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                    {anchorRef.content || anchorRef.title || ""}
+                  </Text>
                 </View>
               )}
-            </View>
-          )}
-
+          </>)}
+ 
           {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">
             <Pressable onPress={handleLike} disabled={togglingLike}>
@@ -235,7 +229,25 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
               }
             );
           }}
-          onSelectOther={() => {}}
+          onSelectOther={() => {
+            setReasonsVisible(false);
+            setOtherVisible(true);
+          }}
+        />
+        <OtherReportModal
+          visible={otherVisible}
+          onClose={() => setOtherVisible(false)}
+          onSubmit={(description) => {
+            setOtherVisible(false);
+            reportMutation.mutate(
+              { reason: "OTHER" as ReportReason, postId: post.id, description },
+              {
+                onSuccess: () => {
+                  setSuccessVisible(true);
+                },
+              }
+            );
+          }}
         />
         <SuccessModal
           visible={successVisible}

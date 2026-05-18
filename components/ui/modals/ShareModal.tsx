@@ -78,7 +78,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         ]}
         pointerEvents="box-none"
       >
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <YStack
             backgroundColor="white"
             borderTopLeftRadius={24}
@@ -112,7 +112,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
               )}
             />
           </YStack>
-        </Pressable>
+        </View>
       </View>
     </View>
   </Modal>

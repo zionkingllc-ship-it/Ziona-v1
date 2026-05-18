@@ -65,8 +65,8 @@ export default function SignIn() {
 
       if (response.requiresOtp) {
         router.push({
-          pathname: "/(auth)/otp",
-          params: { email: email.trim().toLowerCase() },
+          pathname: "/(auth)/verifyOtp",
+          params: { email: email.trim().toLowerCase(), flow: "signin" },
         });
         return;
       }
@@ -75,8 +75,12 @@ export default function SignIn() {
         setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
       }
-    } catch {
-      setAuthError("Email or password incorrect");
+    } catch (error: any) {
+      if (!error?.response) {
+        setAuthError("Network error. Please check your connection.");
+      } else {
+        setAuthError("Email or password incorrect");
+      }
     } finally {
       stop("signin");
     }

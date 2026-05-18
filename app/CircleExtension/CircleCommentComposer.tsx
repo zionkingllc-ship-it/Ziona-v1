@@ -205,39 +205,27 @@ export default function CircleCommentComposer({
               borderColor: "#EEE",
               padding: 8,
               flexDirection: "row",
-              alignItems: "flex-end",
+              alignItems: "center", 
               gap: 8,
               backgroundColor: "#FFF",
               paddingBottom: insets.bottom || 8,
             }}
           >
-            {mode === "action" ? (
-              <Pressable
-                onPress={async () => {
-                  const result = await ImagePicker.launchImageLibraryAsync({
-                    mediaTypes: ["images"],
-                    allowsEditing: true,
-                    quality: 0.8,
-                  });
-                  if (!result.canceled && result.assets?.[0]?.uri) {
-                    setImage(result.assets[0].uri);
-                  }
-                }}
-                style={{ paddingVertical: 8 }}
-              >
-                <Ionicons name="image-outline" size={22} color="#333" />
-              </Pressable>
-            ) : (
-              <Pressable style={{ paddingVertical: 8 }}>
-                <AvatarWithInitials
-                  uri={userAvatar}
-                  name={userName}
-                  size={28}
-                  failedUris={failedAvatarUrls}
-                  setFailedUris={setFailedAvatarUrls}
-                />
-              </Pressable>
-            )}
+            <Pressable
+              onPress={async () => {
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ["images"],
+                  allowsEditing: true,
+                  quality: 0.8,
+                });
+                if (!result.canceled && result.assets?.[0]?.uri) {
+                  setImage(result.assets[0].uri);
+                }
+              }}
+              style={{ paddingVertical: 8 }}
+            >
+              <Ionicons name="image-outline" size={22} color="#333" />
+            </Pressable>
 
             <TextInput
               placeholder={

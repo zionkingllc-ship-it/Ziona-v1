@@ -7,6 +7,7 @@ import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
 import { usePostActionsStore } from "@/store/usePostActionStore";
+import { useUnreadCount } from "@/hooks/useNotifications";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -51,12 +52,18 @@ export default function Feed() {
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
   const isFocused = useIsFocused();
   const [refreshingFeed, setRefreshingFeed] = useState(false);
+  const { data: unreadCount } = useUnreadCount();
 
   const onRefreshFeed = useCallback(async () => {
     setRefreshingFeed(true);
-    const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
-    await queryClient.invalidateQueries({ queryKey: [key] });
-    setRefreshingFeed(false);
+    try {
+      const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
+      await queryClient.refetchQueries({ queryKey: [key] });
+    } catch (err) {
+      console.error("Feed refresh failed:", err);
+    } finally {
+      setRefreshingFeed(false);
+    }
   }, [feedType, queryClient]);
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
@@ -187,14 +194,6 @@ export default function Feed() {
     [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
   );
 
-  if (query.isLoading) {
-    return (
-      <View flex={1} justifyContent="center" alignItems="center">
-        <ActivityIndicator size={40} color={colors.primary} />
-      </View>
-    );
-  }
-
   const handleBellPress = () => {
     router.push("/notifications");
   };
@@ -207,6 +206,7 @@ export default function Feed() {
           onChangeFeedType={setFeedType}
           emptyFollowing={data.length === 0}
           onBellPress={handleBellPress}
+          unreadCount={unreadCount ?? 0}
         />
       </View>
 

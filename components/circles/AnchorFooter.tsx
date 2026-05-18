@@ -17,12 +17,14 @@ type AnchorFooterProps = {
   prayIcon?: any;
   bottomOffset?: number;
   anchorId?: string;
+  expired?: boolean;
 };
 
 export default function AnchorFooter({
   prayIcon,
   bottomOffset = 30,
   anchorId,
+  expired = false,
 }: AnchorFooterProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -63,8 +65,8 @@ export default function AnchorFooter({
       {/*Prayer like*/}
       <TouchableOpacity
         onPress={handlePrayLike}
-        disabled={toggling}
-        style={styles.footerButton}
+        disabled={toggling || expired}
+        style={[styles.footerButton, expired && styles.disabledButton]}
       >
         {isLiked ? (
           <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
@@ -77,7 +79,7 @@ export default function AnchorFooter({
       </TouchableOpacity>
 
       {/*reflection comment*/}
-      <TouchableOpacity onPress={handleReflection}>
+      <TouchableOpacity onPress={handleReflection} disabled={expired}>
         <XStack
           backgroundColor="#000"
           paddingHorizontal="$3"
@@ -112,5 +114,8 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: "#E0E0E0",
     borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.4,
   },
 });

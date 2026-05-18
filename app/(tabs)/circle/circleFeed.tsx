@@ -16,7 +16,7 @@ import {
   MOCK_CIRCLE_FEEDS,
 } from "@/constants/mockCircles";
 
-import { fetchCircleFeedData } from "@/services/graphQL/queries/circles";
+import { fetchCircleFeedData, fetchAnchorByDate } from "@/services/graphQL/queries/circles";
 import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -331,37 +331,43 @@ export default function CircleFeedScreen() {
     "5 days ago",
   ];
 
-  const getAnchorDaysAgo = (filter: string): number => {
-    if (filter === "Today") return 0;
-    const match = filter.match(/(\d+) days ago/);
-    return match ? parseInt(match[1]) : 0;
-  };
+  const [displayAnchor, setDisplayAnchor] = useState<any | undefined>(undefined);
+  const [anchorExpired, setAnchorExpired] = useState(false);
 
-  const getDisplayAnchor = () => {
-    if (!circle) return undefined;
-    
-    const daysAgo = getAnchorDaysAgo(anchorFilter);
-    const now = new Date();
+  useEffect(() => {
+    if (!circle) return;
+    let cancelled = false;
 
-    if (daysAgo === 0 && circle.activeAnchor) {
-      return circle.activeAnchor;
+    async function loadAnchor() {
+      setAnchorExpired(false);
+      if (anchorFilter === "Today") {
+        if (circle.activeAnchor) {
+          if (!cancelled) setDisplayAnchor(circle.activeAnchor);
+          if (circle.activeAnchor.expiresAt && new Date(circle.activeAnchor.expiresAt).getTime() <= Date.now()) {
+            if (!cancelled) setAnchorExpired(true);
+          }
+        }
+        return;
+      }
+
+      const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
+      const date = new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
+      const anchor = await fetchAnchorByDate(circleId, date);
+      if (!cancelled) {
+        if (anchor) {
+          setDisplayAnchor(anchor);
+          if (anchor.expiresAt && new Date(anchor.expiresAt).getTime() <= Date.now()) {
+            setAnchorExpired(true);
+          }
+        } else {
+          setDisplayAnchor(circle.activeAnchor);
+        }
+      }
     }
 
-    if (circle.pastAnchors && circle.pastAnchors.length > 0) {
-      const pastAnchor = circle.pastAnchors.find((anchor: any) => {
-        const created = new Date(anchor.createdAt);
-        const diffDays = Math.round(
-          (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000)
-        );
-        return diffDays === daysAgo;
-      });
-      if (pastAnchor) return pastAnchor;
-    }
-
-    return circle.activeAnchor;
-  };
-
-  const displayAnchor = getDisplayAnchor();
+    loadAnchor();
+    return () => { cancelled = true; };
+  }, [anchorFilter, circle, circleId]);
 
   const flatListRef =
     useRef<FlatList>(null);
@@ -631,7 +637,7 @@ export default function CircleFeedScreen() {
               </View>
             )}
             
-            {anchorCardVisible && <AnchorCard anchor={displayAnchor} circleId={circleId} />}
+            {anchorCardVisible && <AnchorCard anchor={displayAnchor} circleId={circleId} expired={anchorExpired} />}
 
             <CircleFeedFilterRow
               filterSort={filterSort}
@@ -743,7 +749,7 @@ export default function CircleFeedScreen() {
                     ))}
                   </View>
                 )}
-                <AnchorCard anchor={displayAnchor} circleId={circleId} />
+                <AnchorCard anchor={displayAnchor} circleId={circleId} expired={anchorExpired} />
 
                 <CircleFeedFilterRow
                   filterSort={filterSort}

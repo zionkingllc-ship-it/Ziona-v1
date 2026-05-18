@@ -1,6 +1,8 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getCommentReplies,
+  likeComment,
+  unlikeComment,
   CommentReply,
 } from "@/services/graphQL/mutation/actions/comments";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -28,10 +30,8 @@ export function useReplyLike() {
       replyId: string;
       isLiked: boolean;
     }) => {
-      // This would call like/unlike mutation - placeholder for now
-      // const fn = isLiked ? unlikeComment : likeComment;
-      // return fn(replyId);
-      return { success: true };
+      const fn = isLiked ? unlikeComment : likeComment;
+      return fn(replyId);
     },
     onMutate: async ({ commentId, replyId, isLiked }) => {
       await queryClient.cancelQueries({

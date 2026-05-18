@@ -9,6 +9,7 @@ interface Props {
   description: string;
   image: string;
   members: number;
+  isJoined?: boolean;
   avatars?: string[];
   onPress?: () => void;
 }
@@ -18,6 +19,7 @@ export default function CircleCard({
   description,
   image,
   members,
+  isJoined,
   avatars = [],
   onPress,
 }: Props) {
@@ -39,25 +41,29 @@ export default function CircleCard({
           <Text style={styles.title}>{title}</Text>
         </View>
 
-        {/* DESCRIPTION */}
-        <Text style={styles.description}>{description}</Text>
+        {!isJoined && (
+          <>
+            <Text style={styles.description}>{description}</Text>
 
-        {/* MEMBERS */}
-        <XStack alignItems="center" marginTop={6}>
-          <View style={styles.avatarStack}>
-            {avatars.slice(0, 3).map((uri, index) => (
-              <Image
-                key={index}
-                source={{ uri }}
-                style={[styles.avatar, { left: index * 12 }]}
-              />
-            ))}
-          </View>
+            <XStack alignItems="center" marginTop={6} justifyContent="flex-start">
+              {avatars.length > 0 && (
+                <View style={[styles.avatarStack, { width: avatars.length * 28 }]}>
+                  {avatars.slice(0, 3).map((uri, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri }}
+                      style={[styles.avatar, { left: index * 20 }]}
+                    />
+                  ))}
+                </View>
+              )}
 
-          <Text style={styles.membersText}>
-            +{members} members
-          </Text>
-        </XStack>
+              <Text style={styles.membersText}>
+                {members > 0 ? `+${members} members` : `${members} members`}
+              </Text>
+            </XStack>
+          </>
+        )}
 
       </YStack>
     </Pressable>

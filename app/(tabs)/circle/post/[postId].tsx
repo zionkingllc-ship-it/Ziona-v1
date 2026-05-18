@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   View,
   ScrollView,
   StyleSheet,
@@ -15,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { usePostComments } from "@/hooks/usePostComments";
-import { useCreateComment } from "@/hooks/useCreateComment";
+import { useCreateComment, useDeleteComment } from "@/hooks/useCreateComment";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
@@ -86,8 +87,16 @@ export default function CirclePostDetailScreen() {
 
   const createCommentMutation = useCreateComment();
   const toggleCommentLikeMutation = useToggleCommentLike();
+  const deleteCommentMutation = useDeleteComment();
 
   const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
+  console.log("📝 [PostDetail] commentsData:", JSON.stringify({
+    hasData: !!commentsData,
+    pagesCount: commentsData?.pages?.length,
+    totalComments: comments.length,
+    commentIds: comments.map((c: any) => c.id),
+    isLoading: isLoadingComments,
+  }));
 
   const handleCreateComment = async () => {
     if (!commentText.trim() || posting) return;
@@ -180,36 +189,27 @@ export default function CirclePostDetailScreen() {
             )}
 
             {anchorType && (
-              <View style={styles.anchorRefCard}>
-                <Text fontSize={11} color="#999" marginBottom={4}>
-                  From {anchorTitle || "Anchor"}
-                </Text>
-                {anchorType === "image" && anchorMediaUrl ? (
-                  <Image
-                    source={{ uri: anchorMediaUrl }}
-                    width="100%"
-                    height={140}
-                    borderRadius={8}
-                    resizeMode="cover"
-                  />
-                ) : anchorType === "video" && anchorMediaUrl ? (
-                  <View style={styles.anchorMediaPlaceholder}>
-                    <Ionicons name="play-circle" size={32} color="#742092" />
-                    <Text fontSize={12} color="#666">Video</Text>
-                  </View>
-                ) : null}
-                {anchorContent && (
-                  <Text
-                    fontSize={13}
-                    color="#555"
-                    lineHeight={18}
-                    numberOfLines={3}
-                    style={{ marginTop: anchorType === "text" ? 0 : 8 }}
-                  >
-                    {anchorContent}
+              anchorType === "image" && anchorMediaUrl ? (
+                <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                  <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" />
+                </View>
+              ) : anchorType === "video" && anchorMediaUrl ? (
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="videocam" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={12}>Reply to Anchor Video</Text>
+                </View>
+              ) : (
+                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                  {anchorTitle && (
+                    <Text fontFamily="$body" fontSize={11} color="rgba(255,255,255,0.6)" marginBottom={4}>
+                      From {anchorTitle}
+                    </Text>
+                  )}
+                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                    {anchorContent || ""}
                   </Text>
-                )}
-              </View>
+                </View>
+              )
             )}
 
             <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
@@ -253,53 +253,59 @@ export default function CirclePostDetailScreen() {
           ) : (
             <YStack paddingHorizontal="$3" gap="$3" paddingVertical="$2">
               {comments.map((comment) => (
-                <YStack
+                <TouchableOpacity
                   key={comment.id}
-                  gap="$2"
-                  paddingBottom="$2"
-                  borderBottomWidth={1}
-                  borderBottomColor="#F0F0F0"
+                  onLongPress={() => {
+                    if (!comment.viewerState?.isOwner) return;
+                    Alert.alert("Delete comment", "Are you sure you want to delete this comment?", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Delete", style: "destructive", onPress: () => deleteCommentMutation.mutate(comment.id) },
+                    ]);
+                  }}
+                  activeOpacity={1}
                 >
-                  <XStack alignItems="center" gap="$2">
-                    <AvatarWithInitials
-                      uri={comment.user.avatarUrl}
-                      name={comment.user.username}
-                      size={32}
-                      failedUris={failedAvatarUrls}
-                      setFailedUris={setFailedAvatarUrls}
-                    />
-                    <YStack gap={2} flex={1}>
-                      <Text fontSize={12} fontWeight="600">
-                        {comment.user.username}
-                      </Text>
-                      <Text fontSize={11} color="#999">
-                        {formatDate(comment.createdAt)}
-                      </Text>
-                    </YStack>
-                  </XStack>
-
-                  <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
-                    {comment.text}
-                  </Text>
-
-                  <XStack gap="$3" paddingLeft="$4" alignItems="center">
-                    <TouchableOpacity
-                      onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
-                      disabled={toggleCommentLikeMutation.isPending}
-                    >
-                      <XStack alignItems="center" gap="$1">
-                        <Ionicons
-                          name={comment.viewerState?.liked ? "heart" : "heart-outline"}
-                          size={14}
-                          color={comment.viewerState?.liked ? themeColors.primary : "#999"}
-                        />
-                        <Text fontSize={11} color="#999">
-                          {comment.stats.likesCount}
+                  <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
+                    <XStack alignItems="center" gap="$2">
+                      <AvatarWithInitials
+                        uri={comment.user.avatarUrl}
+                        name={comment.user.username}
+                        size={32}
+                        failedUris={failedAvatarUrls}
+                        setFailedUris={setFailedAvatarUrls}
+                      />
+                      <YStack gap={2} flex={1}>
+                        <Text fontSize={12} fontWeight="600">
+                          {comment.user.username}
                         </Text>
-                      </XStack>
-                    </TouchableOpacity>
-                  </XStack>
-                </YStack>
+                        <Text fontSize={11} color="#999">
+                          {formatDate(comment.createdAt)}
+                        </Text>
+                      </YStack>
+                    </XStack>
+
+                    <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
+                      {comment.text}
+                    </Text>
+
+                    <XStack gap="$3" paddingLeft="$4" alignItems="center">
+                      <TouchableOpacity
+                        onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
+                        disabled={toggleCommentLikeMutation.isPending}
+                      >
+                        <XStack alignItems="center" gap="$1">
+                          <Ionicons
+                            name={comment.viewerState?.liked ? "heart" : "heart-outline"}
+                            size={14}
+                            color={comment.viewerState?.liked ? themeColors.primary : "#999"}
+                          />
+                          <Text fontSize={11} color="#999">
+                            {comment.stats.likesCount}
+                          </Text>
+                        </XStack>
+                      </TouchableOpacity>
+                    </XStack>
+                  </YStack>
+                </TouchableOpacity>
               ))}
 
               {hasNextPage && (
@@ -427,22 +433,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  anchorRefCard: {
-    backgroundColor: "#F5F3F7",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#E4C0F1",
-    maxHeight: 200,
-    overflow: "hidden",
-  },
 
-  anchorMediaPlaceholder: {
-    height: 100,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F0ECF3",
-    borderRadius: 8,
-    gap: 4,
-  },
 });

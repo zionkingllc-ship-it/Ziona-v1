@@ -20,16 +20,18 @@ export default function AnchorVideoView() {
   const {
     video,
     colors: colorsParam,
-    expiresAt,
-    circleId,
-    id,
-  } = useLocalSearchParams<{
-    video?: string;
-    colors?: string;
-    expiresAt?: string;
-    circleId?: string;
-    id?: string;
-  }>();
+      expiresAt,
+      circleId,
+      id,
+      expired,
+    } = useLocalSearchParams<{
+      video?: string;
+      colors?: string;
+      expiresAt?: string;
+      circleId?: string;
+      id?: string;
+      expired?: string;
+    }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const hasNavigatedRef = useRef(false);
@@ -187,7 +189,7 @@ export default function AnchorVideoView() {
         )}
       </View>
 
-      <AnchorFooter anchorId={id} />
+      <AnchorFooter anchorId={id} expired={expired === "1"} />
     </View>
   );
 }

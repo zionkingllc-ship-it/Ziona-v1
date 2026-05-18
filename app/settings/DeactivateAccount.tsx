@@ -14,6 +14,7 @@ export default function DeactivateAccountScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleDeactivate = async () => {
+    if (deactivateMutation.isPending) return;
     try {
       await deactivateMutation.mutateAsync();
       setModalVisible(true);

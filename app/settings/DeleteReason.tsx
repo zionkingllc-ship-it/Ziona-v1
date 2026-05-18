@@ -28,7 +28,7 @@ export default function DeleteReasonScreen() {
     (selected !== "other" || otherText.trim().length > 0);
 
   const handleDelete = async () => {
-    if (!isValid) return;
+    if (!isValid || isDeleting) return;
     setIsDeleting(true);
     try {
       await authApi.deleteAccount();

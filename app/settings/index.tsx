@@ -49,6 +49,7 @@ export default function SettingsScreen() {
   }, [profile?.avatarUrl, imageError]);
 
   const handleLogout = async () => {
+    if (logout.isPending) return;
     try {
       await logout.mutateAsync();
     } catch (error) {
@@ -147,6 +148,11 @@ export default function SettingsScreen() {
             onPress={() => router.push("/settings/Notification")}
           />
           <SettingsRow
+            icon={<Bell size={18} color={colors.secondaryGray} />}
+            label="In-App Notification"
+            onPress={() => router.push("/settings/InAppNotification")}
+          />
+          <SettingsRow
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Account privacy"
             onPress={() => router.push("/settings/Privacy")}
@@ -187,15 +193,15 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         {/* LOGOUT */}
-        <Pressable onPress={handleLogout}>
+        <Pressable onPress={handleLogout} disabled={logout.isPending}>
           <Text
             marginTop={30}
             alignSelf="center"
-            color={colors.DEBIT_RED}
+            color={logout.isPending ? colors.gray : colors.DEBIT_RED}
             fontFamily="$body"
             fontWeight="500"
           >
-            Log out
+            {logout.isPending ? "Logging out..." : "Log out"}
           </Text>
         </Pressable>
       </ScrollView>

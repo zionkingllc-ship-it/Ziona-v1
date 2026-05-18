@@ -347,6 +347,44 @@ export const GET_ANCHOR_HISTORY = `
   }
 `;
 
+export const GET_ANCHOR_BY_DATE = `
+  query GetAnchorByDate($circleId: String!, $date: String!) {
+    anchorByDate(circleId: $circleId, date: $date) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
 export const GET_ANCHOR_RESPONSES = `
   query GetAnchorResponses($anchorId: String!) {
     anchorResponses(anchorId: $anchorId) {
@@ -527,6 +565,11 @@ export async function fetchAnchorResponses(anchorId: string) {
 export async function fetchAnchor(id: string) {
   const res = await graphqlRequest(GET_ANCHOR, { id });
   return res?.anchor ?? null;
+}
+
+export async function fetchAnchorByDate(circleId: string, date: string) {
+  const res = await graphqlRequest(GET_ANCHOR_BY_DATE, { circleId, date });
+  return res?.anchorByDate ?? null;
 }
 
 export async function fetchCirclePost(id: string) {

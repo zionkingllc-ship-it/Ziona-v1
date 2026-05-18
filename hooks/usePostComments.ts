@@ -6,15 +6,27 @@ export function usePostComments(postId: string, enabled: boolean = true) {
     queryKey: ["postComments", postId],
     queryFn: async ({ pageParam }) => {
       try {
-        return await getPostComments(postId, pageParam, 20);
+        const result = await getPostComments(postId, pageParam, 20);
+        console.log("📝 [usePostComments] fetched:", {
+          postId,
+          cursor: pageParam,
+          hasMore: result.hasMore,
+          nextCursor: result.nextCursor,
+          count: result.comments?.length,
+          commentIds: result.comments?.map((c: any) => c.id),
+        });
+        return result;
       } catch (err) {
-        console.error("❌ [usePostComments] Failed for postId:", postId, err);
+        console.error("📝 [usePostComments] FAILED for postId:", postId, err);
         throw err;
       }
     },
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.nextCursor : undefined,
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.hasMore ? lastPage.nextCursor : undefined;
+      console.log("📝 [usePostComments] pagination:", { hasMore: lastPage.hasMore, nextCursor: lastPage.nextCursor, resolvedNext: next });
+      return next;
+    },
     enabled,
     retry: 2,
   });

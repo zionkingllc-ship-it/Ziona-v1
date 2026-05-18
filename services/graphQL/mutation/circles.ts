@@ -108,18 +108,6 @@ export const RESPOND_TO_ANCHOR = `
   }
 `;
 
-export const REPORT_CIRCLE_CONTENT = `
-  mutation ReportCircleContent($circleId: String!, $targetId: String!, $reason: String!, $targetType: String!) {
-    reportCircleContent(circleId: $circleId, targetId: $targetId, reason: $reason, targetType: $targetType) {
-      success
-      error {
-        code
-        message
-      }
-    }
-  }
-`;
-
 /* =========================
    ACTION FUNCTIONS
    ========================= */
@@ -209,17 +197,4 @@ export async function respondToAnchor(
   return res?.respondToAnchor;
 }
 
-export async function reportCircleContent(
-  circleId: string,
-  targetId: string,
-  reason: string,
-  targetType: string
-) {
-  const res = await graphqlRequest(REPORT_CIRCLE_CONTENT, {
-    circleId,
-    targetId,
-    reason,
-    targetType,
-  });
-  return res?.reportCircleContent;
-}
+

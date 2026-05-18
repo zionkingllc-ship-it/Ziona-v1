@@ -112,6 +112,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   }));
 
   const toggleLike = (commentId: string, currentLiked: boolean) => {
+    if (toggleLikeMutation.isPending) return;
     toggleLikeMutation.mutate({ commentId, currentLiked });
   };
 
@@ -399,7 +400,7 @@ function ReplyItem({
         </XStack>
         <Text fontSize={12} fontFamily="$body" marginTop={2}>{reply.text}</Text>
       </YStack>
-      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)} disabled={toggleLikeMutation.isPending}>
+      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
         {reply.viewerState?.liked ? (
           <Image source={likeIconActive} width={16} height={16} />
         ) : (

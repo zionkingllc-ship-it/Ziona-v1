@@ -46,17 +46,11 @@ export default function CreatePassword() {
     try {
       setLoading(true);
 
-      console.log("RESET PASSWORD REQUEST");
-      console.log("Email:", email);
-      console.log("OTP:", otp);
-
-      const response = await authApi.confirmPasswordReset({
+      await authApi.confirmPasswordReset({
         email,
         otp,
         newPassword: password,
       });
-
-      console.log("🟢 PASSWORD RESET SUCCESS", response);
 
       router.replace("/(auth)/login/signin");
     } catch (error: any) {

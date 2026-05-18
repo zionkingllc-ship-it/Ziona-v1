@@ -7,7 +7,7 @@
   avatars?: string[];
 };
 
-export type AnchorType = "text" | "image" | "video";
+export type AnchorType = "text" | "image" | "video" | "image_text";
 
 export type CirclePost = {
   id: string;
@@ -53,6 +53,7 @@ export type ActiveAnchor = {
   anchorThumbnail?: string;
   createdAt: string;
   expiresAt?: string;
+  mediaUrl?: string;
   prayedCount?: number;
   viewerState?: {
     liked: boolean;

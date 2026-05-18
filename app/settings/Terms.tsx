@@ -1,14 +1,12 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
-import * as WebBrowser from "expo-web-browser";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
 import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
 
 export default function TermsScreen() {
-  const openTerms = () => {
-    WebBrowser.openBrowserAsync("https://ziona-app.web.app/terms");
-  };
+  const router = useRouter();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
@@ -22,7 +20,7 @@ export default function TermsScreen() {
           View our terms of service and privacy policies.
         </Text>
 
-        <Pressable onPress={openTerms}>
+        <Pressable onPress={() => router.push("/settings/terms/use")}>
           <View 
             backgroundColor={colors.sectionBackground} 
             borderRadius={12} 
@@ -34,7 +32,7 @@ export default function TermsScreen() {
           </View>
         </Pressable>
 
-        <Pressable onPress={openTerms}>
+        <Pressable onPress={() => router.push("/settings/terms/privacy")}>
           <View 
             backgroundColor={colors.sectionBackground} 
             borderRadius={12} 

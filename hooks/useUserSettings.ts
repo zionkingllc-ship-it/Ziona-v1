@@ -48,8 +48,19 @@ export function useUpdateNotificationPreferences() {
       const data = await graphqlRequest(UPDATE_NOTIFICATION_PREFS, { preferences });
       return data?.updateNotificationPreferences as NotificationPreferencesType;
     },
-    onSuccess: (newPrefs) => {
+    onMutate: async (newPrefs) => {
+      await queryClient.cancelQueries({ queryKey: ["notificationPreferences"] });
+      const previous = queryClient.getQueryData(["notificationPreferences"]);
       queryClient.setQueryData(["notificationPreferences"], newPrefs);
+      return { previous };
+    },
+    onError: (_err, _newPrefs, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["notificationPreferences"], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notificationPreferences"] });
     },
   });
 }

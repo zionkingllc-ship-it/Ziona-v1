@@ -62,7 +62,7 @@ export default function EditUsernameScreen() {
   }, [user?.username]);
 
   const handleSave = () => {
-    if (!username.trim()) return;
+    if (!username.trim() || mutation.isPending) return;
 
     mutation.mutate(username.trim());
   };

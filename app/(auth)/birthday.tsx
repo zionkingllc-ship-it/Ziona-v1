@@ -16,6 +16,7 @@ export default function Birthday() {
   const [date, setDate] = useState<Date | null>(null);
   const isFocused = useIsFocused();
   const [pickerReady, setPickerReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const email = useSignupStore((s) => s.email);
   const setBirthday = useSignupStore((s) => s.setBirthday);
@@ -36,13 +37,14 @@ export default function Birthday() {
   const pickerVisible = showPicker && Platform.OS === "android";
 
   useEffect(() => {
-    if (isFocused) {
-      const task = InteractionManager.runAfterInteractions(() => {
-        setPickerReady(true);
-      });
+    const task = InteractionManager.runAfterInteractions(() => {
+      setPickerReady(true);
+    });
 
-      return () => task.cancel();
-    }
+    return () => {
+      task.cancel();
+      if (!isFocused) setPickerReady(false);
+    };
   }, [isFocused]);
 
   const handleSubmit = async () => {
@@ -67,8 +69,8 @@ export default function Birthday() {
       setSuggestions(suggestions);
 
       router.push("/(auth)/password");
-    } catch (error) {
-      console.error("Suggestion error:", error);
+    } catch (err: any) {
+      setError(err?.response?.data?.error?.message || "Unable to verify birthday. Please try again.");
     } finally {
       stop("birthdayNext");
     }
@@ -130,6 +132,12 @@ export default function Birthday() {
             </XStack>
           </Pressable>
 
+          {error && (
+            <Text fontSize="$3" color={colors.errorText} textAlign="center">
+              {error}
+            </Text>
+          )}
+
           <SimpleButton
             textColor={colors.buttonText}
             color={colors.primaryButton}
@@ -161,6 +169,7 @@ export default function Birthday() {
             date={date ?? new Date(2000, 0, 1)}
             setDate={(d: any) => {
               setDate(d);
+              setError(null);
             }}
           />
         </View>

@@ -30,7 +30,7 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
     /* -------- Handle paste -------- */
 
     if (text.length > 1) {
-      const pasted = text.slice(0, length).split("");
+      const pasted = text.trim().slice(0, length).split("");
 
       const newOtp = [...otp];
 
@@ -69,16 +69,15 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
     if (newOtp[index]) {
       newOtp[index] = "";
       setOtp(newOtp);
+      focusPrev(index);
       return;
     }
 
-    focusPrev(index);
-
     if (index > 0) {
       newOtp[index - 1] = "";
+      setOtp(newOtp);
+      focusPrev(index);
     }
-
-    setOtp(newOtp);
   };
 
   return (

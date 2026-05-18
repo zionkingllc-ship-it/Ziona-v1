@@ -4,7 +4,7 @@ import colors from "@/constants/colors";
 import { router } from "expo-router";
 // import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack } from "tamagui";
+import { Text, YStack } from "tamagui";
 import { ActivityIndicator } from "react-native";
 
 import { useDiscoverCategories } from "@/hooks/useDiscover";
@@ -22,8 +22,10 @@ export default function DiscoverScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <YStack flex={1}>
-        {/* <SearchHeader value={searchQuery} onChangeText={setSearchQuery} /> */}
+      <YStack flex={1} paddingTop={20}>
+        <Text fontFamily="$body" fontWeight="600" fontSize={18} paddingHorizontal={16} marginBottom={12}>
+          Discover
+        </Text>
 
         {loading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">

@@ -18,6 +18,7 @@ type AnchorActionContentProps = {
   anchorType?: string;
   anchorImage?: string | null;
   anchorColors?: string;
+  isExpired?: boolean;
 };
 
 export default function AnchorActionContent({
@@ -29,6 +30,7 @@ export default function AnchorActionContent({
   anchorType,
   anchorImage,
   anchorColors,
+  isExpired = false,
 }: AnchorActionContentProps) {
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isDone, setIsDone] = useState(false);
@@ -76,137 +78,131 @@ export default function AnchorActionContent({
   const renderContent = () => (
     <View style={styles.actionContainer}>
       <View style={styles.actionCard}>
-        <Text style={styles.actionTitle}>Take a Moment to Respond</Text>
-        <Text style={styles.actionSubtitle}>
-          Share how it met you — prayer,{"\n"} encouragement, or reflection.
-        </Text>
+        <>
+          <Text style={styles.actionTitle}>
+            {isExpired ? "Anchor Expired" : "Take a Moment to Respond"}
+          </Text>
+          <Text style={styles.actionSubtitle}>
+            {isExpired
+              ? "This anchor is no longer available for interaction."
+              : "Share how it met you — prayer, \n encouragement, or reflection."}
+          </Text>
 
-        {anchorType && (anchorType !== "text" || text) && (
-          anchorType === "image" && anchorImage ? (
-            <View style={{ width: "100%", height: 120, borderRadius: 12, overflow: "hidden" }}>
-              <Image source={{ uri: anchorImage }} width="100%" height={120} borderRadius={12} />
-            </View>
-          ) : anchorType === "video" ? (
-            <View style={{ width: "100%", height: 120, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
-              <Ionicons name="videocam" size={28} color="#FFF" />
-              <Text style={{ color: "#FFF", fontSize: 12 }}>Reply to Anchor Video</Text>
-            </View>
-          ) : text ? (
-            <View style={{ width: "100%", height: 120, borderRadius: 12, overflow: "hidden" }}>
-              <LinearGradient
-                colors={getGradientColors(anchorColors || colors || "#6C2BD9,#9B59B6")}
-                style={{ flex: 1, padding: 16, justifyContent: "center" }}
+          <View style={[styles.actionCardsRow, isExpired && styles.disabledCards]}>
+            <TouchableOpacity
+              disabled={isExpired}
+              style={[
+                styles.actionCardItem,
+                selectedAction === "pray" && styles.actionCardItemSelected,
+                isExpired && styles.disabledCard,
+              ]}
+              onPress={() => setSelectedAction("pray")}
+            >
+              <Image
+                source={require("@/assets/images/AnchorPrayingHandDark.png")}
+                style={{ width: 22, height: 22 }}
+              />
+              <Text
+                style={[
+                  styles.actionCardTitle,
+                  selectedAction === "pray" && styles.actionCardTitleSelected,
+                ]}
               >
-                <Text style={{ color: "#FFF", fontSize: 14 }} numberOfLines={4}>
-                  {text}
-                </Text>
-              </LinearGradient>
-            </View>
-          ) : null
-        )}
+                Pray for Me
+              </Text>
+              <Text
+                style={[
+                  styles.actionCardDesc,
+                  selectedAction === "pray" && styles.actionCardDescSelected,
+                ]}
+              >
+                Did this touch something personal? Tell us how we can pray.
+              </Text>
+            </TouchableOpacity>
 
-        <View style={styles.actionCardsRow}>
-          <TouchableOpacity
-            style={[
-              styles.actionCardItem,
-              selectedAction === "pray" && styles.actionCardItemSelected,
-            ]}
-            onPress={() => setSelectedAction("pray")}
-          >
-            <Image
-              source={require("@/assets/images/AnchorPrayingHandDark.png")}
-              style={{ width: 22, height: 22 }}
-            />
-            <Text
+            <TouchableOpacity
+              disabled={isExpired}
               style={[
-                styles.actionCardTitle,
-                selectedAction === "pray" && styles.actionCardTitleSelected,
+                styles.actionCardItem,
+                selectedAction === "encouraged" && styles.actionCardItemSelected,
+                isExpired && styles.disabledCard,
               ]}
+              onPress={() => setSelectedAction("encouraged")}
             >
-              Pray for Me
-            </Text>
-            <Text
-              style={[
-                styles.actionCardDesc,
-                selectedAction === "pray" && styles.actionCardDescSelected,
-              ]}
-            >
-              Did this touch something personal? Tell us how we can pray.
-            </Text>
-          </TouchableOpacity>
+              <Image
+                source={require("@/assets/images/star.png")}
+                style={{ width: 22, height: 22 }}
+              />
+              <Text
+                style={[
+                  styles.actionCardTitle,
+                  selectedAction === "encouraged" &&
+                    styles.actionCardTitleSelected,
+                ]}
+              >
+                This Encouraged Me
+              </Text>
+              <Text
+                style={[
+                  styles.actionCardDesc,
+                  selectedAction === "encouraged" &&
+                    styles.actionCardDescSelected,
+                ]}
+              >
+                Did this strengthen you today? Tell us what stood out.
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.actionCardItem,
-              selectedAction === "encouraged" && styles.actionCardItemSelected,
-            ]}
-            onPress={() => setSelectedAction("encouraged")}
-          >
-            <Image
-              source={require("@/assets/images/star.png")}
-              style={{ width: 22, height: 22 }}
-            />
-            <Text
+            <TouchableOpacity
+              disabled={isExpired}
               style={[
-                styles.actionCardTitle,
-                selectedAction === "encouraged" &&
-                  styles.actionCardTitleSelected,
+                styles.actionCardItem,
+                selectedAction === "think" && styles.actionCardItemSelected,
+                isExpired && styles.disabledCard,
               ]}
+              onPress={() => setSelectedAction("think")}
             >
-              This Encouraged Me
-            </Text>
-            <Text
-              style={[
-                styles.actionCardDesc,
-                selectedAction === "encouraged" &&
-                  styles.actionCardDescSelected,
-              ]}
-            >
-              Did this strengthen you today? Tell us what stood out.
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.actionCardItem,
-              selectedAction === "think" && styles.actionCardItemSelected,
-            ]}
-            onPress={() => setSelectedAction("think")}
-          >
-            <Image
-              source={require("@/assets/images/brain.png")}
-              style={{ width: 22, height: 22 }}
-            />
-            <Text
-              style={[
-                styles.actionCardTitle,
-                selectedAction === "think" && styles.actionCardTitleSelected,
-              ]}
-            >
-              This Made Me Think
-            </Text>
-            <Text
-              style={[
-                styles.actionCardDesc,
-                selectedAction === "think" && styles.actionCardDescSelected,
-              ]}
-            >
-              What line stayed with you? Share it below.
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Image
+                source={require("@/assets/images/brain.png")}
+                style={{ width: 22, height: 22 }}
+              />
+              <Text
+                style={[
+                  styles.actionCardTitle,
+                  selectedAction === "think" && styles.actionCardTitleSelected,
+                ]}
+              >
+                This Made Me Think
+              </Text>
+              <Text
+                style={[
+                  styles.actionCardDesc,
+                  selectedAction === "think" && styles.actionCardDescSelected,
+                ]}
+              >
+                What line stayed with you? Share it below.
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
       </View>
-      <TouchableOpacity
-        onPress={handleActionDone}
-        style={[
-          styles.doneAllButton,
-          !selectedAction && styles.doneAllButtonDisabled,
-        ]}
-      >
-        <Text style={styles.doneAllText}>
-          {selectedAction ? "Done ✓" : "Done"}
-        </Text>
-      </TouchableOpacity>
+      {isExpired ? (
+        <TouchableOpacity onPress={handleDone} style={styles.doneAllButton}>
+          <Text style={styles.doneAllText}>Done</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          onPress={handleActionDone}
+          style={[
+            styles.doneAllButton,
+            !selectedAction && styles.doneAllButtonDisabled,
+          ]}
+        >
+          <Text style={styles.doneAllText}>
+            {selectedAction ? "Done ✓" : "Done"}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -271,6 +267,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 5,
     width: "100%",
+  },
+  disabledCards: {
+    opacity: 0.5,
+  },
+  disabledCard: {
+    opacity: 0.5,
   },
   actionCardItem: {
     flex: 1,

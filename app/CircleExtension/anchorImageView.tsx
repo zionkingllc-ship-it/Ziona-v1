@@ -42,12 +42,13 @@ function createSlides(
 
 export default function AnchorImageView() {
   const router = useRouter();
-  const { image, colors, expiresAt, circleId, id } = useLocalSearchParams<{
+  const { image, colors, expiresAt, circleId, id, expired } = useLocalSearchParams<{
     image?: string;
     colors?: string;
     expiresAt?: string;
     circleId?: string;
     id?: string;
+    expired?: string;
   }>();
 
   const gradientColors = getGradientColors(colors);
@@ -128,6 +129,7 @@ export default function AnchorImageView() {
                 anchorImage={image}
                 anchorColors={colors}
                 onActionSelected={handleActionSelected}
+                isExpired={expired === "1"}
               />
             ) : (
               <View style={styles.imageWrapper}>
@@ -157,7 +159,7 @@ export default function AnchorImageView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} />
       </View>
     </SafeAreaView>
   );

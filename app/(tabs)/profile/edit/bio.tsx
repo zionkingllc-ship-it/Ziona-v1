@@ -33,7 +33,7 @@ export default function EditBioScreen() {
   }, [user?.bio]);
 
   const handleSave = async () => {
-    if (!bio.trim()) return;
+    if (!bio.trim() || mutation.isPending) return;
 
     try {
       await mutation.mutateAsync(bio);

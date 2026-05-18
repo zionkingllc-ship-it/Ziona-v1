@@ -29,6 +29,7 @@ export default function CreateUsername() {
   const [username, setUsername] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [isFocus, setIsFocus] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const userIcon = require("@/assets/images/userIcon.png");
  
@@ -72,8 +73,8 @@ const handleSubmit = async () => {
 
       router.replace("/(tabs)/feed");
     }
-  } catch (error) {
-    console.error("Signup error:", error);
+  } catch (err: any) {
+    setError(err?.response?.data?.error?.message || err?.message || "Signup failed. Please try again.");
   } finally {
     stop("signup");
   }
@@ -123,6 +124,7 @@ const handleSubmit = async () => {
             onChangeText={(value) => {
               setUsername(value);
               setSelectedSuggestion(null);
+              setError(null);
             }}
           />
         </YStack>
@@ -160,6 +162,14 @@ const handleSubmit = async () => {
               })}
             </XStack>
           </YStack>
+        )}
+
+        {/* ERROR MESSAGE */}
+
+        {error && (
+          <Text fontSize={fs(13)} color={colors.errorText} alignSelf="flex-start">
+            {error}
+          </Text>
         )}
 
         {/* SIGNUP BUTTON */}
