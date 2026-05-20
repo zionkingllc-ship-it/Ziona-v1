@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useCountdown } from "@/hooks/useCountdown";
+
+const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
 type AnchorCardSmallProps = {
   anchor: {
@@ -17,6 +19,7 @@ type AnchorCardSmallProps = {
     content?: string;
     mediaUrl?: string;
     backgroundColors?: [string, string];
+    backgroundImage?: string;
     bibleText?: string;
     bibleReference?: string;
     expiresAt?: string;
@@ -27,6 +30,7 @@ type AnchorCardSmallProps = {
 
 const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circleName }: AnchorCardSmallProps) {
   const router = useRouter();
+  const [imageError, setImageError] = useState(false);
   const anchorType = anchor.anchorType || anchor.type || "text";
   const hasExpiry = !!anchor.expiresAt;
   const { formatted, isExpired } = useCountdown(anchor.expiresAt || "");
@@ -56,6 +60,12 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
   const gradientColors = anchor.backgroundColors || ["#6C2BD9", "#9B59B6"];
   const thumbnail = anchor.anchorThumbnail || anchor.anchorImage || "";
 
+  const textBgSource = () => {
+    if (imageError) return FALLBACK_IMAGE;
+    if (anchor.backgroundImage) return { uri: anchor.backgroundImage };
+    return FALLBACK_IMAGE;
+  };
+
   return (
     <Pressable onPress={handlePress} style={styles.card}>
       {anchorType === "image" || anchorType === "video" ? (
@@ -74,11 +84,20 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
           )}
         </View>
       ) : (
-        <LinearGradient colors={gradientColors as [string, string]} style={styles.textPreview}>
+        <View style={styles.textPreview}>
+          <Image
+            source={textBgSource()}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+            onError={() => setImageError(true)}
+          />
+          <View style={StyleSheet.absoluteFill}>
+            <LinearGradient colors={gradientColors as [string, string]} style={StyleSheet.absoluteFill} opacity={0.4} />
+          </View>
           <Text style={styles.textPreviewContent} numberOfLines={3}>
             {anchor.anchorText || anchor.content || anchor.bibleText || ""}
           </Text>
-        </LinearGradient>
+        </View>
       )}
 
       {hasExpiry && (
@@ -135,11 +154,13 @@ const styles = StyleSheet.create({
     height: IMAGE_HEIGHT,
     padding: 10,
     justifyContent: "center",
+    position: "relative",
   },
   textPreviewContent: {
     color: "#FFF",
     fontSize: 11,
     lineHeight: 15,
+    zIndex: 1,
   },
   countdownBadge: {
     position: "absolute",
