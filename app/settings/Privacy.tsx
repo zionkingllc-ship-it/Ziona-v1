@@ -15,7 +15,7 @@ export default function PrivacyScreen() {
       </XStack>
 
       <YStack padding={16} gap="$4">
-        <Text fontFamily="$body" fontSize={14} color={colors.gray}>
+        <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>
           Manage your privacy settings and control who can see your content.
         </Text>
 
@@ -25,14 +25,14 @@ export default function PrivacyScreen() {
             borderRadius={12} 
             padding={16}
           >
-            <Text fontFamily="$body" fontSize={14} color={colors.primary}>
+            <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.primary}>
               View Privacy Policy
             </Text>
           </View>
         </Pressable>
 
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>
-          <Text fontFamily="$body" fontSize={14} color={colors.gray}>
+          <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>
             Privacy settings are managed on the server. Contact support for changes.
           </Text>
         </View>

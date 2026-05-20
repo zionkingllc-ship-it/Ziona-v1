@@ -340,6 +340,11 @@ export default function CirclePostDetailScreen() {
           >
             <Pressable
               onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert("Permission required", "Please grant media library access in Settings to attach images.");
+                  return;
+                }
                 const result = await ImagePicker.launchImageLibraryAsync({
                   mediaTypes: ["images"],
                   allowsEditing: true,

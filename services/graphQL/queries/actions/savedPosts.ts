@@ -25,14 +25,17 @@ export async function getSavedPosts(
     }
   `;
 
+  console.log(`🔍 [savedPosts] Fetching saved posts folderId=${folderId} mediaType=${mediaType} cursor=${cursor} limit=${limit}`);
   const data = await graphqlRequest(query, {
     folderId,
     mediaType,
     cursor,
     limit,
   });
+  console.log("🔍 [savedPosts] Raw API response:", JSON.stringify(data, null, 2));
 
   const res = data?.savedPosts ?? {};
+  console.log(`🔍 [savedPosts] Parsed: ${res.posts?.length ?? 0} posts, hasMore=${res.hasMore}, nextCursor=${res.nextCursor}`);
 
   return {
     posts: res.posts ?? [],

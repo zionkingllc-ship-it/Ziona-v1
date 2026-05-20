@@ -4,11 +4,12 @@ import CircleCommentComposer from "./CircleCommentComposer";
 
 export default function AnchorResponseScreen() {
   const router = useRouter();
-  const { action, text, circleId, anchorRefId } = useLocalSearchParams<{
+  const { action, text, circleId, anchorRefId, source } = useLocalSearchParams<{
     action?: string;
     text?: string;
     circleId?: string;
     anchorRefId?: string;
+    source?: string;
   }>();
 
   const prompt =
@@ -32,6 +33,7 @@ export default function AnchorResponseScreen() {
           circleId,
           fromScreen: "circleFeed",
           anchorRefId: anchorRefId || "",
+          ...(source ? { source } : {}),
         },
       });
     } else {

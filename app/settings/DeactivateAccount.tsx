@@ -32,21 +32,21 @@ export default function DeactivateAccountScreen() {
       <YStack flex={1} paddingHorizontal={16} marginTop={20} gap="$4">
         <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
           Deactivate:{" "}
-          <Text color={colors.primary}>@{username}</Text>
+          <Text fontWeight="600" color={colors.primary}>@{username}</Text>
         </Text>
 
-        <Text fontFamily="$body" fontSize={13} color={colors.gray} marginTop={10}>
+        <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray} marginTop={10}>
           If you deactivate your account:
         </Text>
 
         <YStack gap="$3" marginTop={10}>
-          <Text fontFamily="$body" fontSize={13} color={colors.secondaryGray}>
+          <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
             • No one will see your account and content
           </Text>
-          <Text fontFamily="$body" fontSize={13} color={colors.secondaryGray}>
+          <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
             • Ziona will keep your data so you can recover it when you reactivate
           </Text>
-          <Text fontFamily="$body" fontSize={13} color={colors.secondaryGray}>
+          <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
             • You can reactivate anytime by logging back in
           </Text>
         </YStack>

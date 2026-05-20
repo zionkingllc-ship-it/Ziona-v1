@@ -17,6 +17,8 @@ type AnchorFooterProps = {
   prayIcon?: any;
   bottomOffset?: number;
   anchorId?: string;
+  circleId?: string;
+  source?: string;
   expired?: boolean;
 };
 
@@ -24,6 +26,8 @@ export default function AnchorFooter({
   prayIcon,
   bottomOffset = 30,
   anchorId,
+  circleId,
+  source = "suggestion",
   expired = false,
 }: AnchorFooterProps) {
   const router = useRouter();
@@ -56,7 +60,13 @@ export default function AnchorFooter({
   const handleReflection = () => {
     router.push({
       pathname: "/CircleExtension/CircleCommentComposer",
-      params: { anchorId }
+      params: {
+        anchorId,
+        ...(circleId ? { circleId } : {}),
+        fromScreen: "circleFeed",
+        mode: "action",
+        source,
+      },
     });
   };
 

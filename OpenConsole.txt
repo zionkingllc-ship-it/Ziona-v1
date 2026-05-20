@@ -212,14 +212,7 @@ Generated: May 2026 (refreshed via codegen)
 
   [4.3] deletePost mutation — no delete post UI
         File: generated types (see M6 above)
-
-  [4.4] addPassword mutation — OAuth users can't add password ✓
-        File: generated types (see M1 above)
-
-  [4.5] checkUsernameAvailability / finalizeUsername ✓
-        finalizeUsername wired via REST in app/(auth)/username.tsx,
-        checkUsernameAvailability still only in generated types
-
+ 
 ======================================================================
   5. ENTIRE FEATURES MISSING (NO UI)
 ======================================================================

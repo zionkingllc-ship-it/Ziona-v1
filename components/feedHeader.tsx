@@ -1,6 +1,6 @@
 // components/feedHeader.tsx
 import colorsDefault from "@/constants/colors";
-import { Bell } from "@tamagui/lucide-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "react-native";
 import { XStack, Text } from "tamagui";
 import TwoButtonSwitch from "./ui/twoButtonSwitch";
@@ -48,26 +48,20 @@ export default function FeedHeader({
       <TouchableOpacity
         onPress={onBellPress}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(255, 255, 255, 0.24)",
         }}
       >
-        <Bell
+        <Ionicons
+          name="notifications"
           size={24}
-          stroke={colorsDefault.black}
-          color={colorsDefault.white} 
-          strokeOpacity={1}
-          strokeWidth={2}
+          color={colorsDefault.white}
         />
         {unreadCount > 0 && (
           <XStack
             position="absolute"
-            top={4}
-            right={4}
+            top={-2}
+            right={-4}
             backgroundColor={colorsDefault.primary}
             borderRadius={10}
             minWidth={18}

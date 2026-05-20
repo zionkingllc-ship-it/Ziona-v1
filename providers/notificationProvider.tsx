@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { registerDeviceToken } from "@/services/graphQL/queries/actions/notifications";
@@ -19,7 +19,17 @@ async function requestPermissionsAndRegister() {
     const { status: newStatus } = await Notifications.requestPermissionsAsync({
       ios: { allowAlert: true, allowSound: true },
     });
-    if (newStatus !== "granted") return;
+    if (newStatus !== "granted") {
+      Alert.alert(
+        "Notifications disabled",
+        "You won't receive push notifications. You can enable them later in Settings.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+        ]
+      );
+      return;
+    }
   }
   try {
     const expoPushToken = await Notifications.getExpoPushTokenAsync();

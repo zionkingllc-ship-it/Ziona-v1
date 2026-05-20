@@ -133,6 +133,8 @@ export default function AnchorVideoView() {
             expiresAt: expiresAt || "",
             anchorType: "video",
             ...(circleId ? { circleId } : {}),
+            ...(id ? { id } : {}),
+            source: "suggestion",
           },
         });
       }, 2000);
@@ -189,7 +191,7 @@ export default function AnchorVideoView() {
         )}
       </View>
 
-      <AnchorFooter anchorId={id} expired={expired === "1"} />
+      <AnchorFooter anchorId={id} expired={expired === "1"} source="suggestion" />
     </View>
   );
 }

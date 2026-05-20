@@ -83,6 +83,7 @@ export default function AnchorImageView() {
         anchorImage: image || "",
         anchorColors: colors || "",
         ...(circleId ? { circleId } : {}),
+        source: "suggestion",
       },
     });
   };
@@ -159,7 +160,7 @@ export default function AnchorImageView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" />
       </View>
     </SafeAreaView>
   );

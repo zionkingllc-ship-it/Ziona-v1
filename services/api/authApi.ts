@@ -184,7 +184,8 @@ export const authApi = {
 
       const response = await api.get("/auth/me");
 
-      return response.data;
+      // Backend wraps in { data: ... } — unwrap consistently with other endpoints
+      return response.data?.data ?? response.data;
     } catch (err: any) {
       errorLog("getMe failed", err);
       throw err;

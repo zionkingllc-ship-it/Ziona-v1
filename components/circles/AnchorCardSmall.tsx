@@ -15,6 +15,7 @@ type AnchorCardSmallProps = {
     anchorThumbnail?: string;
     anchorText?: string;
     content?: string;
+    mediaUrl?: string;
     backgroundColors?: [string, string];
     bibleText?: string;
     bibleReference?: string;
@@ -31,9 +32,24 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
   const { formatted, isExpired } = useCountdown(anchor.expiresAt || "");
 
   const handlePress = () => {
+    const text = anchor.anchorText || anchor.content || "";
+    const url = anchor.mediaUrl || "";
+    const isVideo = (anchor.anchorType || anchor.type || "") === "video";
+    const anchorVideo = anchor.anchorVideo || (isVideo && url ? url : "");
+    const anchorImage = !isVideo && url ? url : anchor.anchorImage || "";
     router.push({
-      pathname: "/(tabs)/circle/circleFeed",
-      params: { id: circleId },
+      pathname: "/CircleExtension/anchorUnifiedView",
+      params: {
+        id: anchor.id || "",
+        ...(circleId ? { circleId } : {}),
+        ...(text ? { text } : {}),
+        ...(anchorImage ? { anchorImage } : {}),
+        ...(anchorVideo ? { video: anchorVideo } : {}),
+        ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+        ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
+        ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
+        ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
+      },
     });
   };
 

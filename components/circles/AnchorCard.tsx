@@ -6,93 +6,85 @@ import React, { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
 interface AnchorCardProps {
-  anchor: ActiveAnchor;
+  anchor?: ActiveAnchor;
   disabled?: boolean;
   circleId?: string;
   expired?: boolean;
+  isEmpty?: boolean;
 }
 
 const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
-export default function AnchorCard({ anchor, disabled = false, circleId, expired = false }: AnchorCardProps) {
+export default function AnchorCard({ anchor, disabled = false, circleId, expired = false, isEmpty = false }: AnchorCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const handlePress = useCallback(() => {
-    if (disabled || loading) return;
+    if (!anchor || disabled || loading || isEmpty) return;
     
     setLoading(true);
-    
-    const params: Record<string, string> = {
-      id: anchor.id || "",
-      likedCount: anchor.anchorLikedCount?.toString() || "0",
-      expired: expired ? "1" : "0",
-      ...(circleId ? { circleId } : {}),
-    };
 
-    if (anchor.type === "image_text") {
-      router.push({
-        pathname: "/CircleExtension/anchorTextView",
-        params: {
-          ...params,
-          text: anchor.content || anchor.bibleText || "",
-          anchorImage: anchor.mediaUrl || "",
-          colors: anchor.backgroundColors?.join(",") || "",
-          bibleReference: anchor.bibleReference || "",
-          bibleText: anchor.bibleText || "",
-          expiresAt: anchor.expiresAt || "",
-        },
-      });
-    } else if (anchor.type === "image") {
-      router.push({
-        pathname: "/CircleExtension/anchorImageView",
-        params: { ...params, image: anchor.mediaUrl || anchor.anchorImage || "", expiresAt: anchor.expiresAt || "" },
-      });
-    } else if (anchor.type === "video") {
-      router.push({
-        pathname: "/CircleExtension/anchorVideoView",
-        params: { ...params, video: anchor.anchorVideo || "", expiresAt: anchor.expiresAt || "" },
-      });
-    } else if (anchor.type === "text") {
-      router.push({
-        pathname: "/CircleExtension/anchorTextView",
-        params: {
-          ...params,
-          text: anchor.anchorText || "",
-          colors: anchor.backgroundColors?.join(",") || "",
-          backgroundImage: anchor.backgroundImage || "",
-          bibleReference: anchor.bibleReference || "",
-          bibleText: anchor.bibleText || "",
-          expiresAt: anchor.expiresAt || "",
-        },
-      });
-    }
+    const url = anchor.mediaUrl || "";
+    const anchorVideo = anchor.anchorVideo || (anchor.type === "video" && url ? url : "");
+    const anchorImage = anchor.type !== "video" && url ? url : anchor.anchorImage || "";
+    const text = anchor.anchorText || anchor.content || "";
+
+    router.push({
+      pathname: "/CircleExtension/anchorUnifiedView",
+      params: {
+        id: anchor.id || "",
+        likedCount: anchor.anchorLikedCount?.toString() || "0",
+        expired: expired ? "1" : "0",
+        ...(circleId ? { circleId } : {}),
+        ...(text ? { text } : {}),
+        ...(anchorImage ? { anchorImage } : {}),
+        ...(anchorVideo ? { video: anchorVideo } : {}),
+        ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+        ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
+        ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
+        ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
+      },
+    });
     
     setTimeout(() => setLoading(false), 500);
-  }, [disabled, loading, anchor, router, circleId]);
+  }, [disabled, loading, anchor, router, circleId, isEmpty]);
 
-  const isImageType = anchor.type === "image" || anchor.type === "image_text";
+  if (isEmpty) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.imageWrapper, {
+          backgroundColor: "#E5E5E5",
+          justifyContent: "center",
+          alignItems: "center",
+          borderRadius: 10,
+        }]}>
+          <Text style={{ fontSize: 14, color: "#999", fontWeight: "500" }}>No anchor</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const hasText = !!(anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference);
+  const hasVideo = !!(anchor!.anchorVideo || (anchor!.type === "video" && anchor!.mediaUrl));
 
   const imageSource = () => {
     if (imageError) return FALLBACK_IMAGE;
 
-    if (anchor.type === "text") {
-      if (anchor.backgroundImage) return { uri: anchor.backgroundImage };
+    if (anchor!.type === "text") {
+      if (anchor!.backgroundImage) return { uri: anchor!.backgroundImage };
       return FALLBACK_IMAGE;
     }
 
-    const uri = anchor.mediaUrl || anchor.anchorThumbnail || anchor.anchorImage;
+    const uri = anchor!.mediaUrl || anchor!.anchorThumbnail || anchor!.anchorImage;
     if (uri) return { uri };
     return FALLBACK_IMAGE;
   };
 
-  let previewText = "";
-  if (isImageType) {
-    previewText = anchor.content || anchor.bibleText || anchor.bibleReference || "";
-  } else if (anchor.type === "text") {
-    previewText = anchor.anchorText || anchor.bibleText || anchor.bibleReference || anchor.content || "";
-  }
+  const previewText = anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference || "";
+
+  const showTextPreview = hasText;
+  const showVideoOverlay = !hasText && hasVideo;
 
   return (
     <TouchableOpacity 
@@ -126,19 +118,19 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
             <Text style={styles.label}>Anchor of the day</Text>
           </View>
 
-          {anchor.type === "video" && (
+          {showVideoOverlay && (
             <View style={styles.playOverlay}>
               <Ionicons name="play-circle" size={28} color="#FFF" />
             </View>
           )}
 
-          {(anchor.type === "image_text" || anchor.type === "text") && previewText ? (
+          {showTextPreview && (
             <View style={styles.textArea}>
               <Text style={styles.previewText} numberOfLines={4}>
                 {previewText}
               </Text>
             </View>
-          ) : null}
+          )}
 
           <View style={styles.bottomRow}>
             <YStack style={styles.statsRow}>

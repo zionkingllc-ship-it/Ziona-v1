@@ -1,10 +1,12 @@
 import { useAuthStore } from "@/store/useAuthStore";
 
 const GRAPHQL_URL = "https://ziona-api-staging.onrender.com/graphql/";
+const REST_BASE = "https://ziona-api-staging.onrender.com/api";
 
 const AUTH_ERROR_MESSAGES = [
   "unauthorized",
   "not authenticated",
+  "authentication required",
   "token expired",
   "invalid token",
   "missing token",
@@ -12,7 +14,8 @@ const AUTH_ERROR_MESSAGES = [
   "bearer",
 ];
 
-function isAuthErrorMessage(message: string): boolean {
+function isAuthErrorMessage(message: string | null | undefined): boolean {
+  if (!message) return false;
   const lower = message.toLowerCase();
   return AUTH_ERROR_MESSAGES.some((authMsg) => lower.includes(authMsg));
 }
@@ -29,12 +32,22 @@ async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
 
   let lastError = null;
 
+  // Try REST /auth/refresh first (more reliable endpoint)
+  try {
+    const restResult = await restRefresh(refreshToken);
+    if (restResult) return restResult;
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : "REST refresh error";
+    console.warn("REST refresh failed, falling back to GraphQL:", lastError);
+  }
+
+  // Fall back to GraphQL mutation retries
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       // Add exponential backoff: 500ms, 1000ms, 2000ms
       if (attempt > 0) {
         const delay = 500 * Math.pow(2, attempt - 1);
-        console.log(`Refresh retry ${attempt + 1}/${maxRetries} after ${delay}ms...`);
+        console.log(`GraphQL refresh retry ${attempt + 1}/${maxRetries} after ${delay}ms...`);
         await sleep(delay);
       }
 
@@ -57,7 +70,15 @@ async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
       });
 
       const json = await res.json();
-      const newTokens = json?.data?.refreshToken;
+
+      // Handle both camelCase and snake_case from the backend
+      const rawTokens = json?.data?.refreshToken;
+      const newTokens = rawTokens
+        ? {
+            accessToken: rawTokens.accessToken ?? rawTokens.access_token ?? "",
+            refreshToken: rawTokens.refreshToken ?? rawTokens.refresh_token ?? "",
+          }
+        : null;
 
       if (newTokens?.accessToken) {
         useAuthStore.getState().setTokens?.(newTokens);
@@ -68,11 +89,47 @@ async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
       lastError = json?.errors?.[0]?.message || "No tokens in response";
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Network error";
-      console.warn(`Refresh attempt ${attempt + 1} failed:`, lastError);
+      console.warn(`GraphQL refresh attempt ${attempt + 1} failed:`, lastError);
     }
   }
 
-  console.warn(`All ${maxRetries} refresh attempts failed. Last error:`, lastError);
+  console.warn(`All ${maxRetries} GraphQL refresh attempts failed. Last error:`, lastError);
+  return null;
+}
+
+async function restRefresh(token: string): Promise<string | null> {
+  const res = await fetch(`${REST_BASE}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: token }),
+  });
+
+  if (!res.ok) {
+    console.warn(`REST refresh returned ${res.status}`);
+    return null;
+  }
+
+  const data = await res.json();
+
+  console.log("REST refresh raw response:", JSON.stringify(data).slice(0, 300));
+
+  // Handle wrapped { data: { accessToken, refreshToken } } or flat, and snake_case
+  const inner = data?.data ?? data;
+  const accessToken = inner.accessToken ?? inner.access_token ?? null;
+  const newRefreshToken = inner.refreshToken ?? inner.refresh_token ?? null;
+
+  console.log("REST refresh extracted:", JSON.stringify({ accessToken: accessToken?.slice(0, 20), hasRefreshToken: !!newRefreshToken }));
+
+  if (accessToken) {
+    useAuthStore.getState().setTokens?.({
+      accessToken,
+      refreshToken: newRefreshToken ?? "",
+    });
+    console.log("Token refreshed successfully via REST endpoint");
+    return accessToken;
+  }
+
+  console.warn("REST refresh succeeded but no access token in response");
   return null;
 }
 
@@ -110,8 +167,11 @@ export async function graphqlRequest(
     });
   };
 
+  const queryPreview = query.replace(/\s+/g, " ").substring(0, 120);
+  console.log("🔍 [graphql] Making request:", queryPreview);
   let res = await makeRequest(token);
   let json = await res.json();
+  console.log("🔍 [graphql] Response status:", res.status, "hasErrors:", !!json?.errors?.length);
 
   const isAuthError =
     res.status === 401 ||
@@ -136,28 +196,32 @@ export async function graphqlRequest(
       const stillHasAuthError = res.status === 401 ||
         json?.errors?.some(
           (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
-                        err?.extensions?.code === "FORBIDDEN"
+                        err?.extensions?.code === "FORBIDDEN" ||
+                        isAuthErrorMessage(err?.message)
         );
 
       if (stillHasAuthError) {
-        console.warn("Refresh still failing after retries — logging out");
-        useAuthStore.getState().logout?.();
-        // Still allow app to function - return partial data or throw
+        console.warn("Refresh still failing after retries — session broken");
+        // Don't call logout — REST refresh might have worked even if GraphQL is
+        // rejecting the token. Let the caller handle this gracefully.
         throw new Error("Session expired");
       }
     } else {
       // All retries failed - this handles Option 3 gracefully
       // Log a warning but don't crash - let the calling function handle it
       console.warn("Refresh failed after 3 attempts — API may need re-auth");
-      // Return partial success - caller should check if data is null
-      return json?.data;
+      // Return null so callers don't get undefined → React Query error
+      return null;
     }
   }
 
   if (json?.errors?.length) {
     const errorMessage = json.errors[0]?.message || "Request failed";
+    console.error("🔍 [graphql] Request errors:", JSON.stringify(json.errors));
     throw new Error(errorMessage);
   }
 
+  const responseKeys = json?.data ? Object.keys(json.data) : [];
+  console.log("🔍 [graphql] Response data keys:", responseKeys);
   return json?.data;
 }

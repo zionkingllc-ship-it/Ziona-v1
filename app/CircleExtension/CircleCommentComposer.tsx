@@ -46,7 +46,7 @@ export default function CircleCommentComposer({
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string }>();
+  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string }>();
 
   const mode = propMode || (routeMode as "action" | "comment") || "comment";
   const anchorPreview = propAnchorPreview || routeAnchorPreview;
@@ -97,21 +97,12 @@ export default function CircleCommentComposer({
 
       setShowSuccess(true);
       
-      // Reload circle feed to show new post
-      if (fromScreen === "circleFeed" && circleId) {
-        console.log("🔄 [Composer] Reloading circle feed after post...");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(tabs)/circle/circleFeed",
-            params: { id: circleId, t: Date.now().toString() },
-          });
-        }, 1500);
-        return;
-      }
-      
       setTimeout(() => {
         setShowSuccess(false);
-        if (onClose) {
+        if (source === "feed") {
+          // Only navigate back to feed when entered directly from feed screen
+          router.back();
+        } else if (onClose) {
           onClose();
         } else {
           router.back();
@@ -213,6 +204,11 @@ export default function CircleCommentComposer({
           >
             <Pressable
               onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert("Permission required", "Please grant media library access in Settings to attach images.");
+                  return;
+                }
                 const result = await ImagePicker.launchImageLibraryAsync({
                   mediaTypes: ["images"],
                   allowsEditing: true,

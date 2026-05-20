@@ -125,7 +125,7 @@ export default function CirclesSuggestion() {
   function handleCirclePress(circleId: string) {
     router.push({
       pathname: "/(tabs)/circle/circleFeed",
-      params: { id: circleId },
+      params: { id: circleId, source: "suggestion" },
     });
   }
 

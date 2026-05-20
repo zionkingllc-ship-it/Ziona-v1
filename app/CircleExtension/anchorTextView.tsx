@@ -146,6 +146,7 @@ export default function AnchorTextView() {
         anchorImage: anchorImage || "",
         anchorColors: colors || "",
         ...(circleId ? { circleId } : {}),
+        source: "suggestion",
       },
     });
   };
@@ -272,7 +273,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" />
       </View>
     </SafeAreaView>
   );
@@ -297,6 +298,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     minHeight: 318,
+    maxHeight: 512,
     width: "100%",
     zIndex: 999,
   },
@@ -326,7 +328,7 @@ const styles = StyleSheet.create({
   },
   dots: {
     position: "absolute",
-    bottom: 150,
+    bottom: 160,
     left: 0,
     right: 0,
     flexDirection: "row",

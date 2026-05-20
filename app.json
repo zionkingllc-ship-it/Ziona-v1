@@ -17,7 +17,9 @@
         "applinks:ziona.app"
       ],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Ziona needs access to your photo library to let you upload profile pictures and attach images to posts and comments.",
+        "NSPhotoLibraryAddUsageDescription": "Ziona needs access to save images to your photo library."
       }
     },
     "android": {

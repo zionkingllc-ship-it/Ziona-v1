@@ -40,7 +40,7 @@ export default function LikeCountScreen() {
       <YStack paddingHorizontal={16} marginTop={10}>
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>
           <XStack justifyContent="space-between" alignItems="center">
-            <Text fontFamily="$body" fontSize={14}>
+            <Text fontFamily="$body" fontSize={14} fontWeight="500">
               Hide like count
             </Text>
             <Switch
@@ -51,7 +51,7 @@ export default function LikeCountScreen() {
               disabled={isPending}
             />
           </XStack>
-          <Text fontFamily="$body" fontSize={12} color={colors.gray} marginTop={8}>
+          <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={8}>
             When enabled, like counts won't be shown on your posts
           </Text>
         </View>

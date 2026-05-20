@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/store/useAuthStore";
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -20,6 +21,18 @@ export const api = axios.create({
   baseURL: "https://ziona-api-staging.onrender.com/api",
   timeout: 60000,
 });
+
+/* HELPERS */
+
+function extractTokens(data: any) {
+  // Backend may wrap in { data: { accessToken, refreshToken } }
+  // or use snake_case: { access_token, refresh_token }
+  const inner = data?.data ?? data;
+  return {
+    accessToken: inner.accessToken ?? inner.access_token ?? null,
+    refreshToken: inner.refreshToken ?? inner.refresh_token ?? null,
+  };
+}
 
 /* REQUEST */
 
@@ -52,12 +65,19 @@ api.interceptors.response.use(
           }
         );
 
-        const newTokens = response.data;
+        const newTokens = extractTokens(response.data);
+
+        if (!newTokens.accessToken) {
+          throw new Error("No access token in refresh response");
+        }
 
         setAuthTokens({
           accessToken: newTokens.accessToken,
           refreshToken: newTokens.refreshToken,
         });
+
+        // Persist to Zustand store so it survives app relaunch
+        useAuthStore.getState().setTokens?.(newTokens as any);
 
         originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
 

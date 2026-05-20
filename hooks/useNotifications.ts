@@ -12,7 +12,7 @@ export function useNotifications(limit: number = 20) {
     queryKey: ["notifications", limit],
     queryFn: ({ pageParam }) => getNotifications(limit, pageParam),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
+    getNextPageParam: (lastPage) => lastPage?.hasMore ? lastPage.nextCursor : undefined,
   });
 }
 

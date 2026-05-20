@@ -22,7 +22,7 @@ import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
 
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -74,8 +74,8 @@ type CirclePost = {
 };
 
 export default function CircleFeedScreen() {
-  const { id, t } =
-    useLocalSearchParams<{ id: string; t?: string }>();
+  const { id, source } =
+    useLocalSearchParams<{ id: string; source?: string }>();
 
   const router = useRouter();
 
@@ -120,6 +120,7 @@ export default function CircleFeedScreen() {
             anchorLikedCount: data.activeAnchor.anchorLikedCount, anchorVerse: data.activeAnchor.anchorVerse || undefined,
             anchorText: data.activeAnchor.anchorText || undefined, anchorImage: data.activeAnchor.anchorImage || undefined,
             anchorVideo: data.activeAnchor.anchorVideo || undefined, anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+            mediaUrl: data.activeAnchor.mediaUrl || undefined,
             bibleReference: data.activeAnchor.bibleReference || undefined, bibleText: data.activeAnchor.bibleText || undefined,
             backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
             backgroundImage: data.activeAnchor.backgroundImage || undefined,
@@ -133,6 +134,7 @@ export default function CircleFeedScreen() {
             anchorLikedCount: a.anchorLikedCount, anchorVerse: a.anchorVerse || undefined,
             anchorText: a.anchorText || undefined, anchorImage: a.anchorImage || undefined,
             anchorVideo: a.anchorVideo || undefined, anchorThumbnail: a.anchorThumbnail || undefined,
+            mediaUrl: a.mediaUrl || undefined,
             bibleReference: a.bibleReference || undefined, bibleText: a.bibleText || undefined,
             backgroundColors: a.backgroundColors as [string, string] | undefined,
             backgroundImage: a.backgroundImage || undefined, prayedCount: a.prayedCount || undefined,
@@ -200,6 +202,7 @@ export default function CircleFeedScreen() {
                   anchorImage: data.activeAnchor.anchorImage || undefined,
                   anchorVideo: data.activeAnchor.anchorVideo || undefined,
                   anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+                  mediaUrl: data.activeAnchor.mediaUrl || undefined,
                   bibleReference: data.activeAnchor.bibleReference || undefined,
                   bibleText: data.activeAnchor.bibleText || undefined,
                   backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
@@ -224,6 +227,7 @@ export default function CircleFeedScreen() {
                   anchorImage: a.anchorImage || undefined,
                   anchorVideo: a.anchorVideo || undefined,
                   anchorThumbnail: a.anchorThumbnail || undefined,
+                  mediaUrl: a.mediaUrl || undefined,
                   bibleReference: a.bibleReference || undefined,
                   bibleText: a.bibleText || undefined,
                   backgroundColors: a.backgroundColors as [string, string] | undefined,
@@ -284,6 +288,17 @@ export default function CircleFeedScreen() {
     };
   }, [circleId, filterSort, filterView, userId]);
 
+  // Refresh feed when returning from CircleCommentComposer
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedRef.current) {
+        hasFocusedRef.current = true;
+        return;
+      }
+      onRefreshFeed();
+    }, [onRefreshFeed])
+  );
+
   const [showFilterModal, setShowFilterModal] =
     useState(false);
 
@@ -318,6 +333,7 @@ export default function CircleFeedScreen() {
   const [showFixedAnchor, setShowFixedAnchor] = useState(false);
   const anchorStickyThreshold = useRef(0);
   const [anchorSectionHeight, setAnchorSectionHeight] = useState(0);
+  const hasFocusedRef = useRef(false);
   const [anchorFilter, setAnchorFilter] = useState("Today");
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
@@ -796,7 +812,7 @@ export default function CircleFeedScreen() {
               setNavigating(true);
               router.push({
                 pathname: "/CircleExtension/CircleCommentComposer",
-                params: { circleId: circleId, fromScreen: "circleFeed" },
+                params: { circleId: circleId, fromScreen: "circleFeed", source: source || "feed" },
               });
             }}
             disabled={navigating}

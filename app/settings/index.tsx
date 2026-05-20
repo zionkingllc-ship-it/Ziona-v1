@@ -126,7 +126,7 @@ export default function SettingsScreen() {
                 <Text fontFamily="$body" fontWeight="600" fontSize={14}>
                   {profile?.username || "Ziona User"}
                 </Text>
-                <Text fontFamily="$body" fontSize={12} color={colors.gray}>
+                <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray}>
                   Account set-up
                 </Text>
               </YStack>
@@ -138,29 +138,14 @@ export default function SettingsScreen() {
         {/* ACCOUNT SETTINGS */}
         <SettingsSection title="Account settings">
           <SettingsRow
-            icon={<Lock size={18} color={colors.secondaryGray} />}
-            label="Password and security"
-            onPress={() => router.push("/settings/ChangePassword")}
-          />
-          <SettingsRow
             icon={<Bell size={18} color={colors.secondaryGray} />}
             label="Notification"
             onPress={() => router.push("/settings/Notification")}
           />
           <SettingsRow
-            icon={<Bell size={18} color={colors.secondaryGray} />}
-            label="In-App Notification"
-            onPress={() => router.push("/settings/InAppNotification")}
-          />
-          <SettingsRow
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Account privacy"
             onPress={() => router.push("/settings/Privacy")}
-          />
-          <SettingsRow
-            icon={<Bell size={18} color={colors.secondaryGray} />}
-            label="Like counts visible"
-            onPress={() => router.push("/settings/LikeCountVisible")}
           />
         </SettingsSection>
 
@@ -184,6 +169,11 @@ export default function SettingsScreen() {
             icon={<FileText size={18} color={colors.secondaryGray} />}
             label="Terms and policies"
             onPress={() => router.push("/settings/Terms")}
+          />
+          <SettingsRow
+            icon={<FileText size={18} color={colors.secondaryGray} />}
+            label="Terms of use"
+            onPress={() => router.push("/settings/terms/use")}
           />
           <SettingsRow
             icon={<User size={18} color={colors.secondaryGray} />}

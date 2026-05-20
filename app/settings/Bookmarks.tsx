@@ -28,7 +28,20 @@ export default function BookmarksScreen() {
     refetch: refetchFolders,
     isLoading: foldersLoading,
     error: foldersError,
+    isError,
   } = useBookmarkFolders();
+
+  useEffect(() => {
+    console.log("🔍 [BookmarksScreen] folders data:", JSON.stringify(folders, null, 2));
+    console.log("🔍 [BookmarksScreen] foldersLoading:", foldersLoading);
+    console.log("🔍 [BookmarksScreen] isError:", isError);
+    console.log("🔍 [BookmarksScreen] foldersError:", foldersError);
+    console.log("🔍 [BookmarksScreen] folders type:", typeof folders, Array.isArray(folders));
+    if (Array.isArray(folders)) {
+      console.log("🔍 [BookmarksScreen] folders length:", folders.length);
+      folders.forEach((f, i) => console.log(`🔍 [BookmarksScreen] folder[${i}]:`, JSON.stringify(f)));
+    }
+  }, [folders, foldersLoading, isError, foldersError]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,7 +53,7 @@ export default function BookmarksScreen() {
 
   useEffect(() => {
     if (foldersError) {
-      console.log("Folders error:", foldersError);
+      console.error("🔍 [BookmarksScreen] Folders error:", foldersError);
     }
   }, [foldersError]);
 
@@ -115,7 +128,7 @@ export default function BookmarksScreen() {
           <Header heading="Bookmarks" />
         </XStack>
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text fontFamily="$body" color={colors.gray}>Loading...</Text>
+          <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading...</Text>
         </YStack>
       </SafeAreaView>
     );
@@ -127,7 +140,7 @@ export default function BookmarksScreen() {
         <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} />
         {selectedFolderId && (
           <Pressable onPress={handleBack}>
-            <Text fontFamily="$body" color={colors.primary} fontSize={14}>
+            <Text fontFamily="$body" fontWeight="500" color={colors.primary} fontSize={14}>
               Back to folders
             </Text>
           </Pressable>
@@ -142,14 +155,14 @@ export default function BookmarksScreen() {
 
           {postsLoading && folderPosts.length === 0 ? (
             <YStack flex={1} justifyContent="center" alignItems="center">
-              <Text fontFamily="$body" color={colors.gray}>Loading posts...</Text>
+              <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading posts...</Text>
             </YStack>
           ) : folderPosts.length === 0 ? (
             <YStack flex={1} justifyContent="center" alignItems="center">
-              <Text fontFamily="$body" color={colors.gray}>
+              <Text fontFamily="$body" fontWeight="400" color={colors.gray}>
                 No posts in this folder
               </Text>
-              <Text fontFamily="$body" fontSize={12} color={colors.gray} marginTop={4}>
+              <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={4}>
                 Save posts to this folder to see them here
               </Text>
             </YStack>
@@ -217,7 +230,7 @@ export default function BookmarksScreen() {
                         <Text fontFamily="$body" fontWeight="600" fontSize={13} numberOfLines={1}>
                           {item.name}
                         </Text>
-                        <Text fontFamily="$body" fontSize={11} color={colors.gray}>
+                        <Text fontFamily="$body" fontSize={11} fontWeight="400" color={colors.gray}>
                           {item.savedCount} saved
                         </Text>
                       </YStack>
@@ -228,10 +241,10 @@ export default function BookmarksScreen() {
             </YStack>
           ) : (
             <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={wp(10)}>
-              <Text fontFamily="$body" color={colors.gray} textAlign="center">
+              <Text fontFamily="$body" fontWeight="400" color={colors.gray} textAlign="center">
                 No folders yet
               </Text>
-              <Text fontFamily="$body" fontSize={12} color={colors.gray} marginTop={4} textAlign="center">
+              <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={4} textAlign="center">
                 Save posts and create folders to organize your bookmarks
               </Text>
             </YStack>

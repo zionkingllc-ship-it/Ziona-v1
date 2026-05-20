@@ -16,7 +16,7 @@ export default function TermsScreen() {
       </XStack>
 
       <YStack padding={16} gap="$4">
-        <Text fontFamily="$body" fontSize={14} color={colors.gray}>
+        <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>
           View our terms of service and privacy policies.
         </Text>
 
@@ -26,7 +26,7 @@ export default function TermsScreen() {
             borderRadius={12} 
             padding={16}
           >
-            <Text fontFamily="$body" fontSize={14} color={colors.primary}>
+            <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.primary}>
               View Terms of Service
             </Text>
           </View>
@@ -38,7 +38,7 @@ export default function TermsScreen() {
             borderRadius={12} 
             padding={16}
           >
-            <Text fontFamily="$body" fontSize={14} color={colors.primary}>
+            <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.primary}>
               View Privacy Policy
             </Text>
           </View>
