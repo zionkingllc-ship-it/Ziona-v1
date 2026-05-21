@@ -1,3 +1,4 @@
+import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { saveAnchorRef } from "@/utils/anchorRef";
@@ -229,6 +230,7 @@ export default function CircleCommentComposer({
                   ? "Share your reflection..."
                   : "Write a comment..."
               }
+              placeholderTextColor={colors.placeHolderText}
               value={text}
               onChangeText={setText}
               style={{
@@ -236,6 +238,7 @@ export default function CircleCommentComposer({
                 paddingVertical: 8,
                 minHeight: 36,
                 maxHeight: 120,
+                color: colors.black,
               }}
               multiline
               autoFocus

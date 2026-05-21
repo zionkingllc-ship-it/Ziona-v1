@@ -15,7 +15,7 @@ type Props = {
 
 export default function KeyboardScreen({ children, keyboardVerticalOffset }: Props) {
   const insets = useSafeAreaInsets();
-  const iosOffset = keyboardVerticalOffset ?? insets.top + 44;
+  const iosOffset = keyboardVerticalOffset ?? insets.top;
 
   return (
     <KeyboardAvoidingView

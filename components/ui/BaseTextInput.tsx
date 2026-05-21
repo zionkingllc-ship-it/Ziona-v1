@@ -1,3 +1,4 @@
+import colors from "@/constants/colors";
 import React, { forwardRef, useState, useRef, useEffect } from "react";
 import { TextInput, TextInputProps, Platform } from "react-native";
 
@@ -32,6 +33,7 @@ const BaseInput = forwardRef<TextInput, TextInputProps>(
         underlineColorAndroid="transparent"
         autoCorrect={false}
         autoCapitalize="none"
+        placeholderTextColor={colors.placeHolderText}
         {...(Platform.OS === "android"
           ? { importantForAutofill: "no" as const }
           : {})}
@@ -39,6 +41,7 @@ const BaseInput = forwardRef<TextInput, TextInputProps>(
           {
             padding: 0,
             backgroundColor: "transparent",
+            color: colors.black,
           },
           style,
         ]}

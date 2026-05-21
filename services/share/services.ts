@@ -10,32 +10,26 @@ export function buildPostUrl(postId: string) {
 }
  
 export async function shareToApp(url: string, scheme: string) {
-  const supported = await Linking.canOpenURL(scheme);
-
-  if (supported) {
+  try {
     await Linking.openURL(scheme);
+  } catch {
+    await Share.share({ message: url });
   }
 }
 
 export async function shareToWhatsApp(url: string) {
-  await shareToApp(
-    url,
-    `whatsapp://send?text=${encodeURIComponent(url)}`
-  );
+  const text = encodeURIComponent(url);
+  await shareToApp(url, `whatsapp://send?text=${text}`);
 }
 
 export async function shareToMessages(url: string) {
-  await shareToApp(
-    url,
-    `sms:&body=${encodeURIComponent(url)}`
-  );
+  const text = encodeURIComponent(url);
+  await shareToApp(url, `sms:&body=${text}`);
 }
 
 export async function shareToMail(url: string) {
-  await shareToApp(
-    url,
-    `mailto:?subject=Shared from Ziona&body=${encodeURIComponent(url)}`
-  );
+  const text = encodeURIComponent(url);
+  await shareToApp(url, `mailto:?subject=Shared from Ziona&body=${text}`);
 }
 
 export function copyLink(url: string) {

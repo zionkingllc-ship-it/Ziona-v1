@@ -44,7 +44,9 @@ function buildReference(book: string, chapter: number, verses: number[]) {
 export default function CreateBiblePostScreen() {
   const { wp, hp, fs } = useResponsive();
 
-  const { draft, setCategory, setBibleVerse } = useCreatePostStore();
+  const draft = useCreatePostStore((s) => s.draft);
+  const setCategory = useCreatePostStore((s) => s.setCategory);
+  const setBibleVerse = useCreatePostStore((s) => s.setBibleVerse);
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open

@@ -8,6 +8,7 @@ import { useCommentReplies } from "@/hooks/useCommentReplies";
 import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
 import { Comment } from "@/services/graphQL/mutation/actions/comments";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Dimensions,
@@ -50,6 +51,7 @@ interface ReplyState {
 }
 
 export function CommentsSheet({ visible, onClose, postId }: Props) {
+  const insets = useSafeAreaInsets();
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [bottomHeight, setBottomHeight] = useState(10);
@@ -108,7 +110,10 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   }, []);
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: Platform.OS === "android" ? -keyboardHeight.value : 0 }],
+    paddingBottom:
+      Platform.OS === "android"
+        ? keyboardHeight.value
+        : Math.max(0, keyboardHeight.value - insets.bottom),
   }));
 
   const toggleLike = (commentId: string, currentLiked: boolean) => {
@@ -257,7 +262,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
             </TouchableOpacity>
           </XStack>
 
-          <XStack paddingHorizontal="$3" paddingVertical="$2" gap="$2" flexWrap="wrap" justifyContent="flex-start">
+          <XStack paddingHorizontal="$3" paddingVertical="$2" gap="$2" flexWrap="wrap" justifyContent="center">
             {EMOJIS.map((emoji) => (
               <Pressable key={emoji} onPress={() => addEmoji(emoji)} hitSlop={8}>
                 <Text fontSize={24}>{emoji}</Text>

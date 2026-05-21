@@ -41,12 +41,14 @@ export default function SearchHeader({
 
         <TextInput
           placeholder={placeholder}
+          placeholderTextColor={colors.placeHolderText}
           value={value}
           onChangeText={onChangeText}
           style={{
             flex: 1,
             height: 40,
-            fontFamily: "MonaSans", 
+            fontFamily: "MonaSans",
+            color: colors.black,
           }}
         />
       </XStack>

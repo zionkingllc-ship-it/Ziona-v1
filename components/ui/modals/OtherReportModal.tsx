@@ -55,6 +55,7 @@ export default function OtherReportModal({
             value={text}
             onChangeText={setText}
             placeholder="Explain your reason for reporting this post"
+            placeholderTextColor={colors.placeHolderText}
             multiline
             style={styles.textInput}
           />
@@ -108,6 +109,7 @@ const styles = StyleSheet.create({
     maxHeight:150,
     textAlignVertical: "top",
     fontFamily: "$body",
+    color: colors.black,
   },
   button: {
     marginTop: 20,

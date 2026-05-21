@@ -20,6 +20,8 @@ import {
 import { Text, View, XStack } from "tamagui";
 import CloseButton from "../CloseButton";
 
+import colors from "@/constants/colors";
+
 import { useQueryClient } from "@tanstack/react-query";
 
 const { height } = Dimensions.get("window");
@@ -348,6 +350,7 @@ export default function BibleSelectorModal({
             onChangeText={setSearch}
             style={styles.searchInput}
             placeholder="Search..."
+            placeholderTextColor={colors.placeHolderText}
           />
         </XStack>
 
@@ -442,9 +445,6 @@ export default function BibleSelectorModal({
         onClose={() => setReaderOpen(false)}
         onDone={(numbers) => {
           const ordered = [...numbers].sort((a, b) => a - b);
-          const verseStart = ordered[0];
-          const verseEnd = ordered[ordered.length - 1];
-
           if (!chapter || !book || ordered.length === 0) return;
 
           const cached: any = queryClient.getQueryData([
@@ -462,16 +462,18 @@ export default function BibleSelectorModal({
 
           const text = selectedVerses.map((v: any) => v.text).join(" ");
 
-          onDone({
+          const data = {
             translation,
             book: cached.book,
             chapter: cached.chapter,
             verses: ordered,
             text,
-          });
+          };
 
+          // Close modals first, then update parent state after
           setReaderOpen(false);
           onClose();
+          setTimeout(() => onDone(data), 0);
         }}
       />
     </BaseModal>
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: "#EEEBEF",
   },
-  searchInput: { flex: 1 },
+  searchInput: { flex: 1, color: colors.black },
   row: { paddingVertical: 12 },
   verseSelected: { backgroundColor: "black" },
 

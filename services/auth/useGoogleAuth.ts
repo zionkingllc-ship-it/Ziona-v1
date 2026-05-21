@@ -1,13 +1,6 @@
+import { Platform } from "react-native";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  offlineAccess: true,
-  forceCodeForRefreshToken: true,
-});
 
 type GoogleAuthResponse = {
   user?: {
@@ -21,8 +14,24 @@ type GoogleAuthResponse = {
 export const useGoogleAuth = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
 
+  const initGoogleSignIn = () => {
+    const { GoogleSignin } = require("@react-native-google-signin/google-signin");
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
+    });
+    return GoogleSignin;
+  };
+
   const signInWithGoogle = async (): Promise<GoogleAuthResponse> => {
     try {
+      if (Platform.OS !== "android") {
+        return { error: "Google Sign-In is only available on Android" };
+      }
+
+      const GoogleSignin = initGoogleSignIn();
       await GoogleSignin.hasPlayServices();
 
       // force fresh session

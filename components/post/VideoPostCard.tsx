@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import React, { useCallback, useEffect, useState, memo } from "react";
+import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -114,6 +114,23 @@ function VideoPostCardComponent({
     [seekTo]
   );
 
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleSingleTap = useCallback(() => {
+    if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
+    singleTapTimer.current = setTimeout(() => {
+      singleTapTimer.current = null;
+      handleSingleTap();
+    }, 300);
+  }, [handleSingleTap]);
+
+  const cancelSingleTap = useCallback(() => {
+    if (singleTapTimer.current) {
+      clearTimeout(singleTapTimer.current);
+      singleTapTimer.current = null;
+    }
+  }, []);
+
   const lastTapTime = useSharedValue(0);
 
   const tapGesture = Gesture.Tap()
@@ -124,10 +141,11 @@ function VideoPostCardComponent({
 
       if (timeSinceLastTap < 300) {
         lastTapTime.value = 0;
+        runOnJS(cancelSingleTap)();
         runOnJS(handleDoubleTap)();
       } else {
         lastTapTime.value = now;
-        runOnJS(handleSingleTap)();
+        runOnJS(scheduleSingleTap)();
       }
     });
 

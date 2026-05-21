@@ -14,7 +14,7 @@ export function KeyboardAvoidingWrapper({
   backgroundColor = 'transparent',
 }: KeyboardAvoidingWrapperProps) {
   const insets = useSafeAreaInsets()
-  const iosOffset = offset ?? insets.top + 44
+  const iosOffset = offset ?? insets.top
 
   return (
     <KeyboardAvoidingView

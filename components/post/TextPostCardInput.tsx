@@ -29,7 +29,7 @@ export default function TextPostCardInput({
   translation,
   verseText,
 
-  value,
+  value = "",
   onChangeText,
   maxLength = 500,
 
@@ -178,6 +178,7 @@ export default function TextPostCardInput({
                   onChangeText(text);
                 }}
                 placeholder="Whats on your mind?"
+                placeholderTextColor={colors.placeHolderText}
                 multiline
                 style={{
                   flex: 1,

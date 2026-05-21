@@ -94,6 +94,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item.id}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
               renderItem={({ item }) => (
                 <Pressable
                   style={{ alignItems: "center", marginRight: 20 }}
