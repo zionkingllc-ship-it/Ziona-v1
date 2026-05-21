@@ -117,6 +117,7 @@ export const GET_CIRCLE_DETAIL = `
 `;
 
 export const GET_CIRCLE_FEED = `
+  # Backend TODO: add $sortBy: String, $authorId: String params and pass them to circleFeed
   query GetCircleFeed($circleId: String!, $page: Int, $pageSize: Int) {
     circleFeed(circleId: $circleId, page: $page, pageSize: $pageSize) {
       pageInfo {
@@ -145,12 +146,17 @@ export const GET_CIRCLE_FEED = `
           avatar
           avatarUrl
         }
+        viewerState {
+          liked
+          prayed
+        }
       }
     }
   }
 `;
 
 export const GET_CIRCLE_FEED_DATA = `
+  # Backend TODO: add $sortBy: String, $authorId: String params and pass to circleFeedData
   query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int) {
     circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize) {
       name
@@ -197,6 +203,10 @@ export const GET_CIRCLE_FEED_DATA = `
           mediaUrl
           title
         }
+        viewerState {
+          liked
+          prayed
+        }
       }
       pastAnchors {
         id
@@ -229,6 +239,10 @@ export const GET_CIRCLE_FEED_DATA = `
           name
           avatar
           avatarUrl
+        }
+        viewerState {
+          liked
+          prayed
         }
       }
       rules {
@@ -283,6 +297,10 @@ export const GET_ACTIVE_ANCHOR = `
         mediaUrl
         title
       }
+      viewerState {
+        liked
+        prayed
+      }
     }
   }
 `;
@@ -329,6 +347,44 @@ export const GET_ANCHOR_HISTORY = `
   }
 `;
 
+export const GET_ANCHOR_BY_DATE = `
+  query GetAnchorByDate($circleId: String!, $date: String!) {
+    anchorByDate(circleId: $circleId, date: $date) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
 export const GET_ANCHOR_RESPONSES = `
   query GetAnchorResponses($anchorId: String!) {
     anchorResponses(anchorId: $anchorId) {
@@ -341,6 +397,83 @@ export const GET_ANCHOR_RESPONSES = `
       reactionCount
       replyCount
       viewerReactionType
+    }
+  }
+`;
+
+export const GET_ANCHOR = `
+  query GetAnchor($id: String!) {
+    anchor(id: $id) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      likedImage
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_POST = `
+  query GetCirclePost($id: String!) {
+    circlePost(id: $id) {
+      id
+      text
+      image
+      createdAt
+      likes
+      likesCount
+      likeCount
+      likedImage
+      comments
+      commentsCount
+      prayedCount
+      savedCount
+      sharedCount
+      user {
+        id
+        name
+        avatar
+        avatarUrl
+      }
+      viewerState {
+        liked
+        prayed
+      }
     }
   }
 `;
@@ -373,11 +506,16 @@ export async function fetchCircleFeed(
   circleId: string,
   page = 1,
   pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
 ) {
   const res = await graphqlRequest(GET_CIRCLE_FEED, {
     circleId,
     page,
     pageSize,
+    // Backend TODO: uncomment when API supports sortBy/authorId
+    // sortBy: sortBy || undefined,
+    // authorId: authorId || undefined,
   });
   return (
     res?.circleFeed ?? {
@@ -391,13 +529,18 @@ export async function fetchCircleFeedData(
   circleId: string,
   historyLimit?: number,
   page = 1,
-  pageSize = 20
+  pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
 ) {
   const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
     circleId,
     historyLimit: historyLimit ?? 10,
     page,
     pageSize,
+    // Backend TODO: uncomment when API supports sortBy/authorId
+    // sortBy: sortBy || undefined,
+    // authorId: authorId || undefined,
   });
   return res?.circleFeedData ?? null;
 }
@@ -417,4 +560,19 @@ export async function fetchAnchorHistory() {
 export async function fetchAnchorResponses(anchorId: string) {
   const res = await graphqlRequest(GET_ANCHOR_RESPONSES, { anchorId });
   return res?.anchorResponses ?? [];
+}
+
+export async function fetchAnchor(id: string) {
+  const res = await graphqlRequest(GET_ANCHOR, { id });
+  return res?.anchor ?? null;
+}
+
+export async function fetchAnchorByDate(circleId: string, date: string) {
+  const res = await graphqlRequest(GET_ANCHOR_BY_DATE, { circleId, date });
+  return res?.anchorByDate ?? null;
+}
+
+export async function fetchCirclePost(id: string) {
+  const res = await graphqlRequest(GET_CIRCLE_POST, { id });
+  return res?.circlePost ?? null;
 }

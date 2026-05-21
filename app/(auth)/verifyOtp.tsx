@@ -14,16 +14,6 @@ import { Image, Text, YStack, XStack } from "tamagui";
 
 const OTP_LENGTH = 6;
 
-/* ---------------- DEBUG HELPERS ---------------- */
-
-const log = (...args: any[]) => {
-  console.log("OTP FLOW:", ...args);
-};
-
-const line = () => {
-  console.log("--------------------------------------------------");
-};
-
 export default function VerifyOtp() {
   const { email, flow } = useLocalSearchParams<{
     email: string;
@@ -39,16 +29,6 @@ export default function VerifyOtp() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
-  /* ---------------- SCREEN MOUNT ---------------- */
-
-  useEffect(() => {
-    line();
-    log("OTP screen mounted");
-    log("Flow:", flow);
-    log("Email:", email);
-    line();
-  }, []);
-
   /* ---------------- TIMER ---------------- */
 
   useEffect(() => {
@@ -56,13 +36,9 @@ export default function VerifyOtp() {
       setTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          log("Resend available");
           return 0;
         }
-
-        const next = prev - 1;
-        log("Timer:", next);
-        return next;
+        return prev - 1;
       });
     }, 1000);
 
@@ -77,13 +53,6 @@ export default function VerifyOtp() {
     setIsSubmitting(true);
     Keyboard.dismiss();
 
-    line();
-    log("Submitting OTP");
-    log("Code:", code);
-    log("Email:", email);
-    log("Flow:", flow);
-    line();
-
     try {
       /* ---------------- SIGNUP / SIGNIN VERIFY ---------------- */
 
@@ -93,15 +62,11 @@ export default function VerifyOtp() {
           code,
         });
 
-        log("OTP verification success");
-        log("Backend response:", response);
-
-        if (response.user && response.tokens) {
-          log("Saving auth tokens");
-          setAuth(response.user, response.tokens);
+        if (!response.user || !response.tokens) {
+          throw new Error("Invalid response from server");
         }
 
-        log("Routing to feed");
+        setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
         return;
       }
@@ -109,8 +74,6 @@ export default function VerifyOtp() {
       /* ---------------- PASSWORD RESET ---------------- */
 
       if (flow === "reset-password") {
-        log("OTP verified for password reset");
-
         router.replace({
           pathname: "/(auth)/forgotPassword/newPassword",
           params: {
@@ -125,6 +88,7 @@ export default function VerifyOtp() {
       console.error("OTP verification failed:", error?.response?.data || error);
 
       setErrorVisible(true);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -134,12 +98,12 @@ export default function VerifyOtp() {
   const resendCode = async () => {
     if (!email || isResending) return;
 
+    setErrorVisible(false);
     setIsResending(true);
     setTimer(50);
 
     try {
-      const response = await authApi.resendOtp(email);
-      log("Resend success:", response);
+      await authApi.resendOtp(email);
     } catch (error: any) {
       console.error("Resend OTP failed:", error?.response?.data || error);
       setErrorVisible(true);
@@ -193,10 +157,9 @@ export default function VerifyOtp() {
 
         <OtpContainer
           length={OTP_LENGTH}
-          onComplete={(code: string) => {
-            log("OTP complete — triggering submit");
-            submitOtp(code);
-          }}
+            onComplete={(code: string) => {
+              submitOtp(code);
+            }}
         />
 
         {/* RESEND */}

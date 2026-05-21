@@ -3,7 +3,7 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useUpdateProfile } from "@/hooks/useUdateProfle";
+import { useUpdateProfile } from "@/hooks/useProfileMutations";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -36,7 +36,7 @@ export default function EditNameScreen() {
   }, [user?.fullName]);
 
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || mutation.isPending) return;
 
     mutation.mutate(
       { fullName: name },

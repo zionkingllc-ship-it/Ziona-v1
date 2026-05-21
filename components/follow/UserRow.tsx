@@ -17,6 +17,7 @@ interface FollowUserRowProps {
   showFollowButton?: boolean;
   isFollowing?: boolean;
   isFollowedBy?: boolean;
+  listType?: "followers" | "following";
   onPress?: () => void;
 }
 
@@ -28,6 +29,7 @@ export default function FollowUserRow({
   showFollowButton = true,
   isFollowing: propIsFollowing,
   isFollowedBy: propIsFollowedBy,
+  listType = "following",
   onPress,
 }: FollowUserRowProps) {
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -43,6 +45,7 @@ export default function FollowUserRow({
   );
 
   const getButtonText = () => {
+    if (isFollowing && listType === "followers") return "Friends";
     if (isFollowing) return "Unfollow";
     if (isFollowedBy) return "Follow back";
     return "Follow";

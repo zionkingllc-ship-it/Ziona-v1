@@ -112,6 +112,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   }));
 
   const toggleLike = (commentId: string, currentLiked: boolean) => {
+    if (toggleLikeMutation.isPending) return;
     toggleLikeMutation.mutate({ commentId, currentLiked });
   };
 

@@ -11,7 +11,17 @@ export { type BookmarkFolder, type BookmarkPost } from "@/services/graphQL/queri
 export function useBookmarkFolders() {
   return useQuery({
     queryKey: ["bookmarkFolders"],
-    queryFn: getBookmarkFolders,
+    queryFn: async () => {
+      console.log("🔍 [useBookmarkFolders] Starting query...");
+      try {
+        const result = await getBookmarkFolders();
+        console.log("🔍 [useBookmarkFolders] Query succeeded, count:", result?.length);
+        return result;
+      } catch (err) {
+        console.error("🔍 [useBookmarkFolders] Query failed:", err);
+        throw err;
+      }
+    },
   });
 }
 

@@ -1,17 +1,16 @@
 import CategoryGrid from "@/components/discover/CategoryGrid";
-import SearchHeader from "@/components/SearchHeader";
+// import SearchHeader from "@/components/SearchHeader";
 import colors from "@/constants/colors";
 import { router } from "expo-router";
-import { useState } from "react";
+// import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack } from "tamagui";
+import { Text, YStack } from "tamagui";
 import { ActivityIndicator } from "react-native";
 
 import { useDiscoverCategories } from "@/hooks/useDiscover";
 
 export default function DiscoverScreen() {
-  const [searchQuery, setSearchQuery] = useState("");
-
+  // const [searchQuery, setSearchQuery] = useState("");
   const { categories, loading } = useDiscoverCategories();
 
   const handleCategoryPress = (categoryId: string) => {
@@ -22,9 +21,11 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
       <YStack flex={1}>
-        <SearchHeader value={searchQuery} onChangeText={setSearchQuery} />
+        <Text fontFamily="$body" fontWeight="600" fontSize={18} paddingHorizontal={16} marginBottom={12}>
+          Discover
+        </Text>
 
         {loading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">

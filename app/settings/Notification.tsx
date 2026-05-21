@@ -1,31 +1,81 @@
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useUserSettings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Switch } from "react-native";
+import { ScrollView } from "react-native";
 import { Text, XStack, YStack, View } from "tamagui";
 
-export default function NotificationScreen() {
-  const { data: prefs, isLoading } = useNotificationPreferences();
-  const updatePrefs = useUpdateNotificationPreferences();
+type Prefs = {
+  inAppLikes: boolean;
+  inAppComment: boolean;
+  inAppNewFollowers: boolean;
+  inAppMentionAndTags: boolean;
+  interactionLikes: boolean;
+  interactionComment: boolean;
+  interactionPostInteraction: boolean;
+  interactionNewFollower: boolean;
+  circleLikes: boolean;
+  circleAnchorPost: boolean;
+  circleComment: boolean;
+  circleFriendInteraction: boolean;
+};
 
-  const updatePref = (key: string, value: boolean) => {
-    try {
-      updatePrefs.mutate({
-        likeNotifications: key === "likeNotifications" ? value : prefs?.likeNotifications ?? true,
-        replyNotifications: key === "replyNotifications" ? value : prefs?.replyNotifications ?? true,
-        anchorNotifications: key === "anchorNotifications" ? value : prefs?.anchorNotifications ?? true,
-        circleActivityNotifications: key === "circleActivityNotifications" ? value : prefs?.circleActivityNotifications ?? true,
-        adminAnnouncements: key === "adminAnnouncements" ? value : prefs?.adminAnnouncements ?? true,
-      });
-    } catch (error) {
-      console.log("Failed to update notification:", error);
+const DEFAULTS: Prefs = {
+  inAppLikes: true,
+  inAppComment: true,
+  inAppNewFollowers: true,
+  inAppMentionAndTags: true,
+  interactionLikes: true,
+  interactionComment: true,
+  interactionPostInteraction: true,
+  interactionNewFollower: true,
+  circleLikes: true,
+  circleAnchorPost: true,
+  circleComment: true,
+  circleFriendInteraction: true,
+};
+
+export default function NotificationScreen() {
+  const { data: backend, isLoading } = useNotificationPreferences();
+  const updatePrefs = useUpdateNotificationPreferences();
+  const [local, setLocal] = useState<Prefs>(DEFAULTS);
+
+  // Seed local state from backend when it loads
+  useEffect(() => {
+    if (backend) {
+      setLocal((prev) => ({
+        ...prev,
+        inAppLikes: backend.likeNotifications ?? prev.inAppLikes,
+        inAppComment: backend.replyNotifications ?? prev.inAppComment,
+        interactionLikes: backend.likeNotifications ?? prev.interactionLikes,
+        interactionComment: backend.replyNotifications ?? prev.interactionComment,
+        circleLikes: backend.circleActivityNotifications ?? prev.circleLikes,
+        circleAnchorPost: backend.anchorNotifications ?? prev.circleAnchorPost,
+        circleComment: backend.replyNotifications ?? prev.circleComment,
+      }));
     }
+  }, [backend]);
+
+  const toggle = (key: keyof Prefs, value: boolean) => {
+    const updated = { ...local, [key]: value };
+    setLocal(updated);
+
+    // Save to backend using existing 5 fields — maps UI toggles to backend fields
+    // Once backend adds the 12 fields, this will send them directly instead
+    updatePrefs.mutate({
+      likeNotifications: updated.inAppLikes,
+      replyNotifications: updated.inAppComment,
+      anchorNotifications: updated.circleAnchorPost,
+      circleActivityNotifications: updated.circleLikes,
+      adminAnnouncements: updated.inAppMentionAndTags,
+    });
   };
 
   const Row = ({ label, value, onChange, disabled }: any) => (
     <XStack justifyContent="space-between" alignItems="center" paddingVertical={10}>
-      <Text fontFamily="$body" fontSize={14} color={colors.black}>{label}</Text>
+      <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onChange}
@@ -43,7 +93,7 @@ export default function NotificationScreen() {
           <Header heading="Notification" />
         </XStack>
         <View flex={1} justifyContent="center" alignItems="center">
-          <Text fontFamily="$body" color={colors.gray}>Loading...</Text>
+          <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -55,37 +105,105 @@ export default function NotificationScreen() {
         <Header heading="Notification" />
       </XStack>
 
-      <YStack padding={16} gap="$4">
-        {/* INTERACTIONS */}
-        <YStack>
-          <Text fontFamily="$body" fontSize={12} color={colors.gray} marginBottom={6}>
-            Interactions
-          </Text>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <YStack gap="$5">
+          {/* IN-APP NOTIFICATIONS */}
+          <YStack>
+            <Text fontFamily="$body" fontSize={12} fontWeight="600" color={colors.gray} marginBottom={6}>
+              In-App Notification
+            </Text>
 
-          <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
-            <Row
-              label="Likes"
-              value={prefs?.likeNotifications ?? true}
-              onChange={(v: boolean) => updatePref("likeNotifications", v)}
-            />
-            <Row
-              label="Comments"
-              value={prefs?.replyNotifications ?? true}
-              onChange={(v: boolean) => updatePref("replyNotifications", v)}
-            />
-            <Row
-              label="Anchor posts"
-              value={prefs?.anchorNotifications ?? true}
-              onChange={(v: boolean) => updatePref("anchorNotifications", v)}
-            />
-            <Row
-              label="Circle activity"
-              value={prefs?.circleActivityNotifications ?? true}
-              onChange={(v: boolean) => updatePref("circleActivityNotifications", v)}
-            />
-          </View>
+            <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
+              <Row
+                label="Likes"
+                value={local.inAppLikes}
+                onChange={(v: boolean) => toggle("inAppLikes", v)}
+              />
+              <Row
+                label="Comment"
+                value={local.inAppComment}
+                onChange={(v: boolean) => toggle("inAppComment", v)}
+              />
+              <Row
+                label="New followers"
+                value={local.inAppNewFollowers}
+                onChange={(v: boolean) => toggle("inAppNewFollowers", v)}
+              />
+              <Row
+                label="Mention and tags"
+                value={local.inAppMentionAndTags}
+                onChange={(v: boolean) => toggle("inAppMentionAndTags", v)}
+              />
+            </View>
+          </YStack>
+
+          {/* INTERACTIONS */}
+          <YStack>
+            <Text fontFamily="$body" fontSize={12} fontWeight="600" color={colors.gray} marginBottom={6}>
+              Interactions
+            </Text>
+
+            <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
+              <Row
+                label="Likes"
+                value={local.interactionLikes}
+                onChange={(v: boolean) => toggle("interactionLikes", v)}
+              />
+              <Row
+                label="Comment"
+                value={local.interactionComment}
+                onChange={(v: boolean) => toggle("interactionComment", v)}
+              />
+              <Row
+                label="Post interaction"
+                value={local.interactionPostInteraction}
+                onChange={(v: boolean) => toggle("interactionPostInteraction", v)}
+              />
+              <Row
+                label="New follower"
+                value={local.interactionNewFollower}
+                onChange={(v: boolean) => toggle("interactionNewFollower", v)}
+              />
+              <Text fontFamily="$body" fontSize={11} fontWeight="400" color={colors.gray} marginTop={8} lineHeight={16}>
+                Get notified when your friends (people you follow who follow you back) comment on a friend's post that you've liked or commented on.
+              </Text>
+            </View>
+          </YStack>
+
+          {/* CIRCLES */}
+          <YStack>
+            <Text fontFamily="$body" fontSize={12} fontWeight="600" color={colors.gray} marginBottom={6}>
+              Circles
+            </Text>
+
+            <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
+              <Row
+                label="Likes"
+                value={local.circleLikes}
+                onChange={(v: boolean) => toggle("circleLikes", v)}
+              />
+              <Row
+                label="Anchor post"
+                value={local.circleAnchorPost}
+                onChange={(v: boolean) => toggle("circleAnchorPost", v)}
+              />
+              <Row
+                label="Comment"
+                value={local.circleComment}
+                onChange={(v: boolean) => toggle("circleComment", v)}
+              />
+              <Row
+                label="Friend interaction"
+                value={local.circleFriendInteraction}
+                onChange={(v: boolean) => toggle("circleFriendInteraction", v)}
+              />
+              <Text fontFamily="$body" fontSize={11} fontWeight="400" color={colors.gray} marginTop={8} lineHeight={16}>
+                Get notified when your friends (people you follow who follow you back) interact in a circle you are not a member of.
+              </Text>
+            </View>
+          </YStack>
         </YStack>
-      </YStack>
+      </ScrollView>
     </SafeAreaView>
   );
 }

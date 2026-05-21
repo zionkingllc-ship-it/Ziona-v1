@@ -5,9 +5,15 @@ import { getGradientColors } from "@/lib/anchorUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, YStack } from "tamagui";
+import { Image, Text, YStack } from "tamagui";
+import { saveAnchorRef } from "@/utils/anchorRef";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
@@ -22,8 +28,9 @@ function calculateChunkSize(textLength: number): number {
 
 type SlideItem = {
   id: string;
-  type: "text" | "action";
+  type: "text" | "image" | "action";
   text?: string;
+  image?: string;
   bibleReference?: string;
   bibleText?: string;
   label: string;
@@ -37,8 +44,18 @@ function createSlides(
   bibleText?: string,
   colors?: string,
   expiresAt?: string,
+  mediaUrl?: string,
 ): SlideItem[] {
   const slides: SlideItem[] = [];
+
+  if (mediaUrl) {
+    slides.push({
+      id: "image",
+      type: "image",
+      image: mediaUrl,
+      label: "Anchor Image",
+    });
+  }
 
   if (bibleReference) {
     slides.push({
@@ -84,7 +101,7 @@ function createSlides(
 
 export default function AnchorTextView() {
   const router = useRouter();
-  const { text, colors, bibleReference, bibleText, expiresAt, circleId } =
+  const { text, colors, bibleReference, bibleText, expiresAt, circleId, id, anchorImage, expired } =
     useLocalSearchParams<{
       text?: string;
       colors?: string;
@@ -92,12 +109,15 @@ export default function AnchorTextView() {
       bibleText?: string;
       expiresAt?: string;
       circleId?: string;
+      id?: string;
+      anchorImage?: string;
+      expired?: string;
     }>();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const gradientColors = getGradientColors(colors);
-  const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt);
+  const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt, anchorImage);
 
   const handleActionSelected = (action: string, anchorText?: string) => {
     const prompt =
@@ -106,12 +126,27 @@ export default function AnchorTextView() {
         : action === "encouraged"
           ? "What encouraged you?"
           : "What's on your mind?";
+
+    const tempId = `tempAnchor_${Date.now()}`;
+    saveAnchorRef(tempId, {
+      type: anchorImage ? "image" : "text",
+      title: "Anchor",
+      content: text || "",
+      mediaUrl: anchorImage || undefined,
+    });
+
     router.push({
       pathname: "/CircleExtension/anchorResponse",
       params: {
         action,
         text: anchorText || "",
+        anchorRefId: tempId,
+        fromScreen: "circleFeed",
+        anchorType: anchorImage ? "image" : "text",
+        anchorImage: anchorImage || "",
+        anchorColors: colors || "",
         ...(circleId ? { circleId } : {}),
+        source: "suggestion",
       },
     });
   };
@@ -153,14 +188,25 @@ export default function AnchorTextView() {
       >
         {slides.map((item) => (
           <View key={item.id} style={styles.slide}>
-            {item.type === "action" ? (
+            {item.type === "image" ? (
+              <View style={styles.slide}>
+                <Image
+                  source={{ uri: item.image }}
+                  style={{ width: SLIDE_WIDTH, height: "100%" }}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : item.type === "action" ? (
               <View style={styles.actionSlide}>
                 <AnchorActionContent
                   colors={item.colors || gradientColors.join(",")}
                   expiresAt={item.expiresAt}
                   text={text}
                   fullScreen={true}
+                  anchorType="text"
+                  anchorColors={colors}
                   onActionSelected={handleActionSelected}
+                  isExpired={expired === "1"}
                 />
               </View>
             ) : (
@@ -227,7 +273,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" />
       </View>
     </SafeAreaView>
   );
@@ -252,6 +298,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     minHeight: 318,
+    maxHeight: 512,
     width: "100%",
     zIndex: 999,
   },
@@ -281,7 +328,7 @@ const styles = StyleSheet.create({
   },
   dots: {
     position: "absolute",
-    bottom: 150,
+    bottom: 160,
     left: 0,
     right: 0,
     flexDirection: "row",

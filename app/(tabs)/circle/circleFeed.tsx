@@ -16,15 +16,16 @@ import {
   MOCK_CIRCLE_FEEDS,
 } from "@/constants/mockCircles";
 
-import { fetchCircleFeedData } from "@/services/graphQL/queries/circles";
+import { fetchCircleFeedData, fetchAnchorByDate } from "@/services/graphQL/queries/circles";
 import { joinCircle as joinCircleMutation, leaveCircle as leaveCircleMutation } from "@/services/graphQL/mutation/circles";
 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
 
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 import {
   ActivityIndicator,
@@ -61,6 +62,11 @@ type CirclePost = {
   likeCount?: number;
   anchorLikedCount?: number;
   prayedCount?: number;
+  viewerState?: {
+    liked: boolean;
+    prayed: boolean;
+  };
+  userId?: string;
   user: {
     name: string;
     avatar: string;
@@ -68,8 +74,8 @@ type CirclePost = {
 };
 
 export default function CircleFeedScreen() {
-  const { id, t } =
-    useLocalSearchParams<{ id: string; t?: string }>();
+  const { id, source } =
+    useLocalSearchParams<{ id: string; source?: string }>();
 
   const router = useRouter();
 
@@ -81,6 +87,8 @@ export default function CircleFeedScreen() {
 
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [navigating, setNavigating] = useState(false);
+  const [refreshingFeed, setRefreshingFeed] = useState(false);
 
   const [circle, setCircle] =
     useState<CircleFeedData>(circleData);
@@ -89,7 +97,69 @@ export default function CircleFeedScreen() {
     circleData.posts || []
   );
 
-  const cacheKey = `${CACHE_KEY}_${circleId}`;
+  const cacheKey = `${CACHE_KEY}_${circleId}_${filterSort}_${filterView}`;
+  const userId = useAuthStore((s) => s.user?.id);
+
+  const onRefreshFeed = useCallback(async () => {
+    setRefreshingFeed(true);
+    setApiError(null);
+    try {
+      const data = await fetchCircleFeedData(circleId, 10, 1, 20);
+      if (data) {
+        const mappedCircle: CircleFeedData = {
+          bannerImage: data.bannerImage || circleData.bannerImage,
+          profileImage: data.profileImage || circleData.profileImage,
+          name: data.name || circleData.name,
+          description: data.description || circleData.description,
+          memberCount: data.memberCount ?? circleData.memberCount,
+          isJoined: data.isJoined ?? circleData.isJoined,
+          activeAnchor: data.activeAnchor ? {
+            id: data.activeAnchor.id, type: data.activeAnchor.anchorType as "text" | "image" | "video",
+            title: data.activeAnchor.title, content: data.activeAnchor.content,
+            scripture: data.activeAnchor.scripture || undefined, likedImage: data.activeAnchor.likedImage || undefined,
+            anchorLikedCount: data.activeAnchor.anchorLikedCount, anchorVerse: data.activeAnchor.anchorVerse || undefined,
+            anchorText: data.activeAnchor.anchorText || undefined, anchorImage: data.activeAnchor.anchorImage || undefined,
+            anchorVideo: data.activeAnchor.anchorVideo || undefined, anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+            mediaUrl: data.activeAnchor.mediaUrl || undefined,
+            bibleReference: data.activeAnchor.bibleReference || undefined, bibleText: data.activeAnchor.bibleText || undefined,
+            backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
+            backgroundImage: data.activeAnchor.backgroundImage || undefined,
+            prayedCount: data.activeAnchor.prayedCount || undefined,
+            createdAt: data.activeAnchor.createdAt, expiresAt: data.activeAnchor.expiresAt || undefined,
+            viewerState: data.activeAnchor.viewerState || undefined,
+          } : circleData.activeAnchor,
+          pastAnchors: data.pastAnchors ? data.pastAnchors.map((a: any) => ({
+            id: a.id, type: a.anchorType as "text" | "image" | "video", title: a.title, content: a.content,
+            scripture: a.scripture || undefined, likedImage: a.likedImage || undefined,
+            anchorLikedCount: a.anchorLikedCount, anchorVerse: a.anchorVerse || undefined,
+            anchorText: a.anchorText || undefined, anchorImage: a.anchorImage || undefined,
+            anchorVideo: a.anchorVideo || undefined, anchorThumbnail: a.anchorThumbnail || undefined,
+            mediaUrl: a.mediaUrl || undefined,
+            bibleReference: a.bibleReference || undefined, bibleText: a.bibleText || undefined,
+            backgroundColors: a.backgroundColors as [string, string] | undefined,
+            backgroundImage: a.backgroundImage || undefined, prayedCount: a.prayedCount || undefined,
+            createdAt: a.createdAt, expiresAt: a.expiresAt || undefined,
+          })) : circleData.pastAnchors,
+          posts: data.posts ? data.posts.map((p: any) => ({
+            id: p.id, text: p.text || undefined, image: p.image || undefined, createdAt: p.createdAt,
+            likes: p.likes, comments: p.comments, likedImage: p.likedImage || undefined,
+            likeCount: p.likeCount, anchorLikedCount: p.anchorLikedCount, prayedCount: p.prayedCount,
+            viewerState: p.viewerState || undefined, userId: p.user?.id,
+            user: { name: p.user.name || "", avatar: p.user.avatar || "" },
+          })) : circleData.posts,
+          memberAvatars: data.memberAvatars || circleData.memberAvatars,
+          rules: data.rules ? data.rules.map((r: any) => ({ id: r.ruleNumber, title: r.title, description: r.description })) : circleData.rules,
+        };
+        setCircle(mappedCircle);
+        setPosts(mappedCircle.posts);
+        storage.set(cacheKey, { circle: mappedCircle, posts: mappedCircle.posts });
+      }
+    } catch (err) {
+      console.error("Failed to refresh feed:", err);
+    } finally {
+      setRefreshingFeed(false);
+    }
+  }, [circleId]);
 
   useEffect(() => {
     let mounted = true;
@@ -105,7 +175,9 @@ export default function CircleFeedScreen() {
     const loadData = async () => {
       setApiError(null);
       try {
-        const data = await fetchCircleFeedData(circleId, 10, 1, 20);
+        const sortBy = filterSort === "New" ? "NEW" : "TRENDING";
+        const authorId = filterView === "My post" ? userId : undefined;
+        const data = await fetchCircleFeedData(circleId, 10, 1, 20, sortBy, authorId);
         if (!mounted) return;
 
         if (data) {
@@ -116,7 +188,7 @@ export default function CircleFeedScreen() {
             description: data.description || circleData.description,
             memberCount: data.memberCount ?? circleData.memberCount,
             isJoined: data.isJoined ?? circleData.isJoined,
-            activeAnchor: data.activeAnchor
+                activeAnchor: data.activeAnchor
               ? {
                   id: data.activeAnchor.id,
                   type: data.activeAnchor.anchorType as "text" | "image" | "video",
@@ -130,6 +202,7 @@ export default function CircleFeedScreen() {
                   anchorImage: data.activeAnchor.anchorImage || undefined,
                   anchorVideo: data.activeAnchor.anchorVideo || undefined,
                   anchorThumbnail: data.activeAnchor.anchorThumbnail || undefined,
+                  mediaUrl: data.activeAnchor.mediaUrl || undefined,
                   bibleReference: data.activeAnchor.bibleReference || undefined,
                   bibleText: data.activeAnchor.bibleText || undefined,
                   backgroundColors: data.activeAnchor.backgroundColors as [string, string] | undefined,
@@ -137,6 +210,7 @@ export default function CircleFeedScreen() {
                   prayedCount: data.activeAnchor.prayedCount || undefined,
                   createdAt: data.activeAnchor.createdAt,
                   expiresAt: data.activeAnchor.expiresAt || undefined,
+                  viewerState: data.activeAnchor.viewerState || undefined,
                 }
               : circleData.activeAnchor,
             pastAnchors: data.pastAnchors
@@ -153,6 +227,7 @@ export default function CircleFeedScreen() {
                   anchorImage: a.anchorImage || undefined,
                   anchorVideo: a.anchorVideo || undefined,
                   anchorThumbnail: a.anchorThumbnail || undefined,
+                  mediaUrl: a.mediaUrl || undefined,
                   bibleReference: a.bibleReference || undefined,
                   bibleText: a.bibleText || undefined,
                   backgroundColors: a.backgroundColors as [string, string] | undefined,
@@ -174,6 +249,8 @@ export default function CircleFeedScreen() {
                   likeCount: p.likeCount,
                   anchorLikedCount: p.anchorLikedCount,
                   prayedCount: p.prayedCount,
+                  viewerState: p.viewerState || undefined,
+                  userId: p.user?.id,
                   user: {
                     name: p.user.name || "",
                     avatar: p.user.avatar || "",
@@ -209,7 +286,18 @@ export default function CircleFeedScreen() {
     return () => {
       mounted = false;
     };
-  }, [circleId]);
+  }, [circleId, filterSort, filterView, userId]);
+
+  // Refresh feed when returning from CircleCommentComposer
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedRef.current) {
+        hasFocusedRef.current = true;
+        return;
+      }
+      onRefreshFeed();
+    }, [onRefreshFeed])
+  );
 
   const [showFilterModal, setShowFilterModal] =
     useState(false);
@@ -222,6 +310,18 @@ export default function CircleFeedScreen() {
   const [filterView, setFilterView] =
     useState<"All" | "My post">("All");
 
+  // Local sort fallback for "New" order (works even if backend ignores sortBy)
+  const displayedPosts = useMemo(() => {
+    let filtered = posts;
+    if (filterView === "My post" && userId) {
+      filtered = posts.filter((p) => p.userId === userId);
+    }
+    if (filterSort === "New") {
+      return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return filtered;
+  }, [posts, filterSort, filterView, userId]);
+
   const [showChevron, setShowChevron] =
     useState(false);
 
@@ -233,6 +333,7 @@ export default function CircleFeedScreen() {
   const [showFixedAnchor, setShowFixedAnchor] = useState(false);
   const anchorStickyThreshold = useRef(0);
   const [anchorSectionHeight, setAnchorSectionHeight] = useState(0);
+  const hasFocusedRef = useRef(false);
   const [anchorFilter, setAnchorFilter] = useState("Today");
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
@@ -246,37 +347,43 @@ export default function CircleFeedScreen() {
     "5 days ago",
   ];
 
-  const getAnchorDaysAgo = (filter: string): number => {
-    if (filter === "Today") return 0;
-    const match = filter.match(/(\d+) days ago/);
-    return match ? parseInt(match[1]) : 0;
-  };
+  const [displayAnchor, setDisplayAnchor] = useState<any | undefined>(undefined);
+  const [anchorExpired, setAnchorExpired] = useState(false);
 
-  const getDisplayAnchor = () => {
-    if (!circle) return undefined;
-    
-    const daysAgo = getAnchorDaysAgo(anchorFilter);
-    const now = new Date();
+  useEffect(() => {
+    if (!circle) return;
+    let cancelled = false;
 
-    if (daysAgo === 0 && circle.activeAnchor) {
-      return circle.activeAnchor;
+    async function loadAnchor() {
+      setAnchorExpired(false);
+      if (anchorFilter === "Today") {
+        if (circle.activeAnchor) {
+          if (!cancelled) setDisplayAnchor(circle.activeAnchor);
+          if (circle.activeAnchor.expiresAt && new Date(circle.activeAnchor.expiresAt).getTime() <= Date.now()) {
+            if (!cancelled) setAnchorExpired(true);
+          }
+        }
+        return;
+      }
+
+      const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
+      const date = new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
+      const anchor = await fetchAnchorByDate(circleId, date);
+      if (!cancelled) {
+        if (anchor) {
+          setDisplayAnchor(anchor);
+          if (anchor.expiresAt && new Date(anchor.expiresAt).getTime() <= Date.now()) {
+            setAnchorExpired(true);
+          }
+        } else {
+          setDisplayAnchor(circle.activeAnchor);
+        }
+      }
     }
 
-    if (circle.pastAnchors && circle.pastAnchors.length > 0) {
-      const pastAnchor = circle.pastAnchors.find((anchor: any) => {
-        const created = new Date(anchor.createdAt);
-        const diffDays = Math.round(
-          (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000)
-        );
-        return diffDays === daysAgo;
-      });
-      if (pastAnchor) return pastAnchor;
-    }
-
-    return circle.activeAnchor;
-  };
-
-  const displayAnchor = getDisplayAnchor();
+    loadAnchor();
+    return () => { cancelled = true; };
+  }, [anchorFilter, circle, circleId]);
 
   const flatListRef =
     useRef<FlatList>(null);
@@ -394,6 +501,7 @@ export default function CircleFeedScreen() {
         height={1}
         backgroundColor={colors.border}
         width={"90%"}
+        alignSelf="center"
       />
     </YStack>
   );
@@ -545,7 +653,7 @@ export default function CircleFeedScreen() {
               </View>
             )}
             
-            {anchorCardVisible && <AnchorCard anchor={displayAnchor} circleId={circleId} />}
+            {anchorCardVisible && <AnchorCard anchor={displayAnchor} circleId={circleId} expired={anchorExpired} />}
 
             <CircleFeedFilterRow
               filterSort={filterSort}
@@ -562,18 +670,20 @@ export default function CircleFeedScreen() {
 
       <FlatList
         ref={flatListRef}
-        data={posts}
+        data={displayedPosts}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={renderEmpty}
         onScroll={handleScroll}
+        refreshing={refreshingFeed}
+        onRefresh={onRefreshFeed}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         windowSize={7}
         maxToRenderPerBatch={10}
         removeClippedSubviews={true}
         contentContainerStyle={{
-          paddingTop: 129 + (showFixedAnchor ? anchorSectionHeight : 0),
+          paddingTop: 110 + (showFixedAnchor ? anchorSectionHeight : 0),
           paddingBottom: 16,
         }}
         ListHeaderComponent={
@@ -582,6 +692,7 @@ export default function CircleFeedScreen() {
               <CircleFeedProfileSection
                 circle={circle}
                 onToggleJoin={toggleJoin}
+                joining={joining}
               />
 
               <CircleFeedNameRow
@@ -657,7 +768,7 @@ export default function CircleFeedScreen() {
                     ))}
                   </View>
                 )}
-                <AnchorCard anchor={displayAnchor} circleId={circleId} />
+                <AnchorCard anchor={displayAnchor} circleId={circleId} expired={anchorExpired} />
 
                 <CircleFeedFilterRow
                   filterSort={filterSort}
@@ -698,20 +809,27 @@ export default function CircleFeedScreen() {
           <Button
             circular
             size="$6"
-            backgroundColor={colors.primary}
+            backgroundColor={navigating ? colors.inActiveButton : colors.primary}
             onPress={() => {
+              if (navigating) return;
+              setNavigating(true);
               router.push({
                 pathname: "/CircleExtension/CircleCommentComposer",
-                params: { circleId: circleId, fromScreen: "circleFeed" },
+                params: { circleId: circleId, fromScreen: "circleFeed", source: source || "feed" },
               });
             }}
+            disabled={navigating}
             elevation={4}
             shadowColor="#000"
             shadowOffset={{ width: 0, height: 2 }}
             shadowOpacity={0.2}
             shadowRadius={4}
           >
-            <Ionicons name="add" size={28} color="#FFF" />
+            {navigating ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Ionicons name="add" size={28} color="#FFF" />
+            )}
           </Button>
         </View>
       )}
@@ -731,7 +849,7 @@ const styles = StyleSheet.create({
 
   fixedAnchor: {
     position: "absolute",
-    top: 100,
+    top: 80,
     left: 0,
     right: 0,
     zIndex: 40,

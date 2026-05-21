@@ -1,4 +1,4 @@
-import { createComment, Comment } from "@/services/graphQL/mutation/actions/comments";
+import { createComment, deleteComment as deleteCommentService, Comment } from "@/services/graphQL/mutation/actions/comments";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -85,28 +85,72 @@ export function useCreateComment() {
       return { previousComments, tempId };
     },
 
-    onError: (_err, { postId }, context) => {
-      if (context?.previousComments) {
-        queryClient.setQueryData(["postComments", postId], context.previousComments);
-      }
-    },
-
     onSuccess: (response: any, { postId }, context) => {
-      const realComment = response?.comment;
-      if (!realComment || !context?.tempId) return;
+      console.log("📝 [useCreateComment] onSuccess:", {
+        hasId: !!response?.id,
+        responseId: response?.id,
+        hasTempId: !!context?.tempId,
+        tempId: context?.tempId,
+        responseKeys: Object.keys(response || {}),
+      });
+
+      if (!response?.id) {
+        console.warn("📝 [useCreateComment] onSuccess missing id, invalidating");
+        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+        return;
+      }
+      if (!context?.tempId) {
+        console.warn("📝 [useCreateComment] onSuccess missing tempId, invalidating");
+        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+        return;
+      }
 
       queryClient.setQueryData(["postComments", postId], (old: any) => {
-        if (!old) return old;
-        return {
+        if (!old) {
+          console.warn("📝 [useCreateComment] setQueryData: old cache is empty");
+          return old;
+        }
+        const newData = {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            comments: page.comments.map((c: any) =>
-              c.id === context.tempId ? { ...c, ...realComment, id: realComment.id } : c
-            ),
+            comments: page.comments.map((c: any) => {
+              if (c.id === context.tempId) {
+                console.log("📝 [useCreateComment] Replacing tempId:", context.tempId, "with realId:", response.id);
+                return { ...c, ...response, id: response.id };
+              }
+              return c;
+            }),
           })),
         };
+        console.log("📝 [useCreateComment] Cache after replacement:", {
+          pages: newData.pages.length,
+          commentsPerPage: newData.pages.map((p: any) => p.comments.length),
+          commentIds: newData.pages.flatMap((p: any) => p.comments.map((c: any) => c.id)),
+        });
+        return newData;
       });
+    },
+    onError: (err, { postId }, context) => {
+      console.log("📝 [useCreateComment] onError:", err);
+      if (context?.previousComments) {
+        queryClient.setQueryData(["postComments", postId], context.previousComments);
+      }
+      queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+    },
+    onSettled: (_data, _err, { postId }) => {
+      console.log("📝 [useCreateComment] onSettled — mutation finished", { hasData: !!_data, hasErr: !!_err });
+    },
+  });
+}
+
+export function useDeleteComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (commentId: string) => deleteCommentService(commentId),
+    onSuccess: (_data, commentId) => {
+      queryClient.invalidateQueries({ queryKey: ["postComments"] });
     },
   });
 }

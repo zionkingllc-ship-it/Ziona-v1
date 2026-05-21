@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
+import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
+import OtherReportModal from "@/components/ui/modals/OtherReportModal";
 import SuccessModal from "../ui/modals/successModal";
 
 const formatTimeAgo = (dateString: string): string => {
@@ -61,7 +63,9 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
 
   const reportMutation = useReportContent();
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
@@ -73,6 +77,8 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
     !!post.likedImage,
     post.likeCount ?? post.likes,
   );
+
+  useState(() => { getAnchorRef(post.id).then(setAnchorRef); });
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
@@ -93,6 +99,12 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
         postLiked: isLiked ? "1" : "0",
         postComments: String(post.comments),
         postCreatedAt: post.createdAt,
+        ...(anchorRef ? {
+          anchorType: anchorRef.type,
+          anchorTitle: anchorRef.title,
+          anchorContent: anchorRef.content || "",
+          anchorMediaUrl: anchorRef.mediaUrl || "",
+        } : {}),
       },
     });
   };
@@ -101,8 +113,8 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
     <Pressable onPress={handlePostPress}>
       <YStack padding="$3" gap={4} backgroundColor="#FFF">
         {/* HEADER */}
-        <XStack justifyContent="space-between" alignItems="center">
-          <XStack alignItems="center" gap="$2">
+        <XStack justifyContent="space-between" alignItems="flex-start">
+          <XStack alignItems="flex-start" gap="$2">
             <AvatarWithInitials
               uri={post.user.avatar}
               name={post.user.name}
@@ -110,11 +122,11 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
               failedUris={failedAvatarUrls}
               setFailedUris={setFailedAvatarUrls}
             />
-            <XStack gap={6} alignItems="center">
-              <Text fontFamily={"$body"} fontSize={13} fontWeight="600">
+            <XStack gap={6} alignItems="flex-start">
+              <Text fontFamily="$body" fontSize={13} fontWeight="600">
                 {post.user.name}
               </Text>
-              <Text fontSize={12} color="#888">
+              <Text fontFamily="$body" fontSize={12} color="#888">
                 {formatTimeAgo(post.createdAt)}
               </Text>
             </XStack>
@@ -127,7 +139,7 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
         <YStack paddingLeft={50} gap={6}>
           {/* TEXT */}
           {post.text && (
-            <Text fontSize={15} color="#333" lineHeight={20}>
+            <Text fontFamily="$body" fontSize={13} color="#333" lineHeight={20}>
               {post.text}
             </Text>
           )}
@@ -143,6 +155,26 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
             />
           )}
 
+          {/* ANCHOR QUOTE */}
+          {anchorRef && (<>
+              {anchorRef.type === "image" && anchorRef.mediaUrl ? (
+                <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                  <Image source={{ uri: anchorRef.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
+                </View>
+              ) : anchorRef.type === "video" ? (
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="videocam" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
+                </View>
+              ) : (
+                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                    {anchorRef.content || anchorRef.title || ""}
+                  </Text>
+                </View>
+              )}
+          </>)}
+ 
           {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">
             <Pressable onPress={handleLike} disabled={togglingLike}>
@@ -152,14 +184,14 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
                   size={18}
                   color={isLiked ? "#742092" : undefined}
                 />
-                <Text>{localLikeCount}</Text>
+                <Text fontFamily="$body">{localLikeCount}</Text>
               </XStack>
             </Pressable>
 
             <Pressable onPress={handlePostPress}>
               <XStack alignItems="center" gap="$1">
                 <Ionicons name="chatbubble-outline" size={18} />
-                <Text>{post.comments}</Text>
+                <Text fontFamily="$body">{post.comments}</Text>
               </XStack>
             </Pressable>
    
@@ -197,7 +229,25 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
               }
             );
           }}
-          onSelectOther={() => {}}
+          onSelectOther={() => {
+            setReasonsVisible(false);
+            setOtherVisible(true);
+          }}
+        />
+        <OtherReportModal
+          visible={otherVisible}
+          onClose={() => setOtherVisible(false)}
+          onSubmit={(description) => {
+            setOtherVisible(false);
+            reportMutation.mutate(
+              { reason: "OTHER" as ReportReason, postId: post.id, description },
+              {
+                onSuccess: () => {
+                  setSuccessVisible(true);
+                },
+              }
+            );
+          }}
         />
         <SuccessModal
           visible={successVisible}

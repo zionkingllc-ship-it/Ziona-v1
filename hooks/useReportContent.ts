@@ -7,10 +7,12 @@ export function useReportContent() {
       reason,
       postId,
       commentId,
+      description,
     }: {
       reason: ReportReason;
       postId?: string;
       commentId?: string;
-    }) => reportContent(reason, postId, commentId),
+      description?: string;
+    }) => reportContent(reason, postId, commentId, description),
   });
 }

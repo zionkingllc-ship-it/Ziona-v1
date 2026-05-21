@@ -58,7 +58,7 @@ export default function ChangePasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
     <KeyboardAvoidingWrapper>
-      <XStack padding={10}>  <Header heading="Change password" /></XStack>
+      <XStack padding={10}><Header heading="Change password" /></XStack>
     
 
       <YStack padding="$4" gap="$4" marginTop="$4">
@@ -86,7 +86,7 @@ export default function ChangePasswordScreen() {
         />
 
         {error ? (
-          <Text fontFamily="$body" color={colors.DEBIT_RED} fontSize={12}>
+          <Text fontFamily="$body" fontWeight="400" color={colors.DEBIT_RED} fontSize={12}>
             {error}
           </Text>
         ) : null}
@@ -120,7 +120,7 @@ export default function ChangePasswordScreen() {
         />
 
         {/* FORGOT PASSWORD */}
-        <Text fontFamily="$body" fontSize={13} color={colors.primary}>
+        <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary}>
           Forgot password?
         </Text>
 
@@ -149,10 +149,10 @@ export default function ChangePasswordScreen() {
             justifyContent="center"
             alignItems="center"
           >
-            <Text color={colors.white} fontSize={12}>✓</Text>
+            <Text fontFamily="$body" fontWeight="400" color={colors.white} fontSize={12}>✓</Text>
           </View>
 
-          <Text fontFamily="$body" fontSize={13} color={colors.secondaryGray}>
+          <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
             Sign out of other devices if you suspect unauthorized access.
           </Text>
         </XStack>
@@ -190,10 +190,10 @@ export default function ChangePasswordScreen() {
   );
 }
 
-/* RULE COMPONENT */
+{/* RULE COMPONENT */}
 function Rule({ ok, text }: { ok: boolean; text: string }) {
   return (
-    <Text fontFamily="$body" color={ok ? colors.SUCCESS_GREEN : colors.gray} fontSize={13}>
+    <Text fontFamily="$body" fontWeight="400" color={ok ? colors.SUCCESS_GREEN : colors.gray} fontSize={13}>
       ✓ {text}
     </Text>
   );

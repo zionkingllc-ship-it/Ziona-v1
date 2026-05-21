@@ -179,7 +179,6 @@ export default function ProfileScreen() {
         <Header
           heading={`@${profile?.username || ""}`}
           imageAfter2={settingIcon}
-          imageAfter={profileShareIcon}
           imageAfter2Press={() => router.push("/settings")}
         />
       </XStack>

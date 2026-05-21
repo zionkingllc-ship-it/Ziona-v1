@@ -140,11 +140,8 @@ export default function CreateBiblePostScreen() {
             scripture={reference}
             translation={translation}
             verseText={verseText}
-            value={""}
-            onChangeText={() => {}}
             backgroundColor={cardColor}
             maxLength={500}
-            
           />
 
           {/* ACTIONS */}

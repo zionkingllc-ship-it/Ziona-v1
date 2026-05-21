@@ -34,14 +34,9 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
 
-      console.log("PASSWORD RESET REQUEST");
-      console.log("Email:", email);
-
-      const response = await authApi.requestPasswordReset(
+      await authApi.requestPasswordReset(
         email.trim().toLowerCase()
       );
-
-      console.log("PASSWORD RESET RESPONSE:", response);
 
       router.push({
         pathname: "/(auth)/verifyOtp",
@@ -51,10 +46,6 @@ export default function ForgotPassword() {
         },
       });
     } catch (error: any) {
-      console.error(
-        "PASSWORD RESET FAILED:",
-        error?.response?.data || error
-      );
       const feedback = getNetworkModalCopy(error, "Failed to send reset code. Please try again.");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
@@ -115,6 +106,7 @@ export default function ForgotPassword() {
             onBlur={() => setIsFocus(false)}
             onChangeText={(text) => {
               setEmail(text);
+              setErrorVisible(false);
             }}
           />
 

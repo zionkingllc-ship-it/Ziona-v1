@@ -1,9 +1,9 @@
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useEffect, useRef } from "react";
-import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import React, { useCallback, useEffect, useRef } from "react";
+import { AppState, Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "tamagui";
 
@@ -20,14 +20,18 @@ export default function AnchorVideoView() {
   const {
     video,
     colors: colorsParam,
-    expiresAt,
-    circleId,
-  } = useLocalSearchParams<{
-    video?: string;
-    colors?: string;
-    expiresAt?: string;
-    circleId?: string;
-  }>();
+      expiresAt,
+      circleId,
+      id,
+      expired,
+    } = useLocalSearchParams<{
+      video?: string;
+      colors?: string;
+      expiresAt?: string;
+      circleId?: string;
+      id?: string;
+      expired?: string;
+    }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const hasNavigatedRef = useRef(false);
@@ -89,6 +93,32 @@ export default function AnchorVideoView() {
     }
   }, [player]);
 
+  // Pause video when screen loses focus or app goes to background
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (player) {
+          try { player.pause(); } catch {}
+        }
+      };
+    }, [player])
+  );
+
+  useEffect(() => {
+    if (!player) return;
+
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") {
+        try { player.pause(); } catch {}
+      }
+    });
+
+    return () => {
+      sub.remove();
+      try { player.pause(); } catch {}
+    };
+  }, [player]);
+
   useEffect(() => {
     if (!player || hasNavigatedRef.current) return;
 
@@ -101,7 +131,10 @@ export default function AnchorVideoView() {
           params: {
             colors: colorsParam || "",
             expiresAt: expiresAt || "",
+            anchorType: "video",
             ...(circleId ? { circleId } : {}),
+            ...(id ? { id } : {}),
+            source: "suggestion",
           },
         });
       }, 2000);
@@ -158,7 +191,7 @@ export default function AnchorVideoView() {
         )}
       </View>
 
-      <AnchorFooter />
+      <AnchorFooter anchorId={id} expired={expired === "1"} source="suggestion" />
     </View>
   );
 }

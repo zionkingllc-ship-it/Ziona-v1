@@ -1,20 +1,26 @@
 import { Image, Text, XStack, YStack, View } from "tamagui";
 import { ActivityIndicator, FlatList, Pressable } from "react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
 import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { NotificationItem } from "@/src/types/__generated__/graphql";
+import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
 
 const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
 
 export default function ActivityScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
-  const { data: notificationsData, isLoading } = useNotifications(50);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useNotifications(50);
   const markAsRead = useMarkNotificationAsRead();
 
-  const notifications = notificationsData?.items ?? [];
-  
+  const notifications: NotificationItem[] = data?.pages.flatMap((p) => p.items) ?? [];
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const filtered = notifications.filter((item: NotificationItem) => {
     if (activeTab === "All") return true;
     if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
@@ -61,6 +67,13 @@ export default function ActivityScreen() {
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
+      if ((item.type === "follow" || item.type === "follow_request") && item.referenceId) {
+        router.push(`/guest?userId=${item.referenceId}`);
+      } else if (item.referenceType === "post" && item.referenceId) {
+        router.push(`/viewer/${item.referenceId}`);
+      } else if (item.referenceType === "circle" || item.referenceType === "circle_post") {
+        router.push({ pathname: "/(tabs)/circle/circleFeed", params: { id: item.referenceId || "" } });
+      }
     };
 
     return (
@@ -68,7 +81,11 @@ export default function ActivityScreen() {
         <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
           <XStack gap="$3" flex={1}>
             <Image
-              source={require("@/assets/images/emptyDP.png")}
+              source={
+                item.user?.avatarUrl
+                  ? { uri: item.user.avatarUrl }
+                  : require("@/assets/images/emptyDP.png")
+              }
               width={40}
               height={40}
               borderRadius={20}
@@ -93,8 +110,8 @@ export default function ActivityScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <YStack flex={1} paddingTop={50}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
+      <YStack flex={1}>
         <Text textAlign="center" fontSize={18} fontWeight="600" marginBottom={12}>
           Activity
         </Text>
@@ -123,6 +140,13 @@ export default function ActivityScreen() {
             windowSize={5}
             maxToRenderPerBatch={15}
             removeClippedSubviews={true}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={isFetchingNextPage ? (
+              <YStack paddingVertical={16} alignItems="center">
+                <ActivityIndicator size="small" color={colors.primary} />
+              </YStack>
+            ) : null}
           />
         )}
       </YStack>

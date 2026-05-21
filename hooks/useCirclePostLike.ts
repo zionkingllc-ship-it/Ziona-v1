@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { prayForCirclePost } from "@/services/graphQL/mutation/circles";
+import { likeCirclePost } from "@/services/graphQL/mutation/circles";
 
 export function useCirclePostLike(
   postId: string,
@@ -20,10 +20,10 @@ export function useCirclePostLike(
     setLikeCount(newCount);
 
     try {
-      const result = await prayForCirclePost(postId);
+      const result = await likeCirclePost(postId);
       if (result?.success) {
-        setIsLiked(result.prayed ?? newLiked);
-        setLikeCount(result.prayedCount ?? newCount);
+        setIsLiked(result.liked ?? newLiked);
+        setLikeCount(result.likesCount ?? newCount);
       }
     } catch {
       setIsLiked(!newLiked);

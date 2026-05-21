@@ -1,12 +1,16 @@
 import colors from "@/constants/colors";
 import { useScreenDimensions } from "@/context/ScreenDimensionsContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circles";
+import { fetchForYouFeed } from "@/services/feed/feedServices";
+import { getNotifications, getUnreadNotificationCount } from "@/services/graphQL/queries/actions/notifications";
 import { Tabs } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Platform, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "tamagui";
 import { useAuthStore } from "@/store/useAuthStore";
+import { queryClient } from "@/lib/queryClient";
 
 // Visual height of tab bar only (safe area handled separately by OS)
 const TAB_BAR_VISUAL_HEIGHT = Platform.OS === "ios" ? 49 : 56;
@@ -57,6 +61,18 @@ export default function TabsLayout() {
 
   useEffect(() => {
     setTabBarHeight(TAB_BAR_VISUAL_HEIGHT);
+
+    // Preload data for all tab screens
+    const isAuth = useAuthStore.getState().isAuthenticated;
+    if (isAuth) {
+      Promise.allSettled([
+        queryClient.prefetchQuery({ queryKey: ["forYouFeed"], queryFn: () => fetchForYouFeed({ pageParam: undefined }) }),
+        queryClient.prefetchQuery({ queryKey: ["allCircles"], queryFn: fetchAllCircles }),
+        queryClient.prefetchQuery({ queryKey: ["myCircles"], queryFn: fetchMyCircles }),
+        queryClient.prefetchQuery({ queryKey: ["notifications", 50], queryFn: () => getNotifications(50) }),
+        queryClient.prefetchQuery({ queryKey: ["unreadNotificationCount"], queryFn: getUnreadNotificationCount }),
+      ]);
+    }
   }, [setTabBarHeight]);
 
   return (

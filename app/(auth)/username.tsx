@@ -29,6 +29,7 @@ export default function CreateUsername() {
   const [username, setUsername] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [isFocus, setIsFocus] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const userIcon = require("@/assets/images/userIcon.png");
  
@@ -40,40 +41,75 @@ export default function CreateUsername() {
 const flow = useSignupStore((s) => s.flow);
 
 const handleSubmit = async () => {
-  if (!isValidUsername) return;
+  console.log("🟦 USERNAME: handleSubmit called, flow:", flow, "username:", username);
+  if (!isValidUsername) {
+    console.log("🟦 USERNAME: invalid username, returning");
+    return;
+  }
 
   const cleanUsername = username.trim().toLowerCase();
+  console.log("🟦 USERNAME: clean username:", cleanUsername);
 
   setSelectedUsername(cleanUsername);
 
   try {
     start("signup");
+    console.log("🟦 USERNAME: loading started, flow:", flow);
 
     if (flow === "email") {
-      if (!email || !birthday || !password) return;
+      console.log("🟦 USERNAME: email flow, store - email:", !!email, "birthday:", !!birthday, "password:", !!password);
+      if (!email || !birthday || !password) {
+        console.error("🟥 USERNAME: missing store data - email:", email, "birthday:", birthday, "password:", password);
+        return;
+      }
 
+      console.log("🟦 USERNAME: calling signUp API");
       await authApi.signUp({
         email,
         birthday,
         username: cleanUsername,
         password,
       });
+      console.log("🟦 USERNAME: signUp API succeeded");
 
-      router.push({
-        pathname: "/(auth)/verifyOtp",
-        params: { email, flow: "signup" },
+      stop("signup");
+      console.log("🟦 USERNAME: loading stopped, navigating to verifyOtp");
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.push({
+            pathname: "/(auth)/verifyOtp",
+            params: { email, flow: "signup" },
+          });
+        }, 120);
       });
+      return;
     }
 
     if (flow === "google") {
+      console.log("🟦 USERNAME: google flow, calling finalize-username");
       await api.post("/user/finalize-username", {
         username: cleanUsername,
       });
+      console.log("🟦 USERNAME: finalize-username succeeded");
 
-      router.replace("/(tabs)/feed");
+      stop("signup");
+      console.log("🟦 USERNAME: loading stopped, navigating to feed");
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.replace("/(tabs)/feed");
+        }, 120);
+      });
+      return;
     }
-  } catch (error) {
-    console.error("Signup error:", error);
+
+    console.warn("🟨 USERNAME: no matching flow - flow is:", flow);
+  } catch (err: any) {
+    console.error("🟥 USERNAME ERROR:", err);
+    console.error("🟥 raw error shape:", JSON.stringify(err).slice(0, 300));
+    console.error("🟥 message:", err?.error?.message || err?.message);
+    setError(err?.error?.message || err?.message || "Signup failed. Please try again.");
   } finally {
     stop("signup");
   }
@@ -123,6 +159,7 @@ const handleSubmit = async () => {
             onChangeText={(value) => {
               setUsername(value);
               setSelectedSuggestion(null);
+              setError(null);
             }}
           />
         </YStack>
@@ -160,6 +197,14 @@ const handleSubmit = async () => {
               })}
             </XStack>
           </YStack>
+        )}
+
+        {/* ERROR MESSAGE */}
+
+        {error && (
+          <Text fontSize={fs(13)} color={colors.errorText} alignSelf="flex-start">
+            {error}
+          </Text>
         )}
 
         {/* SIGNUP BUTTON */}

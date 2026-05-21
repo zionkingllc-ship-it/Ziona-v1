@@ -28,7 +28,7 @@ export default function AboutScreen() {
               <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
                 {user?.fullName || "Ziona User"}
               </Text>
-              <Text fontFamily="$body" fontSize={14} color={colors.gray}>
+              <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>
                 @{user?.username || "username"}
               </Text>
             </YStack>
@@ -43,13 +43,13 @@ export default function AboutScreen() {
           
           <YStack gap={12}>
             <XStack justifyContent="space-between">
-              <Text fontFamily="$body" fontSize={14} color={colors.gray}>Member since</Text>
-              <Text fontFamily="$body" fontSize={14} color={colors.black}>-</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>Member since</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.black}>-</Text>
             </XStack>
             
             <XStack justifyContent="space-between">
-              <Text fontFamily="$body" fontSize={14} color={colors.gray}>Account status</Text>
-              <Text fontFamily="$body" fontSize={14} color={colors.SUCCESS_GREEN}>Active</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>Account status</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.SUCCESS_GREEN}>Active</Text>
             </XStack>
           </YStack>
         </View>
@@ -62,8 +62,8 @@ export default function AboutScreen() {
           
           <YStack gap={12}>
             <XStack justifyContent="space-between">
-              <Text fontFamily="$body" fontSize={14} color={colors.gray}>Version</Text>
-              <Text fontFamily="$body" fontSize={14} color={colors.black}>1.0.0</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>Version</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>1.0.0</Text>
             </XStack>
           </YStack>
         </View>

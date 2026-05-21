@@ -26,7 +26,7 @@ const POST_TYPES = [
     id: "media",
     title: "Upload a video / image",
     icon: require("@/assets/images/imageIcon.png"),
-    onPress: () => {}, // handled separately for media picking
+    onPress: () => { /* handled by handleItemPress */ },
   },
   {
     id: "bible",

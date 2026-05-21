@@ -9,7 +9,7 @@ import { ChevronRight } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Text, XStack, YStack } from "tamagui";
 
@@ -36,7 +36,10 @@ export default function EditProfileScreen() {
     if (avatarMutation.isPending) return;
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Please grant media library access in Settings to change your profile picture.");
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -70,7 +73,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.white, paddingTop: 20 }}
+      style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}

@@ -5,7 +5,13 @@ import type {
   NotificationPreferencesType,
 } from "@/src/types/__generated__/graphql";
 
-export type NotificationItem = Omit<GQLNotificationItem, "__typename">;
+export type NotificationItem = Omit<GQLNotificationItem, "__typename"> & {
+  user?: {
+    id: string;
+    username: string;
+    avatarUrl?: string | null;
+  } | null;
+};
 
 export type NotificationsResponse = Omit<NotificationConnection, "__typename">;
 
@@ -21,7 +27,13 @@ export async function getNotifications(limit: number = 50): Promise<Notification
           type
           isRead
           referenceId
+          referenceType
           createdAt
+          user {
+            id
+            username
+            avatarUrl
+          }
         }
       }
     }

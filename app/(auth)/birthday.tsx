@@ -16,6 +16,7 @@ export default function Birthday() {
   const [date, setDate] = useState<Date | null>(null);
   const isFocused = useIsFocused();
   const [pickerReady, setPickerReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const email = useSignupStore((s) => s.email);
   const setBirthday = useSignupStore((s) => s.setBirthday);
@@ -36,13 +37,14 @@ export default function Birthday() {
   const pickerVisible = showPicker;
 
   useEffect(() => {
-    if (isFocused) {
-      const task = InteractionManager.runAfterInteractions(() => {
-        setPickerReady(true);
-      });
+    const task = InteractionManager.runAfterInteractions(() => {
+      setPickerReady(true);
+    });
 
-      return () => task.cancel();
-    }
+    return () => {
+      task.cancel();
+      if (!isFocused) setPickerReady(false);
+    };
   }, [isFocused]);
 
   const handleSubmit = async () => {
@@ -53,6 +55,7 @@ export default function Birthday() {
       start("birthdayNext");
 
       const isoBirthday = date.toISOString().split("T")[0];
+      console.log("🟦 BIRTHDAY: submitting birthday:", isoBirthday, "email:", email, "flow:", useSignupStore.getState().flow);
 
       // Save birthday locally
       setBirthday(isoBirthday);
@@ -63,13 +66,17 @@ export default function Birthday() {
         date_of_birth: isoBirthday,
       });
 
+      console.log("🟦 BIRTHDAY: suggestions received:", suggestions?.length);
+
       // Always an array
       setSuggestions(suggestions);
 
+      console.log("🟦 BIRTHDAY: navigating to password");
       router.push("/(auth)/password");
-    } catch (error) {
-      console.error("Suggestion error:", error);
-    } finally {
+      stop("birthdayNext");
+    } catch (err: any) {
+      console.error("🟥 BIRTHDAY ERROR:", err?.response?.data || err?.message || err);
+      setError(err?.error?.message || err?.message || "Unable to verify birthday. Please try again.");
       stop("birthdayNext");
     }
   };
@@ -130,6 +137,12 @@ export default function Birthday() {
             </XStack>
           </Pressable>
 
+          {error && (
+            <Text fontSize="$3" color={colors.errorText} textAlign="center">
+              {error}
+            </Text>
+          )}
+
           <SimpleButton
             textColor={colors.buttonText}
             color={colors.primaryButton}
@@ -161,6 +174,7 @@ export default function Birthday() {
             date={date ?? new Date(2000, 0, 1)}
             setDate={(d: any) => {
               setDate(d);
+              setError(null);
             }}
           />
         </View>

@@ -1,10 +1,13 @@
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
+import { saveAnchorRef } from "@/utils/anchorRef";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Modal,
@@ -15,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text, XStack, YStack, Image } from "tamagui";
+import { Image, Text, XStack, YStack } from "tamagui";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 
 type Props = {
@@ -43,7 +46,7 @@ export default function CircleCommentComposer({
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string }>();
+  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string }>();
 
   const mode = propMode || (routeMode as "action" | "comment") || "comment";
   const anchorPreview = propAnchorPreview || routeAnchorPreview;
@@ -60,7 +63,7 @@ export default function CircleCommentComposer({
       // If we have a circleId, create a circle post
       if (circleId) {
         console.log("📤 [Composer] Creating post for circle:", circleId, "text:", text.trim());
-        result = await createCirclePost(circleId, text.trim(), undefined);
+        result = await createCirclePost(circleId, text.trim(), image || undefined);
         console.log("✅ [Composer] Post created result:", result);
       } else if (onSend) {
         // Otherwise use the callback
@@ -81,23 +84,25 @@ export default function CircleCommentComposer({
         return;
       }
 
-      setShowSuccess(true);
-      
-      // Reload circle feed to show new post
-      if (fromScreen === "circleFeed" && circleId) {
-        console.log("🔄 [Composer] Reloading circle feed after post...");
-        setTimeout(() => {
-          router.replace({
-            pathname: "/(tabs)/circle/circleFeed",
-            params: { id: circleId, t: Date.now().toString() },
-          });
-        }, 1500);
-        return;
+      // Re-key anchor ref from temp ID to the new post ID
+      const newPostId = result?.post?.id;
+      if (anchorRefId && newPostId && anchorRefId.startsWith("tempAnchor_")) {
+        const { getAnchorRef, removeAnchorRef } = await import("@/utils/anchorRef");
+        const refData = await getAnchorRef(anchorRefId);
+        if (refData) {
+          await saveAnchorRef(newPostId, refData);
+          await removeAnchorRef(anchorRefId);
+        }
       }
+
+      setShowSuccess(true);
       
       setTimeout(() => {
         setShowSuccess(false);
-        if (onClose) {
+        if (source === "feed") {
+          // Only navigate back to feed when entered directly from feed screen
+          router.back();
+        } else if (onClose) {
           onClose();
         } else {
           router.back();
@@ -117,7 +122,7 @@ export default function CircleCommentComposer({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
       >
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, top: insets.top, paddingBottom: insets.bottom  }}>
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
@@ -191,15 +196,27 @@ export default function CircleCommentComposer({
               borderColor: "#EEE",
               padding: 8,
               flexDirection: "row",
-              alignItems: "flex-end",
+              alignItems: "center", 
               gap: 8,
               backgroundColor: "#FFF",
               paddingBottom: insets.bottom || 8,
             }}
           >
             <Pressable
-              onPress={() => {
-                setImage("https://picsum.photos/300");
+              onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert("Permission required", "Please grant media library access in Settings to attach images.");
+                  return;
+                }
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ["images"],
+                  allowsEditing: true,
+                  quality: 0.8,
+                });
+                if (!result.canceled && result.assets?.[0]?.uri) {
+                  setImage(result.assets[0].uri);
+                }
               }}
               style={{ paddingVertical: 8 }}
             >
@@ -224,16 +241,20 @@ export default function CircleCommentComposer({
               autoFocus
             />
 
-            <Pressable onPress={handleSend} style={{ paddingVertical: 8 }}>
+            <Pressable onPress={handleSend} disabled={posting} style={{ paddingVertical: 8 }}>
               <View
                 style={{
-                  backgroundColor: text.trim() ? "#6C2BD9" : "#CCC",
+                  backgroundColor: text.trim() && !posting ? "#6C2BD9" : "#CCC",
                   paddingHorizontal: 14,
                   paddingVertical: 6,
                   borderRadius: 20,
                 }}
               >
-                <Text color="#FFF">{mode === "action" ? "Share" : "Post"}</Text>
+                {posting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text color="#FFF">{mode === "action" ? "Share" : "Post"}</Text>
+                )}
               </View>
             </Pressable>
           </View>

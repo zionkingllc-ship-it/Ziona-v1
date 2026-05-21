@@ -49,6 +49,7 @@ export default function SettingsScreen() {
   }, [profile?.avatarUrl, imageError]);
 
   const handleLogout = async () => {
+    if (logout.isPending) return;
     try {
       await logout.mutateAsync();
     } catch (error) {
@@ -70,7 +71,7 @@ export default function SettingsScreen() {
       </Text>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* SEARCH */}
-        <View
+        {/* <View
           backgroundColor={colors.lightGrayBg}
           borderRadius={10}
           paddingHorizontal={12}
@@ -81,7 +82,7 @@ export default function SettingsScreen() {
             placeholder="Search"
             placeholderTextColor={colors.placeholderText}
           />
-        </View>
+        </View> */}
 
         {/* PROFILE */}
         <Pressable onPress={() => router.push("/settings/AccountSetup")}>
@@ -125,7 +126,7 @@ export default function SettingsScreen() {
                 <Text fontFamily="$body" fontWeight="600" fontSize={14}>
                   {profile?.username || "Ziona User"}
                 </Text>
-                <Text fontFamily="$body" fontSize={12} color={colors.gray}>
+                <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray}>
                   Account set-up
                 </Text>
               </YStack>
@@ -137,11 +138,6 @@ export default function SettingsScreen() {
         {/* ACCOUNT SETTINGS */}
         <SettingsSection title="Account settings">
           <SettingsRow
-            icon={<Lock size={18} color={colors.secondaryGray} />}
-            label="Password and security"
-            onPress={() => router.push("/settings/ChangePassword")}
-          />
-          <SettingsRow
             icon={<Bell size={18} color={colors.secondaryGray} />}
             label="Notification"
             onPress={() => router.push("/settings/Notification")}
@@ -150,11 +146,6 @@ export default function SettingsScreen() {
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Account privacy"
             onPress={() => router.push("/settings/Privacy")}
-          />
-          <SettingsRow
-            icon={<Bell size={18} color={colors.secondaryGray} />}
-            label="Like counts visible"
-            onPress={() => router.push("/settings/LikeCountVisible")}
           />
         </SettingsSection>
 
@@ -180,6 +171,11 @@ export default function SettingsScreen() {
             onPress={() => router.push("/settings/Terms")}
           />
           <SettingsRow
+            icon={<FileText size={18} color={colors.secondaryGray} />}
+            label="Terms of use"
+            onPress={() => router.push("/settings/terms/use")}
+          />
+          <SettingsRow
             icon={<User size={18} color={colors.secondaryGray} />}
             label="About your account"
             onPress={() => router.push("/settings/About")}
@@ -187,15 +183,15 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         {/* LOGOUT */}
-        <Pressable onPress={handleLogout}>
+        <Pressable onPress={handleLogout} disabled={logout.isPending}>
           <Text
             marginTop={30}
             alignSelf="center"
-            color={colors.DEBIT_RED}
+            color={logout.isPending ? colors.gray : colors.DEBIT_RED}
             fontFamily="$body"
             fontWeight="500"
           >
-            Log out
+            {logout.isPending ? "Logging out..." : "Log out"}
           </Text>
         </Pressable>
       </ScrollView>

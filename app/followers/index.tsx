@@ -45,6 +45,7 @@ export default function FollowersScreen() {
                 avatarUrl={item.avatarUrl} 
                 isFollowing={item.isFollowing}
                 isFollowedBy={item.isFollowedBy}
+                listType="followers"
               />
             )}
             showsVerticalScrollIndicator={false}

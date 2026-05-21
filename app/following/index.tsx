@@ -45,6 +45,7 @@ export default function FollowingScreen() {
                 avatarUrl={item.avatarUrl} 
                 isFollowing={item.isFollowing}
                 isFollowedBy={item.isFollowedBy}
+                listType="following"
               />
             )}
             showsVerticalScrollIndicator={false}

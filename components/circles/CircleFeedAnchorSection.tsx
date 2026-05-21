@@ -27,33 +27,43 @@ const getAnchorDaysAgo = (filter: string): number => {
   return match ? parseInt(match[1]) : 0;
 };
 
+const getAllAnchors = (circle: CircleFeedData): ActiveAnchor[] => {
+  const all: ActiveAnchor[] = [];
+  if (circle.activeAnchor) all.push(circle.activeAnchor);
+  if (circle.pastAnchors) all.push(...circle.pastAnchors);
+  return all;
+};
+
+const getAnchorDaysDiff = (createdAt: string): number => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  return Math.round((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+};
+
 const getDisplayAnchor = (circle: CircleFeedData, filter: string): ActiveAnchor | undefined => {
   const daysAgo = getAnchorDaysAgo(filter);
-  const now = new Date();
+  const allAnchors = getAllAnchors(circle).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
 
   if (daysAgo === 0 && circle.activeAnchor) {
     return circle.activeAnchor;
   }
 
-  if (circle.pastAnchors && circle.pastAnchors.length > 0) {
-    const pastAnchor = circle.pastAnchors.find((anchor) => {
-      const created = new Date(anchor.createdAt);
-      const diffDays = Math.round(
-        (now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000)
-      );
-      return diffDays === daysAgo;
-    });
-    if (pastAnchor) return pastAnchor;
-  }
+  const exact = allAnchors.find((a) => getAnchorDaysDiff(a.createdAt) === daysAgo);
+  if (exact) return exact;
 
-  return circle.activeAnchor;
+  const closest = allAnchors.find((a) => getAnchorDaysDiff(a.createdAt) <= daysAgo);
+  if (closest) return closest;
+
+  return allAnchors[0];
 };
 
 const CircleFeedAnchorSection = ({ circle, anchorFilter, onFilterChange }: CircleFeedAnchorSectionProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const allAnchors = getAllAnchors(circle);
   const displayAnchor = getDisplayAnchor(circle, anchorFilter);
-
-  if (!displayAnchor) return null;
+  const hasNoAnchor = allAnchors.length === 0;
 
   return (
     <YStack top={10}>
@@ -120,7 +130,7 @@ const CircleFeedAnchorSection = ({ circle, anchorFilter, onFilterChange }: Circl
           ))}
         </View>
       )}
-      <AnchorCard anchor={displayAnchor} />
+      <AnchorCard anchor={displayAnchor} isEmpty={hasNoAnchor} />
     </YStack>
   );
 };

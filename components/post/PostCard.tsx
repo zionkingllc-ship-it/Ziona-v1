@@ -16,6 +16,7 @@ import BookmarkFoldersModal from "../ui/modals/BookmarkFoldersModal";
 import ConfirmReportModal from "../ui/modals/ConfirmReportModal";
 import CreateFolderModal from "../ui/modals/CreateFolderModal";
 import ReportReasonsModal from "../ui/modals/ReportReasonsModal";
+import OtherReportModal from "../ui/modals/OtherReportModal";
 import ShareModal from "../ui/modals/ShareModal";
 import SuccessModal from "../ui/modals/successModal";
 import OptionsModal from "../ui/modals/OptionsModal";
@@ -62,6 +63,7 @@ function PostCardComponent({
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [successTitle, setSuccessTitle] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -69,6 +71,8 @@ function PostCardComponent({
 
   const likedState = post.viewerState.liked;
   const likeCount = post.stats.likesCount;
+  const commentCount = post.stats.commentsCount;
+  const savedCount = post.stats.savesCount;
 
   const [authorAvatarSource, setAuthorAvatarSource] = useState(
     post.author?.avatarUrl && post.author.avatarUrl.trim()
@@ -126,7 +130,7 @@ function PostCardComponent({
   };
 
   const handleFollow = () => {
-    if (!post.author?.id) return;
+    if (!post.author?.id || toggleFollowMutation.isPending) return;
     requireAuth(() => {
       if (post.author) {
         toggleFollowMutation.mutate({
@@ -160,11 +164,18 @@ function PostCardComponent({
       {/* OVERLAY */}
       <YStack
         position="absolute"
-        bottom={Math.max(insets.bottom - 25)}
-        width="100%"
-        paddingTop={insets.top + 12}
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        backgroundColor="rgba(0,0,0,0.15)"
       >
-        <XStack padding="$4" alignItems="flex-end">
+        <XStack
+          position="absolute"
+          bottom={Math.max(insets.bottom - 25)}
+          padding="$4"
+          alignItems="flex-end"
+        >
           {/* LEFT SIDE */}
           <YStack flex={1} gap="$2">
             {/* PROFILE */}
@@ -260,20 +271,26 @@ function PostCardComponent({
               </Text>
             </YStack>
 
-            <Pressable onPress={() => requireAuth(() => setCommentsVisible(true))}>
-              <Image source={commentIcon} width={24} height={24} />
-            </Pressable>
+            <YStack alignItems="center">
+              <Pressable onPress={() => requireAuth(() => setCommentsVisible(true))}>
+                <Image source={commentIcon} width={24} height={24} />
+              </Pressable>
+              <Text color={colors.white} fontSize={12}>{commentCount}</Text>
+            </YStack>
 
-            <Pressable onPress={() => {
-              console.log("[PostCard] Bookmark pressed, calling openFolders");
-              requireAuth(openFolders);
-            }}>
-              <Image
-                source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
-                width={24}
-                height={24}
-              />
-            </Pressable>
+            <YStack alignItems="center">
+              <Pressable onPress={() => {
+                console.log("[PostCard] Bookmark pressed, calling openFolders");
+                requireAuth(openFolders);
+              }}>
+                <Image
+                  source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
+                  width={24}
+                  height={24}
+                />
+              </Pressable>
+              <Text color={colors.white} fontSize={12}>{savedCount}</Text>
+            </YStack>
 
             <Pressable onPress={() => requireAuth(() => setShareVisible(true))}>
               <Image source={shareIcon} width={24} height={24} />
@@ -329,7 +346,32 @@ function PostCardComponent({
             }
           );
         }}
-        onSelectOther={() => {}}
+        onSelectOther={() => {
+          setReasonsVisible(false);
+          setOtherVisible(true);
+        }}
+      />
+      <OtherReportModal
+        visible={otherVisible}
+        onClose={() => setOtherVisible(false)}
+        onSubmit={(description) => {
+          setOtherVisible(false);
+          reportMutation.mutate(
+            { reason: "OTHER" as ReportReason, postId: post.id, description },
+            {
+              onSuccess: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Report Submitted");
+                setSuccessMessage("Thank you for your report. We'll review it shortly.");
+              },
+              onError: () => {
+                setSuccessVisible(true);
+                setSuccessTitle("Something went wrong");
+                setSuccessMessage("Please try again later.");
+              },
+            }
+          );
+        }}
       />
       <ShareModal
         visible={shareVisible}

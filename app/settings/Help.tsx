@@ -27,10 +27,10 @@ export default function HelpScreen() {
         marginBottom={10}
       >
         <YStack>
-          <Text fontFamily="$body" fontSize={14} color={colors.black}>
+          <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>
             {title}
           </Text>
-          <Text fontFamily="$body" fontSize={12} color={colors.gray}>
+          <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray}>
             2 articles
           </Text>
         </YStack>
@@ -53,13 +53,14 @@ export default function HelpScreen() {
       </XStack>
 
       <YStack padding={16} flex={1}>
-        <Text fontFamily="$body" fontSize={13} color={colors.gray}>
+        <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray}>
           Welcome @username
         </Text>
 
         <Text
           fontFamily="$body"
           fontSize={14}
+          fontWeight="500"
           marginTop={4}
           marginBottom={10}
           color={colors.black}
@@ -83,6 +84,7 @@ export default function HelpScreen() {
         <Text
           fontFamily="$body"
           fontSize={14}
+          fontWeight="500"
           marginBottom={10}
           color={colors.black}
         >

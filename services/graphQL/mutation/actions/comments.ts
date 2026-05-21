@@ -94,8 +94,18 @@ export async function getPostComments(
 
   const data = await graphqlRequest(query, { postId, cursor, limit });
 
+  console.log("📝 [getPostComments] RAW response:", JSON.stringify({
+    hasData: !!data,
+    hasPostComments: !!data?.postComments,
+    totalCount: data?.postComments?.totalCount,
+    commentsCount: data?.postComments?.comments?.length,
+    hasMore: data?.postComments?.hasMore,
+    commentIds: data?.postComments?.comments?.map((c: any) => ({ id: c.id, text: c.text?.slice(0, 30) })),
+  }));
+
   const result = data?.postComments;
   if (!result) {
+    console.warn("📝 [getPostComments] No data returned for postId:", postId, "raw:", JSON.stringify(data));
     throw new Error("Failed to fetch comments");
   }
 
@@ -204,6 +214,28 @@ export async function createComment(
     ...res.comment,
     message: res.message,
   };
+}
+
+/* DELETE COMMENT */
+export async function deleteComment(commentId: string) {
+  const mutation = `
+    mutation DeleteComment($commentId: String!) {
+      deleteComment(commentId: $commentId) {
+        success
+        error {
+          code
+          message
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(mutation, { commentId });
+  const res = data?.deleteComment;
+  if (!res?.success) {
+    throw new Error(res?.error?.message || "Failed to delete comment");
+  }
+  return res;
 }
 
 /* LIKE COMMENT */

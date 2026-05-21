@@ -86,6 +86,10 @@ export default function AuthIndex() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
+    useSignupStore.getState().reset();
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       router.replace("/(tabs)/feed");
     }
@@ -160,7 +164,7 @@ export default function AuthIndex() {
               startIcon={<Image source={google} width={wp(6)} height={wp(6)} />}
             />
 
-            <PrimaryButton
+            {/* <PrimaryButton
               text="Continue with Facebook"
               color={colors.white}
               textSize={fs(15)}
@@ -169,7 +173,7 @@ export default function AuthIndex() {
               startIcon={
                 <Image source={facebook} width={wp(6)} height={wp(6)} />
               }
-            />
+            /> */}
           </YStack>
 
           {/* -------- Footer -------- */}
@@ -200,16 +204,18 @@ export default function AuthIndex() {
                 By continuing, you agree to Ziona’s{" "}
               </Text>
 
-              <InlineUnderlineText
-                color={colors.termsButton}
-                fontFamily={"$body"}
-                weight="500"
-                fontSize={fs(13)}
-                thickness={1}
-                offset={-1}
-              >
-                Terms of use
-              </InlineUnderlineText>
+              <Pressable onPress={() => router.push("/settings/terms/use")}>
+                <InlineUnderlineText
+                  color={colors.termsButton}
+                  fontFamily={"$body"}
+                  weight="500"
+                  fontSize={fs(13)}
+                  thickness={1}
+                  offset={-1}
+                >
+                  Terms of use
+                </InlineUnderlineText>
+              </Pressable>
               <Text
                 fontSize={fs(13)}
                 textAlign="center"
@@ -222,11 +228,7 @@ export default function AuthIndex() {
                 and confirm that you have read Ziona’s{" "}
               </Text>
               <Pressable
-                onPress={() =>
-                  router.push(
-                    "https://www.privacypolicies.com/live/db459a7c-78ec-4d12-8d82-cf20f7e716a6",
-                  )
-                }
+                onPress={() => router.push("/settings/terms/privacy")}
               >
                 <InlineUnderlineText
                   color={colors.termsButton}

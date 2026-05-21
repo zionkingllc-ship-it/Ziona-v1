@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   View,
   ScrollView,
   StyleSheet,
@@ -8,16 +9,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { usePostComments } from "@/hooks/usePostComments";
-import { useCreateComment } from "@/hooks/useCreateComment";
+import { useCreateComment, useDeleteComment } from "@/hooks/useCreateComment";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
+import { useAuthStore } from "@/store/useAuthStore";
+import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
 
 const formatDate = (dateString?: string): string => {
@@ -40,6 +44,10 @@ export default function CirclePostDetailScreen() {
     postLiked,
     postComments,
     postCreatedAt,
+    anchorType,
+    anchorTitle,
+    anchorContent,
+    anchorMediaUrl,
   } = useLocalSearchParams<{
     postId?: string;
     circleId?: string;
@@ -51,10 +59,17 @@ export default function CirclePostDetailScreen() {
     postLiked?: string;
     postComments?: string;
     postCreatedAt?: string;
+    anchorType?: string;
+    anchorTitle?: string;
+    anchorContent?: string;
+    anchorMediaUrl?: string;
   }>();
 
   const [commentText, setCommentText] = useState("");
+  const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const currentUser = useAuthStore((state) => state.user);
 
   const { isLiked, likeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     postId || "",
@@ -72,11 +87,20 @@ export default function CirclePostDetailScreen() {
 
   const createCommentMutation = useCreateComment();
   const toggleCommentLikeMutation = useToggleCommentLike();
+  const deleteCommentMutation = useDeleteComment();
 
   const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
+  console.log("📝 [PostDetail] commentsData:", JSON.stringify({
+    hasData: !!commentsData,
+    pagesCount: commentsData?.pages?.length,
+    totalComments: comments.length,
+    commentIds: comments.map((c: any) => c.id),
+    isLoading: isLoadingComments,
+  }));
 
   const handleCreateComment = async () => {
-    if (!commentText.trim()) return;
+    if (!commentText.trim() || posting) return;
+    setPosting(true);
 
     createCommentMutation.mutate(
       {
@@ -84,6 +108,9 @@ export default function CirclePostDetailScreen() {
         text: commentText,
       },
       {
+        onSettled: () => {
+          setPosting(false);
+        },
         onSuccess: () => {
           setCommentText("");
         },
@@ -92,6 +119,7 @@ export default function CirclePostDetailScreen() {
   };
 
   const handleLikeComment = (commentId: string, currentLiked: boolean) => {
+    if (toggleCommentLikeMutation.isPending) return;
     toggleCommentLikeMutation.mutate({ commentId, currentLiked });
   };
 
@@ -160,6 +188,30 @@ export default function CirclePostDetailScreen() {
               />
             )}
 
+            {anchorType && (
+              anchorType === "image" && anchorMediaUrl ? (
+                <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                  <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" />
+                </View>
+              ) : anchorType === "video" && anchorMediaUrl ? (
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="videocam" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={12}>Reply to Anchor Video</Text>
+                </View>
+              ) : (
+                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                  {anchorTitle && (
+                    <Text fontFamily="$body" fontSize={11} color="rgba(255,255,255,0.6)" marginBottom={4}>
+                      From {anchorTitle}
+                    </Text>
+                  )}
+                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                    {anchorContent || ""}
+                  </Text>
+                </View>
+              )
+            )}
+
             <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
               <TouchableOpacity onPress={handleToggleLike} disabled={togglingLike}>
                 <XStack alignItems="center" gap="$1">
@@ -201,52 +253,59 @@ export default function CirclePostDetailScreen() {
           ) : (
             <YStack paddingHorizontal="$3" gap="$3" paddingVertical="$2">
               {comments.map((comment) => (
-                <YStack
+                <TouchableOpacity
                   key={comment.id}
-                  gap="$2"
-                  paddingBottom="$2"
-                  borderBottomWidth={1}
-                  borderBottomColor="#F0F0F0"
+                  onLongPress={() => {
+                    if (!comment.viewerState?.isOwner) return;
+                    Alert.alert("Delete comment", "Are you sure you want to delete this comment?", [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Delete", style: "destructive", onPress: () => deleteCommentMutation.mutate(comment.id) },
+                    ]);
+                  }}
+                  activeOpacity={1}
                 >
-                  <XStack alignItems="center" gap="$2">
-                    <AvatarWithInitials
-                      uri={comment.user.avatarUrl}
-                      name={comment.user.username}
-                      size={32}
-                      failedUris={failedAvatarUrls}
-                      setFailedUris={setFailedAvatarUrls}
-                    />
-                    <YStack gap={2} flex={1}>
-                      <Text fontSize={12} fontWeight="600">
-                        {comment.user.username}
-                      </Text>
-                      <Text fontSize={11} color="#999">
-                        {formatDate(comment.createdAt)}
-                      </Text>
-                    </YStack>
-                  </XStack>
-
-                  <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
-                    {comment.text}
-                  </Text>
-
-                  <XStack gap="$3" paddingLeft="$4" alignItems="center">
-                    <TouchableOpacity
-                      onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
-                    >
-                      <XStack alignItems="center" gap="$1">
-                        <Ionicons
-                          name={comment.viewerState?.liked ? "heart" : "heart-outline"}
-                          size={14}
-                          color={comment.viewerState?.liked ? themeColors.primary : "#999"}
-                        />
-                        <Text fontSize={11} color="#999">
-                          {comment.stats.likesCount}
+                  <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
+                    <XStack alignItems="center" gap="$2">
+                      <AvatarWithInitials
+                        uri={comment.user.avatarUrl}
+                        name={comment.user.username}
+                        size={32}
+                        failedUris={failedAvatarUrls}
+                        setFailedUris={setFailedAvatarUrls}
+                      />
+                      <YStack gap={2} flex={1}>
+                        <Text fontSize={12} fontWeight="600">
+                          {comment.user.username}
                         </Text>
-                      </XStack>
-                    </TouchableOpacity>
-                  </XStack>
-                </YStack>
+                        <Text fontSize={11} color="#999">
+                          {formatDate(comment.createdAt)}
+                        </Text>
+                      </YStack>
+                    </XStack>
+
+                    <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
+                      {comment.text}
+                    </Text>
+
+                    <XStack gap="$3" paddingLeft="$4" alignItems="center">
+                      <TouchableOpacity
+                        onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
+                        disabled={toggleCommentLikeMutation.isPending}
+                      >
+                        <XStack alignItems="center" gap="$1">
+                          <Ionicons
+                            name={comment.viewerState?.liked ? "heart" : "heart-outline"}
+                            size={14}
+                            color={comment.viewerState?.liked ? themeColors.primary : "#999"}
+                          />
+                          <Text fontSize={11} color="#999">
+                            {comment.stats.likesCount}
+                          </Text>
+                        </XStack>
+                      </TouchableOpacity>
+                    </XStack>
+                  </YStack>
+                </TouchableOpacity>
               ))}
 
               {hasNextPage && (
@@ -272,41 +331,80 @@ export default function CirclePostDetailScreen() {
 
         <View style={styles.inputContainer}>
           <XStack
-            paddingHorizontal="$3"
+            paddingHorizontal="$2"
             paddingVertical="$2"
             gap="$2"
             alignItems="flex-end"
             borderTopWidth={1}
             borderTopColor="#EEE"
           >
-            <YStack
-              flex={1}
-              borderRadius={20}
-              borderWidth={1}
-              borderColor="#DDD"
-              paddingHorizontal="$3"
-              paddingVertical="$1"
-              backgroundColor="#F9F9F9"
+            <Pressable
+              onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== "granted") {
+                  Alert.alert("Permission required", "Please grant media library access in Settings to attach images.");
+                  return;
+                }
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ["images"],
+                  allowsEditing: true,
+                  quality: 0.8,
+                });
+                if (!result.canceled && result.assets?.[0]?.uri) {
+                  setCommentImage(result.assets[0].uri);
+                }
+              }}
+              style={{ paddingVertical: 8 }}
             >
-              <TextInput
-                placeholder="Add a comment..."
-                placeholderTextColor="#999"
-                value={commentText}
-                onChangeText={setCommentText}
-                style={styles.textInput}
-                numberOfLines={1}
-              />
-            </YStack>
+              {currentUser?.avatarUrl ? (
+                <AvatarWithInitials
+                  uri={currentUser?.avatarUrl}
+                  name={currentUser?.username}
+                  size={28}
+                  failedUris={failedAvatarUrls}
+                  setFailedUris={setFailedAvatarUrls}
+                />
+              ) : (
+                <AvatarWithInitials
+                  uri={null}
+                  name={currentUser?.username || "You"}
+                  size={28}
+                  failedUris={failedAvatarUrls}
+                  setFailedUris={setFailedAvatarUrls}
+                />
+              )}
+            </Pressable>
+
+            <TextInput
+              placeholder="Add a comment..."
+              placeholderTextColor="#999"
+              value={commentText}
+              onChangeText={setCommentText}
+              style={styles.textInput}
+              multiline
+            />
 
             <TouchableOpacity
               onPress={handleCreateComment}
-              disabled={!commentText.trim() || createCommentMutation.isPending}
+              disabled={!commentText.trim() || posting}
+              style={{ paddingVertical: 8 }}
             >
-              <Ionicons
-                name="send"
-                size={20}
-                color={commentText.trim() ? themeColors.primary : "#DDD"}
-              />
+              <View
+                style={{
+                  backgroundColor: commentText.trim() && !posting ? themeColors.primary : "#CCC",
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                }}
+              >
+                {posting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text color="#FFF" fontSize={13}>
+                    Post
+                  </Text>
+                )}
+              </View>
             </TouchableOpacity>
           </XStack>
         </View>
@@ -327,13 +425,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   textInput: {
+    flex: 1,
     fontSize: 14,
     color: "#333",
     paddingVertical: 8,
+    minHeight: 36,
+    maxHeight: 120,
   },
   loadMoreButton: {
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
   },
+
+
 });

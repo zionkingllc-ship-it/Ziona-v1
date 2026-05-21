@@ -25,7 +25,7 @@ export default function InAppNotificationScreen() {
 
   const Row = ({ label, value, onChange, disabled }: any) => (
     <XStack justifyContent="space-between" alignItems="center" paddingVertical={12}>
-      <Text fontFamily="$body" fontSize={14} color={colors.black}>{label}</Text>
+      <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onChange}
@@ -43,7 +43,7 @@ export default function InAppNotificationScreen() {
           <Header heading="In-app notification" />
         </XStack>
         <View flex={1} justifyContent="center" alignItems="center">
-          <Text fontFamily="$body" color={colors.gray}>Loading...</Text>
+          <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading...</Text>
         </View>
       </SafeAreaView>
     );

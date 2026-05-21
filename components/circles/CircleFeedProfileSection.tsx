@@ -8,9 +8,10 @@ import { CircleFeedData } from '@/constants/mockCircles';
 interface CircleFeedProfileSectionProps {
   circle: CircleFeedData;
   onToggleJoin: () => void;
+  joining?: boolean;
 }
 
-const CircleFeedProfileSection = ({ circle, onToggleJoin }: CircleFeedProfileSectionProps) => (
+const CircleFeedProfileSection = ({ circle, onToggleJoin, joining }: CircleFeedProfileSectionProps) => (
   <XStack justifyContent="space-between" alignItems="center">
     <Image
       source={{ uri: circle.profileImage }}
@@ -19,6 +20,7 @@ const CircleFeedProfileSection = ({ circle, onToggleJoin }: CircleFeedProfileSec
     <SimpleButton
       text={circle.isJoined ? 'Joined' : 'Join'}
       onPress={onToggleJoin}
+      loading={joining}
       textSize={13}
       fontFamily={'$body'}
       fontWeight={'400'}
@@ -26,6 +28,7 @@ const CircleFeedProfileSection = ({ circle, onToggleJoin }: CircleFeedProfileSec
       textColor={circle.isJoined ? colors.primary : colors.white}
       borderColor={colors.primary}
       borderRadius={99}
+      paddingVertical={4}
       style={{ width: 90 }}
     />
   </XStack>

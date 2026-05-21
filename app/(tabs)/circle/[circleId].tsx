@@ -32,6 +32,7 @@ export default function CircleDetailScreen() {
   const [circle, setCircle] = useState<any>(null);
   const [posts, setPosts] = useState<CirclePost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -90,39 +91,13 @@ export default function CircleDetailScreen() {
   }
 
   const toggleJoin = async () => {
-    try {
-      const wasJoined = circle?.isJoined;
-      setCircle((prev: any) =>
-        prev
-          ? {
-              ...prev,
-              isJoined: !prev.isJoined,
-              memberCount: prev.isJoined
-                ? prev.memberCount - 1
-                : prev.memberCount + 1,
-            }
-          : null,
-      );
-
-      if (wasJoined) {
-        await leaveCircle(circleId!);
-      } else {
-        await joinCircle(circleId!);
-      }
-    } catch (err) {
-      console.error("Failed to toggle join", err);
-      setCircle((prev: any) =>
-        prev
-          ? {
-              ...prev,
-              isJoined: !prev.isJoined,
-              memberCount: prev.isJoined
-                ? prev.memberCount - 1
-                : prev.memberCount + 1,
-            }
-          : null,
-      );
-    }
+    if (joining) return;
+    setJoining(true);
+    setCircle((prev: any) => prev ? {
+      ...prev,
+      isJoined: !prev.isJoined,
+    } : null);
+    setTimeout(() => setJoining(false), 1000);
   };
 
   return (
@@ -172,6 +147,7 @@ export default function CircleDetailScreen() {
               <SimpleButton
                 text="Joined"
                 onPress={toggleJoin}
+                loading={joining}
                 color={colors.white}
                 textColor={colors.primary}
                 style={{
@@ -185,6 +161,7 @@ export default function CircleDetailScreen() {
               <SimpleButton
                 text="Join"
                 onPress={toggleJoin}
+                loading={joining}
                 color={colors.primary}
                 textColor={colors.white}
                 style={{ paddingHorizontal: 24, paddingVertical: 8 }}

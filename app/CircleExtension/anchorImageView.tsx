@@ -1,4 +1,5 @@
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
+import { saveAnchorRef } from "@/utils/anchorRef";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -41,11 +42,13 @@ function createSlides(
 
 export default function AnchorImageView() {
   const router = useRouter();
-  const { image, colors, expiresAt, circleId } = useLocalSearchParams<{
+  const { image, colors, expiresAt, circleId, id, expired } = useLocalSearchParams<{
     image?: string;
     colors?: string;
     expiresAt?: string;
     circleId?: string;
+    id?: string;
+    expired?: string;
   }>();
 
   const gradientColors = getGradientColors(colors);
@@ -60,12 +63,27 @@ export default function AnchorImageView() {
         : action === "encouraged"
           ? "What encouraged you?"
           : "What's on your mind?";
+
+    const tempId = `tempAnchor_${Date.now()}`;
+    saveAnchorRef(tempId, {
+      type: "image",
+      title: "Anchor",
+      content: anchorText || "",
+      mediaUrl: image || "",
+    });
+
     router.push({
       pathname: "/CircleExtension/anchorResponse",
       params: {
         action,
         text: anchorText || "",
+        anchorRefId: tempId,
+        fromScreen: "circleFeed",
+        anchorType: "image",
+        anchorImage: image || "",
+        anchorColors: colors || "",
         ...(circleId ? { circleId } : {}),
+        source: "suggestion",
       },
     });
   };
@@ -108,7 +126,11 @@ export default function AnchorImageView() {
                 colors={item.colors || gradientColors.join(",")}
                 expiresAt={item.expiresAt}
                 fullScreen={true}
+                anchorType="image"
+                anchorImage={image}
+                anchorColors={colors}
                 onActionSelected={handleActionSelected}
+                isExpired={expired === "1"}
               />
             ) : (
               <View style={styles.imageWrapper}>
@@ -138,7 +160,7 @@ export default function AnchorImageView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" />
       </View>
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import colors from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -11,33 +11,62 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
+import { likeAnchor } from "@/services/graphQL/mutation/circles";
 
 type AnchorFooterProps = {
   prayIcon?: any;
   bottomOffset?: number;
   anchorId?: string;
+  circleId?: string;
+  source?: string;
+  expired?: boolean;
 };
 
-export default function     AnchorFooter({
+export default function AnchorFooter({
   prayIcon,
   bottomOffset = 30,
   anchorId,
+  circleId,
+  source = "suggestion",
+  expired = false,
 }: AnchorFooterProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isLiked, setIsLiked] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   const bottomPadding =
     Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
-  const handlePrayLike = () => {
-    setIsLiked(!isLiked);
-  };
+  const handlePrayLike = useCallback(async () => {
+    if (!anchorId || toggling) return;
+    setToggling(true);
+
+    const newLiked = !isLiked;
+    setIsLiked(newLiked);
+
+    try {
+      const result = await likeAnchor(anchorId);
+      if (result?.success) {
+        setIsLiked(result.liked ?? newLiked);
+      }
+    } catch {
+      setIsLiked(!newLiked);
+    } finally {
+      setToggling(false);
+    }
+  }, [anchorId, isLiked, toggling]);
 
   const handleReflection = () => {
     router.push({
       pathname: "/CircleExtension/CircleCommentComposer",
-      params: { anchorId }
+      params: {
+        anchorId,
+        ...(circleId ? { circleId } : {}),
+        fromScreen: "circleFeed",
+        mode: "action",
+        source,
+      },
     });
   };
 
@@ -46,7 +75,8 @@ export default function     AnchorFooter({
       {/*Prayer like*/}
       <TouchableOpacity
         onPress={handlePrayLike}
-        style={styles.footerButton}
+        disabled={toggling || expired}
+        style={[styles.footerButton, expired && styles.disabledButton]}
       >
         {isLiked ? (
           <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
@@ -59,7 +89,7 @@ export default function     AnchorFooter({
       </TouchableOpacity>
 
       {/*reflection comment*/}
-      <TouchableOpacity onPress={handleReflection}>
+      <TouchableOpacity onPress={handleReflection} disabled={expired}>
         <XStack
           backgroundColor="#000"
           paddingHorizontal="$3"
@@ -94,5 +124,8 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: "#E0E0E0",
     borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.4,
   },
 });

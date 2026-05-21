@@ -18,6 +18,7 @@ export default function Email() {
 
   const storedEmail = useSignupStore((s) => s.email);
   const setEmail = useSignupStore((s) => s.setEmail);
+  const setFlow = useSignupStore((s) => s.setFlow);
 
   const start = useAsyncStore((s) => s.start);
   const stop = useAsyncStore((s) => s.stop);
@@ -47,26 +48,34 @@ export default function Email() {
 
       setServerError(null);
 
+      console.log("🟦 EMAIL: checking email:", email.trim().toLowerCase());
+
       const result = await authApi.checkEmail(email.trim().toLowerCase());
 
+      console.log("🟦 EMAIL: checkEmail result:", result);
+
       if (result.exists) {
+        console.log("🟦 EMAIL: email already exists");
         setServerError(result.message || "Email already registered");
         return;
       }
 
       setEmail(email.trim().toLowerCase());
+      setFlow("email");
+      console.log("🟦 EMAIL: flow set to 'email', navigating to birthday");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
           router.push("/(auth)/birthday");
+          stop("emailNext");
         }, 120);
       });
     } catch (err: any) {
+      console.error("🟥 EMAIL ERROR:", err?.response?.data || err?.message || err);
       setServerError(
-        err?.response?.data?.error?.message ||
+        err?.error?.message || err?.message ||
           "Unable to verify email, please try again",
       );
-    } finally {
       stop("emailNext");
     }
   };

@@ -8,11 +8,15 @@ const DEFAULT_GRADIENT = "#C7EBCB,#FFFFFF";
 
 export default function AnchorActionView() {
   const router = useRouter();
-  const { colors, expiresAt, text, circleId } = useLocalSearchParams<{
+  const { colors, expiresAt, text, circleId, anchorType, expired, id, source } = useLocalSearchParams<{
     colors?: string;
     expiresAt?: string;
     text?: string;
     circleId?: string;
+    anchorType?: string;
+    expired?: string;
+    id?: string;
+    source?: string;
   }>();
   const insets = useSafeAreaInsets();
 
@@ -28,7 +32,11 @@ export default function AnchorActionView() {
       params: {
         action,
         text: anchorText || "",
+        fromScreen: "circleFeed",
+        anchorType: anchorType || "text",
+        anchorColors: colors || "",
         ...(circleId ? { circleId } : {}),
+        ...(source ? { source } : { source: "suggestion" }),
       },
     });
   };
@@ -39,7 +47,12 @@ export default function AnchorActionView() {
         colors={colors || DEFAULT_GRADIENT}
         expiresAt={expiresAt}
         text={text}
+        anchorType={anchorType || "text"}
+        anchorColors={colors}
         onActionSelected={handleActionSelected}
+        isExpired={expired === "1"}
+        anchorId={id}
+        circleId={circleId}
       />
     </View>
   );
