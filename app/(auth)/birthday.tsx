@@ -55,6 +55,7 @@ export default function Birthday() {
       start("birthdayNext");
 
       const isoBirthday = date.toISOString().split("T")[0];
+      console.log("🟦 BIRTHDAY: submitting birthday:", isoBirthday, "email:", email, "flow:", useSignupStore.getState().flow);
 
       // Save birthday locally
       setBirthday(isoBirthday);
@@ -65,13 +66,17 @@ export default function Birthday() {
         date_of_birth: isoBirthday,
       });
 
+      console.log("🟦 BIRTHDAY: suggestions received:", suggestions?.length);
+
       // Always an array
       setSuggestions(suggestions);
 
+      console.log("🟦 BIRTHDAY: navigating to password");
       router.push("/(auth)/password");
+      stop("birthdayNext");
     } catch (err: any) {
-      setError(err?.response?.data?.error?.message || "Unable to verify birthday. Please try again.");
-    } finally {
+      console.error("🟥 BIRTHDAY ERROR:", err?.response?.data || err?.message || err);
+      setError(err?.error?.message || err?.message || "Unable to verify birthday. Please try again.");
       stop("birthdayNext");
     }
   };
