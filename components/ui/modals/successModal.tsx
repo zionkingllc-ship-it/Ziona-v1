@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { StyleProp, StyleSheet } from "react-native";
 import { Image, Text, View } from "tamagui";
 import { SimpleButtonWithStyle } from "../SimpleButtonWithStyle";
+import CloseButton from "../CloseButton";
 import BaseModal from "./BaseModal";
 
 interface Props {
@@ -61,7 +62,10 @@ export default function SuccessModal({
   return (
     <BaseModal visible={visible} onClose={onClose}>
       <View style={styles.card}>
-        {/* Green Check Circle */}
+        {!autoClose && (
+          <CloseButton onPress={onClose} size={24} style={styles.closeButton} />
+        )}
+
         {type === "success" ? (
           <Image source={successImage} width={50} height={50} bottom={10} />
         ) : type === "failed" ? (
@@ -127,5 +131,10 @@ const styles = StyleSheet.create({
     fontFamily: "$body",
     color: "#666",
     marginBottom: 10,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
   },
 });

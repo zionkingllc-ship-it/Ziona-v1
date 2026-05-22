@@ -8,7 +8,7 @@ import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Keyboard } from "react-native";
 import { Image, Text, YStack, XStack } from "tamagui";
 
@@ -31,18 +31,28 @@ export default function VerifyOtp() {
 
   /* ---------------- TIMER ---------------- */
 
-  useEffect(() => {
-    const interval = setInterval(() => {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = (seconds: number) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setTimer(seconds);
+    intervalRef.current = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
+  };
 
-    return () => clearInterval(interval);
+  useEffect(() => {
+    startTimer(50);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   /* ---------------- SUBMIT OTP ---------------- */
@@ -68,6 +78,7 @@ export default function VerifyOtp() {
 
         setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
+        setIsSubmitting(false);
         return;
       }
 
@@ -82,13 +93,19 @@ export default function VerifyOtp() {
           },
         });
 
+        setIsSubmitting(false);
         return;
       }
-    } catch (error: any) {
-      console.error("OTP verification failed:", error?.response?.data || error);
 
+      setIsSubmitting(false);
+    } catch (error: any) {
+      console.error("OTP verification failed:", error);
+
+      setErrorTitle(error?.message || error?.error?.message || "Incorrect code entered");
+      setErrorMessage(
+        error?.error?.details || "Please check the code and try again",
+      );
       setErrorVisible(true);
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -100,12 +117,14 @@ export default function VerifyOtp() {
 
     setErrorVisible(false);
     setIsResending(true);
-    setTimer(50);
+    startTimer(50);
 
     try {
       await authApi.resendOtp(email);
     } catch (error: any) {
-      console.error("Resend OTP failed:", error?.response?.data || error);
+      console.error("Resend OTP failed:", error);
+      setErrorTitle(error?.message || error?.error?.message || "Failed to resend code");
+      setErrorMessage(error?.error?.details || "Please try again later");
       setErrorVisible(true);
     } finally {
       setIsResending(false);
@@ -201,8 +220,8 @@ export default function VerifyOtp() {
         autoClose
         duration={3000}
         onClose={() => setErrorVisible(false)}
-        title="Incorrect code entered"
-        message="Please check the code and try again"
+        title={errorTitle}
+        message={errorMessage}
       />
     </KeyboardAvoidingWrapper>
   );

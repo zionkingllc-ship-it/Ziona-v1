@@ -101,11 +101,6 @@ function VideoPostCardComponent({
     if (onTogglePlay) onTogglePlay();
   }, [onTogglePlay]);
 
-  const handleDoubleTap = useCallback(() => {
-    if (onLike) onLike();
-    triggerHeart();
-  }, [onLike, triggerHeart]);
-
   const handleSeek = useCallback(
     (newProgress: number) => {
       progress.value = newProgress;
@@ -114,40 +109,9 @@ function VideoPostCardComponent({
     [seekTo]
   );
 
-  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const scheduleSingleTap = useCallback(() => {
-    if (singleTapTimer.current) clearTimeout(singleTapTimer.current);
-    singleTapTimer.current = setTimeout(() => {
-      singleTapTimer.current = null;
-      handleSingleTap();
-    }, 300);
-  }, [handleSingleTap]);
-
-  const cancelSingleTap = useCallback(() => {
-    if (singleTapTimer.current) {
-      clearTimeout(singleTapTimer.current);
-      singleTapTimer.current = null;
-    }
-  }, []);
-
-  const lastTapTime = useSharedValue(0);
-
-  const tapGesture = Gesture.Tap()
-    .maxDuration(250)
-    .onEnd(() => {
-      const now = Date.now();
-      const timeSinceLastTap = now - lastTapTime.value;
-
-      if (timeSinceLastTap < 300) {
-        lastTapTime.value = 0;
-        runOnJS(cancelSingleTap)();
-        runOnJS(handleDoubleTap)();
-      } else {
-        lastTapTime.value = now;
-        runOnJS(scheduleSingleTap)();
-      }
-    });
+  const tapGesture = Gesture.Tap().onEnd(() => {
+    runOnJS(handleSingleTap)();
+  });
 
   const progressPan = Gesture.Pan()
     .onUpdate((e) => {

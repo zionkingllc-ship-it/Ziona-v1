@@ -57,6 +57,7 @@ export default function Email() {
       if (result.exists) {
         console.log("🟦 EMAIL: email already exists");
         setServerError(result.message || "Email already registered");
+        stop("emailNext");
         return;
       }
 

@@ -14,6 +14,12 @@ const errorLog = (label: string, err: any) => {
   console.log("code:", err?.code);
   console.log("status:", err?.response?.status);
   console.log("response:", err?.response?.data);
+
+  if (!err?.response && !err?.message) {
+    try {
+      console.log("raw error:", JSON.stringify(err));
+    } catch {}
+  }
 };
 
 export const authApi = {

@@ -2,11 +2,12 @@ import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWra
 import Header from "@/components/layout/header";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import { SimpleButton } from "@/components/ui/centerTextButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable } from "react-native";
+import { Linking, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { EyeClosed, Eye } from "@tamagui/lucide-icons";
 
@@ -36,6 +37,8 @@ export default function SignIn() {
 
   const [authError, setAuthError] = useState<string | null>(null);
   const [passwordClientError, setPasswordClientError] = useState<string | null>(null);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendMessage, setSuspendMessage] = useState("");
 
   const isValidEmail = emailRegex.test(email);
   const passwordIsValid = isLoginPasswordValid(password);
@@ -68,6 +71,7 @@ export default function SignIn() {
           pathname: "/(auth)/verifyOtp",
           params: { email: email.trim().toLowerCase(), flow: "signin" },
         });
+        stop("signin");
         return;
       }
 
@@ -75,13 +79,18 @@ export default function SignIn() {
         setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
       }
+
+      stop("signin");
     } catch (error: any) {
-      if (!error?.response) {
-        setAuthError("Network error. Please check your connection.");
+      const message = error?.error?.message || error?.message || "";
+      if (message.toLowerCase().includes("suspended") || message.toLowerCase().includes("does not exist")) {
+        setSuspendMessage(message);
+        setShowSuspendModal(true);
+      } else if (error?._status) {
+        setAuthError(message || "Email or password incorrect");
       } else {
-        setAuthError("Email or password incorrect");
+        setAuthError("Network error. Please check your connection.");
       }
-    } finally {
       stop("signin");
     }
   };
@@ -228,6 +237,21 @@ export default function SignIn() {
           textSize={fs(16)}
         />
       </YStack>
+
+      <SuccessModal
+        visible={showSuspendModal}
+        type="warning"
+        autoClose={false}
+        onClose={() => setShowSuspendModal(false)}
+        title="Account issue"
+        message={suspendMessage}
+        withButton
+        buttonText="Appeal"
+        onButtonPress={() => {
+          setShowSuspendModal(false);
+          Linking.openURL("mailto:support@ziona.app");
+        }}
+      />
     </KeyboardAvoidingWrapper>
   );
 }

@@ -87,6 +87,10 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error.response?.data || error);
+    return Promise.reject(
+      error.response
+        ? { ...error.response.data, _status: error.response.status }
+        : error,
+    );
   }
 );

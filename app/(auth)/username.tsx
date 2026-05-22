@@ -1,6 +1,7 @@
 import Header from "@/components/layout/header";
 import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWrapper";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -9,6 +10,7 @@ import { authApi } from "@/services/api/authApi";
 import { useAsyncStore } from "@/store/useAsyncStore";
 import { router } from "expo-router";
 import { useState } from "react";
+import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { api } from "@/services/api/client";
 
@@ -30,6 +32,7 @@ export default function CreateUsername() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [isFocus, setIsFocus] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const userIcon = require("@/assets/images/userIcon.png");
  
@@ -60,6 +63,9 @@ const handleSubmit = async () => {
       console.log("🟦 USERNAME: email flow, store - email:", !!email, "birthday:", !!birthday, "password:", !!password);
       if (!email || !birthday || !password) {
         console.error("🟥 USERNAME: missing store data - email:", email, "birthday:", birthday, "password:", password);
+        setError("Something went wrong. Please go back and try again.");
+        setShowErrorModal(true);
+        stop("signup");
         return;
       }
 
@@ -72,8 +78,7 @@ const handleSubmit = async () => {
       });
       console.log("🟦 USERNAME: signUp API succeeded");
 
-      stop("signup");
-      console.log("🟦 USERNAME: loading stopped, navigating to verifyOtp");
+      console.log("🟦 USERNAME: navigating to verifyOtp");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -81,6 +86,7 @@ const handleSubmit = async () => {
             pathname: "/(auth)/verifyOtp",
             params: { email, flow: "signup" },
           });
+          stop("signup");
         }, 120);
       });
       return;
@@ -93,24 +99,27 @@ const handleSubmit = async () => {
       });
       console.log("🟦 USERNAME: finalize-username succeeded");
 
-      stop("signup");
-      console.log("🟦 USERNAME: loading stopped, navigating to feed");
+      console.log("🟦 USERNAME: navigating to feed");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
           router.replace("/(tabs)/feed");
+          stop("signup");
         }, 120);
       });
       return;
     }
 
     console.warn("🟨 USERNAME: no matching flow - flow is:", flow);
+    setError("Signup failed. Please try again.");
+    setShowErrorModal(true);
+    stop("signup");
   } catch (err: any) {
     console.error("🟥 USERNAME ERROR:", err);
     console.error("🟥 raw error shape:", JSON.stringify(err).slice(0, 300));
     console.error("🟥 message:", err?.error?.message || err?.message);
     setError(err?.error?.message || err?.message || "Signup failed. Please try again.");
-  } finally {
+    setShowErrorModal(true);
     stop("signup");
   }
 };
@@ -199,14 +208,6 @@ const handleSubmit = async () => {
           </YStack>
         )}
 
-        {/* ERROR MESSAGE */}
-
-        {error && (
-          <Text fontSize={fs(13)} color={colors.errorText} alignSelf="flex-start">
-            {error}
-          </Text>
-        )}
-
         {/* SIGNUP BUTTON */}
 
         <PrimaryButton
@@ -222,6 +223,21 @@ const handleSubmit = async () => {
           }}
         />
       </YStack>
+
+      <SuccessModal
+        visible={showErrorModal}
+        type="failed"
+        autoClose={false}
+        onClose={() => setShowErrorModal(false)}
+        title="Signup failed"
+        message={error || ""}
+        withButton
+        buttonText="Appeal"
+        onButtonPress={() => {
+          setShowErrorModal(false);
+          Linking.openURL("mailto:support@ziona.app");
+        }}
+      />
     </KeyboardAvoidingWrapper>
   );
 }
