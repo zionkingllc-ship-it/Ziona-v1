@@ -47,13 +47,18 @@ export default function NotificationScreen() {
     if (backend) {
       setLocal((prev) => ({
         ...prev,
-        inAppLikes: backend.likeNotifications ?? prev.inAppLikes,
-        inAppComment: backend.replyNotifications ?? prev.inAppComment,
-        interactionLikes: backend.likeNotifications ?? prev.interactionLikes,
-        interactionComment: backend.replyNotifications ?? prev.interactionComment,
-        circleLikes: backend.circleActivityNotifications ?? prev.circleLikes,
-        circleAnchorPost: backend.anchorNotifications ?? prev.circleAnchorPost,
-        circleComment: backend.replyNotifications ?? prev.circleComment,
+        inAppLikes: backend.inAppLikes ?? prev.inAppLikes,
+        inAppComment: backend.inAppComment ?? prev.inAppComment,
+        inAppNewFollowers: backend.inAppNewFollowers ?? prev.inAppNewFollowers,
+        inAppMentionAndTags: backend.inAppMentionAndTags ?? prev.inAppMentionAndTags,
+        interactionLikes: backend.interactionLikes ?? prev.interactionLikes,
+        interactionComment: backend.interactionComment ?? prev.interactionComment,
+        interactionPostInteraction: backend.interactionPostInteraction ?? prev.interactionPostInteraction,
+        interactionNewFollower: backend.interactionNewFollower ?? prev.interactionNewFollower,
+        circleLikes: backend.circleLikes ?? prev.circleLikes,
+        circleAnchorPost: backend.circleAnchorPost ?? prev.circleAnchorPost,
+        circleComment: backend.circleComment ?? prev.circleComment,
+        circleFriendInteraction: backend.circleFriendInteraction ?? prev.circleFriendInteraction,
       }));
     }
   }, [backend]);
@@ -61,16 +66,7 @@ export default function NotificationScreen() {
   const toggle = (key: keyof Prefs, value: boolean) => {
     const updated = { ...local, [key]: value };
     setLocal(updated);
-
-    // Save to backend using existing 5 fields — maps UI toggles to backend fields
-    // Once backend adds the 12 fields, this will send them directly instead
-    updatePrefs.mutate({
-      likeNotifications: updated.inAppLikes,
-      replyNotifications: updated.inAppComment,
-      anchorNotifications: updated.circleAnchorPost,
-      circleActivityNotifications: updated.circleLikes,
-      adminAnnouncements: updated.inAppMentionAndTags,
-    });
+    updatePrefs.mutate(updated);
   };
 
   const Row = ({ label, value, onChange, disabled }: any) => (

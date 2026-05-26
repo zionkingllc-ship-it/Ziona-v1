@@ -85,61 +85,67 @@ export function useCreateComment() {
       return { previousComments, tempId };
     },
 
-    onSuccess: (response: any, { postId }, context) => {
-      console.log("📝 [useCreateComment] onSuccess:", {
-        hasId: !!response?.id,
-        responseId: response?.id,
-        hasTempId: !!context?.tempId,
-        tempId: context?.tempId,
-        responseKeys: Object.keys(response || {}),
-      });
+    onSuccess: (response: any, { postId, parentCommentId }, context) => {
+      const hasId = !!response?.id;
+      const hasTempId = !!context?.tempId;
 
-      if (!response?.id) {
-        console.warn("📝 [useCreateComment] onSuccess missing id, invalidating");
-        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
-        return;
-      }
-      if (!context?.tempId) {
-        console.warn("📝 [useCreateComment] onSuccess missing tempId, invalidating");
-        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
-        return;
-      }
-
-      queryClient.setQueryData(["postComments", postId], (old: any) => {
-        if (!old) {
-          console.warn("📝 [useCreateComment] setQueryData: old cache is empty");
-          return old;
-        }
-        const newData = {
-          ...old,
-          pages: old.pages.map((page: any) => ({
-            ...page,
-            comments: page.comments.map((c: any) => {
-              if (c.id === context.tempId) {
-                console.log("📝 [useCreateComment] Replacing tempId:", context.tempId, "with realId:", response.id);
-                return { ...c, ...response, id: response.id };
-              }
-              return c;
-            }),
-          })),
-        };
-        console.log("📝 [useCreateComment] Cache after replacement:", {
-          pages: newData.pages.length,
-          commentsPerPage: newData.pages.map((p: any) => p.comments.length),
-          commentIds: newData.pages.flatMap((p: any) => p.comments.map((c: any) => c.id)),
+      if (hasId && hasTempId) {
+        const tempId = context.tempId;
+        queryClient.setQueryData(["postComments", postId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              comments: page.comments.map((c: any) =>
+                c.id === tempId ? { ...c, ...response, id: response.id } : c
+              ),
+            })),
+          };
         });
-        return newData;
-      });
+      } else if (!hasId && hasTempId) {
+        console.warn("Response missing id — keeping temp comment in cache");
+      } else if (hasId && !hasTempId) {
+        queryClient.setQueryData(["postComments", postId], (old: any) => {
+          if (!old) return old;
+          if (parentCommentId) {
+            return {
+              ...old,
+              pages: old.pages.map((page: any) => ({
+                ...page,
+                comments: page.comments.map((comment: Comment) =>
+                  comment.id === parentCommentId
+                    ? {
+                        ...comment,
+                        replies: [...(comment.replies || []), response],
+                        stats: {
+                          ...comment.stats,
+                          repliesCount: (comment.stats.repliesCount || 0) + 1,
+                        },
+                      }
+                    : comment
+                ),
+              })),
+            };
+          }
+          return {
+            ...old,
+            pages: old.pages.map((page: any, index: number) =>
+              index === 0
+                ? { ...page, comments: [response, ...page.comments] }
+                : page
+            ),
+          };
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
+      }
     },
     onError: (err, { postId }, context) => {
-      console.log("📝 [useCreateComment] onError:", err);
       if (context?.previousComments) {
         queryClient.setQueryData(["postComments", postId], context.previousComments);
       }
       queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
-    },
-    onSettled: (_data, _err, { postId }) => {
-      console.log("📝 [useCreateComment] onSettled — mutation finished", { hasData: !!_data, hasErr: !!_err });
     },
   });
 }

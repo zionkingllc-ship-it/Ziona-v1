@@ -32,6 +32,7 @@ import {
 } from "react-native";
 import { View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -54,6 +55,7 @@ export default function Feed() {
   const isFocused = useIsFocused();
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const { data: unreadCount } = useUnreadCount();
+  console.log("🟦 NOTIFICATION: unreadCount from hook:", unreadCount);
 
   const onRefreshFeed = useCallback(async () => {
     setRefreshingFeed(true);
@@ -196,6 +198,12 @@ export default function Feed() {
   );
 
   const handleBellPress = () => {
+    console.log("🟦 NOTIFICATION: bell pressed, unreadCount:", unreadCount);
+    const isAuth = useAuthStore.getState().isAuthenticated;
+    if (!isAuth) {
+      router.push("/(auth)/login/");
+      return;
+    }
     router.push("/notifications");
   };
 

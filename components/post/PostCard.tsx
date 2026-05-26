@@ -170,6 +170,14 @@ function PostCardComponent({
         bottom={0}
         backgroundColor="rgba(0,0,0,0.15)"
       >
+        {/* TAP TOGGLE PLAY - behind all interactive elements */}
+        {post.mediaType === "video" && (
+          <Pressable
+            onPress={onTogglePlay}
+            style={{ flex: 1 }}
+          />
+        )}
+
         <XStack
           position="absolute"
           bottom={Math.max(insets.bottom - 25)}
@@ -304,105 +312,123 @@ function PostCardComponent({
       </YStack>
 
       {/* MODALS */}
-      <CommentsSheet
-        visible={commentsVisible}
-        onClose={() => setCommentsVisible(false)}
-        postId={post.id}
-      />
-      <OptionsModal
-        visible={optionsVisible}
-        onClose={() => setOptionsVisible(false)}
-        onReportPost={() => {
-          setOptionsVisible(false);
-          setConfirmVisible(true);
-        }}
-      />
-      <ConfirmReportModal
-        visible={confirmVisible}
-        onClose={() => setConfirmVisible(false)}
-        onConfirm={() => {
-          setConfirmVisible(false);
-          setReasonsVisible(true);
-        }}
-      />
-      <ReportReasonsModal
-        visible={reasonsVisible}
-        onClose={() => setReasonsVisible(false)}
-        onSelectReason={(reason) => {
-          setReasonsVisible(false);
-          reportMutation.mutate(
-            { reason: reason as ReportReason, postId: post.id },
-            {
-              onSuccess: () => {
-                setSuccessVisible(true);
-                setSuccessTitle("Report Submitted");
-                setSuccessMessage("Thank you for your report. We'll review it shortly.");
-              },
-              onError: () => {
-                setSuccessVisible(true);
-                setSuccessTitle("Something went wrong");
-                setSuccessMessage("Please try again later.");
-              },
-            }
-          );
-        }}
-        onSelectOther={() => {
-          setReasonsVisible(false);
-          setOtherVisible(true);
-        }}
-      />
-      <OtherReportModal
-        visible={otherVisible}
-        onClose={() => setOtherVisible(false)}
-        onSubmit={(description) => {
-          setOtherVisible(false);
-          reportMutation.mutate(
-            { reason: "OTHER" as ReportReason, postId: post.id, description },
-            {
-              onSuccess: () => {
-                setSuccessVisible(true);
-                setSuccessTitle("Report Submitted");
-                setSuccessMessage("Thank you for your report. We'll review it shortly.");
-              },
-              onError: () => {
-                setSuccessVisible(true);
-                setSuccessTitle("Something went wrong");
-                setSuccessMessage("Please try again later.");
-              },
-            }
-          );
-        }}
-      />
-      <ShareModal
-        visible={shareVisible}
-        onClose={() => setShareVisible(false)}
-        post={post}
-      />
-      <SuccessModal
-        visible={successVisible}
-        onClose={() => setSuccessVisible(false)}
-        title={successTitle}
-        message={successMessage}
-      />
-      <BookmarkFoldersModal
-        visible={foldersVisible}
-        savedFolderIds={savedFolderIds}
-        onClose={() => setFoldersVisible(false)}
-        onToggleFolder={toggleFolder}
-        onCreateNew={() => {
-          setFoldersVisible(false);
-          setCreateVisible(true);
-        }}
-      />
-      <CreateFolderModal
-        visible={createVisible}
-        post={post}
-        onClose={() => setCreateVisible(false)}
-        onSave={(name, cover) => {
-          createFolder(name, cover);
-          setCreateVisible(false);
-        }}
-      />
+      {commentsVisible && (
+        <CommentsSheet
+          visible={commentsVisible}
+          onClose={() => setCommentsVisible(false)}
+          postId={post.id}
+        />
+      )}
+      {optionsVisible && (
+        <OptionsModal
+          visible={optionsVisible}
+          onClose={() => setOptionsVisible(false)}
+          onReportPost={() => {
+            setOptionsVisible(false);
+            setConfirmVisible(true);
+          }}
+        />
+      )}
+      {confirmVisible && (
+        <ConfirmReportModal
+          visible={confirmVisible}
+          onClose={() => setConfirmVisible(false)}
+          onConfirm={() => {
+            setConfirmVisible(false);
+            setReasonsVisible(true);
+          }}
+        />
+      )}
+      {reasonsVisible && (
+        <ReportReasonsModal
+          visible={reasonsVisible}
+          onClose={() => setReasonsVisible(false)}
+          onSelectReason={(reason) => {
+            setReasonsVisible(false);
+            reportMutation.mutate(
+              { reason: reason as ReportReason, postId: post.id },
+              {
+                onSuccess: () => {
+                  setSuccessVisible(true);
+                  setSuccessTitle("Report Submitted");
+                  setSuccessMessage("Thank you for your report. We'll review it shortly.");
+                },
+                onError: () => {
+                  setSuccessVisible(true);
+                  setSuccessTitle("Something went wrong");
+                  setSuccessMessage("Please try again later.");
+                },
+              }
+            );
+          }}
+          onSelectOther={() => {
+            setReasonsVisible(false);
+            setOtherVisible(true);
+          }}
+        />
+      )}
+      {otherVisible && (
+        <OtherReportModal
+          visible={otherVisible}
+          onClose={() => setOtherVisible(false)}
+          onSubmit={(description) => {
+            setOtherVisible(false);
+            reportMutation.mutate(
+              { reason: "OTHER" as ReportReason, postId: post.id, description },
+              {
+                onSuccess: () => {
+                  setSuccessVisible(true);
+                  setSuccessTitle("Report Submitted");
+                  setSuccessMessage("Thank you for your report. We'll review it shortly.");
+                },
+                onError: () => {
+                  setSuccessVisible(true);
+                  setSuccessTitle("Something went wrong");
+                  setSuccessMessage("Please try again later.");
+                },
+              }
+            );
+          }}
+        />
+      )}
+      {shareVisible && (
+        <ShareModal
+          visible={shareVisible}
+          onClose={() => setShareVisible(false)}
+          post={post}
+        />
+      )}
+      {successVisible && (
+        <SuccessModal
+          visible={successVisible}
+          onClose={() => setSuccessVisible(false)}
+          title={successTitle}
+          message={successMessage}
+        />
+      )}
+      {foldersVisible && (
+        <BookmarkFoldersModal
+          visible={foldersVisible}
+          savedFolderIds={savedFolderIds}
+          onClose={() => setFoldersVisible(false)}
+          onToggleFolder={toggleFolder}
+          onCreateNew={() => {
+            setFoldersVisible(false);
+            setCreateVisible(true);
+          }}
+        />
+      )}
+      {createVisible && (
+        <CreateFolderModal
+          visible={createVisible}
+          post={post}
+          onClose={() => setCreateVisible(false)}
+          onSave={(name, cover) => {
+            createFolder(name, cover);
+            setCreateVisible(false);
+          }}
+        />
+      )}
       {AuthModal}
     </YStack>
   );

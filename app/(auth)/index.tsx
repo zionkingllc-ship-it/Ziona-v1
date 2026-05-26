@@ -5,12 +5,14 @@ import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSignupStore } from "@/store/useSignupStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
+import { Ionicons } from "@expo/vector-icons";
 
 const cards = [
   {
@@ -34,11 +36,13 @@ export default function AuthIndex() {
   const { wp, hp, fs } = useResponsive();
 
   const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
 
   const setFlow = useSignupStore((s) => s.setFlow);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messageType, setMessageType] = useState<
@@ -76,6 +80,27 @@ export default function AuthIndex() {
     } catch (err) {
       setIsGoogleLoading(false);
       console.log("Google login failed", err);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      setIsAppleLoading(true);
+      const res = await signInWithApple();
+
+      if (res.error) {
+        setIsAppleLoading(false);
+        setModalVisible(true);
+        setMessageType("failed");
+        setMessageTitle("Authentication Failed");
+        setMessage(res.error);
+        return;
+      }
+
+      router.replace("/(tabs)/feed");
+    } catch (err) {
+      setIsAppleLoading(false);
+      console.log("Apple login failed", err);
     }
   };
 
@@ -151,6 +176,18 @@ export default function AuthIndex() {
               loading={isEmailLoading}
               disabled={isEmailLoading}
               startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
+            />
+
+            <PrimaryButton
+              text="Continue with Apple"
+              color={colors.white}
+              textSize={fs(15)}
+              textWeight="400"
+              onPress={handleAppleSignIn}
+              loading={isAppleLoading}
+              disabled={isAppleLoading}
+              iconSize={wp(6)}
+              startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
             />
 
             <PrimaryButton

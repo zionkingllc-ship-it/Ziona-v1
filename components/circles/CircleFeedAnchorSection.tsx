@@ -4,7 +4,7 @@ import { XStack, YStack, Text } from 'tamagui';
 import { ChevronDown } from '@tamagui/lucide-icons';
 import colors from '@/constants/colors';
 import AnchorCard from './AnchorCard';
-import { CircleFeedData, ActiveAnchor } from '@/constants/mockCircles';
+import { CircleFeedData, ActiveAnchor } from '@/constants/circleTypes';
 
 interface CircleFeedAnchorSectionProps {
   circle: CircleFeedData;

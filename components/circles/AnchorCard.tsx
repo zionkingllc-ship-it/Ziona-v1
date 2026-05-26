@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Image, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
-import type { ActiveAnchor } from "@/constants/mockCircles";
+import type { ActiveAnchor } from "@/constants/circleTypes";
 import { YStack } from "tamagui";
 import React, { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";

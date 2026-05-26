@@ -40,13 +40,28 @@ export default function CircleFeedBanner({
     ]).start();
   }, [isCompact]);
 
+  const hasBanner = !!bannerImage;
+  console.log("🖼️ [CircleFeedBanner] received:", JSON.stringify({
+    bannerImage: bannerImage ? bannerImage.substring(0, 80) + "..." : "(empty)",
+    hasBanner,
+    circleName,
+    isCompact,
+    isJoined,
+  }));
+
   return (
     <Animated.View style={{ height: bannerHeight, overflow: 'hidden', position: 'relative' }}>
-      <Image
-        source={{ uri: bannerImage }}
-        style={{ width: '100%', height: '100%' }}
-        resizeMode="cover"
-      />
+      {hasBanner ? (
+        <Image
+          source={{ uri: bannerImage }}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={{ width: '100%', height: '100%', backgroundColor: '#D3D3D3', justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#666', fontSize: 12, fontWeight: '500' }}>Upload banner</Text>
+        </View>
+      )}
 
       <Animated.View
         style={{
@@ -56,7 +71,7 @@ export default function CircleFeedBanner({
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.4)',
-          opacity: overlayOpacity,
+          opacity: hasBanner ? overlayOpacity : 0,
         }}
       />
 

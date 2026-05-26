@@ -1,9 +1,9 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View, Text as RNText } from 'react-native';
 import { XStack, YStack, Text } from 'tamagui';
 import { SimpleButton } from '@/components/ui/centerTextButton';
 import colors from '@/constants/colors';
-import { CircleFeedData } from '@/constants/mockCircles';
+import { CircleFeedData } from '@/constants/circleTypes';
 
 interface CircleFeedProfileSectionProps {
   circle: CircleFeedData;
@@ -11,28 +11,38 @@ interface CircleFeedProfileSectionProps {
   joining?: boolean;
 }
 
-const CircleFeedProfileSection = ({ circle, onToggleJoin, joining }: CircleFeedProfileSectionProps) => (
-  <XStack justifyContent="space-between" alignItems="center">
-    <Image
-      source={{ uri: circle.profileImage }}
-      style={{ width: 87, height: 80, borderRadius: 7 }}
-    />
-    <SimpleButton
-      text={circle.isJoined ? 'Joined' : 'Join'}
-      onPress={onToggleJoin}
-      loading={joining}
-      textSize={13}
-      fontFamily={'$body'}
-      fontWeight={'400'}
-      color={circle.isJoined ? colors.white : colors.primary}
-      textColor={circle.isJoined ? colors.primary : colors.white}
-      borderColor={colors.primary}
-      borderRadius={99}
-      paddingVertical={4}
-      style={{ width: 90 }}
-    />
-  </XStack>
-);
+const CircleFeedProfileSection = ({ circle, onToggleJoin, joining }: CircleFeedProfileSectionProps) => {
+  const hasProfileImage = !!circle.profileImage;
+
+  return (
+    <XStack justifyContent="space-between" alignItems="center">
+      {hasProfileImage ? (
+        <Image
+          source={{ uri: circle.profileImage }}
+          style={{ width: 87, height: 80, borderRadius: 7 }}
+        />
+      ) : (
+        <View style={{ width: 87, height: 80, borderRadius: 7, backgroundColor: '#D3D3D3', justifyContent: 'center', alignItems: 'center' }}>
+          <RNText style={{ color: '#666', fontSize: 10, fontWeight: '500', textAlign: 'center' }}>Upload avatar</RNText>
+        </View>
+      )}
+      <SimpleButton
+        text={circle.isJoined ? 'Joined' : 'Join'}
+        onPress={onToggleJoin}
+        loading={joining}
+        textSize={13}
+        fontFamily={'$body'}
+        fontWeight={'400'}
+        color={circle.isJoined ? colors.white : colors.primary}
+        textColor={circle.isJoined ? colors.primary : colors.white}
+        borderColor={colors.primary}
+        borderRadius={99}
+        paddingVertical={4}
+        style={{ width: 90 }}
+      />
+    </XStack>
+  );
+};
 
 const CircleFeedNameRow = ({ circle, memberAvatars }: {
   circle: CircleFeedData;

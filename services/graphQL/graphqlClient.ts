@@ -201,16 +201,13 @@ export async function graphqlRequest(
         );
 
       if (stillHasAuthError) {
-        console.warn("Refresh still failing after retries — session broken");
-        // Don't call logout — REST refresh might have worked even if GraphQL is
-        // rejecting the token. Let the caller handle this gracefully.
+        console.warn("Refresh still failing after retries — clearing session");
+        await useAuthStore.getState().clearSession?.();
         throw new Error("Session expired");
       }
     } else {
-      // All retries failed - this handles Option 3 gracefully
-      // Log a warning but don't crash - let the calling function handle it
-      console.warn("Refresh failed after 3 attempts — API may need re-auth");
-      // Return null so callers don't get undefined → React Query error
+      console.warn("Refresh failed after 3 attempts — clearing session");
+      await useAuthStore.getState().clearSession?.();
       return null;
     }
   }

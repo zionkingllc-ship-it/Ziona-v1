@@ -1,4 +1,4 @@
-import type { Rule } from "./mockCircles";
+import type { Rule } from "./circleTypes";
 
 export const DEFAULT_CIRCLE_RULES: Rule[] = [
   {

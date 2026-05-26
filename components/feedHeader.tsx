@@ -62,7 +62,7 @@ export default function FeedHeader({
             position="absolute"
             top={-2}
             right={-4}
-            backgroundColor={colorsDefault.primary}
+            backgroundColor={colorsDefault.DEBIT_RED}
             borderRadius={10}
             minWidth={18}
             height={18}

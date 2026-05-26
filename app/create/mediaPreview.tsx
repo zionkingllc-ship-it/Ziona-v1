@@ -11,15 +11,58 @@ import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Image, Pressable, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
-import { Play, Pause } from "@tamagui/lucide-icons";
+import { Play } from "@tamagui/lucide-icons";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+
+function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
+  const player = useVideoPlayer(uri, (instance) => {
+    instance.loop = true;
+  });
+  const [showing, setShowing] = useState(true);
+
+  return (
+    <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
+      <Pressable
+        onPress={() => setShowing((p) => !p)}
+        disabled={uploading}
+        style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
+      >
+        <VideoView
+          player={player}
+          style={{ width: "100%", height: "100%" }}
+          contentFit="cover"
+          nativeControls={false}
+        />
+
+        {!showing && (
+          <View
+            style={{
+              position: "absolute",
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: "#FFF1DB",
+              justifyContent: "center",
+              alignItems: "center",
+              alignSelf: "center",
+              top: "50%",
+              marginTop: -30,
+            }}
+          >
+            <Play size={28} color="black" fill="black" />
+          </View>
+        )}
+      </Pressable>
+    </View>
+  );
+}
 
 export default function CreateMediaPreviewScreen() {
   const { wp, hp, fs } = useResponsive();
@@ -28,7 +71,6 @@ export default function CreateMediaPreviewScreen() {
 
   const [uploading, setUploading] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -43,24 +85,8 @@ export default function CreateMediaPreviewScreen() {
   const mediaDraft = draft;
   const media = mediaDraft.media.items[0];
 
-  const getVideoUri = (uri: string | null) => {
-    if (!uri) return "";
-    if (uri.startsWith("file://")) {
-      return uri.replace("file://", "");
-    }
-    return uri;
-  };
-
-  const videoUri = media?.type === "VIDEO" ? getVideoUri(media.uri) : null;
-  const player = useVideoPlayer(videoUri, (instance) => {
-    instance.loop = true;
-  });
-
-  useEffect(() => {
-    if (player) {
-      player.pause();
-    }
-  }, [player]);
+  const getVideoUri = (uri: string) =>
+    uri.startsWith("file://") ? uri.replace("file://", "") : uri;
 
   const caption = mediaDraft.caption ?? "";
 
@@ -107,11 +133,6 @@ export default function CreateMediaPreviewScreen() {
     }, 1200);
   }
 
-  const togglePlay = () => {
-    if (uploading) return;
-    setIsPlaying((prev) => !prev);
-  };
-
   const handleBack = () => {
     if (uploading) return;
     router.back();
@@ -136,52 +157,14 @@ export default function CreateMediaPreviewScreen() {
         }}
       >
         {media?.type === "IMAGE" && (
-          <Pressable
-            onPress={togglePlay}
-            disabled={uploading}
+          <Image
+            source={{ uri: media.uri }}
             style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
-          >
-            <Image
-              source={{ uri: media.uri }}
-              style={{ width: "100%", height: "100%" }}
-            />
-          </Pressable>
+          />
         )}
 
         {media?.type === "VIDEO" && (
-          <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
-            <Pressable
-              onPress={togglePlay}
-              disabled={uploading}
-              style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
-            >
-              <VideoView
-                player={player}
-                style={{ width: "100%", height: "100%" }}
-                contentFit="cover"
-                nativeControls={false}
-              />
-
-              {!isPlaying && (
-                <View
-                  style={{
-                    position: "absolute",
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
-                    backgroundColor: "#FFF1DB",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    alignSelf: "center",
-                    top: "50%",
-                    marginTop: -30,
-                  }}
-                >
-                  <Play size={28} color={colors.black} fill={colors.black} />
-                </View>
-              )}
-            </Pressable>
-          </View>
+          <VideoPreview uri={getVideoUri(media.uri)} uploading={uploading} />
         )}
 
         <TouchableOpacity
@@ -253,24 +236,28 @@ export default function CreateMediaPreviewScreen() {
         />
       </YStack>
 
-      <SuccessModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={
-          modalType === "success"
-            ? "Success"
-            : modalType === "warning"
-              ? "Network issue"
-              : "Failed"
-        }
-        message={modalMessage}
-        type={modalType}
-        autoClose
-      />
-      <PostProgressModal
-        visible={showProgress}
-        onComplete={handleProgressComplete}
-      />
+      {modalVisible && (
+        <SuccessModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={
+            modalType === "success"
+              ? "Success"
+              : modalType === "warning"
+                ? "Network issue"
+                : "Failed"
+          }
+          message={modalMessage}
+          type={modalType}
+          autoClose
+        />
+      )}
+      {showProgress && (
+        <PostProgressModal
+          visible={showProgress}
+          onComplete={handleProgressComplete}
+        />
+      )}
     </YStack>
   );
 }

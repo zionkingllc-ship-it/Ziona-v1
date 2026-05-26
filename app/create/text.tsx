@@ -235,24 +235,25 @@ export default function CreateTextScreen() {
         }}
       />
 
-      <BibleSelectorModal
-        visible={bibleVisible}
-        onClose={() => setBibleVisible(false)}
-        onDone={(data) => {
-          const newVerseLength = data.text.length;
-          const currentTextLength = textValue.length;
+      {bibleVisible && (
+        <BibleSelectorModal
+          visible={bibleVisible}
+          onClose={() => setBibleVisible(false)}
+          onDone={(data) => {
+            const newVerseLength = data.text.length;
+            const currentTextLength = textValue.length;
 
-          if (newVerseLength + currentTextLength > MAX_LENGTH) {
-            feedback.showError(
-              "Selected bible verse too long, Please select fewer verses to stay under 500 characters",
-            );
-            return;
-          }
+            if (newVerseLength + currentTextLength > MAX_LENGTH) {
+              feedback.showError(
+                "Selected bible verse too long, Please select fewer verses to stay under 500 characters",
+              );
+              return;
+            }
 
-          setBibleVerse(data);
-          setBibleVisible(false);
-        }}
-      />
+            setBibleVerse(data);
+          }}
+        />
+      )}
       <SuccessModal
         visible={feedback.visible}
         onClose={feedback.handleClose}

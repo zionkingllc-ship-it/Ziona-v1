@@ -27,28 +27,25 @@ export const useGoogleAuth = () => {
 
   const signInWithGoogle = async (): Promise<GoogleAuthResponse> => {
     try {
-      if (Platform.OS !== "android") {
-        return { error: "Google Sign-In is only available on Android" };
+      const GoogleSignin = initGoogleSignIn();
+
+      if (Platform.OS === "android") {
+        await GoogleSignin.hasPlayServices();
       }
 
-      const GoogleSignin = initGoogleSignIn();
-      await GoogleSignin.hasPlayServices();
-
-      // force fresh session
       await GoogleSignin.signOut();
 
       const userInfo = await GoogleSignin.signIn();
 
-      // Proper type narrowing
-      if (!userInfo || !("data" in userInfo)) {
+      if (!userInfo) {
         throw new Error("Invalid Google Sign-In response");
       }
 
-      const idToken = userInfo.data?.idToken;
+      const idToken = userInfo.data?.idToken || (userInfo as any).idToken;
 
       console.log("====== GOOGLE TOKEN ======");
       console.log("ID Token:", idToken);
-      console.log("User:", userInfo.data?.user);
+      console.log("User:", userInfo.data?.user || userInfo.user);
 
       if (!idToken) {
         throw new Error("Google Sign-In failed: No idToken returned");
@@ -63,7 +60,7 @@ export const useGoogleAuth = () => {
       setAuth(res.user, res.tokens);
       console.log("====== GOOGLE DATA  ======");
       console.log("Google ID Token:", idToken);
-      console.log("Google User:", userInfo.data?.user);
+      console.log("Google User:", userInfo.data?.user || userInfo.user);
       return {
         user: res.user,
         tokens: res.tokens,

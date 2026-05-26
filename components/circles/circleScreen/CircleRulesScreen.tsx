@@ -1,7 +1,7 @@
 import BackButton from "@/components/ui/BackButton";
 import colors from "@/constants/colors";
 import { DEFAULT_CIRCLE_RULES } from "@/constants/defaultRules";
-import type { Rule } from "@/constants/mockCircles";
+import type { Rule } from "@/constants/circleTypes";
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronLeft } from "@tamagui/lucide-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";

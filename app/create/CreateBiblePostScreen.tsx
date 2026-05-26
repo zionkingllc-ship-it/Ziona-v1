@@ -206,14 +206,15 @@ export default function CreateBiblePostScreen() {
 
           {/* BIBLE */}
 
-          <BibleSelectorModal
-            visible={bibleVisible}
-            onClose={() => setBibleVisible(false)}
-            onDone={(data) => {
-              setBibleVerse(data);
-              setBibleVisible(false);
-            }}
-          />
+          {bibleVisible && (
+            <BibleSelectorModal
+              visible={bibleVisible}
+              onClose={() => setBibleVisible(false)}
+              onDone={(data) => {
+                setBibleVerse(data);
+              }}
+            />
+          )}
         </YStack>
       </ScrollView>
 

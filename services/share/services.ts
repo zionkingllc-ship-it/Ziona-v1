@@ -3,49 +3,72 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import * as Haptics from "expo-haptics";
 import { Post } from "@/types/post"; 
 import { SharePayload } from "./adapter";
-const DOMAIN = "https://dev.ziona.app";
+const DOMAIN = "https://ziona.app";
 
 export function buildPostUrl(postId: string) {
   return `${DOMAIN}/post/${postId}`;
+}
+
+export function buildDeepLink(postId: string) {
+  return `ziona://viewer/${postId}`;
 }
  
 export async function shareToApp(url: string, scheme: string) {
   try {
     await Linking.openURL(scheme);
   } catch {
-    await Share.share({ message: url });
+    try {
+      await Share.share({ message: url });
+    } catch {}
   }
 }
 
 export async function shareToWhatsApp(url: string) {
-  const text = encodeURIComponent(url);
-  await shareToApp(url, `whatsapp://send?text=${text}`);
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `whatsapp://send?text=${text}`);
+  } catch {}
 }
 
 export async function shareToMessages(url: string) {
-  const text = encodeURIComponent(url);
-  await shareToApp(url, `sms:&body=${text}`);
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `sms:&body=${text}`);
+  } catch {}
 }
 
 export async function shareToMail(url: string) {
-  const text = encodeURIComponent(url);
-  await shareToApp(url, `mailto:?subject=Shared from Ziona&body=${text}`);
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `mailto:?subject=Shared from Ziona&body=${text}`);
+  } catch {}
 }
 
 export function copyLink(url: string) {
-  Clipboard.setString(url);
+  try {
+    Clipboard.setString(url);
+  } catch {}
 }
 
 export async function openNativeShare(post: SharePayload) {
-  const message =
-    post.text || post.mediaUrl || "Check this out";
+  try {
+    const content = post.text || post.mediaUrl || "";
+    const parts = [
+      content,
+      "",
+      "Shared from Ziona",
+      post.postUrl,
+    ].filter(Boolean);
 
-  await Share.share({
-    message,
-  });
+    await Share.share({
+      message: parts.join("\n"),
+    });
+  } catch {}
 }
 
 export async function withHaptic(action: () => Promise<void> | void) {
-  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  } catch {}
   await action();
 }

@@ -4,10 +4,12 @@ import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { Ionicons } from "@expo/vector-icons";
 
 const cards = [
   {
@@ -31,8 +33,28 @@ export default function LoginIndex() {
   const { wp, hp, fs } = useResponsive();
 
   const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
+
+  const handleAppleSignIn = async () => {
+    try {
+      setIsAppleLoading(true);
+      const res = await signInWithApple();
+
+      if (res.error) {
+        setIsAppleLoading(false);
+        console.log("Apple login failed:", res.error);
+        return;
+      }
+
+      router.replace("/(tabs)/feed");
+    } catch (err) {
+      setIsAppleLoading(false);
+      console.log("Apple login failed", err);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -116,6 +138,21 @@ export default function LoginIndex() {
             loading={isEmailLoading}
             disabled={isEmailLoading}
             startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
+            style={{
+              height: hp(6.5),
+            }}
+          />
+
+          <PrimaryButton
+            text="Continue with Apple"
+            color={colors.white}
+            textSize={fs(14)}
+            textWeight="400"
+            onPress={handleAppleSignIn}
+            loading={isAppleLoading}
+            disabled={isAppleLoading}
+            iconSize={wp(6)}
+            startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
             style={{
               height: hp(6.5),
             }}

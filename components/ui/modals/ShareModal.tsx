@@ -7,6 +7,7 @@ import {
   shareToWhatsApp,
   withHaptic,
 } from "@/services/share/services";
+import { mapFeedPostToShare } from "@/services/share/adapter";
 import { FeedPost } from "@/types/feedTypes";
 import React, { useMemo } from "react";
 import { FlatList, Modal, Pressable, StyleSheet } from "react-native";
@@ -22,6 +23,7 @@ type Props = {
 export default function ShareModal({ visible, onClose, post }: Props) {
   const insets = useSafeAreaInsets();
   const url = buildPostUrl(post.id);
+  const payload = useMemo(() => mapFeedPostToShare(post), [post]);
 
   const shareTargets = useMemo(
     () => [
@@ -53,10 +55,10 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         id: "more",
         label: "More",
         icon: require("@/assets/images/moreIcon.png"),
-        action: () => openNativeShare(post),
+        action: () => openNativeShare(payload),
       },
     ],
-    [url]
+    [url, payload]
   );
 
     return (

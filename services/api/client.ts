@@ -84,6 +84,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         clearAuthTokens();
+        useAuthStore.getState().clearSession?.();
       }
     }
 

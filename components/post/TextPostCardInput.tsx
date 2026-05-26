@@ -148,15 +148,8 @@ export default function TextPostCardInput({
               paddingLeft={wp(4)}
               marginBottom={hp(2)}
             >
-              <Text
-                fontFamily="$heading"
-                fontWeight="400"
-                fontSize={fs(17)}
-                fontStyle="italic"
-                color={colors.black}
-                lineHeight={fs(25)}
-              >
-                {verseText}
+              <Text fontFamily="$body" fontSize={14} color={colors.black}>
+                {verseText.slice(0, 100)}
               </Text>
             </View>
           )}

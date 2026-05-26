@@ -184,6 +184,23 @@ export const authApi = {
     }
   },
 
+  appleLogin: async (idToken: string) => {
+    try {
+      log("appleLogin called");
+
+      const response = await api.post("/auth/apple", {
+        id_token: idToken,
+      });
+
+      log("appleLogin response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("appleLogin failed", err);
+      throw err;
+    }
+  },
+
   getMe: async (): Promise<User> => {
     try {
       log("getMe called");

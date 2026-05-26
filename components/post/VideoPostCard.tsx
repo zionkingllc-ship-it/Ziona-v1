@@ -27,7 +27,6 @@ interface Props {
 function VideoPostCardComponent({
   post,
   isPlaying,
-  onTogglePlay,
   onLike,
   heartStyle,
   triggerHeart,
@@ -97,10 +96,6 @@ function VideoPostCardComponent({
     width: progress.value * screenWidth,
   }));
 
-  const handleSingleTap = useCallback(() => {
-    if (onTogglePlay) onTogglePlay();
-  }, [onTogglePlay]);
-
   const handleSeek = useCallback(
     (newProgress: number) => {
       progress.value = newProgress;
@@ -108,10 +103,6 @@ function VideoPostCardComponent({
     },
     [seekTo]
   );
-
-  const tapGesture = Gesture.Tap().onEnd(() => {
-    runOnJS(handleSingleTap)();
-  });
 
   const progressPan = Gesture.Pan()
     .onUpdate((e) => {
@@ -205,18 +196,6 @@ function VideoPostCardComponent({
           pointerEvents: "none",
         }}
       />
-
-      {/* TAP GESTURE - full screen, behind the progress bar */}
-      <GestureDetector gesture={tapGesture}>
-        <View
-          style={{
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            backgroundColor: "transparent",
-          }}
-        />
-      </GestureDetector>
 
       {/* PROGRESS BAR - sits on top, only intercepts touches in bottom 40px */}
       <View

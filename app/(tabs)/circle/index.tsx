@@ -47,15 +47,17 @@ export default function CirclesSuggestion() {
     }
   }
 
-  const mapCircle = useCallback((circle: any) => ({
-    id: circle.id,
-    title: circle.name,
-    description: circle.description,
-    image: circle.coverImage,
-    members: circle.memberCount,
-    isJoined: circle.isSubscribed,
-    avatars: circle.avatars || [],
-  }), []);
+  const mapCircle = useCallback((circle: any) => {
+    return {
+      id: circle.id,
+      title: circle.name,
+      description: circle.description,
+      image: circle.coverImage,
+      members: circle.memberCount,
+      isJoined: circle.isSubscribed,
+      avatars: circle.avatars || [],
+    };
+  }, []);
 
   async function loadAllData() {
     try {
@@ -75,20 +77,12 @@ export default function CirclesSuggestion() {
 
       // Fetch active anchors for each joined circle
       if (mappedMine.length > 0) {
-        console.log("📡 [Anchor] Fetching anchors for", mappedMine.length, "circles");
         const anchorResults = await Promise.allSettled(
           mappedMine.map((c: any) =>
             fetchCircleDetail(c.id).then((detail: any) => {
-              if (!detail?.activeAnchor) {
-                console.log("📡 [Anchor] No activeAnchor for circle:", c.title);
-                return null;
-              }
+              if (!detail?.activeAnchor) return null;
               const expires = detail.activeAnchor.expiresAt;
-              if (expires && new Date(expires).getTime() <= Date.now()) {
-                console.log("📡 [Anchor] Expired anchor for circle:", c.title);
-                return null;
-              }
-              console.log("📡 [Anchor] Found anchor for circle:", c.title, "type:", detail.activeAnchor.anchorType);
+              if (expires && new Date(expires).getTime() <= Date.now()) return null;
               return {
                 ...detail.activeAnchor,
                 circleId: c.id,
@@ -98,15 +92,10 @@ export default function CirclesSuggestion() {
           )
         );
         const fulfilled = anchorResults.filter((r) => r.status === "fulfilled");
-        const rejected = anchorResults.filter((r) => r.status === "rejected");
-        if (rejected.length > 0) console.warn("📡 [Anchor] Failed to fetch", rejected.length, "anchors");
         const valid = fulfilled
           .filter((r) => (r as PromiseFulfilledResult<any>).value)
           .map((r) => (r as PromiseFulfilledResult<any>).value);
-        console.log("📡 [Anchor] Valid anchors found:", valid.length, JSON.stringify(valid, null, 2));
         setActiveAnchors(valid);
-      } else {
-        console.log("📡 [Anchor] No joined circles, skipping anchor fetch");
       }
     } catch (err) {
       console.error("Failed to load circles", err);

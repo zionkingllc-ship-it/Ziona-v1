@@ -5,17 +5,11 @@ import type {
   NotificationPreferencesType,
 } from "@/src/types/__generated__/graphql";
 
-export type NotificationItem = Omit<GQLNotificationItem, "__typename"> & {
-  user?: {
-    id: string;
-    username: string;
-    avatarUrl?: string | null;
-  } | null;
-};
+export type NotificationItem = Omit<GQLNotificationItem, "__typename">;
 
 export type NotificationsResponse = Omit<NotificationConnection, "__typename">;
 
-export async function getNotifications(limit: number = 50): Promise<NotificationsResponse> {
+export async function getNotifications(limit: number = 50, cursor?: string): Promise<NotificationsResponse> {
   const query = `
     query MyNotifications($limit: Int, $cursor: String) {
       notifications(limit: $limit, cursor: $cursor) {
@@ -23,6 +17,7 @@ export async function getNotifications(limit: number = 50): Promise<Notification
         nextCursor
         items {
           id
+          title
           message
           type
           isRead
@@ -40,7 +35,7 @@ export async function getNotifications(limit: number = 50): Promise<Notification
   `;
 
   try {
-    const data = await graphqlRequest(query, { limit });
+    const data = await graphqlRequest(query, { limit, cursor });
     return data?.notifications ?? { items: [], hasMore: false, nextCursor: null };
   } catch {
     return { items: [], hasMore: false, nextCursor: null };
@@ -109,11 +104,18 @@ export async function updateNotificationPreferences(
   const mutation = `
     mutation UpdatePrefs($preferences: PreferencesInput!) {
       updateNotificationPreferences(preferences: $preferences) {
-        anchorNotifications
-        replyNotifications
-        likeNotifications
-        circleActivityNotifications
-        adminAnnouncements
+        inAppLikes
+        inAppComment
+        inAppNewFollowers
+        inAppMentionAndTags
+        interactionLikes
+        interactionComment
+        interactionPostInteraction
+        interactionNewFollower
+        circleLikes
+        circleAnchorPost
+        circleComment
+        circleFriendInteraction
       }
     }
   `;

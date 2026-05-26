@@ -4,7 +4,7 @@ import ScriptureReaderModal from "./ScriptureReaderModal";
 import SelectChip from "./SelectChip";
 import TranslationDropdown from "./TranslationDropdown";
 
-import { GraphqlBibleRepository } from "@/repository/graphql/GraphqlBibleRepository";
+import { bibleRepository } from "@/repository";
 import { BibleBook, BibleTranslation, BibleVerse } from "@/types/bible";
 
 import { Search } from "@tamagui/lucide-icons";
@@ -75,7 +75,6 @@ export default function BibleSelectorModal({
   onClose,
   onDone,
 }: Props) {
-  const repository = useMemo(() => new GraphqlBibleRepository(), []);
   const queryClient = useQueryClient();
 
   /* =========================
@@ -115,14 +114,14 @@ export default function BibleSelectorModal({
 
   async function loadTranslations() {
     try {
-      const data = await repository.getTranslations();
+      const data = await bibleRepository.getTranslations();
       setTranslations(data);
     } catch {}
   }
 
   async function loadBooks() {
     try {
-      const data = await repository.getBooks();
+      const data = await bibleRepository.getBooks();
       setBooks(data);
       setSearch("");
     } catch {}
@@ -139,7 +138,7 @@ export default function BibleSelectorModal({
 
   async function loadChapters(selectedBook: BibleBook) {
     try {
-      const data = await repository.getChapters(selectedBook);
+      const data = await bibleRepository.getChapters(selectedBook);
       setChapters(data);
       setSearch("");
     } catch {}
@@ -180,7 +179,7 @@ export default function BibleSelectorModal({
       .fetchQuery({
         queryKey: key,
         queryFn: () =>
-          repository.getScripture({
+          bibleRepository.getScripture({
             book: book.name,
             chapter,
             version: translation,
@@ -205,7 +204,7 @@ export default function BibleSelectorModal({
       queryClient.prefetchQuery({
         queryKey: ["scripture", book.name, nextChapter, translation],
         queryFn: () =>
-          repository.getScripture({
+          bibleRepository.getScripture({
             book: book.name,
             chapter: nextChapter,
             version: translation,
@@ -217,7 +216,7 @@ export default function BibleSelectorModal({
       queryClient.prefetchQuery({
         queryKey: ["scripture", book.name, prevChapter, translation],
         queryFn: () =>
-          repository.getScripture({
+          bibleRepository.getScripture({
             book: book.name,
             chapter: prevChapter,
             version: translation,
@@ -470,10 +469,9 @@ export default function BibleSelectorModal({
             text,
           };
 
-          // Close modals first, then update parent state after
           setReaderOpen(false);
           onClose();
-          setTimeout(() => onDone(data), 0);
+          onDone(data);
         }}
       />
     </BaseModal>

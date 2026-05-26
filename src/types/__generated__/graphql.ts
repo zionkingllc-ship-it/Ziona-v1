@@ -96,6 +96,20 @@ export type AdminCirclePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminCircleStatsPayload = {
+  __typename: 'AdminCircleStatsPayload';
+  error: Maybe<ErrorType>;
+  stats: Maybe<AdminCircleStatsType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type AdminCircleStatsType = {
+  __typename: 'AdminCircleStatsType';
+  anchorCount: Scalars['Int']['output'];
+  engagement: MetricCardType;
+  memberCount: Scalars['Int']['output'];
+};
+
 export type AdminCircleType = {
   __typename: 'AdminCircleType';
   canEdit: Scalars['Boolean']['output'];
@@ -217,6 +231,7 @@ export type AdminReportsPaginatedType = {
 
 export type AdminUserType = {
   __typename: 'AdminUserType';
+  availableActions: Array<Scalars['String']['output']>;
   avatarUrl: Scalars['String']['output'];
   bio: Scalars['String']['output'];
   createdAt: Scalars['String']['output'];
@@ -311,6 +326,7 @@ export type AnchorType = {
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
   isActive: Scalars['Boolean']['output'];
+  isExpired: Scalars['Boolean']['output'];
   likedImage: Maybe<Scalars['Int']['output']>;
   mediaUrl: Maybe<Scalars['String']['output']>;
   pages: Array<AnchorPageType>;
@@ -490,6 +506,45 @@ export type CirclePostAuthorType = {
   avatarUrl: Maybe<Scalars['String']['output']>;
   id: Scalars['String']['output'];
   name: Maybe<Scalars['String']['output']>;
+};
+
+export type CirclePostCommentLikePayload = {
+  __typename: 'CirclePostCommentLikePayload';
+  error: Maybe<ErrorType>;
+  liked: Maybe<Scalars['Boolean']['output']>;
+  likesCount: Maybe<Scalars['Int']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type CirclePostCommentPayload = {
+  __typename: 'CirclePostCommentPayload';
+  comment: Maybe<CirclePostCommentType>;
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type CirclePostCommentType = {
+  __typename: 'CirclePostCommentType';
+  author: CirclePostAuthorType;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['String']['output'];
+  likesCount: Scalars['Int']['output'];
+  replies: Array<CirclePostCommentType>;
+  repliesCount: Scalars['Int']['output'];
+  text: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  viewerState: CirclePostCommentViewerState;
+};
+
+export type CirclePostCommentViewerState = {
+  __typename: 'CirclePostCommentViewerState';
+  liked: Scalars['Boolean']['output'];
+};
+
+export type CirclePostCommentsResponse = {
+  __typename: 'CirclePostCommentsResponse';
+  comments: Array<CirclePostCommentType>;
+  pageInfo: PageInfo;
 };
 
 export type CirclePostEngagementPayload = {
@@ -1024,6 +1079,8 @@ export type Mutation = {
   changePassword: ChangePasswordPayload;
   /** Check if a username is available */
   checkUsernameAvailability: UsernameCheckResult;
+  /** Add an inline comment to a CirclePost. */
+  commentOnCirclePost: CirclePostCommentPayload;
   /** Complete password reset using resetToken from OTP verification. Sets new password and optionally signs out all other devices. */
   confirmPasswordReset: ChangePasswordPayload;
   createAnchor: CreateAnchorPayload;
@@ -1038,6 +1095,8 @@ export type Mutation = {
   createPost: CreatePostPayload;
   /** Delete a bookmark folder */
   deleteBookmarkFolder: DeleteFolderPayload;
+  /** Soft-delete your own comment on a CirclePost. */
+  deleteCirclePostComment: CirclePostCommentPayload;
   /** Delete a comment */
   deleteComment: CommentPayload;
   deleteNotification: SuccessResponse;
@@ -1062,6 +1121,8 @@ export type Mutation = {
   likeAnchor: AnchorEngagementPayload;
   /** Toggle a like on a CirclePost. Returns the new like state and count. */
   likeCirclePost: LikeCirclePostPayload;
+  /** Toggle a like on a CirclePost comment. Returns new like state and count. */
+  likeCirclePostComment: CirclePostCommentLikePayload;
   /** Like a comment */
   likeComment: LikePayload;
   /** Optimistically toggle a 'like' on a specific post. */
@@ -1070,6 +1131,8 @@ export type Mutation = {
   login: AuthPayload;
   markAllNotificationsAsRead: SuccessResponse;
   markNotificationAsRead: SuccessResponse;
+  /** Permanently anonymize and remove a user's visible data (admin only). */
+  permanentlyDeleteUser: ModerationActionPayload;
   prayForAnchor: AnchorEngagementPayload;
   prayForCirclePost: CirclePostEngagementPayload;
   reactToResponse: ReactionPayload;
@@ -1262,6 +1325,12 @@ export type MutationCheckUsernameAvailabilityArgs = {
 };
 
 
+export type MutationCommentOnCirclePostArgs = {
+  postId: Scalars['String']['input'];
+  text: Scalars['String']['input'];
+};
+
+
 export type MutationConfirmPasswordResetArgs = {
   newPassword: Scalars['String']['input'];
   resetToken: Scalars['String']['input'];
@@ -1349,6 +1418,11 @@ export type MutationDeleteBookmarkFolderArgs = {
 };
 
 
+export type MutationDeleteCirclePostCommentArgs = {
+  commentId: Scalars['String']['input'];
+};
+
+
 export type MutationDeleteCommentArgs = {
   commentId: Scalars['String']['input'];
 };
@@ -1421,6 +1495,11 @@ export type MutationLikeCirclePostArgs = {
 };
 
 
+export type MutationLikeCirclePostCommentArgs = {
+  commentId: Scalars['String']['input'];
+};
+
+
 export type MutationLikeCommentArgs = {
   commentId: Scalars['String']['input'];
 };
@@ -1439,6 +1518,14 @@ export type MutationLoginArgs = {
 
 export type MutationMarkNotificationAsReadArgs = {
   notificationId: Scalars['ID']['input'];
+};
+
+
+export type MutationPermanentlyDeleteUserArgs = {
+  acknowledgePermanentDeletion: Scalars['Boolean']['input'];
+  confirmationText: Scalars['String']['input'];
+  reason: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
 };
 
 
@@ -1680,16 +1767,25 @@ export type NotificationItem = {
   message: Scalars['String']['output'];
   referenceId: Maybe<Scalars['ID']['output']>;
   referenceType: Scalars['String']['output'];
+  title: Scalars['String']['output'];
   type: Scalars['String']['output'];
+  user: Maybe<UserMiniType>;
 };
 
 export type NotificationPreferencesType = {
   __typename: 'NotificationPreferencesType';
-  adminAnnouncements: Scalars['Boolean']['output'];
-  anchorNotifications: Scalars['Boolean']['output'];
-  circleActivityNotifications: Scalars['Boolean']['output'];
-  likeNotifications: Scalars['Boolean']['output'];
-  replyNotifications: Scalars['Boolean']['output'];
+  circleAnchorPost: Scalars['Boolean']['output'];
+  circleComment: Scalars['Boolean']['output'];
+  circleFriendInteraction: Scalars['Boolean']['output'];
+  circleLikes: Scalars['Boolean']['output'];
+  inAppComment: Scalars['Boolean']['output'];
+  inAppLikes: Scalars['Boolean']['output'];
+  inAppMentionAndTags: Scalars['Boolean']['output'];
+  inAppNewFollowers: Scalars['Boolean']['output'];
+  interactionComment: Scalars['Boolean']['output'];
+  interactionLikes: Scalars['Boolean']['output'];
+  interactionNewFollower: Scalars['Boolean']['output'];
+  interactionPostInteraction: Scalars['Boolean']['output'];
 };
 
 export type OtpPayload = {
@@ -1794,11 +1890,18 @@ export type PostViewerState = {
 };
 
 export type PreferencesInput = {
-  adminAnnouncements?: InputMaybe<Scalars['Boolean']['input']>;
-  anchorNotifications?: InputMaybe<Scalars['Boolean']['input']>;
-  circleActivityNotifications?: InputMaybe<Scalars['Boolean']['input']>;
-  likeNotifications?: InputMaybe<Scalars['Boolean']['input']>;
-  replyNotifications?: InputMaybe<Scalars['Boolean']['input']>;
+  circleAnchorPost?: InputMaybe<Scalars['Boolean']['input']>;
+  circleComment?: InputMaybe<Scalars['Boolean']['input']>;
+  circleFriendInteraction?: InputMaybe<Scalars['Boolean']['input']>;
+  circleLikes?: InputMaybe<Scalars['Boolean']['input']>;
+  inAppComment?: InputMaybe<Scalars['Boolean']['input']>;
+  inAppLikes?: InputMaybe<Scalars['Boolean']['input']>;
+  inAppMentionAndTags?: InputMaybe<Scalars['Boolean']['input']>;
+  inAppNewFollowers?: InputMaybe<Scalars['Boolean']['input']>;
+  interactionComment?: InputMaybe<Scalars['Boolean']['input']>;
+  interactionLikes?: InputMaybe<Scalars['Boolean']['input']>;
+  interactionNewFollower?: InputMaybe<Scalars['Boolean']['input']>;
+  interactionPostInteraction?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type ProfilePayload = {
@@ -1847,6 +1950,8 @@ export type Query = {
   adminCircleDetail: AdminCirclePayload;
   /** List circle members. */
   adminCircleMembers: CircleMembersPaginatedType;
+  /** Get circle-scoped stats for the admin circle detail page. */
+  adminCircleStats: AdminCircleStatsPayload;
   /** List circles with search and filter. */
   adminCircles: AdminCirclesPaginatedType;
   /** List contact messages. */
@@ -1878,6 +1983,8 @@ export type Query = {
   circleFeedData: Maybe<CircleFeedDataType>;
   /** Fetch a single CirclePost by ID. Use this for post detail screens. */
   circlePost: Maybe<CirclePostType>;
+  /** Paginated inline comments for a CirclePost, with viewer like state. */
+  circlePostComments: CirclePostCommentsResponse;
   circlePosts: CircleFeedResponse;
   /** Get paginated replies for a specific comment (beyond the inline 3-reply preview). */
   commentReplies: CommentsResponse;
@@ -1974,6 +2081,11 @@ export type QueryAdminCircleMembersArgs = {
 };
 
 
+export type QueryAdminCircleStatsArgs = {
+  circleId: Scalars['String']['input'];
+};
+
+
 export type QueryAdminCirclesArgs = {
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
@@ -2061,17 +2173,21 @@ export type QueryCircleArgs = {
 
 
 export type QueryCircleFeedArgs = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
   circleId: Scalars['String']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
+  sortBy?: Scalars['String']['input'];
 };
 
 
 export type QueryCircleFeedDataArgs = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
   circleId: Scalars['String']['input'];
   historyLimit?: Scalars['Int']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
+  sortBy?: Scalars['String']['input'];
 };
 
 
@@ -2080,10 +2196,19 @@ export type QueryCirclePostArgs = {
 };
 
 
+export type QueryCirclePostCommentsArgs = {
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+  postId: Scalars['String']['input'];
+};
+
+
 export type QueryCirclePostsArgs = {
+  authorId?: InputMaybe<Scalars['String']['input']>;
   circleId: Scalars['String']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
+  sortBy?: Scalars['String']['input'];
 };
 
 
@@ -2415,6 +2540,13 @@ export type UpdateUsernamePayload = {
   message: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   username: Maybe<Scalars['String']['output']>;
+};
+
+export type UserMiniType = {
+  __typename: 'UserMiniType';
+  avatarUrl: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  username: Scalars['String']['output'];
 };
 
 export type UserProfileType = {

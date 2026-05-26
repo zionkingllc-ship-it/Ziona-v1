@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, XStack, YStack } from 'tamagui';
 import colors from '@/constants/colors';
-import { CircleFeedData } from '@/constants/mockCircles';
+import { CircleFeedData } from '@/constants/circleTypes';
 import { useRouter } from 'expo-router';
 
 interface CircleFeedDescriptionProps {

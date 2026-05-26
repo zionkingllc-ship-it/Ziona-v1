@@ -18,6 +18,9 @@ export function useBibleVerses(
       .then((res: BibleVerse[] | undefined) => {
         setVerses(res ?? []);
         setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
       });
   }, [translation, book, chapter]);
 

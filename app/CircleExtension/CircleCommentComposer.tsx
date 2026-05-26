@@ -63,23 +63,19 @@ export default function CircleCommentComposer({
       let result: any = null;
       // If we have a circleId, create a circle post
       if (circleId) {
-        console.log("📤 [Composer] Creating post for circle:", circleId, "text:", text.trim());
         result = await createCirclePost(circleId, text.trim(), image || undefined);
-        console.log("✅ [Composer] Post created result:", result);
       } else if (onSend) {
         // Otherwise use the callback
         onSend(text, image);
       }
 
       if (result?.error?.code === "NOT_MEMBER") {
-        console.log("❌ [Composer] User is not a member");
         Alert.alert("Join First", "You need to join this circle to post. Tap the Join button on the circle feed.");
         setPosting(false);
         return;
       }
 
       if (!result?.success) {
-        console.log("❌ [Composer] Failed to create post:", result?.error);
         Alert.alert("Error", result?.error?.message || "Failed to create post");
         setPosting(false);
         return;

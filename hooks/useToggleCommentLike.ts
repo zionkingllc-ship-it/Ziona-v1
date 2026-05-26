@@ -77,17 +77,47 @@ export function useToggleCommentLike() {
       return { previousComments };
     },
 
+    onSuccess: (response, { commentId }) => {
+      if (!response?.stats?.likesCount) return;
+      queryClient.setQueriesData(
+        { queryKey: ["postComments"], exact: false },
+        (old: any) => {
+          if (!old) return old;
+          const syncComment = (comment: any) => {
+            if (comment.id === commentId) {
+              return {
+                ...comment,
+                stats: {
+                  ...comment.stats,
+                  likesCount: response.stats.likesCount,
+                },
+              };
+            }
+            return comment;
+          };
+          if (old.pages) {
+            return {
+              ...old,
+              pages: old.pages.map((page: any) => ({
+                ...page,
+                comments: page.comments.map(syncComment),
+              })),
+            };
+          } else if (old.comments) {
+            return {
+              ...old,
+              comments: old.comments.map(syncComment),
+            };
+          }
+          return old;
+        }
+      );
+    },
+
     onError: (_err, _vars, ctx) => {
       if (ctx?.previousComments) {
         queryClient.setQueryData(["postComments"], ctx.previousComments);
       }
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["postComments"],
-        exact: false,
-      });
     },
   });
 }

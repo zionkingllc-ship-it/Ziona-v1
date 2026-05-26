@@ -69,7 +69,7 @@ export default function TabsLayout() {
         queryClient.prefetchQuery({ queryKey: ["forYouFeed"], queryFn: () => fetchForYouFeed({ pageParam: undefined }) }),
         queryClient.prefetchQuery({ queryKey: ["allCircles"], queryFn: fetchAllCircles }),
         queryClient.prefetchQuery({ queryKey: ["myCircles"], queryFn: fetchMyCircles }),
-        queryClient.prefetchQuery({ queryKey: ["notifications", 50], queryFn: () => getNotifications(50) }),
+        queryClient.prefetchInfiniteQuery({ queryKey: ["notifications", 50], queryFn: ({ pageParam }) => getNotifications(50, pageParam), initialPageParam: undefined as string | undefined }),
         queryClient.prefetchQuery({ queryKey: ["unreadNotificationCount"], queryFn: getUnreadNotificationCount }),
       ]);
     }

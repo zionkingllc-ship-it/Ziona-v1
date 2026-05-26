@@ -90,6 +90,7 @@ export const GET_CIRCLE_DETAIL = `
         prayedCount
         likedImage
         isActive
+        isExpired
         publishedAt
         type
         backgroundColors
@@ -110,6 +111,11 @@ export const GET_CIRCLE_DETAIL = `
           content
           mediaUrl
           title
+        }
+        author {
+          id
+          username
+          avatarUrl
         }
       }
     }
@@ -184,6 +190,7 @@ export const GET_CIRCLE_FEED_DATA = `
         prayedCount
         likedImage
         type
+        isExpired
         backgroundColors
         backgroundImage
         bibleReference
@@ -206,6 +213,11 @@ export const GET_CIRCLE_FEED_DATA = `
         viewerState {
           liked
           prayed
+        }
+        author {
+          id
+          username
+          avatarUrl
         }
       }
       pastAnchors {
@@ -276,6 +288,7 @@ export const GET_ACTIVE_ANCHOR = `
       prayedCount
       likedImage
       isActive
+      isExpired
       publishedAt
       type
       backgroundColors
@@ -300,6 +313,11 @@ export const GET_ACTIVE_ANCHOR = `
       viewerState {
         liked
         prayed
+      }
+      author {
+        id
+        username
+        avatarUrl
       }
     }
   }
@@ -343,6 +361,11 @@ export const GET_ANCHOR_HISTORY = `
         mediaUrl
         title
       }
+      author {
+        id
+        username
+        avatarUrl
+      }
     }
   }
 `;
@@ -366,6 +389,7 @@ export const GET_ANCHOR_BY_DATE = `
       responseCount
       prayedCount
       type
+      isExpired
       backgroundColors
       backgroundImage
       bibleReference
@@ -380,6 +404,11 @@ export const GET_ANCHOR_BY_DATE = `
       viewerState {
         liked
         prayed
+      }
+      author {
+        id
+        username
+        avatarUrl
       }
     }
   }
@@ -397,6 +426,11 @@ export const GET_ANCHOR_RESPONSES = `
       reactionCount
       replyCount
       viewerReactionType
+      author {
+        id
+        username
+        avatarUrl
+      }
     }
   }
 `;
@@ -421,6 +455,7 @@ export const GET_ANCHOR = `
       prayedCount
       likedImage
       type
+      isExpired
       backgroundColors
       backgroundImage
       bibleReference
@@ -443,6 +478,11 @@ export const GET_ANCHOR = `
       viewerState {
         liked
         prayed
+      }
+      author {
+        id
+        username
+        avatarUrl
       }
     }
   }
@@ -484,12 +524,27 @@ export const GET_CIRCLE_POST = `
 
 export async function fetchAllCircles() {
   const res = await graphqlRequest(GET_ALL_CIRCLES, {});
-  return res?.allCircles ?? [];
+  const circles = res?.allCircles ?? [];
+  if (circles.length > 0) {
+    console.log("🔍 [API] fetchAllCircles sample circle:", JSON.stringify({
+      id: circles[0].id,
+      name: circles[0].name,
+      coverImage: circles[0].coverImage ? "has value" : "empty",
+      bannerImage: circles[0].bannerImage ? "has value" : "empty",
+      profileImage: circles[0].profileImage ? "has value" : "empty",
+      memberCount: circles[0].memberCount,
+    }));
+  } else {
+    console.log("🔍 [API] fetchAllCircles: empty array returned");
+  }
+  return circles;
 }
 
 export async function fetchMyCircles() {
   const res = await graphqlRequest(GET_MY_CIRCLES, {});
-  return res?.myCircles ?? [];
+  const circles = res?.myCircles ?? [];
+  console.log("🔍 [API] fetchMyCircles count:", circles.length);
+  return circles;
 }
 
 export async function fetchSuggestedCircles() {
@@ -498,7 +553,17 @@ export async function fetchSuggestedCircles() {
 }
 
 export async function fetchCircleDetail(id: string) {
+  console.log("🔍 [API] fetchCircleDetail for id:", id);
   const res = await graphqlRequest(GET_CIRCLE_DETAIL, { id });
+  console.log("🔍 [API] fetchCircleDetail response:", JSON.stringify({
+    hasData: !!res?.circle,
+    bannerImage: res?.circle?.bannerImage ? res.circle.bannerImage.substring(0, 80) + "..." : "null/empty",
+    coverImage: res?.circle?.coverImage ? res.circle.coverImage.substring(0, 80) + "..." : "null/empty",
+    profileImage: res?.circle?.profileImage ? "has value" : "null/empty",
+    name: res?.circle?.name,
+    memberCount: res?.circle?.memberCount,
+    hasActiveAnchor: !!res?.circle?.activeAnchor,
+  }));
   return res?.circle ?? null;
 }
 
@@ -533,15 +598,24 @@ export async function fetchCircleFeedData(
   sortBy?: string,
   authorId?: string,
 ) {
+  console.log("🔍 [API] fetchCircleFeedData called:", JSON.stringify({ circleId, historyLimit, page, pageSize, sortBy, authorId }));
   const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
     circleId,
     historyLimit: historyLimit ?? 10,
     page,
     pageSize,
-    // Backend TODO: uncomment when API supports sortBy/authorId
-    // sortBy: sortBy || undefined,
-    // authorId: authorId || undefined,
   });
+  console.log("🔍 [API] fetchCircleFeedData response:", JSON.stringify({
+    hasData: !!res?.circleFeedData,
+    bannerImage: res?.circleFeedData?.bannerImage ? res.circleFeedData.bannerImage.substring(0, 80) + "..." : "null/empty",
+    profileImage: res?.circleFeedData?.profileImage ? "has value" : "null/empty",
+    coverImage: res?.circleFeedData?.coverImage ? "has value" : "null/missing",
+    name: res?.circleFeedData?.name,
+    memberCount: res?.circleFeedData?.memberCount,
+    isJoined: res?.circleFeedData?.isJoined,
+    postsCount: res?.circleFeedData?.posts?.length,
+    pastAnchorsCount: res?.circleFeedData?.pastAnchors?.length,
+  }));
   return res?.circleFeedData ?? null;
 }
 

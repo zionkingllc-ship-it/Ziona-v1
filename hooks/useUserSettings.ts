@@ -1,29 +1,36 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 
-// Backend fields: likeNotifications, replyNotifications, anchorNotifications,
-// circleActivityNotifications, adminAnnouncements
-// UI fields (not yet in backend, will be wired when backend adds them):
-// inAppLikes, inAppComment, inAppNewFollowers, inAppMention, inAppTabs,
-// interactionLikes, interactionComment, interactionPostInteraction, interactionNewFollower,
-// circleLikes, circleAnchorPost, circleComment, circleFriendInteraction
-
 export type BackendPrefs = {
-  likeNotifications: boolean;
-  replyNotifications: boolean;
-  anchorNotifications: boolean;
-  circleActivityNotifications: boolean;
-  adminAnnouncements: boolean;
+  inAppLikes: boolean;
+  inAppComment: boolean;
+  inAppNewFollowers: boolean;
+  inAppMentionAndTags: boolean;
+  interactionLikes: boolean;
+  interactionComment: boolean;
+  interactionPostInteraction: boolean;
+  interactionNewFollower: boolean;
+  circleLikes: boolean;
+  circleAnchorPost: boolean;
+  circleComment: boolean;
+  circleFriendInteraction: boolean;
 };
 
 const GET_NOTIFICATION_PREFS = `
 query GetNotificationPreferences {
   notificationPreferences {
-    likeNotifications
-    replyNotifications
-    anchorNotifications
-    circleActivityNotifications
-    adminAnnouncements
+    inAppLikes
+    inAppComment
+    inAppNewFollowers
+    inAppMentionAndTags
+    interactionLikes
+    interactionComment
+    interactionPostInteraction
+    interactionNewFollower
+    circleLikes
+    circleAnchorPost
+    circleComment
+    circleFriendInteraction
   }
 }
 `;
@@ -41,11 +48,18 @@ export function useNotificationPreferences() {
 const UPDATE_NOTIFICATION_PREFS = `
 mutation UpdateNotificationPreferences($preferences: PreferencesInput!) {
   updateNotificationPreferences(preferences: $preferences) {
-    likeNotifications
-    replyNotifications
-    anchorNotifications
-    circleActivityNotifications
-    adminAnnouncements
+    inAppLikes
+    inAppComment
+    inAppNewFollowers
+    inAppMentionAndTags
+    interactionLikes
+    interactionComment
+    interactionPostInteraction
+    interactionNewFollower
+    circleLikes
+    circleAnchorPost
+    circleComment
+    circleFriendInteraction
   }
 }
 `;

@@ -1,34 +1,56 @@
 import { Image, Text, XStack, YStack, View } from "tamagui";
-import { ActivityIndicator, FlatList, Pressable } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
-import { useRouter } from "expo-router";
 import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
+import AuthPrompt from "@/components/ui/AuthPrompt";
+import CloseButton from "@/components/ui/CloseButton";
+import { useAuthStore } from "@/store/useAuthStore";
 
-const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
+// const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
+
+function NotificationAvatar({ avatarUrl, size = 40 }: { avatarUrl?: string | null; size?: number }) {
+  const [erred, setErred] = useState(false);
+  const hasValidUrl = !!avatarUrl && !erred;
+
+  return (
+    <Image
+      source={
+        hasValidUrl
+          ? { uri: avatarUrl }
+          : require("@/assets/images/android-icon-foreground.png")
+      }
+      width={size}
+      height={size}
+      borderRadius={size / 2}
+      onError={() => setErred(true)}
+    />
+  );
+}
 
 export default function ActivityScreen() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("All");
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // const [activeTab, setActiveTab] = useState("All");
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useNotifications(50);
   const markAsRead = useMarkNotificationAsRead();
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
-  const notifications: NotificationItem[] = data?.pages.flatMap((p) => p.items) ?? [];
+  const notifications: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const filtered = notifications.filter((item: NotificationItem) => {
-    if (activeTab === "All") return true;
-    if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
-    if (activeTab === "Mentions") return item.type === "mention";
-    if (activeTab === "Replies") return item.type === "comment" || item.type === "reply";
-    if (activeTab === "Circles") return item.type === "circle";
-    return true;
-  });
+  // const filtered = notifications.filter((item: NotificationItem) => {
+  //   if (activeTab === "All") return true;
+  //   if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
+  //   if (activeTab === "Mentions") return item.type === "mention";
+  //   if (activeTab === "Replies") return item.type === "comment" || item.type === "reply";
+  //   if (activeTab === "Circles") return item.type === "circle";
+  //   return true;
+  // });
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -43,71 +65,77 @@ export default function ActivityScreen() {
     return "Just now";
   };
 
-  const Tab = ({ label }: { label: string }) => {
-    const active = label === activeTab;
+  // const Tab = ({ label }: { label: string }) => {
+  //   const active = label === activeTab;
 
-    return (
-      <Pressable onPress={() => setActiveTab(label)}>
-        <XStack
-          paddingHorizontal={14}
-          paddingVertical={6}
-          borderRadius={20}
-          backgroundColor={active ? colors.black : colors.lightGrayBg}
-        >
-          <Text color={active ? colors.white : colors.black} fontSize={13}>
-            {label}
-          </Text>
-        </XStack>
-      </Pressable>
-    );
-  };
+  //   return (
+  //     <Pressable onPress={() => setActiveTab(label)}>
+  //       <XStack
+  //         paddingHorizontal={14}
+  //         paddingVertical={6}
+  //         borderRadius={20}
+  //         backgroundColor={active ? colors.black : colors.lightGrayBg}
+  //       >
+  //         <Text color={active ? colors.white : colors.black} fontSize={13}>
+  //           {label}
+  //         </Text>
+  //       </XStack>
+  //     </Pressable>
+  //   );
+  // };
 
-  const renderNotification = ({ item }: { item: NotificationItem }) => {
-    const handlePress = () => {
+  const handleNotificationPress = useCallback(
+    (item: NotificationItem) => {
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
-      if ((item.type === "follow" || item.type === "follow_request") && item.referenceId) {
-        router.push(`/guest?userId=${item.referenceId}`);
-      } else if (item.referenceType === "post" && item.referenceId) {
-        router.push(`/viewer/${item.referenceId}`);
-      } else if (item.referenceType === "circle" || item.referenceType === "circle_post") {
-        router.push({ pathname: "/(tabs)/circle/circleFeed", params: { id: item.referenceId || "" } });
-      }
-    };
+      setSelectedNotification(item);
+    },
+    [markAsRead],
+  );
 
-    return (
-      <Pressable onPress={handlePress} style={{ opacity: item.isRead ? 0.6 : 1 }}>
-        <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
-          <XStack gap="$3" flex={1}>
-            <Image
-              source={
-                item.user?.avatarUrl
-                  ? { uri: item.user.avatarUrl }
-                  : require("@/assets/images/emptyDP.png")
-              }
-              width={40}
-              height={40}
-              borderRadius={20}
-            />
-            <YStack flex={1}>
-              <Text fontWeight="600" fontSize={14}>
-                <Text>{item.message}</Text>{" "}
-                <Text fontWeight="400" color={colors.gray}>
+  const renderNotification = useCallback(
+    ({ item }: { item: NotificationItem }) => {
+      return (
+        <Pressable onPress={() => handleNotificationPress(item)} style={{ opacity: item.isRead ? 0.6 : 1 }}>
+          <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
+            <XStack gap="$3" flex={1}>
+              <NotificationAvatar avatarUrl={item.user?.avatarUrl} size={40} />
+              <YStack flex={1}>
+                <Text fontWeight="600" fontSize={14} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text fontSize={13} color={colors.gray} numberOfLines={2}>
+                  {item.message}
+                </Text>
+                <Text fontSize={11} color={colors.lightGray}>
                   {formatTime(item.createdAt)}
                 </Text>
-              </Text>
-            </YStack>
-          </XStack>
+              </YStack>
+            </XStack>
 
-          {!item.isRead && (
-            <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
-          )}
-        </XStack>
-        <View height={0.5} backgroundColor={colors.lightGrayBg} />
-      </Pressable>
+            {!item.isRead && (
+              <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
+            )}
+          </XStack>
+          <View height={0.5} backgroundColor={colors.lightGrayBg} />
+        </Pressable>
+      );
+    },
+    [handleNotificationPress],
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
@@ -116,23 +144,23 @@ export default function ActivityScreen() {
           Activity
         </Text>
 
-        <XStack padding={12} gap="$2">
-          {TABS.map((t) => (
-            <Tab key={t} label={t} />
-          ))}
-        </XStack>
+        {/* <XStack padding={12} gap="$2"> */}
+        {/*   {TABS.map((t) => ( */}
+        {/*     <Tab key={t} label={t} /> */}
+        {/*   ))} */}
+        {/* </XStack> */}
 
         {isLoading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">
             <ActivityIndicator size="large" color={colors.primary} />
           </YStack>
-        ) : filtered.length === 0 ? (
+        ) : notifications.length === 0 ? (
           <YStack flex={1} justifyContent="center" alignItems="center">
             <Text color={colors.gray}>No notifications yet</Text>
           </YStack>
         ) : (
           <FlatList
-            data={filtered}
+            data={notifications}
             keyExtractor={(item) => item.id}
             renderItem={renderNotification}
             contentContainerStyle={{ paddingHorizontal: 12 }}
@@ -150,6 +178,65 @@ export default function ActivityScreen() {
           />
         )}
       </YStack>
+
+      <Modal
+        visible={!!selectedNotification}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setSelectedNotification(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSelectedNotification(null)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            {selectedNotification && (
+              <YStack padding={24} gap={16}>
+                <XStack justifyContent="space-between" alignItems="center">
+                  <Text fontWeight="700" fontSize={18}>
+                    Notification
+                  </Text>
+                  <CloseButton onPress={() => setSelectedNotification(null)} size={24} />
+                </XStack>
+
+                <XStack gap="$3" alignItems="center">
+                  <NotificationAvatar avatarUrl={selectedNotification.user?.avatarUrl} size={48} />
+                  <YStack flex={1}>
+                    <Text fontWeight="600" fontSize={16} numberOfLines={1}>
+                      {selectedNotification.user?.username || "Ziona"}
+                    </Text>
+                    <Text fontSize={12} color={colors.lightGray}>
+                      {formatTime(selectedNotification.createdAt)}
+                    </Text>
+                  </YStack>
+                </XStack>
+
+                <Text fontWeight="600" fontSize={16}>
+                  {selectedNotification.title}
+                </Text>
+
+                <Text fontSize={14} color={colors.gray} lineHeight={22}>
+                  {selectedNotification.message}
+                </Text>
+              </YStack>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    marginHorizontal: 24,
+    width: "85%",
+    maxWidth: 400,
+  },
+});

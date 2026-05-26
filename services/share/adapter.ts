@@ -1,13 +1,15 @@
 import { FeedPost, FeedMediaPost, FeedTextPost, FeedBiblePost } from "@/types/feedTypes";
+import { buildPostUrl } from "./services";
 
 export type SharePayload = {
   id: string;
   text?: string;
   mediaUrl?: string;
+  postUrl?: string;
 };
 
 export function mapFeedPostToShare(post: FeedPost): SharePayload {
-  const base = { id: post.id };
+  const base = { id: post.id, postUrl: buildPostUrl(post.id) };
 
   if (post.type === "media") {
     const mediaPost = post as FeedMediaPost;

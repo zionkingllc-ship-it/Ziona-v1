@@ -10,6 +10,8 @@ export function useBibleBooks() {
     bibleRepository.getBooks().then((res: BibleBook[] | undefined) => {
       setData(res ?? []);
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 

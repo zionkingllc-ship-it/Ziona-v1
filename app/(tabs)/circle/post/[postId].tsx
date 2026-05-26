@@ -15,14 +15,16 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
-import { usePostComments } from "@/hooks/usePostComments";
-import { useCreateComment, useDeleteComment } from "@/hooks/useCreateComment";
-import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
+import { useCirclePostComments } from "@/hooks/useCirclePostComments";
+import { useCreateCircleComment } from "@/hooks/useCreateCircleComment";
+import { useToggleCircleCommentLike } from "@/hooks/useToggleCircleCommentLike";
+import { useDeleteCircleComment } from "@/hooks/useDeleteCircleComment";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
+import { CircleCommentItem } from "@/components/circles/CircleCommentItem";
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return "";
@@ -69,6 +71,7 @@ export default function CirclePostDetailScreen() {
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
   const currentUser = useAuthStore((state) => state.user);
 
   const { isLiked, likeCount, handleToggleLike, togglingLike } = useCirclePostLike(
@@ -83,20 +86,13 @@ export default function CirclePostDetailScreen() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = usePostComments(postId || "");
+  } = useCirclePostComments(postId || "");
 
-  const createCommentMutation = useCreateComment();
-  const toggleCommentLikeMutation = useToggleCommentLike();
-  const deleteCommentMutation = useDeleteComment();
+  const createCommentMutation = useCreateCircleComment();
+  const toggleCommentLikeMutation = useToggleCircleCommentLike();
+  const deleteCommentMutation = useDeleteCircleComment();
 
   const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
-  console.log("📝 [PostDetail] commentsData:", JSON.stringify({
-    hasData: !!commentsData,
-    pagesCount: commentsData?.pages?.length,
-    totalComments: comments.length,
-    commentIds: comments.map((c: any) => c.id),
-    isLoading: isLoadingComments,
-  }));
 
   const handleCreateComment = async () => {
     if (!commentText.trim() || posting) return;
@@ -106,10 +102,12 @@ export default function CirclePostDetailScreen() {
       {
         postId: postId || "",
         text: commentText,
+        parentCommentId: replyingTo?.commentId || undefined,
       },
       {
         onSettled: () => {
           setPosting(false);
+          setReplyingTo(null);
         },
         onSuccess: () => {
           setCommentText("");
@@ -121,6 +119,19 @@ export default function CirclePostDetailScreen() {
   const handleLikeComment = (commentId: string, currentLiked: boolean) => {
     if (toggleCommentLikeMutation.isPending) return;
     toggleCommentLikeMutation.mutate({ commentId, currentLiked });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    deleteCommentMutation.mutate(commentId);
+  };
+
+  const handleReply = (commentId: string, username: string) => {
+    setReplyingTo({ commentId, username });
+  };
+
+  const handleCancelReply = () => {
+    setReplyingTo(null);
+    setCommentText("");
   };
 
   const handleLoadMore = () => {
@@ -253,59 +264,14 @@ export default function CirclePostDetailScreen() {
           ) : (
             <YStack paddingHorizontal="$3" gap="$3" paddingVertical="$2">
               {comments.map((comment) => (
-                <TouchableOpacity
+                <CircleCommentItem
                   key={comment.id}
-                  onLongPress={() => {
-                    if (!comment.viewerState?.isOwner) return;
-                    Alert.alert("Delete comment", "Are you sure you want to delete this comment?", [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Delete", style: "destructive", onPress: () => deleteCommentMutation.mutate(comment.id) },
-                    ]);
-                  }}
-                  activeOpacity={1}
-                >
-                  <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
-                    <XStack alignItems="center" gap="$2">
-                      <AvatarWithInitials
-                        uri={comment.user.avatarUrl}
-                        name={comment.user.username}
-                        size={32}
-                        failedUris={failedAvatarUrls}
-                        setFailedUris={setFailedAvatarUrls}
-                      />
-                      <YStack gap={2} flex={1}>
-                        <Text fontSize={12} fontWeight="600">
-                          {comment.user.username}
-                        </Text>
-                        <Text fontSize={11} color="#999">
-                          {formatDate(comment.createdAt)}
-                        </Text>
-                      </YStack>
-                    </XStack>
-
-                    <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
-                      {comment.text}
-                    </Text>
-
-                    <XStack gap="$3" paddingLeft="$4" alignItems="center">
-                      <TouchableOpacity
-                        onPress={() => handleLikeComment(comment.id, comment.viewerState?.liked ?? false)}
-                        disabled={toggleCommentLikeMutation.isPending}
-                      >
-                        <XStack alignItems="center" gap="$1">
-                          <Ionicons
-                            name={comment.viewerState?.liked ? "heart" : "heart-outline"}
-                            size={14}
-                            color={comment.viewerState?.liked ? themeColors.primary : "#999"}
-                          />
-                          <Text fontSize={11} color="#999">
-                            {comment.stats.likesCount}
-                          </Text>
-                        </XStack>
-                      </TouchableOpacity>
-                    </XStack>
-                  </YStack>
-                </TouchableOpacity>
+                  comment={comment}
+                  onLike={handleLikeComment}
+                  onDelete={handleDeleteComment}
+                  onReply={handleReply}
+                  isPending={toggleCommentLikeMutation.isPending}
+                />
               ))}
 
               {hasNextPage && (
@@ -330,6 +296,14 @@ export default function CirclePostDetailScreen() {
         </ScrollView>
 
         <View style={styles.inputContainer}>
+          {replyingTo && (
+            <XStack paddingHorizontal="$3" paddingVertical="$2" backgroundColor="#f5f5f5" gap="$2" alignItems="center">
+              <Text fontSize={12} color="#999">Replying to <Text fontWeight="600">@{replyingTo.username}</Text></Text>
+              <TouchableOpacity onPress={handleCancelReply}>
+                <Text fontSize={12} color="#6C2BD9">Cancel</Text>
+              </TouchableOpacity>
+            </XStack>
+          )}
           <XStack
             paddingHorizontal="$2"
             paddingVertical="$2"
@@ -437,6 +411,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-
 });

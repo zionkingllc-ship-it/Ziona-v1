@@ -295,16 +295,24 @@ export default function CreateMediaScreen() {
         />
       </YStack>
 
-      <CategoryModal
-        visible={categoryVisible}
-        onClose={() => setCategoryVisible(false)}
-        onSelect={(category) => {
-          setCategory(category);
-          setCategoryVisible(false);
-        }}
-      />
+      {categoryVisible && (
+        <CategoryModal
+          visible={categoryVisible}
+          onClose={() => setCategoryVisible(false)}
+          onSelect={(category) => {
+            setCategory(category);
+            setCategoryVisible(false);
+          }}
+        />
+      )}
 
-      <ErrorModal visible={false} message="" onClose={() => {}} />
+      {errorVisible && (
+        <ErrorModal
+          visible={errorVisible}
+          message={error}
+          onClose={() => setErrorVisible(false)}
+        />
+      )}
     </YStack>
   );
 }
