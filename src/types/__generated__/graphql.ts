@@ -529,8 +529,6 @@ export type CirclePostCommentType = {
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
   likesCount: Scalars['Int']['output'];
-  replies: Array<CirclePostCommentType>;
-  repliesCount: Scalars['Int']['output'];
   text: Scalars['String']['output'];
   updatedAt: Scalars['DateTime']['output'];
   viewerState: CirclePostCommentViewerState;

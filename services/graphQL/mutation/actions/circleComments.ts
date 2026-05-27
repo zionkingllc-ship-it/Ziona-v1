@@ -38,22 +38,6 @@ const COMMENT_FIELDS = `
     avatarUrl
   }
   likesCount
-  repliesCount
-  viewerState {
-    liked
-  }
-`;
-
-const REPLY_FIELDS = `
-  id
-  text
-  createdAt
-  author {
-    id
-    name
-    avatarUrl
-  }
-  likesCount
   viewerState {
     liked
   }
@@ -70,9 +54,6 @@ export async function getCirclePostComments(
       circlePostComments(postId: $postId, page: $page, pageSize: $pageSize) {
         comments {
           ${COMMENT_FIELDS}
-          replies {
-            ${REPLY_FIELDS}
-          }
         }
         pageInfo {
           currentPage
@@ -102,9 +83,6 @@ export async function createCircleComment(
         success
         comment {
           ${COMMENT_FIELDS}
-          replies {
-            ${REPLY_FIELDS}
-          }
         }
       }
     }
@@ -116,35 +94,6 @@ export async function createCircleComment(
     throw new Error("Failed to create comment");
   }
   return { comment: res.comment, success: true };
-}
-
-/* GET REPLIES */
-export async function getCircleCommentReplies(
-  commentId: string,
-  page: number = 1,
-  pageSize: number = 20,
-): Promise<{ replies: CircleComment[]; pageInfo: { currentPage: number; hasNextPage: boolean; totalCount: number } }> {
-  const query = `
-    query CircleCommentReplies($commentId: String!, $page: Int, $pageSize: Int) {
-      circleCommentReplies(commentId: $commentId, page: $page, pageSize: $pageSize) {
-        replies {
-          ${REPLY_FIELDS}
-        }
-        pageInfo {
-          currentPage
-          hasNextPage
-          totalCount
-        }
-      }
-    }
-  `;
-
-  const data = await graphqlRequest(query, { commentId, page, pageSize });
-  const result = data?.circleCommentReplies;
-  if (!result) {
-    throw new Error("Failed to fetch circle comment replies");
-  }
-  return result;
 }
 
 /* LIKE COMMENT */

@@ -228,7 +228,11 @@ export default function Feed() {
             if (width !== containerWidth) setContainerWidth(width);
           }}
         >
-          {feedType === "following" && data.length === 0 && !query.isLoading ? (
+          {query.isLoading ? (
+            <View flex={1} justifyContent="center" alignItems="center">
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : feedType === "following" && data.length === 0 ? (
             <FollowSuggestions onDone={() => setFeedType("forYou")} />
           ) : data.length === 0 ? (
             <View flex={1} justifyContent="center" alignItems="center">

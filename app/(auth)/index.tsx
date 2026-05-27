@@ -10,7 +10,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useSignupStore } from "@/store/useSignupStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable } from "react-native";
+import { ActivityIndicator, Platform, Pressable } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -178,6 +178,7 @@ export default function AuthIndex() {
               startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
             />
 
+            {Platform.OS === "ios" && (
             <PrimaryButton
               text="Continue with Apple"
               color={colors.white}
@@ -189,6 +190,7 @@ export default function AuthIndex() {
               iconSize={wp(6)}
               startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
             />
+            )}
 
             <PrimaryButton
               text="Continue with Google"
@@ -278,6 +280,20 @@ export default function AuthIndex() {
                   Privacy Policy
                 </InlineUnderlineText>
               </Pressable>
+                          <Text> </Text>
+            <Text>and</Text>
+            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
+              <InlineUnderlineText
+                color={colors.termsButton}
+                fontFamily={"$body"}
+                weight="500"
+                thickness={1}
+                fontSize={fs(13)}
+                offset={-1}
+              >
+                Community guidelines
+              </InlineUnderlineText>
+            </Pressable>
             </XStack>
 
             <YStack alignItems="center">

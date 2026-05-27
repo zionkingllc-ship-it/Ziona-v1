@@ -3,13 +3,13 @@ import { MarqueeCarousel } from "@/components/ui/marquee";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
+import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Pressable } from "react-native";
+import { Animated, Easing, Platform, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { Ionicons } from "@expo/vector-icons";
 
 const cards = [
   {
@@ -143,20 +143,24 @@ export default function LoginIndex() {
             }}
           />
 
-          <PrimaryButton
-            text="Continue with Apple"
-            color={colors.white}
-            textSize={fs(14)}
-            textWeight="400"
-            onPress={handleAppleSignIn}
-            loading={isAppleLoading}
-            disabled={isAppleLoading}
-            iconSize={wp(6)}
-            startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
-            style={{
-              height: hp(6.5),
-            }}
-          />
+          {Platform.OS === "ios" && (
+            <PrimaryButton
+              text="Continue with Apple"
+              color={colors.white}
+              textSize={fs(14)}
+              textWeight="400"
+              onPress={handleAppleSignIn}
+              loading={isAppleLoading}
+              disabled={isAppleLoading}
+              iconSize={wp(6)}
+              startIcon={
+                <Ionicons name="logo-apple" size={wp(6)} color={colors.text} />
+              }
+              style={{
+                height: hp(6.5),
+              }}
+            />
+          )}
 
           <PrimaryButton
             text="Continue with Google"
@@ -245,6 +249,20 @@ export default function LoginIndex() {
                 offset={-1}
               >
                 Privacy Policy
+              </InlineUnderlineText>
+            </Pressable>
+            <Text> </Text>
+            <Text>and</Text>
+            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
+              <InlineUnderlineText
+                color={colors.termsButton}
+                fontFamily={"$body"}
+                weight="500"
+                thickness={1}
+                fontSize={fs(13)}
+                offset={-1}
+              >
+                Community guidelines
               </InlineUnderlineText>
             </Pressable>
           </XStack>

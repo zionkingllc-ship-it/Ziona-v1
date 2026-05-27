@@ -4,6 +4,7 @@ import { debugAuthStorage } from "@/helpers/asyncDataLog";
 import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
+import { OfflineProvider } from "@/providers/OfflineProvider";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
@@ -18,7 +19,6 @@ import { Linking, Platform, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TamaguiProvider } from "tamagui";
-import { NetworkStatusBanner } from "@/components/ui/NetworkStatusBanner";
 
 
 SplashScreen.preventAutoHideAsync();
@@ -111,8 +111,8 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <QueryClientProvider client={queryClient}>
                 <SyncHooks />
+                <OfflineProvider>
                 <AuthGate>
-                  <NetworkStatusBanner />
                   <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="(auth)" />
@@ -124,6 +124,7 @@ export default function RootLayout() {
                   <Stack.Screen name="following" />
                 </Stack>
                 </AuthGate>
+                </OfflineProvider>
               </QueryClientProvider>
             </GestureHandlerRootView>
           </NotificationProvider>
