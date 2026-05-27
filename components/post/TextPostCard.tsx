@@ -18,9 +18,10 @@ import colors from "@/constants/colors";
 type Props = {
   post: FeedTextPost | FeedBiblePost;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
 };
 
-export default function TextPostCard({ post, onLike }: Props) {
+export default function TextPostCard({ post, onLike, onDoubleTapLike }: Props) {
   const { wp, hp } = useResponsive();
 
   /* ================= SAFE DATA ================= */
@@ -73,10 +74,9 @@ if (post.scripture) {
 
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
-    .maxDelay(250)
     .onEnd((_, success) => {
       if (success) {
-        if (onLike) runOnJS(onLike)();
+        if (onDoubleTapLike) runOnJS(onDoubleTapLike)();
         runOnJS(triggerHeart)();
       }
     });

@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Image, Text, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
 
@@ -141,6 +142,26 @@ function PostCardComponent({
     });
   }, [post.id, likedState, isLikePending, requireAuth, toggleLikeMutation]);
 
+  const handleComment = useCallback(() => {
+    requireAuth(() => setCommentsVisible(true));
+  }, [requireAuth, setCommentsVisible]);
+
+  const handleBookmark = useCallback(() => {
+    requireAuth(openFolders);
+  }, [requireAuth, openFolders]);
+
+  const handleShare = useCallback(() => {
+    requireAuth(() => setShareVisible(true));
+  }, [requireAuth, setShareVisible]);
+
+  const handleOptions = useCallback(() => {
+    requireAuth(() => setOptionsVisible(true));
+  }, [requireAuth, setOptionsVisible]);
+
+  const handleToggleExpanded = useCallback(() => {
+    setExpanded((p) => !p);
+  }, []);
+
   const handleFollow = () => {
     if (!post.author?.id || toggleFollowMutation.isPending) return;
     requireAuth(() => {
@@ -251,20 +272,22 @@ function PostCardComponent({
                 </Text>
 
                 {post.caption.length > 90 && (
-                  <Pressable onPress={() => setExpanded((p) => !p)}>
-                    <LinearGradient
-                      colors={["transparent", "rgba(55,55,55,0.6)"]}
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        height: 24,
-                        width: "100%",
-                      }}
-                    />
-                    <Text color={colors.white} fontSize={14}>
-                      {expanded ? "less" : "more"}
-                    </Text>
-                  </Pressable>
+                  <GestureDetector gesture={Gesture.Native()}>
+                    <Pressable onPress={handleToggleExpanded}>
+                      <LinearGradient
+                        colors={["transparent", "rgba(55,55,55,0.6)"]}
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          height: 24,
+                          width: "100%",
+                        }}
+                      />
+                      <Text color={colors.white} fontSize={14}>
+                        {expanded ? "less" : "more"}
+                      </Text>
+                    </Pressable>
+                  </GestureDetector>
                 )}
               </XStack>
             )}
@@ -273,46 +296,53 @@ function PostCardComponent({
           {/* RIGHT ACTIONS */}
           <YStack gap="$4">
             <YStack alignItems="center">
-              <Pressable onPress={handleLike}>
-                <Image
-                  source={likedState ? likeIconActive : likeIcon}
-                  width={24}
-                  height={24}
-                />
-              </Pressable>
+              <GestureDetector gesture={Gesture.Native()}>
+                <Pressable onPress={handleLike}>
+                  <Image
+                    source={likedState ? likeIconActive : likeIcon}
+                    width={24}
+                    height={24}
+                  />
+                </Pressable>
+              </GestureDetector>
               <Text color={colors.white} fontSize={12}>
                 {likeCount}
               </Text>
             </YStack>
 
             <YStack alignItems="center">
-              <Pressable onPress={() => requireAuth(() => setCommentsVisible(true))}>
-                <Image source={commentIcon} width={24} height={24} />
-              </Pressable>
+              <GestureDetector gesture={Gesture.Native()}>
+                <Pressable onPress={handleComment}>
+                  <Image source={commentIcon} width={24} height={24} />
+                </Pressable>
+              </GestureDetector>
               <Text color={colors.white} fontSize={12}>{commentCount}</Text>
             </YStack>
 
             <YStack alignItems="center">
-              <Pressable onPress={() => {
-                console.log("[PostCard] Bookmark pressed, calling openFolders");
-                requireAuth(openFolders);
-              }}>
-                <Image
-                  source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
-                  width={24}
-                  height={24}
-                />
-              </Pressable>
+              <GestureDetector gesture={Gesture.Native()}>
+                <Pressable onPress={handleBookmark}>
+                  <Image
+                    source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
+                    width={24}
+                    height={24}
+                  />
+                </Pressable>
+              </GestureDetector>
               <Text color={colors.white} fontSize={12}>{savedCount}</Text>
             </YStack>
 
-            <Pressable onPress={() => requireAuth(() => setShareVisible(true))}>
-              <Image source={shareIcon} width={24} height={24} />
-            </Pressable>
+            <GestureDetector gesture={Gesture.Native()}>
+              <Pressable onPress={handleShare}>
+                <Image source={shareIcon} width={24} height={24} />
+              </Pressable>
+            </GestureDetector>
 
-            <Pressable onPress={() => requireAuth(() => setOptionsVisible(true))}>
-              <MoreHorizontal size={28} color={colors.white} />
-            </Pressable>
+            <GestureDetector gesture={Gesture.Native()}>
+              <Pressable onPress={handleOptions}>
+                <MoreHorizontal size={28} color={colors.white} />
+              </Pressable>
+            </GestureDetector>
           </YStack>
         </XStack>
       </YStack>

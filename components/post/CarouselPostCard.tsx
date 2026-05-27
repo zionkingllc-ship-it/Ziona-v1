@@ -14,6 +14,7 @@ import { Image, View } from "tamagui";
 interface Props {
   post: FeedMediaPost;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
   heartStyle?: any;
   triggerHeart?: () => void;
   screenWidth: number;
@@ -25,6 +26,8 @@ function CarouselPostCardComponent({
   screenWidth = 400,
   screenHeight = 800,
   onLike,
+  onDoubleTapLike,
+  heartStyle,
   triggerHeart,
 }: Props) {
   const flatListRef = useRef<FlatList>(null);
@@ -40,15 +43,11 @@ function CarouselPostCardComponent({
     );
   }
 
-  const handleLike = () => {
-    if (onLike) onLike();
-    if (triggerHeart) triggerHeart();
-  };
-
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd(() => {
-      runOnJS(handleLike)();
+      if (onDoubleTapLike) runOnJS(onDoubleTapLike)();
+      if (triggerHeart) runOnJS(triggerHeart)();
     });
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -108,6 +107,21 @@ function CarouselPostCardComponent({
           colors={["transparent", "rgba(0,0,0,0.3)"]}
           style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100 }}
         />
+        <Animated.View
+          style={[
+            {
+              position: "absolute",
+              alignSelf: "center",
+              top: screenHeight * 0.4,
+            },
+            heartStyle,
+          ]}
+        >
+          <Animated.Image
+            source={require("@/assets/images/likeIcon2.png")}
+            style={{ width: 80, height: 80 }}
+          />
+        </Animated.View>
       </View>
     </GestureDetector>
   );

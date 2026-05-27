@@ -79,12 +79,17 @@ function PostMediaComponent({
     }
 
     return (
-      <CarouselPostCard post={post} onLike={onLike} {...mediaProps} />
+      <CarouselPostCard
+        post={post}
+        onLike={onLike}
+        onDoubleTapLike={onDoubleTapLike}
+        {...mediaProps}
+      />
     );
   }
 
   if (post.type === "text" || post.type === "bible") {
-    return <TextPostCard post={post} onLike={onLike} />;
+    return <TextPostCard post={post} onLike={onLike} onDoubleTapLike={onDoubleTapLike} />;
   }
 
   return null;
