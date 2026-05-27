@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import React, { useCallback, useEffect, useRef, useState, memo } from "react";
+import { StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -17,6 +18,7 @@ interface Props {
   isPlaying: boolean;
   onTogglePlay?: () => void;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
   heartStyle: any;
   triggerHeart: () => void;
   screenWidth: number;
@@ -27,7 +29,9 @@ interface Props {
 function VideoPostCardComponent({
   post,
   isPlaying,
+  onTogglePlay,
   onLike,
+  onDoubleTapLike,
   heartStyle,
   triggerHeart,
   screenWidth,
@@ -36,7 +40,6 @@ function VideoPostCardComponent({
   const videoUrl = post.media?.[0]?.url;
   const thumbnailUrl = post.media?.[0]?.thumbnailUrl;
 
-  // All hooks before any early return
   const progress = useSharedValue(0);
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
 
@@ -113,91 +116,113 @@ function VideoPostCardComponent({
       runOnJS(handleSeek)(progress.value);
     });
 
-  // Early return after all hooks
+  /* SINGLE TAP → toggle play/pause */
+  const singleTap = Gesture.Tap()
+    .numberOfTaps(1)
+    .onEnd(() => {
+      if (onTogglePlay) runOnJS(onTogglePlay)();
+    });
+
+  /* DOUBLE TAP → like only (never unlike) + heart animation */
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .maxDelay(250)
+    .onEnd((_, success) => {
+      if (success) {
+        if (onDoubleTapLike) runOnJS(onDoubleTapLike)();
+        runOnJS(triggerHeart)();
+      }
+    });
+
+  const taps = Gesture.Exclusive(doubleTap, singleTap);
+
   if (!videoUrl) {
     return null;
   }
 
   return (
     <View width={screenWidth} height={screenHeight} backgroundColor="black">
-      {player && (
-        <VideoView
-          player={player}
-          style={{ width: "100%", height: "100%" }}
-          contentFit="cover"
-          nativeControls={false}
-          useExoShutter={false}
-          pointerEvents="none"
-          onFirstFrameRender={() => {
-            setHasFirstFrame(true);
-            progress.value = 0;
-          }}
-        />
-      )}
+      <GestureDetector gesture={taps}>
+        <View style={StyleSheet.absoluteFill}>
+          {player && (
+            <VideoView
+              player={player}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+              nativeControls={false}
+              useExoShutter={false}
+              pointerEvents="none"
+              onFirstFrameRender={() => {
+                setHasFirstFrame(true);
+                progress.value = 0;
+              }}
+            />
+          )}
 
-      {!hasFirstFrame &&
-        (thumbnailUrl ? (
-          <Image
-            source={thumbnailUrl}
-            style={{ position: "absolute", width: "100%", height: "100%" }}
-            contentFit="cover"
-          />
-        ) : (
-          <View
-            position="absolute"
-            width="100%"
-            height="100%"
-            backgroundColor="black"
-          />
-        ))}
+          {!hasFirstFrame &&
+            (thumbnailUrl ? (
+              <Image
+                source={thumbnailUrl}
+                style={{ position: "absolute", width: "100%", height: "100%" }}
+                contentFit="cover"
+              />
+            ) : (
+              <View
+                position="absolute"
+                width="100%"
+                height="100%"
+                backgroundColor="black"
+              />
+            ))}
 
-      {!isPlaying && (
-        <View
-          width={60}
-          height={60}
-          borderRadius={30}
-          backgroundColor="#FFF1DB"
-          position="absolute"
-          justifyContent="center"
-          alignItems="center"
-          alignSelf="center"
-          top={screenHeight * 0.45}
-          pointerEvents="none"
-        >
-          <Play size={28} color={colors.black} fill={colors.black} />
+          {!isPlaying && (
+            <View
+              width={60}
+              height={60}
+              borderRadius={30}
+              backgroundColor="#FFF1DB"
+              position="absolute"
+              justifyContent="center"
+              alignItems="center"
+              alignSelf="center"
+              top={screenHeight * 0.45}
+              pointerEvents="none"
+            >
+              <Play size={28} color={colors.black} fill={colors.black} />
+            </View>
+          )}
+
+          <Animated.View
+            style={[
+              {
+                position: "absolute",
+                alignSelf: "center",
+                top: screenHeight * 0.4,
+              },
+              heartStyle,
+            ]}
+          >
+            <Animated.Image
+              source={require("@/assets/images/likeIcon2.png")}
+              style={{ width: 80, height: 80 }}
+            />
+          </Animated.View>
+
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.7)"]}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 200,
+              pointerEvents: "none",
+            }}
+          />
         </View>
-      )}
+      </GestureDetector>
 
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            alignSelf: "center",
-            top: screenHeight * 0.4,
-          },
-          heartStyle,
-        ]}
-      >
-        <Animated.Image
-          source={require("@/assets/images/likeIcon2.png")}
-          style={{ width: 80, height: 80 }}
-        />
-      </Animated.View>
-
-      {/* Gradient is its own independent layer, not nested in any gesture handler */}
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.7)"]}
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 200,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* PROGRESS BAR - sits on top, only intercepts touches in bottom 40px */}
+      {/* PROGRESS BAR */}
       <View
         position="absolute"
         bottom={0}
@@ -233,7 +258,6 @@ export default memo(
   (prev, next) =>
     prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
-    prev.post.viewerState?.liked === next.post.viewerState?.liked &&
     prev.screenWidth === next.screenWidth &&
     prev.screenHeight === next.screenHeight
 );

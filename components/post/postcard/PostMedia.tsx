@@ -16,6 +16,7 @@ interface Props {
   isActive: boolean;
   onTogglePlay?: () => void;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
   screenWidth: number;
   screenHeight: number;
   tabBarHeight: number;
@@ -27,6 +28,7 @@ function PostMediaComponent({
   isActive,
   onTogglePlay,
   onLike,
+  onDoubleTapLike,
   screenWidth,
   screenHeight,
   tabBarHeight,
@@ -70,6 +72,7 @@ function PostMediaComponent({
           isPlaying={isPlaying}
           onTogglePlay={onTogglePlay}
           onLike={onLike}
+          onDoubleTapLike={onDoubleTapLike}
           {...mediaProps}
         />
       );

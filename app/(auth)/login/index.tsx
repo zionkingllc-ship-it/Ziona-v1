@@ -251,8 +251,9 @@ export default function LoginIndex() {
                 Privacy Policy
               </InlineUnderlineText>
             </Pressable>
-            <Text> </Text>
+            <Text>{" "} </Text>
             <Text>and</Text>
+            <Text>{" "} </Text>
             <Pressable onPress={() => router.push("/settings/terms/privacy")}>
               <InlineUnderlineText
                 color={colors.termsButton}

@@ -69,7 +69,9 @@ function PostCardComponent({
   const [successMessage, setSuccessMessage] = useState("");
   const [shareVisible, setShareVisible] = useState(false);
 
-  const likedState = post.viewerState.liked;
+  const likedState = usePostActionsStore(
+    (s) => s.likedPosts[post.id] ?? post.viewerState?.liked ?? false,
+  );
   const likeCount = post.stats.likesCount;
   const commentCount = post.stats.commentsCount;
   const savedCount = post.stats.savesCount;
@@ -129,6 +131,16 @@ function PostCardComponent({
     });
   };
 
+  const handleDoubleTapLike = useCallback(() => {
+    if (isLikePending || likedState) return;
+    requireAuth(() => {
+      toggleLikeMutation.mutate({
+        postId: post.id,
+        currentLiked: false,
+      });
+    });
+  }, [post.id, likedState, isLikePending, requireAuth, toggleLikeMutation]);
+
   const handleFollow = () => {
     if (!post.author?.id || toggleFollowMutation.isPending) return;
     requireAuth(() => {
@@ -152,6 +164,7 @@ function PostCardComponent({
       screenHeight,
       tabBarHeight,
       onLike: handleLike,
+      onDoubleTapLike: handleDoubleTapLike,
     }),
     [post, isPlaying, screenWidth, screenHeight, tabBarHeight, isActive],
   );
@@ -161,7 +174,7 @@ function PostCardComponent({
       {/* MEDIA */}
       <PostMedia {...mediaProps} />
 
-      {/* OVERLAY */}
+      {/* OVERLAY — box-none so taps on empty area pass through to VideoPostCard gesture handler */}
       <YStack
         position="absolute"
         top={0}
@@ -169,15 +182,8 @@ function PostCardComponent({
         right={0}
         bottom={0}
         backgroundColor="rgba(0,0,0,0.15)"
+        pointerEvents="box-none"
       >
-        {/* TAP TOGGLE PLAY - behind all interactive elements */}
-        {post.mediaType === "video" && (
-          <Pressable
-            onPress={onTogglePlay}
-            style={{ flex: 1 }}
-          />
-        )}
-
         <XStack
           position="absolute"
           bottom={Math.max(insets.bottom - 25)}

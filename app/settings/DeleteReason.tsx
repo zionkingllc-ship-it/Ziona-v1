@@ -6,8 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Pressable as RNPressable } from "react-native";
 import { Text, XStack, YStack, TextArea } from "tamagui";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "@/store/useAuthStore";
-import { authApi } from "@/services/api/authApi";
+import { useDeleteAccount } from "@/hooks/useAccountSettings";
 
 type Reason =
   | "temporary"
@@ -18,25 +17,23 @@ type Reason =
 
 export default function DeleteReasonScreen() {
   const router = useRouter();
-  const clearSession = useAuthStore((s) => s.clearSession);
+  const deleteAccount = useDeleteAccount();
   const [selected, setSelected] = useState<Reason>(null);
   const [otherText, setOtherText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const isValid =
     selected &&
     (selected !== "other" || otherText.trim().length > 0);
 
-  const handleDelete = async () => {
-    if (!isValid || isDeleting) return;
-    setIsDeleting(true);
-    try {
-      await authApi.deleteAccount();
-      clearSession();
-      router.replace("/(auth)");
-    } catch (error) {
-      setIsDeleting(false);
-    }
+  const handleDelete = () => {
+    if (!isValid) return;
+    deleteAccount.mutate(
+      {
+        reason: selected!,
+        detail: selected === "other" ? otherText.trim() : undefined,
+      },
+      { onSuccess: () => router.replace("/(auth)") },
+    );
   };
 
   return (
@@ -149,7 +146,7 @@ export default function DeleteReasonScreen() {
         <SimpleButton
           text="Delete account"
           onPress={handleDelete}
-          disabled={!isValid || isDeleting}
+          disabled={!isValid || deleteAccount.isPending}
           color={isValid ? colors.DEBIT_RED : colors.inactiveButton}
           textColor={colors.white}
         />

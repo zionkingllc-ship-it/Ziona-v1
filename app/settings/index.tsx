@@ -142,11 +142,6 @@ export default function SettingsScreen() {
             label="Notification"
             onPress={() => router.push("/settings/Notification")}
           />
-          <SettingsRow
-            icon={<Lock size={18} color={colors.secondaryGray} />}
-            label="Account privacy"
-            onPress={() => router.push("/settings/Privacy")}
-          />
         </SettingsSection>
 
         {/* ACTIVITY */}
@@ -158,22 +153,26 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        {/* SUPPORT */}
-        <SettingsSection title="Support and more info">
+        {/* TERMS AND POLICIES */}
+        <SettingsSection title="Terms and policies">
           <SettingsRow
-            icon={<HelpCircle size={18} color={colors.secondaryGray} />}
-            label="Help"
-            onPress={() => router.push("/settings/Help")}
-          />
-          <SettingsRow
-            icon={<FileText size={18} color={colors.secondaryGray} />}
-            label="Terms and policies"
-            onPress={() => router.push("/settings/Terms")}
+            icon={<Lock size={18} color={colors.secondaryGray} />}
+            label="Account privacy"
+            onPress={() => router.push("/settings/Privacy")}
           />
           <SettingsRow
             icon={<FileText size={18} color={colors.secondaryGray} />}
             label="Terms of use"
             onPress={() => router.push("/settings/terms/use")}
+          />
+        </SettingsSection>
+
+        {/* SUPPORT */}
+        <SettingsSection title="Support">
+          <SettingsRow
+            icon={<HelpCircle size={18} color={colors.secondaryGray} />}
+            label="Help"
+            onPress={() => router.push("/settings/Help")}
           />
           <SettingsRow
             icon={<User size={18} color={colors.secondaryGray} />}

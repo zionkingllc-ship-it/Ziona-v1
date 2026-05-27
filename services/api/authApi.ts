@@ -264,11 +264,13 @@ export const authApi = {
     }
   },
 
-  deleteAccount: async () => {
+  deleteAccount: async (reason?: { reason: string; detail?: string }) => {
     try {
       log("deleteAccount called");
 
-      const response = await api.delete("/auth/account");
+      const response = await api.delete("/auth/account", {
+        data: reason,
+      });
 
       log("deleteAccount response:", response.data);
 

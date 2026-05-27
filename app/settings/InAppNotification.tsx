@@ -1,6 +1,6 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
-import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useUserSettings";
+import { BackendPrefs, useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useUserSettings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Switch } from "react-native";
 import { Text, XStack, YStack, View } from "tamagui";
@@ -9,18 +9,10 @@ export default function InAppNotificationScreen() {
   const { data: prefs, isLoading } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
 
-  const updatePref = (key: string, value: boolean) => {
-    try {
-      updatePrefs.mutate({
-        likeNotifications: key === "likeNotifications" ? value : prefs?.likeNotifications ?? false,
-        replyNotifications: key === "replyNotifications" ? value : prefs?.replyNotifications ?? false,
-        anchorNotifications: key === "anchorNotifications" ? value : prefs?.anchorNotifications ?? false,
-        circleActivityNotifications: key === "circleActivityNotifications" ? value : prefs?.circleActivityNotifications ?? false,
-        adminAnnouncements: key === "adminAnnouncements" ? value : prefs?.adminAnnouncements ?? false,
-      });
-    } catch (error) {
-      console.log("Failed to update notification:", error);
-    }
+  const updatePref = (key: keyof BackendPrefs, value: boolean) => {
+    if (!prefs) return;
+    const updated = { ...prefs, [key]: value };
+    updatePrefs.mutate(updated);
   };
 
   const Row = ({ label, value, onChange, disabled }: any) => (
@@ -59,23 +51,23 @@ export default function InAppNotificationScreen() {
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>
           <Row
             label="Likes"
-            value={prefs?.likeNotifications ?? false}
-            onChange={(v: boolean) => updatePref("likeNotifications", v)}
+            value={prefs?.inAppLikes ?? false}
+            onChange={(v: boolean) => updatePref("inAppLikes", v)}
           />
           <Row
             label="Comments"
-            value={prefs?.replyNotifications ?? false}
-            onChange={(v: boolean) => updatePref("replyNotifications", v)}
+            value={prefs?.inAppComment ?? false}
+            onChange={(v: boolean) => updatePref("inAppComment", v)}
           />
           <Row
             label="Anchor posts"
-            value={prefs?.anchorNotifications ?? false}
-            onChange={(v: boolean) => updatePref("anchorNotifications", v)}
+            value={prefs?.circleAnchorPost ?? false}
+            onChange={(v: boolean) => updatePref("circleAnchorPost", v)}
           />
           <Row
             label="Circle activity"
-            value={prefs?.circleActivityNotifications ?? false}
-            onChange={(v: boolean) => updatePref("circleActivityNotifications", v)}
+            value={prefs?.circleFriendInteraction ?? false}
+            onChange={(v: boolean) => updatePref("circleFriendInteraction", v)}
           />
         </View>
       </YStack>

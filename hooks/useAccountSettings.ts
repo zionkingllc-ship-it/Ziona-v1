@@ -47,8 +47,8 @@ export function useDeleteAccount() {
   const { clearSession } = useAuthStore();
 
   return useMutation({
-    mutationFn: async () => {
-      return await authApi.deleteAccount();
+    mutationFn: async (reason?: { reason: string; detail?: string }) => {
+      return await authApi.deleteAccount(reason);
     },
     onSuccess: async () => {
       await clearSession();
