@@ -300,8 +300,8 @@ function PostCardComponent({
                 <Pressable onPress={handleLike}>
                   <Image
                     source={likedState ? likeIconActive : likeIcon}
-                    width={24}
-                    height={24}
+                    width={30}
+                    height={30}
                   />
                 </Pressable>
               </GestureDetector>
@@ -313,7 +313,7 @@ function PostCardComponent({
             <YStack alignItems="center">
               <GestureDetector gesture={Gesture.Native()}>
                 <Pressable onPress={handleComment}>
-                  <Image source={commentIcon} width={24} height={24} />
+                  <Image source={commentIcon} width={30} height={30} />
                 </Pressable>
               </GestureDetector>
               <Text color={colors.white} fontSize={12}>{commentCount}</Text>
@@ -324,8 +324,8 @@ function PostCardComponent({
                 <Pressable onPress={handleBookmark}>
                   <Image
                     source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
-                    width={24}
-                    height={24}
+                    width={30}
+                    height={30}
                   />
                 </Pressable>
               </GestureDetector>
@@ -333,14 +333,14 @@ function PostCardComponent({
             </YStack>
 
             <GestureDetector gesture={Gesture.Native()}>
-              <Pressable onPress={handleShare}>
-                <Image source={shareIcon} width={24} height={24} />
+                <Pressable onPress={handleShare}>
+                  <Image source={shareIcon} width={30} height={30} />
               </Pressable>
             </GestureDetector>
 
             <GestureDetector gesture={Gesture.Native()}>
-              <Pressable onPress={handleOptions}>
-                <MoreHorizontal size={28} color={colors.white} />
+                <Pressable onPress={handleOptions}>
+                  <MoreHorizontal size={32} color={colors.white} />
               </Pressable>
             </GestureDetector>
           </YStack>

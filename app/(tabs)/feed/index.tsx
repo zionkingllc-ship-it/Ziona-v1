@@ -6,12 +6,10 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
-import { usePostActionsStore } from "@/store/usePostActionStore";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -69,10 +67,6 @@ export default function Feed() {
     }
   }, [feedType, queryClient]);
 
-  const likedMap = usePostActionsStore((s) => s.likedPosts);
-  const savedMap = usePostActionsStore((s) => s.savedPosts);
-  const followedMap = usePostActionsStore((s) => s.followedUsers);
-
   useFocusEffect(
     useCallback(() => {
       if (!query.data && !query.isLoading) {
@@ -118,7 +112,7 @@ export default function Feed() {
   }, [query.isError, query.error]);
 
   const pages =
-    (query.data as InfiniteData<{ posts: any[] }> | undefined)?.pages ?? [];
+    (query.data as InfiniteData<{ posts: any[] } | undefined> | undefined)?.pages ?? [];
   const data: FeedPost[] = useMemo(() => {
     if (!pages.length) return [];
 
@@ -145,14 +139,8 @@ export default function Feed() {
         }
       });
 
-    return uniquePosts.map((post) =>
-      mergePostState(post, {
-        likedPosts: likedMap,
-        savedPosts: savedMap,
-        followedUsers: followedMap,
-      }),
-    );
-  }, [pages, likedMap, savedMap, followedMap]);
+    return uniquePosts;
+  }, [pages]);
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 80,

@@ -339,11 +339,13 @@ function CommentItem({
                 <Text fontSize={12} fontFamily="$body" color="#836F8B">Reply</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => toggleReplies(comment.id)}>
-                <Text fontSize={12} fontFamily="$body" color="#836F8B">
-                  {areRepliesExpanded ? "Hide" : "View"} Replies ({comment.stats?.repliesCount || 0})
-                </Text>
-              </TouchableOpacity>
+              {comment.stats?.repliesCount > 0 && (
+                <TouchableOpacity onPress={() => toggleReplies(comment.id)}>
+                  <Text fontSize={12} fontFamily="$body" color="#836F8B">
+                    {areRepliesExpanded ? "Hide" : "View"} Replies ({comment.stats?.repliesCount})
+                  </Text>
+                </TouchableOpacity>
+              )}
             </XStack>
 
             {areRepliesExpanded && (

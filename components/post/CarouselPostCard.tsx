@@ -85,7 +85,7 @@ function CarouselPostCardComponent({
         {mediaItems.length > 1 && (
           <View
             position="absolute"
-            bottom={20}
+            bottom={120}
             alignSelf="center"
             flexDirection="row"
             gap={6}
