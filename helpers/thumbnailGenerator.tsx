@@ -8,7 +8,7 @@ import { Asset } from "expo-asset";
 function fixMediaUrl(url?: string): string | undefined {
   if (!url) return undefined;
 
-  const base = "https://storage.googleapis.com/";
+  const base = (process.env.EXPO_PUBLIC_STORAGE_BASE_URL || "https://storage.googleapis.com") + "/";
   const parts = url.split(base);
 
   // handle duplicated prefix issue

@@ -3,14 +3,15 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import * as Haptics from "expo-haptics";
 import { Post } from "@/types/post"; 
 import { SharePayload } from "./adapter";
-const DOMAIN = "https://ziona.app";
+const DOMAIN = process.env.EXPO_PUBLIC_SHARE_DOMAIN || "https://ziona.app";
+const DEEP_LINK_SCHEME = process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME || "ziona";
 
 export function buildPostUrl(postId: string) {
   return `${DOMAIN}/post/${postId}`;
 }
 
 export function buildDeepLink(postId: string) {
-  return `ziona://viewer/${postId}`;
+  return `${DEEP_LINK_SCHEME}://viewer/${postId}`;
 }
  
 export async function shareToApp(url: string, scheme: string) {

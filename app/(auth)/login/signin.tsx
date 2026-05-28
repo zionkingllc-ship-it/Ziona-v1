@@ -17,6 +17,7 @@ import { authApi } from "@/services/api/authApi";
 import { isLoginPasswordValid } from "@/utils/passwordRules";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
 export default function SignIn() {
   const { wp, hp, fs } = useResponsive();
@@ -249,7 +250,7 @@ export default function SignIn() {
         buttonText="Appeal"
         onButtonPress={() => {
           setShowSuspendModal(false);
-          Linking.openURL("mailto:support@ziona.app");
+          Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
         }}
       />
     </KeyboardAvoidingWrapper>

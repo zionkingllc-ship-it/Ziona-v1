@@ -73,7 +73,12 @@ function PostCardComponent({
   const likedState = usePostActionsStore(
     (s) => s.likedPosts[post.id] ?? post.viewerState?.liked ?? false,
   );
-  const likeCount = post.stats.likesCount;
+  const baseLiked = post.viewerState?.liked ?? false;
+  const baseCount = post.stats.likesCount;
+  const effectiveBaseCount = (baseLiked && baseCount === 0) ? 1 : baseCount;
+  const likeCount = likedState !== baseLiked
+    ? effectiveBaseCount + (likedState ? 1 : -1)
+    : effectiveBaseCount;
   const commentCount = post.stats.commentsCount;
   const savedCount = post.stats.savesCount;
 

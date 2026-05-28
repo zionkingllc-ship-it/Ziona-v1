@@ -8,11 +8,13 @@ import { FeedPost } from "@/types/feedTypes";
 function isValidStorageUrl(url?: string) {
   if (!url) return false;
 
+  const STORAGE_BASE = process.env.EXPO_PUBLIC_STORAGE_BASE_URL || "https://storage.googleapis.com";
+
   // must be a proper GCS URL
-  if (!url.startsWith("https://storage.googleapis.com/")) return false;
+  if (!url.startsWith(`${STORAGE_BASE}/`)) return false;
 
   // reject double-prefixed broken URLs
-  const count = url.split("https://storage.googleapis.com/").length - 1;
+  const count = url.split(`${STORAGE_BASE}/`).length - 1;
 
   return count === 1;
 }

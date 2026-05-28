@@ -44,6 +44,7 @@ function PostViewerEngineComponent({
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const hasInitialized = useRef(false);
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
@@ -66,27 +67,12 @@ function PostViewerEngineComponent({
   }), [activePostId, pausedPostId]);
 
   useEffect(() => {
-    if (mergedPosts.length > 0 && initialIndex >= 0) {
+    if (!hasInitialized.current && mergedPosts.length > 0 && initialIndex >= 0) {
+      hasInitialized.current = true;
       setActivePostId(mergedPosts[initialIndex]?.id ?? null);
       setIsReady(true);
     }
   }, [mergedPosts, initialIndex]);
-
-  useEffect(() => {
-    if (!mergedPosts.length || !containerHeight || initialIndex <= 0) return;
-    if (initialIndex === undefined || initialIndex < 0) return;
-
-    const targetId = mergedPosts[initialIndex]?.id;
-    if (!targetId) return;
-
-    const timeout = setTimeout(() => {
-      flatListRef.current?.scrollToOffset({
-        offset: initialIndex * containerHeight,
-        animated: false,
-      });
-    }, 50);
-    return () => clearTimeout(timeout);
-  }, [mergedPosts, initialIndex, containerHeight]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -165,6 +151,7 @@ function PostViewerEngineComponent({
       <FlatList
         ref={flatListRef}
         data={mergedPosts}
+        initialScrollIndex={initialIndex}
         extraData={extraData}
         keyExtractor={keyExtractor}
         renderItem={renderItem}

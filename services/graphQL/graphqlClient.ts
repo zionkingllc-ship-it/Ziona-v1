@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/store/useAuthStore";
 
-const GRAPHQL_URL = "https://ziona-api-staging.onrender.com/graphql/";
-const REST_BASE = "https://ziona-api-staging.onrender.com/api";
+const GRAPHQL_URL = process.env.EXPO_PUBLIC_GRAPHQL_URL || "https://ziona-api-staging.onrender.com/graphql/";
+const REST_BASE = `${process.env.EXPO_PUBLIC_API_BASE_URL || "https://ziona-api-staging.onrender.com"}/api`;
 
 const AUTH_ERROR_MESSAGES = [
   "unauthorized",

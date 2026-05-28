@@ -54,10 +54,14 @@ export default function AuthIndex() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
+      console.log("[Google Sign-In] Starting signup flow");
+
       const res = await signInWithGoogle();
+      console.log("[Google Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsGoogleLoading(false);
+        console.log("[Google Sign-In] Failed:", res.error);
         setModalVisible(true);
         setMessageType("failed");
         setMessageTitle("Authentication Failed");
@@ -70,16 +74,18 @@ export default function AuthIndex() {
       // check if username exists
       if (!res?.user?.username) {
         setIsGoogleLoading(false);
+        console.log("[Google Sign-In] No username — navigating to username setup");
         setFlow("google");
         router.replace("/(auth)/username");
         return;
       }
 
       // already complete → go to app
+      console.log("[Google Sign-In] User complete — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
-      console.log("Google login failed", err);
+      console.log("[Google Sign-In] Exception:", err);
     }
   };
 
@@ -184,9 +190,7 @@ export default function AuthIndex() {
               color={colors.white}
               textSize={fs(15)}
               textWeight="400"
-              onPress={handleAppleSignIn}
-              loading={isAppleLoading}
-              disabled={isAppleLoading}
+              loading={false}
               iconSize={wp(6)}
               startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
             />

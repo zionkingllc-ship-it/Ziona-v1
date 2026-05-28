@@ -17,8 +17,10 @@ export const clearAuthTokens = () => {
   refreshToken = null;
 };
 
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://ziona-api-staging.onrender.com";
+
 export const api = axios.create({
-  baseURL: "https://ziona-api-staging.onrender.com/api",
+  baseURL: `${API_BASE}/api`,
   timeout: 60000,
 });
 
@@ -59,7 +61,7 @@ api.interceptors.response.use(
 
       try {
         const response = await axios.post(
-          "https://ziona-api-staging.onrender.com/api/auth/refresh",
+          `${API_BASE}/api/auth/refresh`,
           {
             refresh_token: refreshToken,
           }

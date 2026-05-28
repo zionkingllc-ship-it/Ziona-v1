@@ -14,6 +14,8 @@ import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { api } from "@/services/api/client";
 
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
+
 export default function CreateUsername() {
   const { wp, hp, fs } = useResponsive();
 
@@ -235,7 +237,7 @@ const handleSubmit = async () => {
         buttonText="Appeal"
         onButtonPress={() => {
           setShowErrorModal(false);
-          Linking.openURL("mailto:support@ziona.app");
+          Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
         }}
       />
     </KeyboardAvoidingWrapper>

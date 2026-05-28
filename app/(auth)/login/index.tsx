@@ -59,14 +59,29 @@ export default function LoginIndex() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      console.log("Google login pressed");
+      console.log("[Google Sign-In] Starting login flow");
 
-      await signInWithGoogle();
+      const res = await signInWithGoogle();
+      console.log("[Google Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, error: res?.error }));
 
+      if (res.error) {
+        setIsGoogleLoading(false);
+        console.log("[Google Sign-In] Failed:", res.error);
+        return;
+      }
+
+      if (!res?.user?.username) {
+        setIsGoogleLoading(false);
+        console.log("[Google Sign-In] No username on user object — unexpected for login");
+        router.replace("/(auth)/username");
+        return;
+      }
+
+      console.log("[Google Sign-In] Success — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
-      console.log("Google login failed", err);
+      console.log("[Google Sign-In] Exception:", err);
     }
   };
 
@@ -149,9 +164,7 @@ export default function LoginIndex() {
               color={colors.white}
               textSize={fs(14)}
               textWeight="400"
-              onPress={handleAppleSignIn}
-              loading={isAppleLoading}
-              disabled={isAppleLoading}
+              loading={false}
               iconSize={wp(6)}
               startIcon={
                 <Ionicons name="logo-apple" size={wp(6)} color={colors.text} />
