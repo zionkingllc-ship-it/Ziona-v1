@@ -74,7 +74,7 @@ function PostCardComponent({
     (s) => s.likedPosts[post.id] ?? post.viewerState?.liked ?? false,
   );
   const baseLiked = post.viewerState?.liked ?? false;
-  const baseCount = post.stats.likesCount;
+  const baseCount = Number(post.stats.likesCount) || 0;
   const effectiveBaseCount = (baseLiked && baseCount === 0) ? 1 : baseCount;
   const likeCount = likedState !== baseLiked
     ? effectiveBaseCount + (likedState ? 1 : -1)

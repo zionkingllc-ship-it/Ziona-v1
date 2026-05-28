@@ -5,6 +5,7 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { useSignupStore } from "@/store/useSignupStore";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -34,6 +35,8 @@ export default function LoginIndex() {
 
   const { signInWithGoogle } = useGoogleAuth();
   const { signInWithApple } = useAppleAuth();
+  const setFlow = useSignupStore((s) => s.setFlow);
+  const setSuggestions = useSignupStore((s) => s.setSuggestions);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
@@ -41,18 +44,31 @@ export default function LoginIndex() {
   const handleAppleSignIn = async () => {
     try {
       setIsAppleLoading(true);
+      console.log("[Apple Sign-In] Starting login flow");
+
       const res = await signInWithApple();
+      console.log("[Apple Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsAppleLoading(false);
-        console.log("Apple login failed:", res.error);
+        console.log("[Apple Sign-In] Failed:", res.error);
         return;
       }
 
+      if (!res?.user?.username) {
+        setIsAppleLoading(false);
+        console.log("[Apple Sign-In] No username — setting up username");
+        setFlow("apple");
+        setSuggestions(res.suggestedUsernames ?? []);
+        router.replace("/(auth)/username");
+        return;
+      }
+
+      console.log("[Apple Sign-In] Success — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsAppleLoading(false);
-      console.log("Apple login failed", err);
+      console.log("[Apple Sign-In] Exception:", err);
     }
   };
 
@@ -72,7 +88,9 @@ export default function LoginIndex() {
 
       if (!res?.user?.username) {
         setIsGoogleLoading(false);
-        console.log("[Google Sign-In] No username on user object — unexpected for login");
+        console.log("[Google Sign-In] No username — setting up username");
+        setFlow("google");
+        setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
         return;
       }
@@ -164,7 +182,9 @@ export default function LoginIndex() {
               color={colors.white}
               textSize={fs(14)}
               textWeight="400"
-              loading={false}
+              onPress={handleAppleSignIn}
+              loading={isAppleLoading}
+              disabled={isAppleLoading}
               iconSize={wp(6)}
               startIcon={
                 <Ionicons name="logo-apple" size={wp(6)} color={colors.text} />

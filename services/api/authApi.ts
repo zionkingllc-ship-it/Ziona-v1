@@ -184,6 +184,23 @@ export const authApi = {
     }
   },
 
+  finalizeUsername: async (username: string) => {
+    try {
+      log("finalizeUsername called");
+
+      const response = await api.post("/auth/finalize-username", {
+        username,
+      });
+
+      log("finalizeUsername response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("finalizeUsername failed", err);
+      throw err;
+    }
+  },
+
   appleLogin: async (idToken: string) => {
     try {
       log("appleLogin called");

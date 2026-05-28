@@ -8,6 +8,7 @@ type AppleAuthResponse = {
     username?: string | null;
   };
   tokens?: any;
+  suggestedUsernames?: string[];
   error?: string;
 };
 
@@ -48,6 +49,7 @@ export const useAppleAuth = () => {
       return {
         user: res.user,
         tokens: res.tokens,
+        suggestedUsernames: res.suggestedUsernames ?? [],
       };
     } catch (error: any) {
       if (error?.code === "ERR_CANCELED") {

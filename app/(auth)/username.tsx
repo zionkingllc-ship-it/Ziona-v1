@@ -12,7 +12,6 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { api } from "@/services/api/client";
 
 const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
@@ -94,12 +93,10 @@ const handleSubmit = async () => {
       return;
     }
 
-    if (flow === "google") {
-      console.log("🟦 USERNAME: google flow, calling finalize-username");
-      await api.post("/user/finalize-username", {
-        username: cleanUsername,
-      });
-      console.log("🟦 USERNAME: finalize-username succeeded");
+    if (flow === "google" || flow === "apple") {
+      console.log(`🟦 USERNAME: ${flow} flow, calling finalize-username`);
+      await authApi.finalizeUsername(cleanUsername);
+      console.log(`🟦 USERNAME: finalize-username succeeded`);
 
       console.log("🟦 USERNAME: navigating to feed");
 

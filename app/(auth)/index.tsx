@@ -39,6 +39,7 @@ export default function AuthIndex() {
   const { signInWithApple } = useAppleAuth();
 
   const setFlow = useSignupStore((s) => s.setFlow);
+  const setSuggestions = useSignupStore((s) => s.setSuggestions);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -76,6 +77,7 @@ export default function AuthIndex() {
         setIsGoogleLoading(false);
         console.log("[Google Sign-In] No username — navigating to username setup");
         setFlow("google");
+        setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
         return;
       }
@@ -92,7 +94,10 @@ export default function AuthIndex() {
   const handleAppleSignIn = async () => {
     try {
       setIsAppleLoading(true);
+      console.log("[Apple Sign-In] Starting signup flow");
+
       const res = await signInWithApple();
+      console.log("[Apple Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsAppleLoading(false);
@@ -103,10 +108,20 @@ export default function AuthIndex() {
         return;
       }
 
+      if (!res?.user?.username) {
+        setIsAppleLoading(false);
+        console.log("[Apple Sign-In] No username — navigating to username setup");
+        setFlow("apple");
+        setSuggestions(res.suggestedUsernames ?? []);
+        router.replace("/(auth)/username");
+        return;
+      }
+
+      console.log("[Apple Sign-In] User complete — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsAppleLoading(false);
-      console.log("Apple login failed", err);
+      console.log("[Apple Sign-In] Exception:", err);
     }
   };
 
@@ -190,7 +205,9 @@ export default function AuthIndex() {
               color={colors.white}
               textSize={fs(15)}
               textWeight="400"
-              loading={false}
+              onPress={handleAppleSignIn}
+              loading={isAppleLoading}
+              disabled={isAppleLoading}
               iconSize={wp(6)}
               startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
             />

@@ -8,6 +8,7 @@ type GoogleAuthResponse = {
     username?: string | null;
   };
   tokens?: any;
+  suggestedUsernames?: string[];
   error?: string;
 };
 
@@ -64,6 +65,7 @@ export const useGoogleAuth = () => {
       return {
         user: res.user,
         tokens: res.tokens,
+        suggestedUsernames: res.suggestedUsernames ?? [],
       };
     } catch (error: any) {
       console.error("Google Sign-In error:", error);
