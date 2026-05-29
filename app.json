@@ -27,6 +27,13 @@
           "whatsapp",
           "sms",
           "mailto"
+        ],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv"
+            ]
+          }
         ]
       }
     },

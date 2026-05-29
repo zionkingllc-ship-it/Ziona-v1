@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -20,8 +21,6 @@ export const useAppleAuth = () => {
       if (Platform.OS !== "ios") {
         return { error: "Apple Sign-In is only available on iOS" };
       }
-
-      const { AppleAuthentication } = require("expo-apple-authentication");
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
