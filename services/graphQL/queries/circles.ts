@@ -214,11 +214,6 @@ export const GET_CIRCLE_FEED_DATA = `
           liked
           prayed
         }
-        author {
-          id
-          username
-          avatarUrl
-        }
       }
       pastAnchors {
         id
@@ -314,11 +309,6 @@ export const GET_ACTIVE_ANCHOR = `
         liked
         prayed
       }
-      author {
-        id
-        username
-        avatarUrl
-      }
     }
   }
 `;
@@ -404,11 +394,6 @@ export const GET_ANCHOR_BY_DATE = `
       viewerState {
         liked
         prayed
-      }
-      author {
-        id
-        username
-        avatarUrl
       }
     }
   }
@@ -619,11 +604,19 @@ export async function fetchCircleFeedData(
   return res?.circleFeedData ?? null;
 }
 
+function mapActiveAnchor(raw: any): any {
+  if (!raw) return null;
+  return {
+    ...raw,
+    type: raw.anchorType,
+  };
+}
+
 export async function fetchActiveAnchor(circleId: string) {
   console.log("🔍 [queries] fetchActiveAnchor called for circleId:", circleId);
   const res = await graphqlRequest(GET_ACTIVE_ANCHOR, { circleId });
   console.log("🔍 [queries] fetchActiveAnchor result:", res?.activeAnchor);
-  return res?.activeAnchor ?? null;
+  return mapActiveAnchor(res?.activeAnchor ?? null);
 }
 
 export async function fetchAnchorHistory() {
@@ -643,7 +636,7 @@ export async function fetchAnchor(id: string) {
 
 export async function fetchAnchorByDate(circleId: string, date: string) {
   const res = await graphqlRequest(GET_ANCHOR_BY_DATE, { circleId, date });
-  return res?.anchorByDate ?? null;
+  return mapActiveAnchor(res?.anchorByDate ?? null);
 }
 
 export async function fetchCirclePost(id: string) {

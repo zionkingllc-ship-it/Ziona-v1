@@ -1,18 +1,14 @@
 import themeColors from "@/constants/colors";
 import { getGradientColors } from "@/lib/anchorUtils";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "tamagui";
-
-type ActionType = "pray" | "encouraged" | "think" | null;
 
 type AnchorActionContentProps = {
   colors?: string;
   expiresAt?: string;
   text?: string;
-  onDone?: () => void;
   fullScreen?: boolean;
   onActionSelected?: (action: string, anchorText?: string) => void;
   anchorType?: string;
@@ -24,7 +20,6 @@ type AnchorActionContentProps = {
 export default function AnchorActionContent({
   colors,
   text,
-  onDone,
   fullScreen = false,
   onActionSelected,
   anchorType,
@@ -32,48 +27,13 @@ export default function AnchorActionContent({
   anchorColors,
   isExpired = false,
 }: AnchorActionContentProps) {
-  const [selectedAction, setSelectedAction] = useState<ActionType>(null);
-  const [isDone, setIsDone] = useState(false);
-
   const gradientColors = getGradientColors(colors);
 
-  const handleDone = () => {
-    if (onDone) {
-      onDone();
+  const handleAction = (action: string) => {
+    if (onActionSelected) {
+      onActionSelected(action, text);
     }
   };
-
-  const handleActionDone = () => {
-    if (selectedAction && onActionSelected) {
-      onActionSelected(selectedAction, text);
-    } else if (selectedAction) {
-      setIsDone(true);
-    } else if (onDone) {
-      onDone();
-    }
-  };
-
-  if (isDone) {
-    return (
-      <View style={styles.container}>
-        <View style={StyleSheet.absoluteFill}></View>
-        <View style={styles.doneContainer}>
-          <View style={styles.doneCard}>
-            <View style={styles.checkIcon}>
-              <Text style={styles.checkText}>✓</Text>
-            </View>
-            <Text style={styles.doneTitle}>Thank you!</Text>
-            <Text style={styles.doneMessage}>
-              Your response has been recorded.
-            </Text>
-            <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   const renderContent = () => (
     <View style={styles.actionContainer}>
@@ -93,29 +53,18 @@ export default function AnchorActionContent({
               disabled={isExpired}
               style={[
                 styles.actionCardItem,
-                selectedAction === "pray" && styles.actionCardItemSelected,
                 isExpired && styles.disabledCard,
               ]}
-              onPress={() => setSelectedAction("pray")}
+              onPress={() => handleAction("pray")}
             >
               <Image
                 source={require("@/assets/images/AnchorPrayingHandDark.png")}
                 style={{ width: 22, height: 22 }}
               />
-              <Text
-                style={[
-                  styles.actionCardTitle,
-                  selectedAction === "pray" && styles.actionCardTitleSelected,
-                ]}
-              >
+              <Text style={styles.actionCardTitle}>
                 Pray for Me
               </Text>
-              <Text
-                style={[
-                  styles.actionCardDesc,
-                  selectedAction === "pray" && styles.actionCardDescSelected,
-                ]}
-              >
+              <Text style={styles.actionCardDesc}>
                 Did this touch something personal? Tell us how we can pray.
               </Text>
             </TouchableOpacity>
@@ -124,31 +73,18 @@ export default function AnchorActionContent({
               disabled={isExpired}
               style={[
                 styles.actionCardItem,
-                selectedAction === "encouraged" && styles.actionCardItemSelected,
                 isExpired && styles.disabledCard,
               ]}
-              onPress={() => setSelectedAction("encouraged")}
+              onPress={() => handleAction("encouraged")}
             >
               <Image
                 source={require("@/assets/images/star.png")}
                 style={{ width: 22, height: 22 }}
               />
-              <Text
-                style={[
-                  styles.actionCardTitle,
-                  selectedAction === "encouraged" &&
-                    styles.actionCardTitleSelected,
-                ]}
-              >
+              <Text style={styles.actionCardTitle}>
                 This Encouraged Me
               </Text>
-              <Text
-                style={[
-                  styles.actionCardDesc,
-                  selectedAction === "encouraged" &&
-                    styles.actionCardDescSelected,
-                ]}
-              >
+              <Text style={styles.actionCardDesc}>
                 Did this strengthen you today? Tell us what stood out.
               </Text>
             </TouchableOpacity>
@@ -157,52 +93,24 @@ export default function AnchorActionContent({
               disabled={isExpired}
               style={[
                 styles.actionCardItem,
-                selectedAction === "think" && styles.actionCardItemSelected,
                 isExpired && styles.disabledCard,
               ]}
-              onPress={() => setSelectedAction("think")}
+              onPress={() => handleAction("think")}
             >
               <Image
                 source={require("@/assets/images/brain.png")}
                 style={{ width: 22, height: 22 }}
               />
-              <Text
-                style={[
-                  styles.actionCardTitle,
-                  selectedAction === "think" && styles.actionCardTitleSelected,
-                ]}
-              >
+              <Text style={styles.actionCardTitle}>
                 This Made Me Think
               </Text>
-              <Text
-                style={[
-                  styles.actionCardDesc,
-                  selectedAction === "think" && styles.actionCardDescSelected,
-                ]}
-              >
+              <Text style={styles.actionCardDesc}>
                 What line stayed with you? Share it below.
               </Text>
             </TouchableOpacity>
           </View>
         </>
       </View>
-      {isExpired ? (
-        <TouchableOpacity onPress={handleDone} style={styles.doneAllButton}>
-          <Text style={styles.doneAllText}>Done</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          onPress={handleActionDone}
-          style={[
-            styles.doneAllButton,
-            !selectedAction && styles.doneAllButtonDisabled,
-          ]}
-        >
-          <Text style={styles.doneAllText}>
-            {selectedAction ? "Done ✓" : "Done"}
-          </Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
@@ -283,62 +191,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
   },
-  actionCardItemSelected: {
-    backgroundColor: themeColors.primary,
-  },
   actionCardTitle: {
     fontSize: 10,
     fontWeight: "600",
     color: "#333",
     textAlign: "center",
   },
-  actionCardTitleSelected: { color: "#FFF" },
   actionCardDesc: {
     fontSize: 9,
     color: "#666",
     textAlign: "center",
   },
-  actionCardDescSelected: { color: "rgba(255,255,255,0.8)" },
-  doneAllButton: {
-    backgroundColor: themeColors.primary,
-    paddingHorizontal: 48,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  doneAllButtonDisabled: {
-    backgroundColor: themeColors.inActiveButton,
-  },
-  doneAllText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
-  doneContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-  },
-  doneCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 24,
-    padding: 32,
-    alignItems: "center",
-    gap: 16,
-  },
-  checkIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#4CAF50",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  checkText: { fontSize: 32, color: "#FFF" },
-  doneTitle: { fontSize: 18, fontWeight: "600", color: "#333" },
-  doneMessage: { fontSize: 14, color: "#666", textAlign: "center" },
-  doneButton: {
-    backgroundColor: themeColors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  doneButtonText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
 });

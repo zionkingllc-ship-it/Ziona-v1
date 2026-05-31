@@ -45,6 +45,8 @@ export function useActiveAnchor(circleId: string) {
     queryKey: ["activeAnchor", circleId],
     queryFn: () => fetchActiveAnchor(circleId),
     staleTime: 1000 * 60,
+    refetchInterval: 30000,
+    enabled: !!circleId,
     retry: 2,
   });
 }
@@ -54,6 +56,7 @@ export function useAnchorByDate(circleId: string, date: string) {
     queryKey: ["anchorByDate", circleId, date],
     queryFn: () => fetchAnchorByDate(circleId, date),
     staleTime: 1000 * 60,
+    enabled: !!date,
     retry: 2,
   });
 }

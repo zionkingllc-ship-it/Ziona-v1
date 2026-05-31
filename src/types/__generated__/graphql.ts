@@ -57,8 +57,11 @@ export type AdminAnchorPayload = {
 
 export type AdminAnchorType = {
   __typename: 'AdminAnchorType';
+  anchorImage: Scalars['String']['output'];
   anchorStatus: Scalars['String']['output'];
+  anchorThumbnail: Scalars['String']['output'];
   anchorType: Scalars['String']['output'];
+  anchorVideo: Scalars['String']['output'];
   authorName: Scalars['String']['output'];
   circleId: Scalars['String']['output'];
   content: Scalars['String']['output'];
@@ -112,6 +115,7 @@ export type AdminCircleStatsType = {
 
 export type AdminCircleType = {
   __typename: 'AdminCircleType';
+  bannerImage: Scalars['String']['output'];
   canEdit: Scalars['Boolean']['output'];
   cooldownRemainingDays: Scalars['Int']['output'];
   coverImage: Scalars['String']['output'];
@@ -153,6 +157,7 @@ export type AdminContactReplyPayload = {
 
 export type AdminContactType = {
   __typename: 'AdminContactType';
+  brand: Scalars['String']['output'];
   createdAt: Scalars['String']['output'];
   email: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -160,6 +165,7 @@ export type AdminContactType = {
   name: Scalars['String']['output'];
   repliedAt: Maybe<Scalars['String']['output']>;
   replies: Array<ContactReplyType>;
+  source: Scalars['String']['output'];
   status: Scalars['String']['output'];
 };
 
@@ -192,6 +198,14 @@ export type AdminLoginPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminReportMediaType = {
+  __typename: 'AdminReportMediaType';
+  mediaType: Scalars['String']['output'];
+  order: Scalars['Int']['output'];
+  thumbnailUrl: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
 export type AdminReportReviewPayload = {
   __typename: 'AdminReportReviewPayload';
   error: Maybe<ErrorType>;
@@ -203,8 +217,12 @@ export type AdminReportType = {
   __typename: 'AdminReportType';
   action: Scalars['String']['output'];
   commentId: Maybe<Scalars['String']['output']>;
+  contentMedia: Array<AdminReportMediaType>;
+  contentMediaType: Scalars['String']['output'];
+  contentMediaUrl: Scalars['String']['output'];
   contentOwner: Scalars['String']['output'];
   contentPreview: Scalars['String']['output'];
+  contentThumbnailUrl: Scalars['String']['output'];
   createdAt: Scalars['String']['output'];
   description: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -231,13 +249,16 @@ export type AdminReportsPaginatedType = {
 
 export type AdminUserType = {
   __typename: 'AdminUserType';
+  accountState: Scalars['String']['output'];
   availableActions: Array<Scalars['String']['output']>;
   avatarUrl: Scalars['String']['output'];
   bio: Scalars['String']['output'];
   createdAt: Scalars['String']['output'];
+  deletedAt: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
   fullName: Scalars['String']['output'];
   id: Scalars['String']['output'];
+  isActive: Scalars['Boolean']['output'];
   isEmailVerified: Scalars['Boolean']['output'];
   lastLogin: Maybe<Scalars['String']['output']>;
   postsCount: Scalars['Int']['output'];
@@ -464,6 +485,7 @@ export type CircleFeedDataType = {
   __typename: 'CircleFeedDataType';
   activeAnchor: Maybe<AnchorType>;
   bannerImage: Maybe<Scalars['String']['output']>;
+  coverImage: Maybe<Scalars['String']['output']>;
   description: Scalars['String']['output'];
   isJoined: Scalars['Boolean']['output'];
   memberAvatars: Array<Scalars['String']['output']>;
@@ -473,6 +495,7 @@ export type CircleFeedDataType = {
   posts: Array<CirclePostType>;
   profileImage: Maybe<Scalars['String']['output']>;
   rules: Array<CircleRule>;
+  suggestionCardImage: Maybe<Scalars['String']['output']>;
 };
 
 export type CircleFeedResponse = {
@@ -619,6 +642,7 @@ export type CircleType = {
   name: Scalars['String']['output'];
   profileImage: Maybe<Scalars['String']['output']>;
   rules: Array<CircleRule>;
+  suggestionCardImage: Scalars['String']['output'];
   title: Scalars['String']['output'];
 };
 
@@ -1053,6 +1077,8 @@ export type Mutation = {
   adminCreateCircle: AdminCirclePayload;
   /** Deactivate a circle. */
   adminDeactivateCircle: AdminCirclePayload;
+  /** Soft-delete a circle. */
+  adminDeleteCircle: AdminCirclePayload;
   /** Edit a circle (admin only, 60-day cooldown enforced). */
   adminEditCircle: AdminCirclePayload;
   /** Edit a scheduled anchor's content. */
@@ -1069,6 +1095,8 @@ export type Mutation = {
   adminSendAnchorNow: AdminAnchorPayload;
   /** Update contact message status. */
   adminUpdateContactStatus: AdminContactPayload;
+  /** Authenticate user via Sign in with Apple. Requires a verified identityToken and nonce. */
+  appleOauth: GoogleOAuthPayload;
   /** Remove multiple bookmarks at once */
   bulkRemoveBookmarks: BulkRemovePayload;
   /** Cancel an active Stripe subscription. */
@@ -1104,6 +1132,10 @@ export type Mutation = {
   deleteUser: ModerationActionPayload;
   /** Directly upload media file (image or video) seamlessly */
   directUploadMedia: MediaUploadPayload;
+  /** Idempotently like a CirclePost. Repeated calls keep it liked. */
+  ensureCirclePostLiked: LikeCirclePostPayload;
+  /** Idempotently like a post. Repeated calls keep it liked. */
+  ensurePostLiked: LikePayload;
   /** Set permanent username after Google OAuth signup. Replaces temporary username (user_XXXXXXXX) with chosen username. Validates availability. */
   finalizeUsername: AuthPayload;
   /** Optimistically toggle a direct Edge relationship connecting to a User account globally. */
@@ -1213,7 +1245,10 @@ export type MutationAdminCancelScheduledAnchorArgs = {
 
 
 export type MutationAdminCreateAnchorArgs = {
+  anchorImage?: Scalars['String']['input'];
+  anchorThumbnail?: Scalars['String']['input'];
   anchorType: Scalars['String']['input'];
+  anchorVideo?: Scalars['String']['input'];
   circleId: Scalars['String']['input'];
   content?: Scalars['String']['input'];
   mediaUrl?: Scalars['String']['input'];
@@ -1229,6 +1264,7 @@ export type MutationAdminCreateAnchorArgs = {
 
 
 export type MutationAdminCreateCircleArgs = {
+  bannerImage?: Scalars['String']['input'];
   coverImage: Scalars['String']['input'];
   description: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -1241,7 +1277,13 @@ export type MutationAdminDeactivateCircleArgs = {
 };
 
 
+export type MutationAdminDeleteCircleArgs = {
+  circleId: Scalars['String']['input'];
+};
+
+
 export type MutationAdminEditCircleArgs = {
+  bannerImage?: InputMaybe<Scalars['String']['input']>;
   circleId: Scalars['String']['input'];
   coverImage?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1252,6 +1294,9 @@ export type MutationAdminEditCircleArgs = {
 
 export type MutationAdminEditScheduledAnchorArgs = {
   anchorId: Scalars['String']['input'];
+  anchorImage?: InputMaybe<Scalars['String']['input']>;
+  anchorThumbnail?: InputMaybe<Scalars['String']['input']>;
+  anchorVideo?: InputMaybe<Scalars['String']['input']>;
   content?: InputMaybe<Scalars['String']['input']>;
   mediaUrl?: InputMaybe<Scalars['String']['input']>;
   scriptureBook?: InputMaybe<Scalars['String']['input']>;
@@ -1298,6 +1343,14 @@ export type MutationAdminSendAnchorNowArgs = {
 export type MutationAdminUpdateContactStatusArgs = {
   contactId: Scalars['String']['input'];
   status: Scalars['String']['input'];
+};
+
+
+export type MutationAppleOauthArgs = {
+  identityToken: Scalars['String']['input'];
+  nonce?: InputMaybe<Scalars['String']['input']>;
+  rawNonce?: InputMaybe<Scalars['String']['input']>;
+  user?: InputMaybe<Scalars['JSON']['input']>;
 };
 
 
@@ -1444,6 +1497,16 @@ export type MutationDeleteUserArgs = {
 export type MutationDirectUploadMediaArgs = {
   file: Scalars['Upload']['input'];
   mediaType: MediaType;
+};
+
+
+export type MutationEnsureCirclePostLikedArgs = {
+  postId: Scalars['String']['input'];
+};
+
+
+export type MutationEnsurePostLikedArgs = {
+  postId: Scalars['String']['input'];
 };
 
 
@@ -2574,6 +2637,8 @@ export type UserSuggestion = {
 export type UserSummaryType = {
   __typename: 'UserSummaryType';
   active: Scalars['Int']['output'];
+  deleted: Scalars['Int']['output'];
+  inactive: Scalars['Int']['output'];
   suspended: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
   warned: Scalars['Int']['output'];

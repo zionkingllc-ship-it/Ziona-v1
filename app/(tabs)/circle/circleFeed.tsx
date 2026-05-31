@@ -12,19 +12,21 @@ import colors from "@/constants/colors";
 
 import { CircleFeedData } from "@/constants/circleTypes";
 
-import { useCircleFeedData, useJoinCircle, useLeaveCircle } from "@/hooks/useCircles";
+import { useCircleFeedData, useJoinCircle, useLeaveCircle, useActiveAnchor, useAnchorByDate } from "@/hooks/useCircles";
 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useStatusBarStyle } from "@/hooks/useStatusBarStyle";
 
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   TouchableOpacity,
@@ -167,6 +169,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
 }
 
 export default function CircleFeedScreen() {
+  useStatusBarStyle("light");
   const { id, source } =
     useLocalSearchParams<{ id: string; source?: string }>();
 
@@ -185,6 +188,17 @@ export default function CircleFeedScreen() {
   );
 
   const circle = useMemo(() => mapCircleFeedData(data), [data]);
+
+  console.log("📦 [circleFeed] circle data:", {
+    activeAnchor: circle.activeAnchor ? {
+      id: circle.activeAnchor.id,
+      type: circle.activeAnchor.type,
+      title: circle.activeAnchor.title,
+      backgroundColors: circle.activeAnchor.backgroundColors,
+      backgroundImage: circle.activeAnchor.backgroundImage ? "yes" : "no",
+    } : null,
+    pastAnchorsCount: circle.pastAnchors?.length ?? 0,
+  });
 
   const posts: CirclePost[] = circle.posts;
 
@@ -221,48 +235,29 @@ export default function CircleFeedScreen() {
     "Today", "Yesterday", "2 days ago", "3 days ago", "4 days ago", "5 days ago",
   ];
 
-  const [displayAnchor, setDisplayAnchor] = useState<any | undefined>(undefined);
-  const [anchorExpired, setAnchorExpired] = useState(false);
+  const filterDate = useMemo(() => {
+    if (anchorFilter === "Today") return null;
+    const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
+    return new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
+  }, [anchorFilter]);
 
-  useEffect(() => {
-    if (!circle) return;
-    let cancelled = false;
+  const { data: activeAnchorData } = useActiveAnchor(anchorFilter === "Today" ? circleId : "");
+  const { data: anchorByDateData } = useAnchorByDate(
+    circleId,
+    filterDate ?? "",
+  );
 
-    async function loadAnchor() {
-      setAnchorExpired(false);
-      if (anchorFilter === "Today") {
-        if (circle.activeAnchor) {
-          if (!cancelled) setDisplayAnchor(circle.activeAnchor);
-          if (circle.activeAnchor.expiresAt && new Date(circle.activeAnchor.expiresAt).getTime() <= Date.now()) {
-            if (!cancelled) setAnchorExpired(true);
-          }
-        }
-        return;
-      }
-
-      const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
-      const date = new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
-      try {
-        const { fetchAnchorByDate } = await import("@/services/graphQL/queries/circles");
-        const anchor = await fetchAnchorByDate(circleId, date);
-        if (!cancelled) {
-          if (anchor) {
-            setDisplayAnchor(anchor);
-            if (anchor.expiresAt && new Date(anchor.expiresAt).getTime() <= Date.now()) {
-              setAnchorExpired(true);
-            }
-          } else {
-            setDisplayAnchor(circle.activeAnchor);
-          }
-        }
-      } catch {
-        if (!cancelled) setDisplayAnchor(circle.activeAnchor);
-      }
+  const displayAnchor = useMemo(() => {
+    if (anchorFilter === "Today") {
+      return activeAnchorData ?? circle?.activeAnchor ?? undefined;
     }
+    return anchorByDateData ?? circle?.activeAnchor ?? undefined;
+  }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData]);
 
-    loadAnchor();
-    return () => { cancelled = true; };
-  }, [anchorFilter, circle, circleId]);
+  const anchorExpired = useMemo(() => {
+    if (!displayAnchor?.expiresAt) return false;
+    return new Date(displayAnchor.expiresAt).getTime() <= Date.now();
+  }, [displayAnchor]);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -321,9 +316,19 @@ export default function CircleFeedScreen() {
     });
   };
 
+  const anchorType = displayAnchor?.type;
+  const anchorMediaUrl = displayAnchor?.mediaUrl || "";
+
   const renderItem = ({ item }: { item: CirclePost }) => (
     <YStack>
-      <CircleFeedItem post={item} circleId={circleId} />
+      <CircleFeedItem
+        post={item}
+        circleId={circleId}
+        anchorText={displayAnchor?.anchorText || displayAnchor?.content || ""}
+        anchorType={anchorType}
+        anchorMediaUrl={anchorMediaUrl}
+        anchorExpired={anchorExpired}
+      />
       <YStack
         height={1}
         backgroundColor={colors.border}
@@ -390,7 +395,7 @@ export default function CircleFeedScreen() {
             <XStack justifyContent="space-between" alignItems="center" backgroundColor={anchorCardVisible ? "#fff" : "#E4C0F180"} padding={10} borderRadius={8}>
              <Pressable onPress={() => setAnchorCardVisible(!anchorCardVisible)}>
               <XStack alignItems="flex-start" gap={8}>
-                <Ionicons name="sparkles-outline" size={16} color={colors.black} />
+                <Image source={require("@/assets/images/AnchorPin.png")} style={{ width: 16, height: 16 }} />
                 <YStack>
                   <Text fontFamily="$body" fontWeight={'600'} fontSize={13} color={colors.text} marginBottom={4}>
                     Anchor
@@ -482,7 +487,7 @@ export default function CircleFeedScreen() {
               }}>
                 <XStack justifyContent="space-between" alignItems="center">
                   <XStack alignItems="flex-start" gap={8}>
-                    <Ionicons name="sparkles-outline" size={16} color={colors.black} />
+                    <Image source={require("@/assets/images/AnchorPin.png")} style={{ width: 16, height: 16 }} />
                     <YStack>
                       <Text fontFamily="$body" fontWeight={'600'} fontSize={13} color={colors.text} marginBottom={4}>
                         Anchor

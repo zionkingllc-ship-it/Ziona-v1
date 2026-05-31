@@ -65,8 +65,8 @@ export default function CircleCommentComposer({
       if (circleId) {
         result = await createCirclePost(circleId, text.trim(), image || undefined);
       } else if (onSend) {
-        // Otherwise use the callback
         onSend(text, image);
+        return;
       }
 
       if (result?.error?.code === "NOT_MEMBER") {
@@ -107,6 +107,7 @@ export default function CircleCommentComposer({
       }, 1500);
     } catch (error) {
       console.error("Failed to create post:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
       setPosting(false);
     }

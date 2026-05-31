@@ -2,11 +2,23 @@ import { GET_USER_POSTS } from "@/hooks/useUserPost";
 import { queryClient } from "@/lib/queryClient";
 import { authApi } from "@/services/api/authApi";
 import { clearAuthTokens, setAuthTokens } from "@/services/api/client";
-import { graphqlRequest, refreshWithRetry } from "@/services/graphQL/graphqlClient";
+import { refreshWithRetry } from "@/services/auth/refresh";
+import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { AuthState, AuthTokens, User } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+
+function clearAuthQueries() {
+  queryClient.removeQueries({ queryKey: ["userProfile"] });
+  queryClient.removeQueries({ queryKey: ["userPosts"] });
+  queryClient.removeQueries({ queryKey: ["likedPosts"] });
+  queryClient.removeQueries({ queryKey: ["userSavedPosts"] });
+  queryClient.removeQueries({ queryKey: ["savedPosts"] });
+  queryClient.removeQueries({ queryKey: ["bookmarkFolders"] });
+  queryClient.removeQueries({ queryKey: ["notifications"] });
+  // forYouFeed, followingFeed, discoverFeed — preserved
+}
 
 type AuthStore = AuthState & {
   isBootstrapping: boolean;
@@ -77,7 +89,7 @@ export const useAuthStore = create<AuthStore>()(
         });
 
         await AsyncStorage.removeItem("auth-storage");
-        queryClient.clear();
+        clearAuthQueries();
       },
 
       logout: async () => {
@@ -94,7 +106,7 @@ export const useAuthStore = create<AuthStore>()(
           _hasHydrated: false,
           _forceLogout: logoutTime,
         });
-        queryClient.clear();
+        clearAuthQueries();
 
         // Try signOut but don't block - it's ok if it fails
         try {
@@ -245,7 +257,7 @@ export const useAuthStore = create<AuthStore>()(
           state.mode = "unauthenticated";
           state._forceLogout = undefined;
           clearAuthTokens();
-          queryClient.clear();
+          clearAuthQueries();
           return;
         }
 

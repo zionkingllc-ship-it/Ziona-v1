@@ -9,14 +9,17 @@ import FollowUserRow from "@/components/follow/UserRow";
 import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
+import type { UserSuggestion } from "@/hooks/useFeed";
 
 interface FollowSuggestionsProps {
   onDone: () => void;
+  suggestions?: UserSuggestion[];
 }
 
-export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
+export default function FollowSuggestions({ onDone, suggestions: preloaded }: FollowSuggestionsProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: creators, isLoading } = useSuggestedCreators();
+  const suggestions = preloaded ?? creators;
 
   if (!isAuthenticated) {
     return (
@@ -38,28 +41,30 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
     );
   }
 
-  if (!creators || creators.length === 0) {
+  if (!suggestions || suggestions.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
-        <View style={styles.content}>
-          <CenteredMessage
-            fontFamily={"$body"}
-            fontWeight={"400"}
-            text="No suggestions right now"
-            subtitle="Check back later for new creators to follow."
-          />
-        </View>
-        <View style={styles.footer}>
-          <SimpleButtonWithStyle
-            disabled={true}
-            text="Done"
-            style={{ alignSelf: "center", paddingHorizontal: 24 }}
-            color={colors.primary}
-            textColor={colors.white}
-            textWeight={"400"}
-            borderRadius={8}
-            onPress={onDone}
-          />
+        <View style={styles.sheet}>
+          <View style={{ flex: 1, justifyContent: "center" }}>
+            <CenteredMessage
+              fontFamily={"$body"}
+              fontWeight={"400"}
+              text="No suggestions right now"
+              subtitle="Check back later for new creators to follow."
+            />
+          </View>
+          <View style={styles.footer}>
+            <SimpleButtonWithStyle
+              disabled={true}
+              text="Done"
+              style={{ alignSelf: "center", paddingHorizontal: 24 }}
+              color={colors.primary}
+              textColor={colors.white}
+              textWeight={"400"}
+              borderRadius={8}
+              onPress={onDone}
+            />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -67,9 +72,16 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
-      <View style={styles.content}>
+      <View style={styles.sheet}>
+        <Text
+          fontFamily={"$body"}
+          fontWeight={"400"}
+          style={styles.header}
+        >
+          Suggested for you
+        </Text>
         <FlatList
-          data={creators ?? []}
+          data={suggestions ?? []}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <FollowUserRow
@@ -79,30 +91,22 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
               bio={item.bio}
             />
           )}
+          style={{ flex: 1 }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <Text
-              fontFamily={"$body"}
-              fontWeight={"400"}
-              style={styles.header}
-            >
-              Suggested for you
-            </Text>
-          }
         />
-      </View>
-      <View style={styles.footer}>
-        <SimpleButtonWithStyle
-        disabled={false}
-          text="Done"
-          style={{ alignSelf: "center", paddingHorizontal: 24 }}
-          color={colors.primary}
-          textColor={colors.white}
-          textWeight={"400"}
-          borderRadius={8}
-          onPress={onDone}
-        />
+        <View style={styles.footer}>
+          <SimpleButtonWithStyle
+          disabled={false}
+            text="Done"
+            style={{ alignSelf: "center", paddingHorizontal: 24 }}
+            color={colors.primary}
+            textColor={colors.white}
+            textWeight={"400"}
+            borderRadius={8}
+            onPress={onDone}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -111,10 +115,15 @@ export default function FollowSuggestions({ onDone }: FollowSuggestionsProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
-  content: {
+  sheet: {
     flex: 1,
+    marginHorizontal: 12,
+    marginTop: 105,
+    marginBottom: 12,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    overflow: "hidden",
   },
   header: {
     marginLeft: 16,
@@ -129,6 +138,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
 });

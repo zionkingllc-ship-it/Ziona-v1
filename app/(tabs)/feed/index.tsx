@@ -25,12 +25,14 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
+  StyleSheet,
   Text,
   ViewToken,
 } from "react-native";
 import { View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
+import { usePostActionsStore } from "@/store/usePostActionStore";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -42,6 +44,8 @@ export default function Feed() {
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
+  const followedUsers = usePostActionsStore((s) => s.followedUsers);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"warning" | "failed">("warning");
   const [modalTitle, setModalTitle] = useState("");
@@ -142,6 +146,12 @@ export default function Feed() {
     return uniquePosts;
   }, [pages]);
 
+  const suggestions = useMemo(() => {
+    if (feedType !== "following") return undefined;
+    const firstPage = (followingQuery.data as InfiniteData<{ emptyState?: { suggestions?: any[] } } | undefined> | undefined)?.pages?.[0];
+    return firstPage?.emptyState?.suggestions;
+  }, [followingQuery.data, feedType]);
+
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 80,
     minimumViewTime: 200,
@@ -198,6 +208,9 @@ export default function Feed() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View flex={1}>
+        {feedType === "following" && data.length === 0 && (
+          <View style={StyleSheet.absoluteFill} backgroundColor="rgba(0,0,0,0.2)" pointerEvents="none" />
+        )}
         <View width="100%">
           <FeedHeader
             feedType={feedType}
@@ -221,7 +234,16 @@ export default function Feed() {
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : feedType === "following" && data.length === 0 ? (
-            <FollowSuggestions onDone={() => setFeedType("forYou")} />
+            <FollowSuggestions
+              onDone={() => {
+                if (Object.keys(followedUsers).length >= 1) {
+                  setFeedType("following");
+                } else {
+                  setFeedType("forYou");
+                }
+              }}
+              suggestions={suggestions}
+            />
           ) : data.length === 0 ? (
             <View flex={1} justifyContent="center" alignItems="center">
               <Text style={{ color: colors.text }}>No posts yet</Text>

@@ -56,9 +56,20 @@ type CirclePost = {
 type Props = {
   post: CirclePost;
   circleId?: string;
+  anchorText?: string;
+  anchorType?: string;
+  anchorMediaUrl?: string;
+  anchorExpired?: boolean;
 };
 
-const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
+const CircleFeedItem = memo(function CircleFeedItem({
+  post,
+  circleId,
+  anchorText,
+  anchorType,
+  anchorMediaUrl,
+  anchorExpired,
+}: Props) {
   const router = useRouter();
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
@@ -85,6 +96,13 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
     handleToggleLike();
   };
 
+  const resolved = anchorRef || (anchorText ? {
+    type: (anchorType as "text" | "image" | "video") || "text",
+    title: "",
+    content: anchorText,
+    mediaUrl: anchorMediaUrl || "",
+  } : null);
+
   const handlePostPress = () => {
     router.push({
       pathname: "/(tabs)/circle/post/[postId]",
@@ -99,11 +117,11 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
         postLiked: isLiked ? "1" : "0",
         postComments: String(post.comments),
         postCreatedAt: post.createdAt,
-        ...(anchorRef ? {
-          anchorType: anchorRef.type,
-          anchorTitle: anchorRef.title,
-          anchorContent: anchorRef.content || "",
-          anchorMediaUrl: anchorRef.mediaUrl || "",
+        ...(resolved ? {
+          anchorType: resolved.type,
+          anchorTitle: resolved.title,
+          anchorContent: resolved.content || "",
+          anchorMediaUrl: resolved.mediaUrl || "",
         } : {}),
       },
     });
@@ -156,23 +174,34 @@ const CircleFeedItem = memo(function CircleFeedItem({ post, circleId }: Props) {
           )}
 
           {/* ANCHOR QUOTE */}
-          {anchorRef && (<>
-              {anchorRef.type === "image" && anchorRef.mediaUrl ? (
-                <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                  <Image source={{ uri: anchorRef.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
-                </View>
-              ) : anchorRef.type === "video" ? (
-                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
-                  <Ionicons name="videocam" size={24} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
-                </View>
-              ) : (
-                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
-                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                    {anchorRef.content || anchorRef.title || ""}
-                  </Text>
-                </View>
-              )}
+          {resolved && (<>
+            {anchorExpired ? (
+              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F", opacity: 0.5 }}>
+                <Text fontFamily="$body" color="#999" fontSize={13} textAlign="center">
+                  Anchor either expired or has been removed
+                </Text>
+                {anchorType === "video" && (
+                  <View style={{ alignItems: "center", marginTop: 8 }}>
+                    <Ionicons name="videocam" size={24} color="#666" />
+                  </View>
+                )}
+              </View>
+            ) : resolved.type === "image" && resolved.mediaUrl ? (
+              <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
+              </View>
+            ) : resolved.type === "video" ? (
+              <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                <Ionicons name="videocam" size={24} color="#FFF" />
+                <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
+              </View>
+            ) : (
+              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                  {resolved.content || resolved.title || ""}
+                </Text>
+              </View>
+            )}
           </>)}
  
           {/* ACTIONS */}

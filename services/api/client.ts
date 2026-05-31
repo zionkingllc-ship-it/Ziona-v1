@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
+import { restRefresh, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -10,11 +11,13 @@ export const setAuthTokens = (tokens: {
 }) => {
   accessToken = tokens.accessToken;
   refreshToken = tokens.refreshToken;
+  if (accessToken) setTokenExpiry(accessToken);
 };
 
 export const clearAuthTokens = () => {
   accessToken = null;
   refreshToken = null;
+  clearTokenExpiry();
 };
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "https://ziona-api-staging.onrender.com";
@@ -23,18 +26,6 @@ export const api = axios.create({
   baseURL: `${API_BASE}/api`,
   timeout: 60000,
 });
-
-/* HELPERS */
-
-function extractTokens(data: any) {
-  // Backend may wrap in { data: { accessToken, refreshToken } }
-  // or use snake_case: { access_token, refresh_token }
-  const inner = data?.data ?? data;
-  return {
-    accessToken: inner.accessToken ?? inner.access_token ?? null,
-    refreshToken: inner.refreshToken ?? inner.refresh_token ?? null,
-  };
-}
 
 /* REQUEST */
 
@@ -59,35 +50,24 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      try {
-        const response = await axios.post(
-          `${API_BASE}/api/auth/refresh`,
-          {
-            refresh_token: refreshToken,
-          }
-        );
+      const newAccessToken = await restRefresh(refreshToken);
 
-        const newTokens = extractTokens(response.data);
-
-        if (!newTokens.accessToken) {
-          throw new Error("No access token in refresh response");
-        }
+      if (newAccessToken) {
+        const store = useAuthStore.getState();
+        const newRefreshToken = store.tokens?.refreshToken ?? refreshToken;
 
         setAuthTokens({
-          accessToken: newTokens.accessToken,
-          refreshToken: newTokens.refreshToken,
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
         });
 
-        // Persist to Zustand store so it survives app relaunch
-        useAuthStore.getState().setTokens?.(newTokens as any);
-
-        originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         return api(originalRequest);
-      } catch {
-        clearAuthTokens();
-        useAuthStore.getState().clearSession?.();
       }
+
+      clearAuthTokens();
+      useAuthStore.getState().clearSession?.();
     }
 
     return Promise.reject(

@@ -88,13 +88,13 @@ export default function CircleFeedBanner({
           paddingTop: 18,
         }}
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between',  alignItems:"center"}}>
-       
-            <BackButton/> 
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: "center"}}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <BackButton/>
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.white }}>
               {circleName}
             </Text>
-       
+          </View>
 
           <TouchableOpacity
             onPress={onToggleJoin}

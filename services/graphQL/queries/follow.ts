@@ -24,17 +24,14 @@ export type FriendsListResponse = {
   avatarUrl?: string | null;
 }[];
 
-export type SuggestedCreatorsResponse = {
+export type SuggestedCreator = {
   id: string;
   username: string;
   avatarUrl?: string | null;
   bio?: string;
-  stats?: {
-    followersCount: number;
-    postsCount: number;
-    followingCount: number;
-  };
-}[];
+};
+
+export type SuggestedCreatorsResponse = SuggestedCreator[];
 
 export type SearchUsersResponse = {
   id: string;
@@ -139,11 +136,6 @@ export async function getSuggestedCreators(limit: number = 10): Promise<Suggeste
         username
         avatarUrl
         bio
-        stats {
-          followersCount
-          postsCount
-          followingCount
-        }
       }
     }
   `;
