@@ -48,9 +48,7 @@ export default function HelpScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading="Help" />
-      </XStack>
+      <Header heading="Help" />
 
       <YStack padding={16} flex={1}>
         <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray}>

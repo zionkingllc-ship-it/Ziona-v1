@@ -175,7 +175,7 @@ export default function ProfileScreen() {
       edges={["top", "left", "right"]}
     >
       {/* HEADER */}
-      <XStack padding={15}>
+      <XStack>
         <Header
           heading={`@${profile?.username || ""}`}
           imageAfter2={settingIcon}

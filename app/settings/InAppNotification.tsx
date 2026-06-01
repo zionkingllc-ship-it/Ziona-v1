@@ -43,9 +43,7 @@ export default function InAppNotificationScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading="In-app notification" />
-      </XStack>
+      <Header heading="In-app notification" />
 
       <YStack padding={16}>
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={12}>

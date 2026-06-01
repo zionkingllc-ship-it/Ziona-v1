@@ -20,7 +20,7 @@ export default function SearchHeader({
   placeholder = "Search",
 }: Props) {
   return (
-    <XStack alignItems="center" padding={10}>
+    <XStack alignItems="center" paddingVertical={10} paddingLeft={20} paddingRight={10}>
       {onBackPress && (
         <Pressable onPress={onBackPress}>
           <ChevronLeft size={24} color={colors.text} />

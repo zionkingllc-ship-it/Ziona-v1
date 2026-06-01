@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
+import { WebView } from "react-native-webview";
 
 type DocType = "community" | "privacy" | "use";
 
@@ -21,6 +22,10 @@ const fetchers: Record<DocType, () => Promise<LegalDocumentType | null>> = {
   privacy: fetchPrivacyPolicy,
   use: fetchTermsOfService,
 };
+
+function isUrl(str: string) {
+  return /^https?:\/\//i.test(str.trim());
+}
 
 export default function LegalDocumentScreen() {
   const { type } = useLocalSearchParams<{ type: string }>();
@@ -60,12 +65,11 @@ export default function LegalDocumentScreen() {
   }, [docType]);
 
   const title = labels[docType] || "Document";
+  const isPdfUrl = content ? isUrl(content) : false;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading={title} headerFontFamily="$body" headingWeight="500" />
-      </XStack>
+      <Header heading={title} headerFontFamily="$body" headingWeight="500" />
 
       {loading && (
         <YStack flex={1} justifyContent="center" alignItems="center">
@@ -81,7 +85,7 @@ export default function LegalDocumentScreen() {
         </YStack>
       )}
 
-      {content && !loading && (
+      {content && !loading && !isPdfUrl && (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           {lastUpdated && (
             <Text fontFamily="$body" fontSize={12} color={colors.gray} marginBottom={16}>
@@ -96,6 +100,19 @@ export default function LegalDocumentScreen() {
             {content}
           </Text>
         </ScrollView>
+      )}
+
+      {isPdfUrl && (
+        <WebView
+          source={{ uri: content! }}
+          style={{ flex: 1 }}
+          startInLoadingState
+          renderLoading={() => (
+            <YStack flex={1} justifyContent="center" alignItems="center">
+              <ActivityIndicator size="large" color={colors.primary} />
+            </YStack>
+          )}
+        />
       )}
     </SafeAreaView>
   );

@@ -17,6 +17,7 @@ type prop = {
   headingSize?: any;
   headingWeight?: any;
   headerFontFamily?: any;
+  onBackPress?: () => void;
 };
 
 export default function Header({
@@ -30,14 +31,14 @@ export default function Header({
   imageAfter2Press,
   headingWeight = "500",
   headerFontFamily = "$body",
+  onBackPress,
 }: prop) {
   return (
-    <XStack width={"100%"} justifyContent="space-between" alignItems="center">
+    <XStack width={"100%"} justifyContent="space-between" alignItems="center" paddingLeft={20}>
       <ChevronLeft
         size={24} 
-        marginTop={5}
         color={iconBeforeColor ? iconBeforeColor : colors.black}
-        onPress={() => router.back()}
+        onPress={onBackPress || (() => router.back())}
       />
       <Text
         fontFamily={headerFontFamily}

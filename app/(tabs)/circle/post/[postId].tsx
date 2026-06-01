@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Alert,
   View,
@@ -25,6 +25,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
 import { CircleCommentItem } from "@/components/circles/CircleCommentItem";
+import { MentionSuggestions } from "@/components/comments/MentionSuggestions";
+import type { MentionUser } from "@/components/comments/MentionSuggestions";
 
 const formatDate = (dateString?: string): string => {
   if (!dateString) return "";
@@ -42,6 +44,7 @@ export default function CirclePostDetailScreen() {
     userAvatar,
     postText,
     postImage,
+    postMediaUrl,
     postLikes,
     postLiked,
     postComments,
@@ -57,6 +60,7 @@ export default function CirclePostDetailScreen() {
     userAvatar?: string;
     postText?: string;
     postImage?: string;
+    postMediaUrl?: string;
     postLikes?: string;
     postLiked?: string;
     postComments?: string;
@@ -72,7 +76,32 @@ export default function CirclePostDetailScreen() {
   const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const currentUser = useAuthStore((state) => state.user);
+
+  const detectMention = useCallback((text: string) => {
+    const lastAtIndex = text.lastIndexOf("@");
+    if (lastAtIndex === -1) return null;
+    const textAfterAt = text.slice(lastAtIndex + 1);
+    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) return null;
+    return textAfterAt;
+  }, []);
+
+  const handleTextChange = useCallback((text: string) => {
+    setCommentText(text);
+    const mention = detectMention(text);
+    setMentionSearch(mention);
+  }, [detectMention]);
+
+  const handleSelectUser = useCallback((user: MentionUser) => {
+    const lastAtIndex = commentText.lastIndexOf("@");
+    if (lastAtIndex !== -1) {
+      const textBeforeMention = commentText.slice(0, lastAtIndex);
+      const newText = `${textBeforeMention}@${user.username} `;
+      setCommentText(newText);
+    }
+    setMentionSearch(null);
+  }, [commentText]);
 
   const { isLiked, likeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     postId || "",
@@ -140,10 +169,19 @@ export default function CirclePostDetailScreen() {
     }
   };
 
+  const handleAnchorMediaTap = () => {
+    if (anchorType === "video" && anchorMediaUrl) {
+      router.push({ pathname: "/CircleExtension/circleVideoViewer", params: { video: anchorMediaUrl } });
+    } else if (anchorType === "image" && anchorMediaUrl) {
+      router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: anchorMediaUrl } });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <XStack
-        paddingHorizontal="$3"
+        paddingLeft={20}
+        paddingRight="$3"
         paddingVertical="$2"
         justifyContent="space-between"
         alignItems="center"
@@ -189,38 +227,55 @@ export default function CirclePostDetailScreen() {
               </Text>
             )}
 
-            {postImage && (
-              <Image
-                source={{ uri: postImage }}
-                width="100%"
-                height={200}
-                borderRadius={12}
-                resizeMode="cover"
-              />
+            {postImage && !postMediaUrl && (
+              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: postImage } })}>
+                <Image
+                  source={{ uri: postImage }}
+                  width="100%"
+                  height={200}
+                  borderRadius={12}
+                  resizeMode="cover"
+                />
+              </Pressable>
+            )}
+
+            {postMediaUrl && (
+              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: postMediaUrl } })}>
+                <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="videocam" size={40} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={14}>Tap to view video</Text>
+                </View>
+              </Pressable>
             )}
 
             {anchorType && (
-              anchorType === "image" && anchorMediaUrl ? (
-                <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                  <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" />
-                </View>
-              ) : anchorType === "video" && anchorMediaUrl ? (
-                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
-                  <Ionicons name="videocam" size={24} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={12}>Reply to Anchor Video</Text>
-                </View>
-              ) : (
-                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
-                  {anchorTitle && (
-                    <Text fontFamily="$body" fontSize={11} color="rgba(255,255,255,0.6)" marginBottom={4}>
-                      From {anchorTitle}
+              (anchorContent || anchorTitle) ? (
+                <Pressable onPress={() => handleAnchorMediaTap()}>
+                  <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                    {anchorTitle && (
+                      <Text fontFamily="$body" fontSize={11} color="rgba(255,255,255,0.6)" marginBottom={4}>
+                        From {anchorTitle}
+                      </Text>
+                    )}
+                    <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                      {anchorContent || ""}
                     </Text>
-                  )}
-                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                    {anchorContent || ""}
-                  </Text>
-                </View>
-              )
+                  </View>
+                </Pressable>
+              ) : anchorType === "image" && anchorMediaUrl ? (
+                <Pressable onPress={() => handleAnchorMediaTap()}>
+                  <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                    <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" />
+                  </View>
+                </Pressable>
+              ) : anchorType === "video" && anchorMediaUrl ? (
+                <Pressable onPress={() => handleAnchorMediaTap()}>
+                  <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                    <Ionicons name="videocam" size={24} color="#FFF" />
+                    <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
+                  </View>
+                </Pressable>
+              ) : null
             )}
 
             <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
@@ -304,6 +359,12 @@ export default function CirclePostDetailScreen() {
               </TouchableOpacity>
             </XStack>
           )}
+          {mentionSearch !== null && (
+            <MentionSuggestions
+              searchText={mentionSearch}
+              onSelectUser={handleSelectUser}
+            />
+          )}
           <XStack
             paddingHorizontal="$2"
             paddingVertical="$2"
@@ -353,7 +414,7 @@ export default function CirclePostDetailScreen() {
               placeholder="Add a comment..."
               placeholderTextColor="#999"
               value={commentText}
-              onChangeText={setCommentText}
+              onChangeText={handleTextChange}
               style={styles.textInput}
               multiline
             />

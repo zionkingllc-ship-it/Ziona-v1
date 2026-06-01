@@ -82,7 +82,7 @@ export default function EditProfileScreen() {
         }
       >
         {/* Header */}
-        <XStack paddingLeft={15}>
+        <XStack paddingLeft={20}>
           <Header
             heading="Edit profile"
             headerFontFamily="$body"

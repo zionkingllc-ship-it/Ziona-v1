@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
 import { searchUsers } from "@/services/graphQL/queries/follow";
 
-interface MentionUser {
+export interface MentionUser {
   id: string;
   username: string;
   avatarUrl?: string | null;

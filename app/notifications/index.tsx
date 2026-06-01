@@ -1,6 +1,7 @@
 import { Image, Text, XStack, YStack, View } from "tamagui";
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,19 +10,42 @@ import AuthPrompt from "@/components/ui/AuthPrompt";
 import CloseButton from "@/components/ui/CloseButton";
 import { useAuthStore } from "@/store/useAuthStore";
 
-// const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
+const ANCHOR_PIN = require("@/assets/images/AnchorPin.png");
 
-function NotificationAvatar({ avatarUrl, size = 40 }: { avatarUrl?: string | null; size?: number }) {
+type NotifIcon = { icon: keyof typeof Ionicons.glyphMap; color: string } | { icon: "anchorPin"; color: string };
+const NOTIF_ICON_MAP: Record<string, NotifIcon> = {
+  like_post: { icon: "heart-outline", color: "#FF3B30" },
+  new_anchor: { icon: "anchorPin", color: "#6C2BD9" },
+  admin_announcement: { icon: "megaphone-outline", color: "#FF9500" },
+};
+
+function getNotifIcon(type: string): NotifIcon {
+  return NOTIF_ICON_MAP[type] ?? { icon: "notifications-outline" as const, color: "#8E8E93" };
+}
+
+function NotificationAvatar({ avatarUrl, type, size = 40 }: { avatarUrl?: string | null; type?: string; size?: number }) {
   const [erred, setErred] = useState(false);
   const hasValidUrl = !!avatarUrl && !erred;
 
+  if (!hasValidUrl) {
+    const entry = getNotifIcon(type ?? "");
+    if (entry.icon === "anchorPin") {
+      return (
+        <View width={size} height={size} borderRadius={size / 2} backgroundColor="#FFF" borderWidth={2} borderColor={entry.color} justifyContent="center" alignItems="center">
+          <Image source={ANCHOR_PIN} width={size * 0.55} height={size * 0.55} />
+        </View>
+      );
+    }
+    return (
+      <View width={size} height={size} borderRadius={size / 2} backgroundColor={entry.color} justifyContent="center" alignItems="center">
+        <Ionicons name={entry.icon} size={size * 0.55} color="#FFF" />
+      </View>
+    );
+  }
+
   return (
     <Image
-      source={
-        hasValidUrl
-          ? { uri: avatarUrl }
-          : require("@/assets/images/android-icon-foreground.png")
-      }
+      source={{ uri: avatarUrl }}
       width={size}
       height={size}
       borderRadius={size / 2}
@@ -98,9 +122,9 @@ export default function ActivityScreen() {
     ({ item }: { item: NotificationItem }) => {
       return (
         <Pressable onPress={() => handleNotificationPress(item)} style={{ opacity: item.isRead ? 0.6 : 1 }}>
-          <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
+          <XStack justifyContent="space-between" alignItems="center" paddingVertical={12}>
             <XStack gap="$3" flex={1}>
-              <NotificationAvatar avatarUrl={item.user?.avatarUrl} size={40} />
+              <NotificationAvatar avatarUrl={item.user?.avatarUrl} type={item.type} size={40} />
               <YStack flex={1}>
                 <Text fontWeight="600" fontSize={14} numberOfLines={1}>
                   {item.title}
@@ -198,7 +222,7 @@ export default function ActivityScreen() {
                 </XStack>
 
                 <XStack gap="$3" alignItems="center">
-                  <NotificationAvatar avatarUrl={selectedNotification.user?.avatarUrl} size={48} />
+                  <NotificationAvatar avatarUrl={selectedNotification.user?.avatarUrl} type={selectedNotification.type} size={48} />
                   <YStack flex={1}>
                     <Text fontWeight="600" fontSize={16} numberOfLines={1}>
                       {selectedNotification.user?.username || "Ziona"}

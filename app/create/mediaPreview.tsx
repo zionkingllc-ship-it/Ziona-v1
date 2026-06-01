@@ -143,10 +143,10 @@ export default function CreateMediaPreviewScreen() {
       flex={1}
       backgroundColor={colors.white}
       paddingTop={hp(5)}
-      paddingHorizontal={wp(6)}
     >
       <Header heading="Preview" />
 
+      <YStack paddingHorizontal={wp(6)} flex={1}>
       <View
         style={{
           width: "100%",
@@ -258,6 +258,7 @@ export default function CreateMediaPreviewScreen() {
           onComplete={handleProgressComplete}
         />
       )}
+      </YStack>
     </YStack>
   );
 }

@@ -10,9 +10,7 @@ export default function PrivacyScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading="Account privacy" />
-      </XStack>
+      <Header heading="Account privacy" />
 
       <YStack padding={16} gap="$4">
         <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>

@@ -1,5 +1,6 @@
 import Header from "@/components/layout/header";
 import { SimpleButton } from "@/components/ui/centerTextButton";
+import ErrorModal from "@/components/ui/modals/ErrorModal";
 import colors from "@/constants/colors";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,8 @@ export default function DeleteReasonScreen() {
   const deleteAccount = useDeleteAccount();
   const [selected, setSelected] = useState<Reason>(null);
   const [otherText, setOtherText] = useState("");
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const isValid =
     selected &&
@@ -32,7 +35,13 @@ export default function DeleteReasonScreen() {
         reason: selected!,
         detail: selected === "other" ? otherText.trim() : undefined,
       },
-      { onSuccess: () => router.replace("/(auth)") },
+      {
+        onSuccess: () => router.replace("/(auth)"),
+        onError: (error: any) => {
+          setErrorMessage(error?.message || "Failed to delete account. Please try again.");
+          setErrorVisible(true);
+        },
+      },
     );
   };
 
@@ -40,13 +49,11 @@ export default function DeleteReasonScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       
       {/* HEADER */}
-      <XStack padding={10}>
-        <Header
+      <Header
           heading=""
           headerFontFamily="$body"
           headingWeight="500"
         />
-      </XStack>
 
       <YStack flex={1} paddingHorizontal={16}>
         {/* TITLE */}
@@ -151,6 +158,12 @@ export default function DeleteReasonScreen() {
           textColor={colors.white}
         />
       </YStack>
+
+      <ErrorModal
+        visible={errorVisible}
+        onClose={() => setErrorVisible(false)}
+        message={errorMessage}
+      />
     </SafeAreaView>
   );
 }

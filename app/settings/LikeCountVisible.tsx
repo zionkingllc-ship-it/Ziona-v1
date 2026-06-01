@@ -29,13 +29,11 @@ export default function LikeCountScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header
+      <Header
           heading="Like count"
           headerFontFamily="$body"
           headingWeight="500"
         />
-      </XStack>
 
       <YStack paddingHorizontal={16} marginTop={10}>
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>

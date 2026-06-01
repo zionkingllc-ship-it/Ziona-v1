@@ -83,9 +83,7 @@ export default function Email() {
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack paddingLeft={wp(5)}>
-        <Header />
-      </XStack>
+      <Header />
 
       <YStack
         flex={1}

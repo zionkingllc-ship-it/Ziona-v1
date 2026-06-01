@@ -18,6 +18,7 @@ export type CirclePost = {
   createdAt: string;
   text?: string;
   image?: string;
+  mediaUrl?: string;
   likes: number;
   comments: number;
   likedImage?: number;

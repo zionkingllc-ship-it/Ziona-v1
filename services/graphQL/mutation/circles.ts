@@ -128,12 +128,14 @@ export async function createCirclePost(
   image?: string,
   mediaUrl?: string
 ) {
+  console.log("[createCirclePost] Sending mutation:", { circleId, text: text ? text.substring(0, 50) : undefined, image: image ? image.substring(0, 50) : undefined, mediaUrl: mediaUrl ? mediaUrl.substring(0, 50) : undefined });
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,
     text,
     image,
     mediaUrl,
   });
+  console.log("[createCirclePost] Raw response:", JSON.stringify(res));
   return res?.createCirclePost;
 }
 

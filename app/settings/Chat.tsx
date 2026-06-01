@@ -15,9 +15,7 @@ export default function ChatScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       
       {/* HEADER */}
-      <XStack padding={10}>
-        <Header heading="Chat with us" />
-      </XStack>
+      <Header heading="Chat with us" />
 
       <YStack flex={1} padding={16} gap="$3">
         {/* USER MESSAGE */}

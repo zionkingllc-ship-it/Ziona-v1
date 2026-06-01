@@ -15,7 +15,7 @@ import { normalizePost } from "@/utils/feed/normalizePost";
 import { useResponsive } from "@/hooks/useResponsive";
 
 const { width } = Dimensions.get("window");
-const ITEM_SIZE = (width - 12) / 3;
+const ITEM_SIZE = (width - 26) / 3;
 
 export default function BookmarksScreen() {
   const router = useRouter();
@@ -109,9 +109,7 @@ export default function BookmarksScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-        <XStack padding={10}>
-          <Header heading="Bookmarks" />
-        </XStack>
+        <Header heading="Bookmarks" />
         <AuthPrompt
           message="Login to access this feature"
           buttonText="Login"
@@ -124,9 +122,7 @@ export default function BookmarksScreen() {
   if (foldersLoading && !folders) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-        <XStack padding={10}>
-          <Header heading="Bookmarks" />
-        </XStack>
+        <Header heading="Bookmarks" />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading...</Text>
         </YStack>
@@ -136,8 +132,8 @@ export default function BookmarksScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10} justifyContent="space-between" alignItems="center">
-        <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} />
+      <XStack justifyContent="space-between" alignItems="center">
+        <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} onBackPress={selectedFolderId ? handleBack : undefined} />
         {selectedFolderId && (
           <Pressable onPress={handleBack}>
             <Text fontFamily="$body" fontWeight="500" color={colors.primary} fontSize={14}>
@@ -149,10 +145,6 @@ export default function BookmarksScreen() {
 
       {selectedFolderId ? (
         <>
-          <Text fontFamily="$body" fontWeight="600" fontSize={14} paddingHorizontal={wp(6)} marginBottom={hp(1)}>
-            {selectedFolder?.name || "Folder"}
-          </Text>
-
           {postsLoading && folderPosts.length === 0 ? (
             <YStack flex={1} justifyContent="center" alignItems="center">
               <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading posts...</Text>
@@ -171,7 +163,7 @@ export default function BookmarksScreen() {
               data={folderPosts}
               numColumns={3}
               keyExtractor={(item, index) => `${item.id}-${index}`}
-              contentContainerStyle={{ paddingHorizontal: 2, paddingBottom: 20 }}
+              contentContainerStyle={{ paddingLeft: 4, paddingRight: 18, paddingTop: 8, paddingBottom: 20 }}
               columnWrapperStyle={{ gap: 2 }}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
               onEndReached={() => {

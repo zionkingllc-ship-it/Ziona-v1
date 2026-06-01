@@ -128,9 +128,7 @@ export default function CreateBiblePostScreen() {
     <YStack
       style={{ flex: 1, backgroundColor: colors.white, paddingTop: hp(5) }}
     >
-      <XStack marginLeft={wp(4)}>
-        <Header heading="Create Post" />
-      </XStack>
+      <Header heading="Create Post" />
 
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} paddingHorizontal={wp(6)} paddingTop={hp(2)}>

@@ -145,7 +145,7 @@ export default function GuestProfileScreen() {
       style={{ flex: 1, backgroundColor: colors.white }}
       edges={["top", "left", "right"]}
     >
-      <XStack padding={15}>
+      <XStack>
         <Header heading={`@${profile?.username || ""}`} />
       </XStack>
 

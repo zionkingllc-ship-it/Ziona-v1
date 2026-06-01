@@ -15,7 +15,7 @@ import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { Linking, Platform, useColorScheme } from "react-native";
+import { Linking, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TamaguiProvider } from "tamagui";
@@ -31,7 +31,6 @@ function SyncHooks() {
 export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
 
-  const scheme = useColorScheme() ?? "light";
   const loadCategories = useCategoryStore((s) => s.loadCategories);
 
   useEffect(() => {
@@ -104,7 +103,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ScreenDimensionsProvider>
-        <TamaguiProvider config={config} defaultTheme={scheme} disableInjectCSS>
+        <TamaguiProvider config={config} defaultTheme="light" disableInjectCSS>
           <StatusBar style="dark" />
 
           <NotificationProvider>

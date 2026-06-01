@@ -42,33 +42,35 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(false);
   };
 
-  const createFolder = (name: string, cover?: string) => {
+  const createFolder = (name: string) => {
     createFolderMutation.mutate(
-      { name, cover: cover || undefined },
+      { name },
       {
         onSuccess: (newFolder) => {
+          const folderId = newFolder?.folder?.id;
+          if (!folderId) return;
           const nextFolders = [
             ...localFolders,
             {
-              id: newFolder.id,
+              id: folderId,
               name,
-              cover: cover || "",
+              cover: "",
               createdAt: new Date().toISOString(),
             },
           ];
           setFolders(nextFolders);
 
         // Save the post to the new folder
-        toggleLocalBookmark(postId, newFolder.id);
+        toggleLocalBookmark(postId, folderId);
         toggleSaveMutation.mutate(
           {
             postId,
             currentSaved: isSaved,
-            folderId: newFolder.id,
+            folderId,
           },
           {
             onError: () => {
-              toggleLocalBookmark(postId, newFolder.id);
+              toggleLocalBookmark(postId, folderId);
             },
           },
         );

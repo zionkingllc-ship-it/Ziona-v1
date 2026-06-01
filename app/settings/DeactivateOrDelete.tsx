@@ -13,13 +13,11 @@ export default function DeactivateOrDeleteScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       
       {/* HEADER */}
-      <XStack padding={10}>
-        <Header
+      <Header
           heading="Delete or deactivate?"
           headerFontFamily="$body"
           headingWeight="500"
         />
-      </XStack>
 
       <YStack paddingHorizontal={16} marginTop={20} gap="$6">
 

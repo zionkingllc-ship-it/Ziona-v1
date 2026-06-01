@@ -84,7 +84,8 @@ export default function CircleFeedBanner({
           bottom: 0,
           opacity: compactHeaderOpacity,
           justifyContent: 'center',
-          paddingHorizontal: 16,
+          paddingLeft: 20,
+          paddingRight: 16,
           paddingTop: 18,
         }}
       >

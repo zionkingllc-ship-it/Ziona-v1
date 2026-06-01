@@ -60,12 +60,6 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
   const gradientColors = anchor.backgroundColors || ["#6C2BD9", "#9B59B6"];
   const thumbnail = anchor.anchorThumbnail || anchor.anchorImage || "";
 
-  const textBgSource = () => {
-    if (imageError) return FALLBACK_IMAGE;
-    if (anchor.backgroundImage) return { uri: anchor.backgroundImage };
-    return FALLBACK_IMAGE;
-  };
-
   return (
     <Pressable onPress={handlePress} style={styles.card}>
       {anchorType === "image" || anchorType === "video" ? (
@@ -86,11 +80,18 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
       ) : (
         <View style={styles.textPreview}>
           <Image
-            source={textBgSource()}
+            source={FALLBACK_IMAGE}
             style={StyleSheet.absoluteFill}
             resizeMode="cover"
-            onError={() => setImageError(true)}
           />
+          {!imageError && anchor.backgroundImage && (
+            <Image
+              source={{ uri: anchor.backgroundImage }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+              onError={() => setImageError(true)}
+            />
+          )}
           <View style={StyleSheet.absoluteFill}>
             <LinearGradient colors={gradientColors as [string, string]} style={StyleSheet.absoluteFill} opacity={0.4} />
           </View>

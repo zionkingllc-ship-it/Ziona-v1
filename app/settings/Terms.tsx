@@ -11,9 +11,7 @@ export default function TermsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       {/* HEADER */}
-      <XStack padding={10}>
-        <Header heading="Terms and policies" />
-      </XStack>
+      <Header heading="Terms and policies" />
 
       <YStack padding={16} gap="$4">
         <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>

@@ -13,9 +13,7 @@ export default function ChatInputScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading="Chat with us" />
-      </XStack>
+      <Header heading="Chat with us" />
 
       <View padding={16} flex={1}>
         <View

@@ -1,41 +1,49 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, XStack, YStack, View, Image, Avatar } from "tamagui";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, XStack, YStack, View, Avatar, Image } from "tamagui";
+import { useState } from "react";
 
 export default function AboutScreen() {
-  const user = useAuthStore((s) => s.user);
+  const userId = useAuthStore((s) => s.user?.id);
+  const { data: profile } = useUserProfile(userId);
+  const [imageError, setImageError] = useState(false);
+
+  const avatarUrl = profile?.avatarUrl && !imageError ? profile.avatarUrl : null;
+  const displayName = profile?.fullName || profile?.username || "Ziona User";
+  const displayUsername = profile?.username || "username";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      {/* HEADER */}
-      <XStack padding={10}>
-        <Header heading="About your account" />
-      </XStack>
+      <Header heading="About your account" />
 
       <YStack padding={16} gap="$4">
-        {/* PROFILE INFO */}
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>
           <XStack alignItems="center" gap="$3">
             <Avatar circular size={60}>
-              <Avatar.Image 
-                source={user?.avatarUrl ? { uri: user.avatarUrl } : require("@/assets/images/emptyDP.png")} 
-              />
-              <Avatar.Fallback backgroundColor={colors.black} />
+              {avatarUrl ? (
+                <Avatar.Image source={{ uri: avatarUrl }} onError={() => setImageError(true)} />
+              ) : (
+                <Avatar.Fallback backgroundColor={colors.black} justifyContent="center" alignItems="center">
+                  <Text color="white" fontSize={20} fontWeight="600">
+                    {displayName.charAt(0).toUpperCase()}
+                  </Text>
+                </Avatar.Fallback>
+              )}
             </Avatar>
             <YStack>
               <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
-                {user?.fullName || "Ziona User"}
+                {displayName}
               </Text>
               <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>
-                @{user?.username || "username"}
+                @{displayUsername}
               </Text>
             </YStack>
           </XStack>
         </View>
 
-        {/* ACCOUNT DETAILS */}
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>
           <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black} marginBottom={12}>
             Account Details
@@ -54,7 +62,6 @@ export default function AboutScreen() {
           </YStack>
         </View>
 
-        {/* APP INFO */}
         <View backgroundColor={colors.sectionBackground} borderRadius={12} padding={16}>
           <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black} marginBottom={12}>
             About Ziona

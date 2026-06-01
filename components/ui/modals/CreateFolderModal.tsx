@@ -16,7 +16,7 @@ interface Props {
   visible: boolean;
   post: FeedPost;
   onClose: () => void;
-  onSave: (name: string, cover?: string) => void;
+  onSave: (name: string) => void;
 }
 
 export default function CreateFolderModal({
@@ -75,7 +75,7 @@ export default function CreateFolderModal({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave(name.trim(), thumbnailUri || undefined);
+    onSave(name.trim());
     setName("");
   };
 

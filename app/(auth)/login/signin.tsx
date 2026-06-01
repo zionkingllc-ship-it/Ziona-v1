@@ -108,7 +108,7 @@ export default function SignIn() {
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack padding={15}><Header /></XStack>
+      <Header />
       
 
       <YStack

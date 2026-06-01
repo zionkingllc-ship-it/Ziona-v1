@@ -1,11 +1,9 @@
-import AnchorFooter from "@/components/circles/AnchorFooter";
-import CountdownTimer from "@/components/ui/CountdownTimer";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef } from "react";
-import { AppState, Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import { AppState, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text } from "tamagui";
 
 import themeColors from "@/constants/colors";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -15,29 +13,11 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 
-export default function AnchorVideoView() {
+export default function CircleVideoViewer() {
   const router = useRouter();
-  const {
-    video,
-    colors: colorsParam,
-      expiresAt,
-      circleId,
-      id,
-      expired,
-    } = useLocalSearchParams<{
-      video?: string;
-      colors?: string;
-      expiresAt?: string;
-      circleId?: string;
-      id?: string;
-      expired?: string;
-    }>();
+  const { video } = useLocalSearchParams<{ video?: string }>();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const hasNavigatedRef = useRef(false);
-
-  const bottomPadding =
-    Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
   const progress = useSharedValue(0);
 
@@ -93,7 +73,6 @@ export default function AnchorVideoView() {
     }
   }, [player]);
 
-  // Pause video when screen loses focus or app goes to background
   useFocusEffect(
     useCallback(() => {
       return () => {
@@ -119,41 +98,6 @@ export default function AnchorVideoView() {
     };
   }, [player]);
 
-  useEffect(() => {
-    if (!player || hasNavigatedRef.current) return;
-
-    const handleVideoEnd = () => {
-      if (hasNavigatedRef.current) return;
-      hasNavigatedRef.current = true;
-      setTimeout(() => {
-        router.push({
-          pathname: "/CircleExtension/anchorActionView",
-          params: {
-            colors: colorsParam || "",
-            expiresAt: expiresAt || "",
-            anchorType: "video",
-            ...(circleId ? { circleId } : {}),
-            ...(id ? { id } : {}),
-            source: "suggestion",
-          },
-        });
-      }, 2000);
-    };
-
-    const checkEnd = () => {
-      try {
-        const duration = player.duration;
-        const currentTime = player.currentTime;
-        if (duration > 0 && currentTime >= duration - 0.5) {
-          handleVideoEnd();
-        }
-      } catch {}
-    };
-
-    const remove = player.addListener("timeUpdate", checkEnd as any);
-    return () => remove.remove();
-  }, [player, colorsParam, expiresAt, router]);
-
   return (
     <View style={[styles.container, { backgroundColor: "#000" }]}>
       <View style={styles.progressBar}>
@@ -171,9 +115,10 @@ export default function AnchorVideoView() {
         </GestureDetector>
       </View>
 
-      <View style={[styles.header, { marginTop: 10 }]}>
-        <View style={{ width: 60 }} />
-        <CountdownTimer expiresAt={expiresAt || ""} style={styles.timerText} />
+      <View style={[styles.header, { marginTop: insets.top + 10 }]}>
+        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#FFF" />
+        </Pressable>
       </View>
 
       <View style={[styles.videoContainer, { width, height: height * 0.6 }]}>
@@ -186,12 +131,10 @@ export default function AnchorVideoView() {
           />
         ) : (
           <View style={styles.noVideo}>
-            <Text style={styles.noVideoText}>No video available</Text>
+            <Ionicons name="videocam-outline" size={48} color="#666" />
           </View>
         )}
       </View>
-
-      <AnchorFooter anchorId={id} expired={expired === "1"} source="suggestion" />
     </View>
   );
 }
@@ -217,12 +160,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  timerText: { color: "#FFF", fontSize: 16 },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   videoContainer: { justifyContent: "center", alignItems: "center" },
   noVideo: {
     width: "100%",
@@ -231,5 +181,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  noVideoText: { color: "#FFF", fontSize: 16 },
 });

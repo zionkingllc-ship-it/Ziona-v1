@@ -157,8 +157,8 @@ export default function SettingsScreen() {
         <SettingsSection title="Terms and policies">
           <SettingsRow
             icon={<Lock size={18} color={colors.secondaryGray} />}
-            label="Account privacy"
-            onPress={() => router.push("/settings/Privacy")}
+            label="Privacy policy"
+            onPress={() => router.push("/settings/terms/privacy")}
           />
           <SettingsRow
             icon={<FileText size={18} color={colors.secondaryGray} />}

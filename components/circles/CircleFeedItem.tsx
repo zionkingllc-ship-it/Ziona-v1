@@ -5,6 +5,7 @@ import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useReportContent } from "@/hooks/useReportContent";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
+import { useEffect } from "react";
 import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
@@ -40,6 +41,7 @@ type CirclePost = {
   id: string;
   text?: string;
   image?: string;
+  mediaUrl?: string;
   createdAt: string;
   likes: number;
   comments: number;
@@ -56,19 +58,11 @@ type CirclePost = {
 type Props = {
   post: CirclePost;
   circleId?: string;
-  anchorText?: string;
-  anchorType?: string;
-  anchorMediaUrl?: string;
-  anchorExpired?: boolean;
 };
 
 const CircleFeedItem = memo(function CircleFeedItem({
   post,
   circleId,
-  anchorText,
-  anchorType,
-  anchorMediaUrl,
-  anchorExpired,
 }: Props) {
   const router = useRouter();
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -89,19 +83,17 @@ const CircleFeedItem = memo(function CircleFeedItem({
     post.likeCount ?? post.likes,
   );
 
-  useState(() => { getAnchorRef(post.id).then(setAnchorRef); });
+  useEffect(() => {
+    console.log("[CircleFeedItem] post data:", { id: post.id, text: post.text?.substring(0, 30), image: post.image?.substring(0, 30), mediaUrl: post.mediaUrl?.substring(0, 30) });
+    getAnchorRef(post.id).then(setAnchorRef);
+  }, [post.id]);
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
     handleToggleLike();
   };
 
-  const resolved = anchorRef || (anchorText ? {
-    type: (anchorType as "text" | "image" | "video") || "text",
-    title: "",
-    content: anchorText,
-    mediaUrl: anchorMediaUrl || "",
-  } : null);
+  const resolved = anchorRef;
 
   const handlePostPress = () => {
     router.push({
@@ -113,6 +105,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
         userAvatar: post.user.avatar,
         postText: post.text || "",
         postImage: post.image || "",
+        postMediaUrl: post.mediaUrl || "",
         postLikes: String(localLikeCount),
         postLiked: isLiked ? "1" : "0",
         postComments: String(post.comments),
@@ -125,6 +118,15 @@ const CircleFeedItem = memo(function CircleFeedItem({
         } : {}),
       },
     });
+  };
+
+  const handleAnchorMediaTap = () => {
+    if (!resolved) return;
+    if (resolved.type === "video" && resolved.mediaUrl) {
+      router.push({ pathname: "/CircleExtension/circleVideoViewer", params: { video: resolved.mediaUrl } });
+    } else if (resolved.type === "image" && resolved.mediaUrl) {
+      router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: resolved.mediaUrl } });
+    }
   };
 
   return (
@@ -163,7 +165,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
           )}
 
           {/* IMAGE */}
-          {imageUri && (
+          {imageUri && !post.mediaUrl && (
             <Image
               source={{ uri: imageUri }}
               width="100%"
@@ -173,35 +175,40 @@ const CircleFeedItem = memo(function CircleFeedItem({
             />
           )}
 
+          {/* VIDEO */}
+          {post.mediaUrl && (
+            <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: post.mediaUrl } })}>
+              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                <Ionicons name="videocam" size={32} color="#FFF" />
+                <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
+              </View>
+            </Pressable>
+          )}
+
           {/* ANCHOR QUOTE */}
           {resolved && (<>
-            {anchorExpired ? (
-              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F", opacity: 0.5 }}>
-                <Text fontFamily="$body" color="#999" fontSize={13} textAlign="center">
-                  Anchor either expired or has been removed
-                </Text>
-                {anchorType === "video" && (
-                  <View style={{ alignItems: "center", marginTop: 8 }}>
-                    <Ionicons name="videocam" size={24} color="#666" />
-                  </View>
-                )}
-              </View>
+            {(resolved.content || resolved.title) ? (
+              <Pressable onPress={() => handleAnchorMediaTap()}>
+                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                    {resolved.content || resolved.title || ""}
+                  </Text>
+                </View>
+              </Pressable>
             ) : resolved.type === "image" && resolved.mediaUrl ? (
-              <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
-              </View>
+              <Pressable onPress={() => handleAnchorMediaTap()}>
+                <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                  <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
+                </View>
+              </Pressable>
             ) : resolved.type === "video" ? (
-              <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
-                <Ionicons name="videocam" size={24} color="#FFF" />
-                <Text fontFamily="$body" color="#FFF" fontSize={11}>Reply to Anchor Video</Text>
-              </View>
-            ) : (
-              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
-                <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                  {resolved.content || resolved.title || ""}
-                </Text>
-              </View>
-            )}
+              <Pressable onPress={() => handleAnchorMediaTap()}>
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="videocam" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={11}>Tap to view video</Text>
+                </View>
+              </Pressable>
+            ) : null}
           </>)}
  
           {/* ACTIONS */}

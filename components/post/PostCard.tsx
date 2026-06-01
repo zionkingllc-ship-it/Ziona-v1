@@ -464,8 +464,8 @@ function PostCardComponent({
           visible={createVisible}
           post={post}
           onClose={() => setCreateVisible(false)}
-          onSave={(name, cover) => {
-            createFolder(name, cover);
+          onSave={(name) => {
+            createFolder(name);
             setCreateVisible(false);
           }}
         />

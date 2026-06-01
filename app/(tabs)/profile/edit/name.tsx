@@ -56,13 +56,11 @@ export default function EditNameScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header
+      <Header
           heading={"Name"}
           headerFontFamily={"$body"}
           headingWeight={"500"}
         />
-      </XStack>
 
       <YStack flex={1} padding="$4" gap="$4">
         <Text fontFamily={"$body"} fontWeight={"400"} fontSize={16}>

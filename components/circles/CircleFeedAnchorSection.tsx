@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, TouchableOpacity, View } from 'react-native';
 import { XStack, YStack, Text } from 'tamagui';
 import { ChevronDown } from '@tamagui/lucide-icons';
@@ -40,6 +40,21 @@ const getAnchorDaysDiff = (createdAt: string): number => {
   return Math.round((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
 };
 
+const getAvailableFilterOptions = (circle: CircleFeedData): string[] => {
+  const allAnchors = getAllAnchors(circle);
+  if (allAnchors.length === 0) return [];
+
+  const availableDays = new Set(
+    allAnchors.map((a) => getAnchorDaysDiff(a.createdAt)),
+  );
+  if (circle.activeAnchor) availableDays.add(0);
+
+  return anchorFilterOptions.filter((opt) => {
+    const daysAgo = getAnchorDaysAgo(opt);
+    return availableDays.has(daysAgo);
+  });
+};
+
 const getDisplayAnchor = (circle: CircleFeedData, filter: string): ActiveAnchor | undefined => {
   const daysAgo = getAnchorDaysAgo(filter);
   const allAnchors = getAllAnchors(circle).sort(
@@ -62,8 +77,15 @@ const getDisplayAnchor = (circle: CircleFeedData, filter: string): ActiveAnchor 
 const CircleFeedAnchorSection = ({ circle, anchorFilter, onFilterChange }: CircleFeedAnchorSectionProps) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const allAnchors = getAllAnchors(circle);
+  const availableOptions = getAvailableFilterOptions(circle);
   const displayAnchor = getDisplayAnchor(circle, anchorFilter);
   const hasNoAnchor = allAnchors.length === 0;
+
+  useEffect(() => {
+    if (availableOptions.length > 0 && !availableOptions.includes(anchorFilter)) {
+      onFilterChange(availableOptions[0]);
+    }
+  }, [availableOptions.join(","), anchorFilter]);
 
   return (
     <YStack top={10}>
@@ -106,7 +128,7 @@ const CircleFeedAnchorSection = ({ circle, anchorFilter, onFilterChange }: Circl
       </XStack>
       {showDropdown && (
         <View style={styles.dropdownContainer}>
-          {anchorFilterOptions.map((opt) => (
+          {availableOptions.map((opt) => (
             <TouchableOpacity
               key={opt}
               style={styles.dropdownItem}

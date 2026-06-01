@@ -58,7 +58,7 @@ export default function ChangePasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
     <KeyboardAvoidingWrapper>
-      <XStack padding={10}><Header heading="Change password" /></XStack>
+      <Header heading="Change password" />
     
 
       <YStack padding="$4" gap="$4" marginTop="$4">

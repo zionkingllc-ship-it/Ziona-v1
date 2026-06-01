@@ -10,7 +10,7 @@ import CircleFeedProfileSection, {
 
 import colors from "@/constants/colors";
 
-import { CircleFeedData } from "@/constants/circleTypes";
+import { ActiveAnchor, CircleFeedData } from "@/constants/circleTypes";
 
 import { useCircleFeedData, useJoinCircle, useLeaveCircle, useActiveAnchor, useAnchorByDate } from "@/hooks/useCircles";
 
@@ -19,9 +19,10 @@ import { ChevronDown } from "@tamagui/lucide-icons";
 
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useStatusBarStyle } from "@/hooks/useStatusBarStyle";
+import { useFocusEffect } from "@react-navigation/native";
+import { Platform, StatusBar } from "react-native";
 
 import {
   ActivityIndicator,
@@ -43,6 +44,49 @@ import {
 } from "tamagui";
 
 const HIDE_ANCHOR_THRESHOLD = 220;
+
+const anchorFilterOptions = [
+  "Today", "Yesterday", "2 days ago", "3 days ago", "4 days ago", "5 days ago",
+];
+
+const getAnchorDaysAgo = (filter: string): number => {
+  if (filter === "Today") return 0;
+  const match = filter.match(/(\d+) days ago/);
+  return match ? parseInt(match[1]) : 0;
+};
+
+const getAnchorDaysDiff = (createdAt: string): number => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diff = Math.round((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
+  console.log("[anchor-debug] getAnchorDaysDiff:", { createdAt, parsed: created.toISOString(), now: now.toISOString(), diff });
+  return diff;
+};
+
+const getAvailableFilterOptions = (circle: CircleFeedData): string[] => {
+  const all: ActiveAnchor[] = [];
+  if (circle.activeAnchor) all.push(circle.activeAnchor);
+  if (circle.pastAnchors) all.push(...circle.pastAnchors);
+  console.log("[anchor-debug] getAvailableFilterOptions:", {
+    activeAnchor: circle.activeAnchor
+      ? { id: circle.activeAnchor.id, createdAt: circle.activeAnchor.createdAt, type: circle.activeAnchor.type }
+      : null,
+    pastAnchorsCount: circle.pastAnchors?.length ?? 0,
+    pastAnchors: circle.pastAnchors?.map((a) => ({ id: a.id, createdAt: a.createdAt, type: a.type })),
+    allCount: all.length,
+  });
+  if (all.length === 0) return [];
+
+  const availableDays = new Set(all.map((a) => getAnchorDaysDiff(a.createdAt)));
+  if (circle.activeAnchor) availableDays.add(0);
+
+  const result = anchorFilterOptions.filter((opt) => {
+    const daysAgo = getAnchorDaysAgo(opt);
+    return availableDays.has(daysAgo);
+  });
+  console.log("[anchor-debug] availableOptions result:", { availableDays: [...availableDays], result });
+  return result;
+};
 
 type CirclePost = {
   id: string;
@@ -169,7 +213,18 @@ function mapCircleFeedData(data: any): CircleFeedData {
 }
 
 export default function CircleFeedScreen() {
-  useStatusBarStyle("light");
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === "ios") {
+        StatusBar.setBarStyle("light-content", true);
+      }
+      return () => {
+        if (Platform.OS === "ios") {
+          StatusBar.setBarStyle("dark-content", true);
+        }
+      };
+    }, [])
+  );
   const { id, source } =
     useLocalSearchParams<{ id: string; source?: string }>();
 
@@ -198,6 +253,8 @@ export default function CircleFeedScreen() {
       backgroundImage: circle.activeAnchor.backgroundImage ? "yes" : "no",
     } : null,
     pastAnchorsCount: circle.pastAnchors?.length ?? 0,
+    postsCount: circle.posts?.length ?? 0,
+    firstPostSample: circle.posts?.[0] ? { id: circle.posts[0].id, text: (circle.posts[0].text || "").substring(0, 30), image: circle.posts[0].image ? "yes" : "no", mediaUrl: circle.posts[0].mediaUrl ? "yes" : "no" } : null,
   });
 
   const posts: CirclePost[] = circle.posts;
@@ -231,9 +288,8 @@ export default function CircleFeedScreen() {
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
 
-  const anchorFilterOptions = [
-    "Today", "Yesterday", "2 days ago", "3 days ago", "4 days ago", "5 days ago",
-  ];
+  const availableOptions = getAvailableFilterOptions(circle);
+  console.log("[anchor-debug] component render:", { anchorFilter, availableOptions, hasActive: !!circle.activeAnchor, pastCount: circle.pastAnchors?.length });
 
   const filterDate = useMemo(() => {
     if (anchorFilter === "Today") return null;
@@ -258,6 +314,12 @@ export default function CircleFeedScreen() {
     if (!displayAnchor?.expiresAt) return false;
     return new Date(displayAnchor.expiresAt).getTime() <= Date.now();
   }, [displayAnchor]);
+
+  useEffect(() => {
+    if (availableOptions.length > 0 && !availableOptions.includes(anchorFilter)) {
+      setAnchorFilter(availableOptions[0]);
+    }
+  }, [availableOptions.join(","), anchorFilter]);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -316,18 +378,11 @@ export default function CircleFeedScreen() {
     });
   };
 
-  const anchorType = displayAnchor?.type;
-  const anchorMediaUrl = displayAnchor?.mediaUrl || "";
-
   const renderItem = ({ item }: { item: CirclePost }) => (
     <YStack>
       <CircleFeedItem
         post={item}
         circleId={circleId}
-        anchorText={displayAnchor?.anchorText || displayAnchor?.content || ""}
-        anchorType={anchorType}
-        anchorMediaUrl={anchorMediaUrl}
-        anchorExpired={anchorExpired}
       />
       <YStack
         height={1}
@@ -418,7 +473,7 @@ export default function CircleFeedScreen() {
             </XStack>
             {showAnchorDropdown && (
               <View style={styles.dropdownContainer}>
-                {anchorFilterOptions.map((opt) => (
+                {availableOptions.map((opt) => (
                   <TouchableOpacity
                     key={opt}
                     style={styles.dropdownItem}
@@ -509,7 +564,7 @@ export default function CircleFeedScreen() {
                 </XStack>
                 {showAnchorDropdown && (
                   <View style={styles.dropdownContainer}>
-                    {anchorFilterOptions.map((opt) => (
+                    {availableOptions.map((opt) => (
                       <TouchableOpacity
                         key={opt}
                         style={styles.dropdownItem}
@@ -563,8 +618,8 @@ export default function CircleFeedScreen() {
             backgroundColor={colors.primary}
             onPress={() => {
               router.push({
-                pathname: "/CircleExtension/CircleCommentComposer",
-                params: { circleId: circleId, fromScreen: "circleFeed", source: source || "feed" },
+                pathname: "/CircleExtension/PostComposer",
+                params: { circleId },
               });
             }}
             elevation={4}

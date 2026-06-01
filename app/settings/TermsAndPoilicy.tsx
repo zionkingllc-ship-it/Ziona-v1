@@ -38,13 +38,11 @@ export default function TermsPoliciesScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       
       {/* HEADER */}
-      <XStack padding={10}>
-        <Header
+      <Header
           heading="Terms and policies"
           headerFontFamily="$body"
           headingWeight="500"
         />
-      </XStack>
 
       {/* CARD */}
       <YStack paddingHorizontal={16} marginTop={10}>

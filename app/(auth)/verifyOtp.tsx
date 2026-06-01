@@ -135,7 +135,7 @@ export default function VerifyOtp() {
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack padding={15}><Header /></XStack>
+      <Header />
       
 
       <YStack flex={1} padding="$4" gap="$4" marginTop="$10">

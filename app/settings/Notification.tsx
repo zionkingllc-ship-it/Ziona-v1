@@ -97,9 +97,7 @@ export default function NotificationScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <XStack padding={10}>
-        <Header heading="Notification" />
-      </XStack>
+      <Header heading="Notification" />
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <YStack gap="$5">

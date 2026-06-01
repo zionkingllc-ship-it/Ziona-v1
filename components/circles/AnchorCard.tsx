@@ -68,20 +68,11 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
   const hasText = !!(anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference);
   const hasVideo = !!(anchor!.anchorVideo || (anchor!.type === "video" && anchor!.mediaUrl));
 
-  const imageSource = () => {
-    if (imageError) return FALLBACK_IMAGE;
-
-    if (anchor!.type === "text") {
-      if (anchor!.backgroundImage) return { uri: anchor!.backgroundImage };
-      return FALLBACK_IMAGE;
-    }
-
-    const uri = anchor!.mediaUrl || anchor!.anchorThumbnail || anchor!.anchorImage;
-    if (uri) return { uri };
-    return FALLBACK_IMAGE;
-  };
-
   const previewText = anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference || "";
+
+  const remoteImageUri = anchor!.type === "text"
+    ? (anchor!.backgroundImage || null)
+    : (anchor!.mediaUrl || anchor!.anchorThumbnail || anchor!.anchorImage || null);
 
   const showTextPreview = hasText;
   const showVideoOverlay = !hasText && hasVideo;
@@ -100,11 +91,18 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
       ) : (
         <View style={styles.imageWrapper}>
           <Image
-            source={imageSource()}
+            source={FALLBACK_IMAGE}
             style={styles.image}
             resizeMode="cover"
-            onError={() => setImageError(true)}
           />
+          {!imageError && remoteImageUri && (
+            <Image
+              source={{ uri: remoteImageUri }}
+              style={styles.image}
+              resizeMode="cover"
+              onError={() => setImageError(true)}
+            />
+          )}
 
           <View style={styles.darkOverlay} />
 

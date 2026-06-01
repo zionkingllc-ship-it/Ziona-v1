@@ -8,7 +8,8 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
@@ -28,10 +29,17 @@ export default function CirclesSuggestion() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadAllData();
-    loadCachedCircles();
-  }, []);
+  const isMounted = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isMounted.current) {
+        loadCachedCircles();
+        isMounted.current = true;
+      }
+      loadAllData();
+    }, [])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

@@ -55,9 +55,7 @@ export default function EditBioScreen() {
 
   return (
     <YStack flex={1} backgroundColor={colors.white} padding="$4">
-      <XStack paddingLeft={5} marginTop={25} marginBottom={20}>
-        <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
-      </XStack>
+      <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
 
       <YStack gap="$2">
         <YStack>
