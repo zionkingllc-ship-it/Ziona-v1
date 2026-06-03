@@ -31,11 +31,11 @@ const CircleFeedDescription = ({ circle }: CircleFeedDescriptionProps) => {
           fontWeight="500"
           fontSize={13}
           marginTop={5}
-          color={colors.errorText}
+          color="#64215B"
           onPress={() => {
             const rulesParam = circle.rules ? JSON.stringify(circle.rules) : undefined;
             router.push({
-              pathname: '/(tabs)/circle/circleRules',
+              pathname: '/circleRules',
               params: {
                 circleName: circle.name,
                 circleDescription: circle.description,

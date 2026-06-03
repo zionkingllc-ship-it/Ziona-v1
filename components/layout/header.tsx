@@ -34,27 +34,30 @@ export default function Header({
   onBackPress,
 }: prop) {
   return (
-    <XStack width={"100%"} justifyContent="space-between" alignItems="center" paddingLeft={20}>
+    <XStack width={"100%"} alignItems="center" paddingLeft={20} minHeight={48}>
       <ChevronLeft
         size={24} 
         color={iconBeforeColor ? iconBeforeColor : colors.black}
         onPress={onBackPress || (() => router.back())}
       />
-      <Text
-        fontFamily={headerFontFamily}
-        fontSize={headingSize ? headingSize : "$4"}
-        fontWeight={headingWeight}
-      >
-        {heading}
-      </Text>
+      <XStack flex={1} justifyContent="center" alignItems="center" marginRight={44}>
+        <Text
+          fontFamily={headerFontFamily}
+          fontSize={headingSize ? headingSize : "$4"}
+          fontWeight={headingWeight}
+          textAlign="center"
+        >
+          {heading}
+        </Text>
+      </XStack>
 
       {iconAfter ? (
-        <XStack gap={5}>
+        <XStack gap={5} position="absolute" right={10}>
           <Ionicons type={iconAfter} size={24} />
           {iconAfter2 && <Ionicons type={iconAfter2} size={24} />}
         </XStack>
       ) : (
-        <XStack gap={5}>
+        <XStack gap={5} position="absolute" right={10}>
           {imageAfter && (
             <Image source={imageAfter} width={24} height={24} marginRight={10} />
           )}

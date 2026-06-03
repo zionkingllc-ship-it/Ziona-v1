@@ -1,37 +1,34 @@
-import { useState } from "react";
+import { useCallback } from "react";
 import { likeCirclePost } from "@/services/graphQL/mutation/circles";
+import { useCirclePostLikeStore } from "@/store/useCirclePostLikeStore";
 
 export function useCirclePostLike(
   postId: string,
   initialLiked: boolean,
   initialLikeCount: number,
 ) {
-  const [isLiked, setIsLiked] = useState(initialLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [togglingLike, setTogglingLike] = useState(false);
+  const storeKey = `circle:${postId}`;
+  const stored = useCirclePostLikeStore((s) => s.likes[storeKey]);
+  const setLike = useCirclePostLikeStore((s) => s.setLike);
+  const optimisticToggle = useCirclePostLikeStore((s) => s.optimisticToggle);
 
-  const handleToggleLike = async () => {
-    if (togglingLike) return;
-    setTogglingLike(true);
+  const isLiked = stored?.isLiked ?? initialLiked;
+  const likeCount = stored?.likeCount ?? initialLikeCount;
 
-    const newLiked = !isLiked;
-    const newCount = newLiked ? likeCount + 1 : likeCount - 1;
-    setIsLiked(newLiked);
-    setLikeCount(newCount);
+  const handleToggleLike = useCallback(async () => {
+    const current = { isLiked, likeCount };
+    optimisticToggle(storeKey, current);
 
     try {
       const result = await likeCirclePost(postId);
-      if (result?.success) {
-        setIsLiked(result.liked ?? newLiked);
-        setLikeCount(result.likesCount ?? newCount);
-      }
+      setLike(storeKey, {
+        isLiked: result?.liked ?? !current.isLiked,
+        likeCount: result?.likesCount ?? current.likeCount,
+      });
     } catch {
-      setIsLiked(!newLiked);
-      setLikeCount(likeCount);
-    } finally {
-      setTogglingLike(false);
+      setLike(storeKey, current);
     }
-  };
+  }, [postId, storeKey, isLiked, likeCount, optimisticToggle, setLike]);
 
-  return { isLiked, likeCount, handleToggleLike, togglingLike };
+  return { isLiked, likeCount, handleToggleLike, togglingLike: false };
 }

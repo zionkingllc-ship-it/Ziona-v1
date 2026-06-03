@@ -132,6 +132,7 @@ export default function RootLayout() {
                   <Stack.Screen name="create" />
                   <Stack.Screen name="followers" />
                   <Stack.Screen name="following" />
+                  <Stack.Screen name="circleRules" />
                 </Stack>
                 </AuthGate>
                 </OfflineProvider>

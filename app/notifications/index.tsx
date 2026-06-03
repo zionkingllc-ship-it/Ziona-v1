@@ -3,9 +3,10 @@ import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet } from "react
 import { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
-import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
+import { useNotifications, useMarkNotificationAsRead, useDeleteNotification } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
+import Header from "@/components/layout/header";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import CloseButton from "@/components/ui/CloseButton";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -56,25 +57,18 @@ function NotificationAvatar({ avatarUrl, type, size = 40 }: { avatarUrl?: string
 
 export default function ActivityScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  // const [activeTab, setActiveTab] = useState("All");
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useNotifications(50);
   const markAsRead = useMarkNotificationAsRead();
+  const deleteNotif = useDeleteNotification();
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const isSelecting = selectedIds.size > 0;
 
   const notifications: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  // const filtered = notifications.filter((item: NotificationItem) => {
-  //   if (activeTab === "All") return true;
-  //   if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
-  //   if (activeTab === "Mentions") return item.type === "mention";
-  //   if (activeTab === "Replies") return item.type === "comment" || item.type === "reply";
-  //   if (activeTab === "Circles") return item.type === "circle";
-  //   return true;
-  // });
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -89,40 +83,67 @@ export default function ActivityScreen() {
     return "Just now";
   };
 
-  // const Tab = ({ label }: { label: string }) => {
-  //   const active = label === activeTab;
-
-  //   return (
-  //     <Pressable onPress={() => setActiveTab(label)}>
-  //       <XStack
-  //         paddingHorizontal={14}
-  //         paddingVertical={6}
-  //         borderRadius={20}
-  //         backgroundColor={active ? colors.black : colors.lightGrayBg}
-  //       >
-  //         <Text color={active ? colors.white : colors.black} fontSize={13}>
-  //           {label}
-  //         </Text>
-  //       </XStack>
-  //     </Pressable>
-  //   );
-  // };
-
   const handleNotificationPress = useCallback(
     (item: NotificationItem) => {
+      if (isSelecting) {
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(item.id)) next.delete(item.id);
+          else next.add(item.id);
+          return next;
+        });
+        return;
+      }
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
       setSelectedNotification(item);
     },
-    [markAsRead],
+    [isSelecting, markAsRead],
   );
+
+  const handleLongPress = useCallback((item: NotificationItem) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) next.delete(item.id);
+      else next.add(item.id);
+      return next;
+    });
+  }, []);
+
+  const handleMarkSelectedRead = useCallback(() => {
+    selectedIds.forEach((id) => markAsRead.mutate(id));
+    setSelectedIds(new Set());
+  }, [selectedIds, markAsRead]);
+
+  const handleDeleteSelected = useCallback(() => {
+    selectedIds.forEach((id) => deleteNotif.mutate(id));
+    setSelectedIds(new Set());
+  }, [selectedIds, deleteNotif]);
+
+  const handleCancelSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
 
   const renderNotification = useCallback(
     ({ item }: { item: NotificationItem }) => {
+      const selected = selectedIds.has(item.id);
       return (
-        <Pressable onPress={() => handleNotificationPress(item)} style={{ opacity: item.isRead ? 0.6 : 1 }}>
-          <XStack justifyContent="space-between" alignItems="center" paddingVertical={12}>
+        <Pressable
+          onPress={() => handleNotificationPress(item)}
+          onLongPress={() => handleLongPress(item)}
+          style={{ opacity: item.isRead ? 0.6 : 1 }}
+        >
+          <XStack justifyContent="space-between" alignItems="center" paddingVertical={12} paddingHorizontal={12}>
+            {isSelecting && (
+              <View marginRight={10}>
+                <Ionicons
+                  name={selected ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={selected ? colors.primary : colors.gray}
+                />
+              </View>
+            )}
             <XStack gap="$3" flex={1}>
               <NotificationAvatar avatarUrl={item.user?.avatarUrl} type={item.type} size={40} />
               <YStack flex={1}>
@@ -138,7 +159,7 @@ export default function ActivityScreen() {
               </YStack>
             </XStack>
 
-            {!item.isRead && (
+            {!item.isRead && !isSelecting && (
               <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
             )}
           </XStack>
@@ -146,7 +167,7 @@ export default function ActivityScreen() {
         </Pressable>
       );
     },
-    [handleNotificationPress],
+    [handleNotificationPress, handleLongPress, isSelecting, selectedIds],
   );
 
   if (!isAuthenticated) {
@@ -163,17 +184,47 @@ export default function ActivityScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
+      {isSelecting ? (
+        <XStack
+          backgroundColor={colors.white}
+          paddingHorizontal={12}
+          paddingVertical={10}
+          borderBottomWidth={1}
+          borderBottomColor={colors.border}
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <XStack gap={16} alignItems="center">
+            <Pressable onPress={handleCancelSelection}>
+              <Ionicons name="close" size={24} color={colors.text} />
+            </Pressable>
+            <Text fontFamily="$body" fontSize={15} fontWeight="600" color={colors.text}>
+              {selectedIds.size} selected
+            </Text>
+          </XStack>
+          <XStack gap={16} alignItems="center">
+            <Pressable onPress={handleMarkSelectedRead}>
+              <XStack gap={4} alignItems="center">
+                <Ionicons name="checkmark-done" size={20} color={colors.primary} />
+                <Text fontFamily="$body" fontSize={13} color={colors.primary} fontWeight="500">
+                  Mark read
+                </Text>
+              </XStack>
+            </Pressable>
+            <Pressable onPress={handleDeleteSelected}>
+              <XStack gap={4} alignItems="center">
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                <Text fontFamily="$body" fontSize={13} color="#FF3B30" fontWeight="500">
+                  Delete
+                </Text>
+              </XStack>
+            </Pressable>
+          </XStack>
+        </XStack>
+      ) : (
+        <Header heading="Activity" />
+      )}
       <YStack flex={1}>
-        <Text textAlign="center" fontSize={18} fontWeight="600" marginBottom={12}>
-          Activity
-        </Text>
-
-        {/* <XStack padding={12} gap="$2"> */}
-        {/*   {TABS.map((t) => ( */}
-        {/*     <Tab key={t} label={t} /> */}
-        {/*   ))} */}
-        {/* </XStack> */}
-
         {isLoading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">
             <ActivityIndicator size="large" color={colors.primary} />
@@ -187,7 +238,6 @@ export default function ActivityScreen() {
             data={notifications}
             keyExtractor={(item) => item.id}
             renderItem={renderNotification}
-            contentContainerStyle={{ paddingHorizontal: 12 }}
             showsVerticalScrollIndicator={false}
             windowSize={5}
             maxToRenderPerBatch={15}
