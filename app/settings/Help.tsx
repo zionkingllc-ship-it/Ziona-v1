@@ -8,8 +8,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { HELP_SECTIONS, HelpSection } from "@/services/help/helpContent";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function HelpScreen() {
+  const username = useAuthStore((s) => s.user?.username);
   const router = useRouter();
   const [search, setSearch] = useState("");
 
@@ -101,6 +103,9 @@ export default function HelpScreen() {
       <Header heading="Help" />
 
       <YStack padding={16} flex={1}>
+        <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black} marginBottom={4}>
+          Welcome @{username}
+        </Text>
         <Text
           fontFamily="$body"
           fontSize={14}
