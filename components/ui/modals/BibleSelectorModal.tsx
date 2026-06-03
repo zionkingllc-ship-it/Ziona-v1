@@ -6,6 +6,7 @@ import TranslationDropdown from "./TranslationDropdown";
 
 import { bibleRepository } from "@/repository";
 import { BibleBook, BibleTranslation, BibleVerse } from "@/types/bible";
+import { shortenBookName } from "@/utils/bibleNames";
 
 import { Search } from "@tamagui/lucide-icons";
 
@@ -289,7 +290,10 @@ export default function BibleSelectorModal({
         {/* SELECTORS */}
         <XStack gap="$2" justifyContent="center" marginBottom={20}>
           <SelectChip
-            label={translation}
+            label={
+              translations.find((t) => t.name === translation)?.abbreviation ||
+              translation
+            }
             active
             onPress={() => {
               setBook(null);
@@ -300,7 +304,7 @@ export default function BibleSelectorModal({
           />
 
           <SelectChip
-            label={book?.name || "BOOKS"}
+            label={book ? shortenBookName(book.name) : "BOOKS"}
             active={!!book}
             onPress={() => {
               if (book) {
@@ -388,7 +392,7 @@ export default function BibleSelectorModal({
             keyExtractor={(item) => item.slug}
             renderItem={({ item }) => (
               <Pressable style={styles.row} onPress={() => setBook(item)}>
-                <Text>{item.name}</Text>
+                <Text>{shortenBookName(item.name)}</Text>
               </Pressable>
             )}
           />
@@ -424,9 +428,10 @@ export default function BibleSelectorModal({
 
         <TranslationDropdown
           visible={translationOpen}
-          options={translations.map((t) => t.name)}
+          options={translations}
           onSelect={(v) => {
-            setTranslation(v);
+            const t = translations.find((t) => t.name === v);
+            setTranslation(t?.abbreviation || v);
             setTranslationOpen(false);
           }}
         />
@@ -436,7 +441,7 @@ export default function BibleSelectorModal({
         visible={readerOpen && !loadingVerses}
         verses={verses}
         selected={selected}
-        reference={`${book?.name ?? ""} ${chapter ?? ""}`}
+        reference={`${shortenBookName(book?.name ?? "")} ${chapter ?? ""}`}
         translation={translation}
         book={book?.name ?? ""}
         chapter={chapter}

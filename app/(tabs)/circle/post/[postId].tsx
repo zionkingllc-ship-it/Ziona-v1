@@ -75,6 +75,8 @@ export default function CirclePostDetailScreen() {
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const [postImageError, setPostImageError] = useState(false);
+  const [anchorImageError, setAnchorImageError] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const currentUser = useAuthStore((state) => state.user);
@@ -227,7 +229,7 @@ export default function CirclePostDetailScreen() {
               </Text>
             )}
 
-            {postImage && !postMediaUrl && (
+            {postImage && !postMediaUrl && !postImageError && (
               <Pressable onPress={() => router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: postImage } })}>
                 <Image
                   source={{ uri: postImage }}
@@ -235,8 +237,15 @@ export default function CirclePostDetailScreen() {
                   height={200}
                   borderRadius={12}
                   resizeMode="cover"
+                  onError={() => setPostImageError(true)}
                 />
               </Pressable>
+            )}
+            {postImage && !postMediaUrl && postImageError && (
+              <View style={{ height: 200, borderRadius: 12, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
+                <Ionicons name="image-outline" size={40} color="#999" />
+                <Text fontFamily="$body" fontSize={13} color="#999" marginTop={4}>Image unavailable</Text>
+              </View>
             )}
 
             {postMediaUrl && (
@@ -262,10 +271,17 @@ export default function CirclePostDetailScreen() {
                     </Text>
                   </View>
                 </Pressable>
-              ) : anchorType === "image" && anchorMediaUrl ? (
+              ) : anchorType === "image" && anchorMediaUrl && !anchorImageError ? (
                 <Pressable onPress={() => handleAnchorMediaTap()}>
                   <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                    <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" />
+                    <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" onError={() => setAnchorImageError(true)} />
+                  </View>
+                </Pressable>
+              ) : anchorType === "image" && anchorMediaUrl && anchorImageError ? (
+                <Pressable onPress={() => handleAnchorMediaTap()}>
+                  <View style={{ height: 120, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
+                    <Ionicons name="image-outline" size={28} color="#FFF" />
+                    <Text fontFamily="$body" color="#FFF" fontSize={11} marginTop={2}>Image unavailable</Text>
                   </View>
                 </Pressable>
               ) : anchorType === "video" && anchorMediaUrl ? (

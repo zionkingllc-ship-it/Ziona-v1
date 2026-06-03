@@ -63,7 +63,8 @@
       ],
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "queries": [
         { "scheme": "whatsapp" },
@@ -93,7 +94,13 @@
       "expo-font",
       "expo-web-browser",
       "expo-video",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "color": "#742092"
+        }
+      ]
     ],
     "extra": {
       "router": {},

@@ -30,6 +30,24 @@ export const GET_MY_CIRCLES = `
       isJoined
       isSubscribed
       avatars
+      activeAnchor {
+        id
+        anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorImageText
+        content
+        title
+        # mediaUrl
+        backgroundImage
+        backgroundColors
+        bibleText
+        bibleReference
+        createdAt
+        expiresAt
+      }
     }
   }
 `;
@@ -82,7 +100,7 @@ export const GET_CIRCLE_DETAIL = `
         anchorImageText
         anchorLikedCount
         anchorVerse
-        mediaUrl
+        # mediaUrl
         createdAt
         expiresAt
         timeRemaining
@@ -109,7 +127,7 @@ export const GET_CIRCLE_DETAIL = `
         pages {
           pageNumber
           content
-          mediaUrl
+          # mediaUrl
           title
         }
         author {
@@ -135,6 +153,7 @@ export const GET_CIRCLE_FEED = `
         id
         text
         image
+        # mediaUrl
         createdAt
         likes
         likesCount
@@ -182,7 +201,7 @@ export const GET_CIRCLE_FEED_DATA = `
         anchorVideo
         anchorThumbnail
         anchorLikedCount
-        mediaUrl
+        # mediaUrl
         createdAt
         expiresAt
         timeRemaining
@@ -207,7 +226,7 @@ export const GET_CIRCLE_FEED_DATA = `
         pages {
           pageNumber
           content
-          mediaUrl
+          # mediaUrl
           title
         }
         viewerState {
@@ -230,6 +249,7 @@ export const GET_CIRCLE_FEED_DATA = `
         id
         text
         image
+        # mediaUrl
         createdAt
         likes
         likesCount
@@ -275,7 +295,7 @@ export const GET_ACTIVE_ANCHOR = `
       anchorImageText
       anchorLikedCount
       anchorVerse
-      mediaUrl
+      # mediaUrl
       createdAt
       expiresAt
       timeRemaining
@@ -302,7 +322,7 @@ export const GET_ACTIVE_ANCHOR = `
       pages {
         pageNumber
         content
-        mediaUrl
+        # mediaUrl
         title
       }
       viewerState {
@@ -325,7 +345,7 @@ export const GET_ANCHOR_HISTORY = `
       anchorVideo
       anchorThumbnail
       anchorLikedCount
-      mediaUrl
+      # mediaUrl
       createdAt
       expiresAt
       responseCount
@@ -348,7 +368,7 @@ export const GET_ANCHOR_HISTORY = `
       pages {
         pageNumber
         content
-        mediaUrl
+        # mediaUrl
         title
       }
       author {
@@ -372,7 +392,7 @@ export const GET_ANCHOR_BY_DATE = `
       anchorVideo
       anchorThumbnail
       anchorLikedCount
-      mediaUrl
+      # mediaUrl
       createdAt
       expiresAt
       timeRemaining
@@ -388,7 +408,7 @@ export const GET_ANCHOR_BY_DATE = `
       pages {
         pageNumber
         content
-        mediaUrl
+        # mediaUrl
         title
       }
       viewerState {
@@ -406,7 +426,7 @@ export const GET_ANCHOR_RESPONSES = `
       content
       responseType
       mediaType
-      mediaUrl
+      # mediaUrl
       createdAt
       reactionCount
       replyCount
@@ -432,7 +452,7 @@ export const GET_ANCHOR = `
       anchorVideo
       anchorThumbnail
       anchorLikedCount
-      mediaUrl
+      # mediaUrl
       createdAt
       expiresAt
       timeRemaining
@@ -457,7 +477,7 @@ export const GET_ANCHOR = `
       pages {
         pageNumber
         content
-        mediaUrl
+        # mediaUrl
         title
       }
       viewerState {

@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $text: String, $image: String, $mediaUrl: String) {
-    createCirclePost(circleId: $circleId, text: $text, image: $image, mediaUrl: $mediaUrl) {
+  mutation CreateCirclePost($circleId: String!, $text: String, $image: String) {
+    createCirclePost(circleId: $circleId, text: $text, image: $image) {
       success
       error {
         code
@@ -52,6 +52,7 @@ export const CREATE_CIRCLE_POST = `
         id
         text
         image
+        # mediaUrl
         createdAt
         likes
         likesCount
@@ -89,8 +90,8 @@ export const PRAY_FOR_CIRCLE_POST = `
 `;
 
 export const RESPOND_TO_ANCHOR = `
-  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaType: String, $mediaUrl: String) {
-    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaType: $mediaType, mediaUrl: $mediaUrl) {
+  mutation RespondToAnchor($anchorId: String!, $content: String!, $responseType: String!, $mediaType: String) {
+    respondToAnchor(anchorId: $anchorId, content: $content, responseType: $responseType, mediaType: $mediaType) {
       success
       error {
         code
@@ -101,7 +102,7 @@ export const RESPOND_TO_ANCHOR = `
         content
         responseType
         mediaType
-        mediaUrl
+        # mediaUrl
         createdAt
       }
     }
@@ -126,14 +127,14 @@ export async function createCirclePost(
   circleId: string,
   text?: string,
   image?: string,
-  mediaUrl?: string
+  // mediaUrl?: string
 ) {
-  console.log("[createCirclePost] Sending mutation:", { circleId, text: text ? text.substring(0, 50) : undefined, image: image ? image.substring(0, 50) : undefined, mediaUrl: mediaUrl ? mediaUrl.substring(0, 50) : undefined });
+  console.log("[createCirclePost] Sending mutation:", { circleId, text: text ? text.substring(0, 50) : undefined, image: image ? image.substring(0, 50) : undefined });
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,
     text,
     image,
-    mediaUrl,
+    // mediaUrl,
   });
   console.log("[createCirclePost] Raw response:", JSON.stringify(res));
   return res?.createCirclePost;
@@ -187,14 +188,14 @@ export async function respondToAnchor(
   content: string,
   responseType: string,
   mediaType?: string,
-  mediaUrl?: string
+  // mediaUrl?: string
 ) {
   const res = await graphqlRequest(RESPOND_TO_ANCHOR, {
     anchorId,
     content,
     responseType,
     mediaType,
-    mediaUrl,
+    // mediaUrl,
   });
   return res?.respondToAnchor;
 }

@@ -74,6 +74,8 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const reportMutation = useReportContent();
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const [postImageError, setPostImageError] = useState(false);
+  const [anchorImageError, setAnchorImageError] = useState(false);
 
   const imageUri = post.image || "";
 
@@ -165,14 +167,21 @@ const CircleFeedItem = memo(function CircleFeedItem({
           )}
 
           {/* IMAGE */}
-          {imageUri && !post.mediaUrl && (
+          {imageUri && !post.mediaUrl && !postImageError && (
             <Image
               source={{ uri: imageUri }}
               width="100%"
               height={139}
               borderRadius={14}
               resizeMode="cover"
+              onError={() => setPostImageError(true)}
             />
+          )}
+          {imageUri && !post.mediaUrl && postImageError && (
+            <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
+              <Ionicons name="image-outline" size={32} color="#999" />
+              <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
+            </View>
           )}
 
           {/* VIDEO */}
@@ -195,10 +204,17 @@ const CircleFeedItem = memo(function CircleFeedItem({
                   </Text>
                 </View>
               </Pressable>
-            ) : resolved.type === "image" && resolved.mediaUrl ? (
+            ) : resolved.type === "image" && resolved.mediaUrl && !anchorImageError ? (
               <Pressable onPress={() => handleAnchorMediaTap()}>
                 <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                  <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" />
+                  <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" onError={() => setAnchorImageError(true)} />
+                </View>
+              </Pressable>
+            ) : resolved.type === "image" && resolved.mediaUrl && anchorImageError ? (
+              <Pressable onPress={() => handleAnchorMediaTap()}>
+                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
+                  <Ionicons name="image-outline" size={24} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={10} marginTop={2}>Image unavailable</Text>
                 </View>
               </Pressable>
             ) : resolved.type === "video" ? (

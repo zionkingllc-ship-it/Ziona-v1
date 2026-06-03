@@ -1,6 +1,7 @@
 import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
+import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
 import { saveAnchorRef } from "@/utils/anchorRef";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -63,10 +64,32 @@ export default function CircleCommentComposer({
     setPosting(true);
 
     try {
+      let permanentImage: string | undefined;
+
+      const uploadTasks: Promise<void>[] = [];
+      if (image) {
+        uploadTasks.push(
+          uploadCircleMedia(image, "image/jpeg").then((url) => { permanentImage = url; }),
+        );
+      }
+      if (video) {
+        uploadTasks.push(
+          (async () => {
+            const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(video, { time: 0 });
+            const [thumbUrl] = await Promise.all([
+              uploadCircleMedia(thumbUri, "image/jpeg"),
+              uploadCircleMedia(video, "video/mp4"),
+            ]);
+            permanentImage = thumbUrl;
+          })(),
+        );
+      }
+      await Promise.all(uploadTasks);
+
       let result: any = null;
       // If we have a circleId, create a circle post
       if (circleId) {
-        result = await createCirclePost(circleId, text.trim() || undefined, image || undefined, video || undefined);
+        result = await createCirclePost(circleId, text.trim() || undefined, permanentImage);
       } else if (onSend) {
         onSend(text, image, video);
         return;

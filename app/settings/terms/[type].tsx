@@ -4,10 +4,11 @@ import { fetchCommunityGuidelines, fetchPrivacyPolicy, fetchTermsOfService } fro
 import type { LegalDocumentType } from "@/src/types/__generated__/graphql";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 import { WebView } from "react-native-webview";
+import * as WebBrowser from "expo-web-browser";
 
 type DocType = "community" | "privacy" | "use";
 
@@ -32,9 +33,9 @@ export default function LegalDocumentScreen() {
   const docType = type as DocType;
 
   const [content, setContent] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [webviewError, setWebviewError] = useState(false);
 
   useEffect(() => {
     const fetcher = fetchers[docType];
@@ -49,23 +50,36 @@ export default function LegalDocumentScreen() {
 
     fetcher()
       .then((doc) => {
-        if (doc?.content) {
-          setContent(doc.content);
-          setLastUpdated(doc.lastUpdated);
+        const url = doc?.documentUrl || doc?.content || null;
+        console.log(`📄 [type.tsx] documentUrl="${doc?.documentUrl}", content="${doc?.content?.substring(0, 80)}"`);
+        if (url) {
+          setContent(url);
         } else {
+          console.warn(`📄 [type.tsx] No documentUrl or content for "${type}"`);
           setError(true);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error(`📄 [type.tsx] Fetcher threw:`, err);
         setError(true);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, [docType]);
+  }, [type, docType]);
 
   const title = labels[docType] || "Document";
   const isPdfUrl = content ? isUrl(content) : false;
+
+  const pdfUri = Platform.OS === "android" && content
+    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(content)}`
+    : content;
+
+  const handleOpenInBrowser = async () => {
+    if (content) {
+      await WebBrowser.openBrowserAsync(content);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
@@ -87,32 +101,45 @@ export default function LegalDocumentScreen() {
 
       {content && !loading && !isPdfUrl && (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
-          {lastUpdated && (
-            <Text fontFamily="$body" fontSize={12} color={colors.gray} marginBottom={16}>
-              Last updated: {new Date(lastUpdated).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
-          )}
           <Text fontFamily="$body" fontSize={14} color={colors.black} lineHeight={22}>
             {content}
           </Text>
         </ScrollView>
       )}
 
-      {isPdfUrl && (
+      {isPdfUrl && !webviewError && (
         <WebView
-          source={{ uri: content! }}
+          source={{ uri: pdfUri! }}
           style={{ flex: 1 }}
           startInLoadingState
+          onError={() => setWebviewError(true)}
           renderLoading={() => (
             <YStack flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={colors.primary} />
             </YStack>
           )}
         />
+      )}
+
+      {webviewError && (
+        <YStack flex={1} justifyContent="center" alignItems="center" padding="$4" gap="$4">
+          <Text fontFamily="$body" fontSize={14} color={colors.gray} textAlign="center">
+            Unable to display the document inline.
+          </Text>
+          <TouchableOpacity
+            onPress={handleOpenInBrowser}
+            style={{
+              backgroundColor: colors.primary,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
+          >
+            <Text fontFamily="$body" fontSize={14} color={colors.white} fontWeight="600">
+              Open in browser
+            </Text>
+          </TouchableOpacity>
+        </YStack>
       )}
     </SafeAreaView>
   );

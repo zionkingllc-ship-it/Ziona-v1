@@ -86,6 +86,12 @@ export async function fetchForYouFeed({
       posts: Array.isArray(rawPosts) ? rawPosts : [],
       nextCursor: feed?.nextCursor ?? undefined,
       hasMore: Boolean(feed?.hasMore),
+      emptyState: feed?.emptyState
+        ? {
+            message: feed.emptyState.message,
+            suggestions: feed.emptyState.suggestions,
+          }
+        : undefined,
     };
   } catch (error) {
     console.error("[FEED][FOR_YOU] ❌ Request failed", error);

@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { Image, Pressable, StyleSheet, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CircleImageViewer() {
   const router = useRouter();
   const { image } = useLocalSearchParams<{ image?: string }>();
+  const [imageError, setImageError] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,12 +18,19 @@ export default function CircleImageViewer() {
       </View>
 
       <View style={styles.imageContainer}>
-        {image && (
+        {image && !imageError && (
           <Image
             source={{ uri: image }}
             style={styles.image}
             resizeMode="contain"
+            onError={() => setImageError(true)}
           />
+        )}
+        {imageError && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="image-outline" size={64} color="#666" />
+            <Text style={styles.errorText}>Unable to load image</Text>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -55,5 +63,14 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+  },
+  errorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    color: "#999",
+    fontSize: 14,
+    marginTop: 12,
   },
 });

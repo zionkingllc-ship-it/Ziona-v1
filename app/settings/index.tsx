@@ -158,12 +158,18 @@ export default function SettingsScreen() {
           <SettingsRow
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Privacy policy"
-            onPress={() => router.push("/settings/terms/privacy")}
+            onPress={() => {
+              console.log("📄 [settings] Pressed: Privacy policy");
+              router.push("/settings/terms/privacy");
+            }}
           />
           <SettingsRow
             icon={<FileText size={18} color={colors.secondaryGray} />}
             label="Terms of use"
-            onPress={() => router.push("/settings/terms/use")}
+            onPress={() => {
+              console.log("📄 [settings] Pressed: Terms of use");
+              router.push("/settings/terms/use");
+            }}
           />
         </SettingsSection>
 

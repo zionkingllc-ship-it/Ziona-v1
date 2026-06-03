@@ -9,7 +9,7 @@ import { TouchableOpacity } from "react-native";
 type FeedHeaderProps = {
   feedType: "forYou" | "following";
   onChangeFeedType: (type: "forYou" | "following") => void;
-  emptyFollowing?: boolean;
+  emptyFeed?: boolean;
   onBellPress?: () => void;
   unreadCount?: number;
 };
@@ -17,11 +17,11 @@ type FeedHeaderProps = {
 export default function FeedHeader({
   feedType,
   onChangeFeedType,
-  emptyFollowing = false,
+  emptyFeed = false,
   onBellPress,
   unreadCount = 0,
 }: FeedHeaderProps) {
-  const logoSource = emptyFollowing
+  const logoSource = emptyFeed
     ? require("@/assets/images/logoColored.png")
     : require("@/assets/images/logowhite.png");
 
@@ -42,7 +42,7 @@ export default function FeedHeader({
         value={feedType}
         onChange={onChangeFeedType}
         width="65%"
-        emptyFollowing={emptyFollowing}
+        emptyFeed={emptyFeed}
       />
 
       <TouchableOpacity

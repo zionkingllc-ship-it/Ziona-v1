@@ -6,6 +6,8 @@ export async function fetchPrivacyPolicy(): Promise<LegalDocumentType | null> {
     query GetPrivacyPolicy {
       privacyPolicy {
         content
+        documentUrl
+        documentType
         lastUpdated
         version
       }
@@ -13,9 +15,12 @@ export async function fetchPrivacyPolicy(): Promise<LegalDocumentType | null> {
   `;
 
   try {
+    console.log("📄 [legalDocs] Fetching Privacy Policy...");
     const data = await graphqlRequest(query);
+    console.log("📄 [legalDocs] Privacy Policy response:", JSON.stringify(data?.privacyPolicy));
     return data?.privacyPolicy ?? null;
-  } catch {
+  } catch (err) {
+    console.error("📄 [legalDocs] Privacy Policy fetch failed:", err);
     return null;
   }
 }
@@ -25,6 +30,8 @@ export async function fetchTermsOfService(): Promise<LegalDocumentType | null> {
     query GetTermsOfService {
       termsOfService {
         content
+        documentUrl
+        documentType
         lastUpdated
         version
       }
@@ -32,9 +39,12 @@ export async function fetchTermsOfService(): Promise<LegalDocumentType | null> {
   `;
 
   try {
+    console.log("📄 [legalDocs] Fetching Terms of Service...");
     const data = await graphqlRequest(query);
+    console.log("📄 [legalDocs] Terms of Service response:", JSON.stringify(data?.termsOfService));
     return data?.termsOfService ?? null;
-  } catch {
+  } catch (err) {
+    console.error("📄 [legalDocs] Terms of Service fetch failed:", err);
     return null;
   }
 }
@@ -44,6 +54,8 @@ export async function fetchCommunityGuidelines(): Promise<LegalDocumentType | nu
     query GetCommunityGuidelines {
       communityGuidelines {
         content
+        documentUrl
+        documentType
         lastUpdated
         version
       }
@@ -51,9 +63,12 @@ export async function fetchCommunityGuidelines(): Promise<LegalDocumentType | nu
   `;
 
   try {
+    console.log("📄 [legalDocs] Fetching Community Guidelines...");
     const data = await graphqlRequest(query);
+    console.log("📄 [legalDocs] Community Guidelines response:", JSON.stringify(data?.communityGuidelines));
     return data?.communityGuidelines ?? null;
-  } catch {
+  } catch (err) {
+    console.error("📄 [legalDocs] Community Guidelines fetch failed:", err);
     return null;
   }
 }

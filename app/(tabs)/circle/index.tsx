@@ -3,7 +3,7 @@ import CirclesIntro from "@/components/circles/CirclesIntro";
 import AnchorCardSmall from "@/components/circles/AnchorCardSmall";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
-import { fetchAllCircles, fetchMyCircles, fetchCircleDetail } from "@/services/graphQL/queries/circles";
+import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circles";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
@@ -14,6 +14,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TextInput, T
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 import { storage } from "@/utils/storage";
+import { getViewedStatus } from "@/utils/viewedAnchors";
 
 const CIRCLES_CACHE_KEY = "allCircles";
 
@@ -24,6 +25,7 @@ export default function CirclesSuggestion() {
   const [allCircles, setAllCircles] = useState<any[]>([]);
   const [myCircles, setMyCircles] = useState<any[]>([]);
   const [activeAnchors, setActiveAnchors] = useState<any[]>([]);
+  const [viewedAnchors, setViewedAnchors] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [showIntro, setShowIntro] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -83,28 +85,24 @@ export default function CirclesSuggestion() {
       setAllCircles(mappedAll);
       storage.set(CIRCLES_CACHE_KEY, mappedAll);
 
-      // Fetch active anchors for each joined circle
-      if (mappedMine.length > 0) {
-        const anchorResults = await Promise.allSettled(
-          mappedMine.map((c: any) =>
-            fetchCircleDetail(c.id).then((detail: any) => {
-              if (!detail?.activeAnchor) return null;
-              const expires = detail.activeAnchor.expiresAt;
-              if (expires && new Date(expires).getTime() <= Date.now()) return null;
-              return {
-                ...detail.activeAnchor,
-                circleId: c.id,
-                circleName: c.title,
-              };
-            })
-          )
-        );
-        const fulfilled = anchorResults.filter((r) => r.status === "fulfilled");
-        const valid = fulfilled
-          .filter((r) => (r as PromiseFulfilledResult<any>).value)
-          .map((r) => (r as PromiseFulfilledResult<any>).value);
-        setActiveAnchors(valid);
-      }
+      // Extract active anchors from myCircles response
+      const anchors = myData
+        .map((circle: any) => {
+          if (!circle?.activeAnchor) return null;
+          const createdAt = circle.activeAnchor.createdAt;
+          if (createdAt) {
+            const daysOld = Math.round((Date.now() - new Date(createdAt).getTime()) / (24 * 60 * 60 * 1000));
+            if (daysOld > 5) return null;
+          }
+          return {
+            ...circle.activeAnchor,
+            circleId: circle.id,
+            circleName: circle.name,
+          };
+        })
+        .filter(Boolean);
+      setActiveAnchors(anchors);
+      getViewedStatus(anchors.map((a: any) => a.id)).then(setViewedAnchors);
     } catch (err) {
       console.error("Failed to load circles", err);
       setError("Failed to load circles");
@@ -208,6 +206,7 @@ export default function CirclesSuggestion() {
                     anchor={anchor}
                     circleId={anchor.circleId}
                     circleName={anchor.circleName}
+                    viewed={viewedAnchors[anchor.id]}
                   />
                 ))}
               </ScrollView>

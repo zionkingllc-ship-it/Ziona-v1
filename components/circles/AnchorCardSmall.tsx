@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { memo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import colors from "@/constants/colors";
 import { useCountdown } from "@/hooks/useCountdown";
+import { markAnchorViewed } from "@/utils/viewedAnchors";
 
 const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
@@ -26,9 +27,10 @@ type AnchorCardSmallProps = {
   };
   circleId: string;
   circleName?: string;
+  viewed?: boolean;
 };
 
-const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circleName }: AnchorCardSmallProps) {
+const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circleName, viewed }: AnchorCardSmallProps) {
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
   const anchorType = anchor.anchorType || anchor.type || "text";
@@ -36,6 +38,7 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
   const { formatted, isExpired } = useCountdown(anchor.expiresAt || "");
 
   const handlePress = () => {
+    markAnchorViewed(anchor.id);
     const text = anchor.anchorText || anchor.content || "";
     const url = anchor.mediaUrl || "";
     const isVideo = (anchor.anchorType || anchor.type || "") === "video";
@@ -57,49 +60,57 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
     });
   };
 
-  const gradientColors = anchor.backgroundColors || ["#6C2BD9", "#9B59B6"];
-  const thumbnail = anchor.anchorThumbnail || anchor.anchorImage || "";
+  const mediaSource = anchor.mediaUrl || anchor.anchorThumbnail || anchor.anchorImage;
+
+  const renderContent = () => {
+    switch (anchorType) {
+      case "image":
+        return mediaSource ? (
+          <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ) : null;
+      case "video":
+        return (
+          <>
+            {mediaSource ? (
+              <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : null}
+            <View style={StyleSheet.absoluteFill}>
+              <View style={styles.playOverlay}>
+                <Ionicons name="play-circle" size={22} color="#FFF" />
+              </View>
+            </View>
+          </>
+        );
+      default:
+        return (
+          <>
+            <View style={StyleSheet.absoluteFill}>
+              <View style={styles.darkOverlay} />
+            </View>
+            <Text style={styles.textPreviewContent} numberOfLines={3}>
+              {anchor.anchorText || anchor.content || anchor.bibleText || ""}
+            </Text>
+          </>
+        );
+    }
+  };
 
   return (
-    <Pressable onPress={handlePress} style={styles.card}>
-      {anchorType === "image" || anchorType === "video" ? (
-        <View style={styles.mediaWrapper}>
-          {thumbnail ? (
-            <Image source={{ uri: thumbnail }} style={styles.mediaImage} />
-          ) : (
-            <View style={[styles.mediaFallback, { backgroundColor: "#333" }]}>
-              <Ionicons name={anchorType === "video" ? "videocam" : "image"} size={24} color="#FFF" />
-            </View>
-          )}
-          {anchorType === "video" && (
-            <View style={styles.playOverlay}>
-              <Ionicons name="play-circle" size={22} color="#FFF" />
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.textPreview}>
-          <Image
-            source={FALLBACK_IMAGE}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
-          {!imageError && anchor.backgroundImage && (
-            <Image
-              source={{ uri: anchor.backgroundImage }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-              onError={() => setImageError(true)}
-            />
-          )}
-          <View style={StyleSheet.absoluteFill}>
-            <LinearGradient colors={gradientColors as [string, string]} style={StyleSheet.absoluteFill} opacity={0.4} />
-          </View>
-          <Text style={styles.textPreviewContent} numberOfLines={3}>
-            {anchor.anchorText || anchor.content || anchor.bibleText || ""}
-          </Text>
-        </View>
+    <Pressable onPress={handlePress} style={[styles.card, !viewed && styles.unviewedBorder]}>
+      <Image
+        source={FALLBACK_IMAGE}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
+      {!imageError && anchor.backgroundImage && (
+        <Image
+          source={{ uri: anchor.backgroundImage }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
       )}
+      {renderContent()}
 
       {hasExpiry && (
         <View style={styles.countdownBadge}>
@@ -114,7 +125,6 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
 
 const CARD_WIDTH = 120;
 const CARD_HEIGHT = 100;
-const IMAGE_HEIGHT = 100;
 
 const styles = StyleSheet.create({
   card: {
@@ -125,20 +135,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#F5F3F7",
   },
-  mediaWrapper: {
-    width: "100%",
-    height: IMAGE_HEIGHT,
-    position: "relative",
+  unviewedBorder: {
+    borderWidth: 4,
+    borderColor: colors.secondary,
   },
-  mediaImage: {
-    width: "100%",
-    height: "100%",
-  },
-  mediaFallback: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+  darkOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   playOverlay: {
     position: "absolute",
@@ -148,20 +151,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  textPreview: {
-    width: "100%",
-    height: IMAGE_HEIGHT,
-    padding: 10,
-    justifyContent: "center",
-    position: "relative",
   },
   textPreviewContent: {
+    position: "absolute",
+    bottom: 24,
+    left: 8,
+    right: 8,
     color: "#FFF",
     fontSize: 11,
     lineHeight: 15,
-    zIndex: 1,
   },
   countdownBadge: {
     position: "absolute",

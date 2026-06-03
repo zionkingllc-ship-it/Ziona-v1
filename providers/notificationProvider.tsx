@@ -1,48 +1,76 @@
-import React, { useEffect } from "react";
-import { Alert, Linking, Platform } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Alert, AppState, AppStateStatus, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { registerDeviceToken } from "@/services/graphQL/queries/actions/notifications";
+import { useAuthStore } from "@/store/useAuthStore";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
+    shouldSetBadge: true,
   }),
 });
+
+async function setupAndroidChannel() {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync("default", {
+    name: "Default",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: "#742092",
+  });
+}
 
 async function requestPermissionsAndRegister() {
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") {
     const { status: newStatus } = await Notifications.requestPermissionsAsync({
-      ios: { allowAlert: true, allowSound: true },
+      ios: { allowAlert: true, allowSound: true, allowBadge: true },
     });
     if (newStatus !== "granted") {
-      Alert.alert(
-        "Notifications disabled",
-        "You won't receive push notifications. You can enable them later in Settings.",
-        [
-          { text: "Not now", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() },
-        ]
-      );
+      console.log("🔔 Push permission denied");
       return;
     }
   }
   try {
     const expoPushToken = await Notifications.getExpoPushTokenAsync();
-    await registerDeviceToken(expoPushToken.data, Platform.OS);
+    console.log("🔔 Got push token:", expoPushToken.data);
+    const success = await registerDeviceToken(expoPushToken.data, Platform.OS);
+    console.log("🔔 Token registered:", success);
   } catch (err) {
-    console.warn("Push token registration failed:", err);
+    console.warn("🔔 Push token registration failed:", err);
   }
 }
 
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    requestPermissionsAndRegister();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const appState = useRef(AppState.currentState);
 
+  useEffect(() => {
+    setupAndroidChannel();
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
+        if (isAuthenticated) {
+          requestPermissionsAndRegister();
+        }
+      }
+      appState.current = nextState;
+    });
+
+    if (isAuthenticated) {
+      requestPermissionsAndRegister();
+    }
+
+    return () => subscription.remove();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data as Record<string, string> | undefined;
       if (!data) return;
@@ -60,8 +88,17 @@ export default function NotificationProvider({ children }: { children: React.Rea
       }
     });
 
+    const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
+      if (Platform.OS === "ios") {
+        Notifications.setBadgeCountAsync(
+          (notification.request.content.badge as number) || 1,
+        ).catch(() => {});
+      }
+    });
+
     return () => {
       responseSubscription.remove();
+      receivedSubscription.remove();
     };
   }, []);
 

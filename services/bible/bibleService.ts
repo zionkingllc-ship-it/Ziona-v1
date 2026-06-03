@@ -9,6 +9,7 @@ const GET_TRANSLATIONS = `
 query {
   bibleVersions {
     name
+    abbreviation
   }
 }
 `;
@@ -18,6 +19,7 @@ export async function getBibleTranslations(): Promise<BibleTranslation[]> {
 
   return (data?.bibleVersions ?? []).map((v: any) => ({
     name: v.name,
+    abbreviation: v.abbreviation,
   }));
 }
 

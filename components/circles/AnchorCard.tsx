@@ -66,7 +66,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
   }
 
   const hasText = !!(anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference);
-  const hasVideo = !!(anchor!.anchorVideo || (anchor!.type === "video" && anchor!.mediaUrl));
+  const hasVideo = !!(anchor!.anchorVideo || anchor!.type === "video");
 
   const previewText = anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference || "";
 

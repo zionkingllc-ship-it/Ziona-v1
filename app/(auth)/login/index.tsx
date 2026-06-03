@@ -249,7 +249,10 @@ export default function LoginIndex() {
               By continuing, you agree to Ziona’s{" "}
             </Text>
 
-            <Pressable onPress={() => router.push("/settings/terms/use")}>
+            <Pressable onPress={() => {
+              console.log("📄 [auth/login] Pressed: Terms of use");
+              router.push("/settings/terms/use");
+            }}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}
@@ -270,9 +273,12 @@ export default function LoginIndex() {
               lineHeight={fs(18)}
             >
               {" "}
-              and confirm that you have read Ziona’s{" "}
+              and confirm that you have read Ziona's{" "}
             </Text>
-            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
+            <Pressable onPress={() => {
+              console.log("📄 [auth/login] Pressed: Privacy Policy");
+              router.push("/settings/terms/privacy");
+            }}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}
@@ -287,7 +293,10 @@ export default function LoginIndex() {
             <Text> </Text>
             <Text>and</Text>
             <Text> </Text>
-            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
+            <Pressable onPress={() => {
+              console.log("📄 [auth/login] Pressed: Community guidelines");
+              router.push("/settings/terms/community");
+            }}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}

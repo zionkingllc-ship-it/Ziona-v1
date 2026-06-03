@@ -3,7 +3,7 @@ import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
 import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
-import { searchUsers } from "@/services/graphQL/queries/follow";
+import { getFriendsList } from "@/services/graphQL/queries/follow";
 
 export interface MentionUser {
   id: string;
@@ -27,7 +27,7 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
     }
 
     setIsLoading(true);
-    searchUsers(searchText)
+    getFriendsList(searchText)
       .then(setUsers)
       .catch(() => setUsers([]))
       .finally(() => setIsLoading(false));

@@ -5,6 +5,7 @@ import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
 import { OfflineProvider } from "@/providers/OfflineProvider";
+import { startAuthHealthMonitor, stopAuthHealthMonitor } from "@/services/auth/authHealth";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
@@ -92,6 +93,16 @@ export default function RootLayout() {
   }, []);
 
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
+
+  /* -------- AUTH HEALTH MONITOR -------- */
+
+  useEffect(() => {
+    if (!isBootstrapping && fontsLoaded) {
+      startAuthHealthMonitor(router);
+      return () => stopAuthHealthMonitor();
+    }
+  }, [isBootstrapping, fontsLoaded]);
+
   if (isBootstrapping) {
     return null;
   }

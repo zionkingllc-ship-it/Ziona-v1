@@ -13,6 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { shortenBookName } from "@/utils/bibleNames";
 import { useRef, useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -26,8 +27,10 @@ function buildReference(book: string, chapter: number, verses: number[]) {
 
   if (!sorted.length) return "";
 
+  const shortBook = shortenBookName(book);
+
   if (sorted.length === 1) {
-    return `${book} ${chapter}:${sorted[0]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}`;
   }
 
   const isContinuous = sorted.every(
@@ -35,10 +38,10 @@ function buildReference(book: string, chapter: number, verses: number[]) {
   );
 
   if (isContinuous) {
-    return `${book} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
   }
 
-  return `${book} ${chapter}:${sorted.join(", ")}`;
+  return `${shortBook} ${chapter}:${sorted.join(", ")}`;
 }
 
 export default function CreateBiblePostScreen() {

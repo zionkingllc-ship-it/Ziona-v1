@@ -4,8 +4,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circles";
 import { fetchForYouFeed } from "@/services/feed/feedServices";
 import { getNotifications, getUnreadNotificationCount } from "@/services/graphQL/queries/actions/notifications";
-import { Tabs } from "expo-router";
-import { useEffect, useState } from "react";
+import { Tabs, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import { Image, Platform, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text } from "tamagui";
@@ -74,6 +74,18 @@ export default function TabsLayout() {
       ]);
     }
   }, [setTabBarHeight]);
+
+  /* -------- AUTH GUARD — redirect to login if unauthenticated -------- */
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const tabRouter = useRouter();
+  const prevAuth = useRef(isAuthenticated);
+  useEffect(() => {
+    if (prevAuth.current && !isAuthenticated) {
+      tabRouter.replace("/(auth)");
+    }
+    prevAuth.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   return (
     <Tabs

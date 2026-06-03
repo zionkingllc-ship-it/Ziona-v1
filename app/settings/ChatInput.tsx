@@ -1,47 +1,89 @@
 import Header from "@/components/layout/header";
-import { SimpleButton } from "@/components/ui/centerTextButton";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TextInput } from "react-native";
-import { View, XStack } from "tamagui";
+import { TextInput, Pressable, Keyboard, Alert, ActivityIndicator } from "react-native";
+import { View, XStack, Text } from "tamagui";
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { submitContact } from "@/services/graphQL/mutation/contact";
+import { useAuthStore } from "@/store/useAuthStore";
 import colors from "@/constants/colors";
 
 export default function ChatInputScreen() {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const userName = user?.username || "User";
+  const userEmail = user?.email || "";
+
+  const handleSend = async () => {
+    if (!message.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      const result = await submitContact({
+        brand: "ZIONA",
+        email: userEmail || `${userName}@ziona.app`,
+        message: message.trim(),
+        name: userName,
+      });
+      router.push({
+        pathname: "/settings/Chat",
+        params: { message: message.trim(), ticketId: result.ticketId || "" },
+      });
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Chat with us" />
 
-      <View padding={16} flex={1}>
-        <View
-          backgroundColor={colors.lightGrayBg}
-          borderRadius={10}
-          padding={10}
-        >
-          <TextInput
-            placeholder="Describe your issue"
-            placeholderTextColor={colors.placeholderText}
-            value={message}
-            onChangeText={setMessage}
-          />
+      <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+        <View padding={16} flex={1}>
+          <View
+            backgroundColor={colors.lightGrayBg}
+            borderRadius={10}
+            padding={10}
+          >
+            <TextInput
+              placeholder="Describe your issue"
+              placeholderTextColor={colors.placeholderText}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              style={{ fontSize: 14, color: colors.black, minHeight: 80, textAlignVertical: "top" }}
+            />
+          </View>
         </View>
-      </View>
+      </Pressable>
 
       <View padding={16}>
-        <SimpleButton
-          text="Send message"
-          color={colors.primary}
-          textColor={colors.white}
-          onPress={() =>
-            router.push({
-              pathname: "/settings/Chat",
-              params: { message },
-            })
-          }
-        />
+        <Pressable
+          onPress={handleSend}
+          disabled={!message.trim() || submitting}
+          style={{
+            backgroundColor: message.trim() && !submitting ? colors.primary : colors.inactiveButton,
+            borderRadius: 8,
+            paddingVertical: 14,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {submitting ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <XStack gap={8} alignItems="center">
+              <Ionicons name="mail-outline" size={18} color={colors.white} />
+              <Text fontFamily="$body" fontSize="$4" fontWeight="400" color={colors.white}>
+                Send message
+              </Text>
+            </XStack>
+          )}
+        </Pressable>
       </View>
     </SafeAreaView>
   );

@@ -147,10 +147,9 @@ export default function Feed() {
   }, [pages]);
 
   const suggestions = useMemo(() => {
-    if (feedType !== "following") return undefined;
-    const firstPage = (followingQuery.data as InfiniteData<{ emptyState?: { suggestions?: any[] } } | undefined> | undefined)?.pages?.[0];
+    const firstPage = (query.data as InfiniteData<{ emptyState?: { suggestions?: any[] } } | undefined> | undefined)?.pages?.[0];
     return firstPage?.emptyState?.suggestions;
-  }, [followingQuery.data, feedType]);
+  }, [query.data]);
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 80,
@@ -208,14 +207,14 @@ export default function Feed() {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View flex={1}>
-        {feedType === "following" && data.length === 0 && (
+        {data.length === 0 && (
           <View style={StyleSheet.absoluteFill} backgroundColor="rgba(0,0,0,0.2)" pointerEvents="none" />
         )}
         <View width="100%">
           <FeedHeader
             feedType={feedType}
             onChangeFeedType={setFeedType}
-            emptyFollowing={data.length === 0}
+            emptyFeed={data.length === 0}
             onBellPress={handleBellPress}
             unreadCount={unreadCount ?? 0}
           />
@@ -233,7 +232,7 @@ export default function Feed() {
             <View flex={1} justifyContent="center" alignItems="center">
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
-          ) : feedType === "following" && data.length === 0 ? (
+          ) : data.length === 0 ? (
             <FollowSuggestions
               onDone={() => {
                 if (Object.keys(followedUsers).length >= 1) {
@@ -244,10 +243,6 @@ export default function Feed() {
               }}
               suggestions={suggestions}
             />
-          ) : data.length === 0 ? (
-            <View flex={1} justifyContent="center" alignItems="center">
-              <Text style={{ color: colors.text }}>No posts yet</Text>
-            </View>
           ) : (
           <PostViewerEngine
             key={feedType}

@@ -264,7 +264,10 @@ export default function AuthIndex() {
                 By continuing, you agree to Ziona’s{" "}
               </Text>
 
-              <Pressable onPress={() => router.push("/settings/terms/use")}>
+              <Pressable onPress={() => {
+                console.log("📄 [auth/signup] Pressed: Terms of use");
+                router.push("/settings/terms/use");
+              }}>
                 <InlineUnderlineText
                   color={colors.termsButton}
                   fontFamily={"$body"}
@@ -288,7 +291,10 @@ export default function AuthIndex() {
                 and confirm that you have read Ziona’s{" "}
               </Text>
               <Pressable
-                onPress={() => router.push("/settings/terms/privacy")}
+                onPress={() => {
+                  console.log("📄 [auth/signup] Pressed: Privacy Policy");
+                  router.push("/settings/terms/privacy");
+                }}
               >
                 <InlineUnderlineText
                   color={colors.termsButton}
@@ -304,13 +310,16 @@ export default function AuthIndex() {
                           <Text>{" "} </Text>
             <Text>and</Text>
             <Text>{" "} </Text>
-            <Pressable onPress={() => router.push("/settings/terms/privacy")}>
+            <Pressable onPress={() => {
+              console.log("📄 [auth/signup] Pressed: Community guidelines");
+              router.push("/settings/terms/community");
+            }}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}
                 weight="500"
-                thickness={1}
                 fontSize={fs(13)}
+                thickness={1}
                 offset={-1}
               >
                 Community guidelines

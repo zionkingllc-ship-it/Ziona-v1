@@ -1,6 +1,7 @@
 import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
+import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,8 +44,30 @@ export default function PostComposer() {
     setPosting(true);
 
     try {
-      console.log("[PostComposer] Sending post:", { circleId: circleId || "", text: text.trim() || undefined, image: image || undefined, video: video || undefined });
-      const result = await createCirclePost(circleId || "", text.trim() || undefined, image || undefined, video || undefined);
+      let permanentImage: string | undefined;
+
+      const uploadTasks: Promise<void>[] = [];
+      if (image) {
+        uploadTasks.push(
+          uploadCircleMedia(image, "image/jpeg").then((url) => { permanentImage = url; }),
+        );
+      }
+      if (video) {
+        uploadTasks.push(
+          (async () => {
+            const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(video, { time: 0 });
+            const [thumbUrl] = await Promise.all([
+              uploadCircleMedia(thumbUri, "image/jpeg"),
+              uploadCircleMedia(video, "video/mp4"),
+            ]);
+            permanentImage = thumbUrl;
+          })(),
+        );
+      }
+      await Promise.all(uploadTasks);
+
+      console.log("[PostComposer] Sending post:", { circleId: circleId || "", text: text.trim() || undefined, image: permanentImage });
+      const result = await createCirclePost(circleId || "", text.trim() || undefined, permanentImage);
       console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
 
       if (result?.error?.code === "NOT_MEMBER") {
