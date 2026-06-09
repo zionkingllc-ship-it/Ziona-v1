@@ -42,7 +42,7 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(false);
   };
 
-  const createFolder = (name: string) => {
+  const createFolder = (name: string, thumbnailUri?: string | null) => {
     createFolderMutation.mutate(
       { name },
       {
@@ -54,7 +54,7 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
             {
               id: folderId,
               name,
-              cover: "",
+              cover: thumbnailUri || "",
               createdAt: new Date().toISOString(),
             },
           ];

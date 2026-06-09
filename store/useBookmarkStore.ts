@@ -8,6 +8,8 @@ interface BookmarkState {
   createFolder: (name: string, cover: string, postId?: string) => void;
   toggleBookmark: (postId: string, folderId: string) => void;
   getSavedFolderIds: (postId: string) => string[];
+  deleteFolder: (folderId: string) => void;
+  removeBookmarks: (postIds: string[], folderId?: string) => void;
   setFolders: (folders: Folder[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
 }
@@ -32,6 +34,23 @@ export const useBookmarksStore = create<BookmarkState>((set, get) => ({
     if (postId) {
       get().toggleBookmark(postId, newFolder.id);
     }
+  },
+
+  deleteFolder: (folderId: string) => {
+    set((state) => ({
+      folders: state.folders.filter((f) => f.id !== folderId),
+      bookmarks: state.bookmarks.filter((b) => b.folderId !== folderId),
+    }));
+  },
+
+  removeBookmarks: (postIds: string[], folderId?: string) => {
+    set((state) => ({
+      bookmarks: state.bookmarks.filter((b) => {
+        if (folderId && postIds.includes(b.postId) && b.folderId === folderId) return false;
+        if (!folderId && postIds.includes(b.postId)) return false;
+        return true;
+      }),
+    }));
   },
 
   toggleBookmark: (postId, folderId) => {

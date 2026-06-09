@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
@@ -7,6 +8,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Dimensions,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -171,6 +173,12 @@ export default function AnchorTextView() {
         />
       </View>
 
+      <View style={styles.closeContainer}>
+        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#FFF" />
+        </Pressable>
+      </View>
+
       <View style={styles.timerContainer}>
         <CountdownTimer expiresAt={expiresAt || ""} style={styles.timerText} />
       </View>
@@ -273,7 +281,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} />
       </View>
     </SafeAreaView>
   );
@@ -281,6 +289,20 @@ export default function AnchorTextView() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  closeContainer: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    zIndex: 1000,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   timerContainer: {
     position: "absolute",
     top: 60,

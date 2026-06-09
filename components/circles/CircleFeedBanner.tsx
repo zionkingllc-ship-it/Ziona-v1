@@ -1,7 +1,7 @@
 import colors from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, TouchableOpacity, View, Text } from 'react-native';
+import { ActivityIndicator, Animated, Image, TouchableOpacity, View, Text } from 'react-native';
 import BackButton from '../ui/BackButton';
 
 interface CircleFeedBannerProps {
@@ -9,6 +9,7 @@ interface CircleFeedBannerProps {
   isCompact?: boolean;
   circleName?: string;
   isJoined?: boolean;
+  loading?: boolean;
   onToggleJoin?: () => void;
   onBack?: () => void;
 }
@@ -18,6 +19,7 @@ export default function CircleFeedBanner({
   isCompact = false,
   circleName = '',
   isJoined = false,
+  loading = false,
   onToggleJoin,
   onBack,
 }: CircleFeedBannerProps) {
@@ -99,16 +101,22 @@ export default function CircleFeedBanner({
 
           <TouchableOpacity
             onPress={onToggleJoin}
+            disabled={loading}
             style={{
               borderRadius: 100,
               backgroundColor: isJoined ? "#EEEBEF" : colors.primary,
               paddingHorizontal: 16,
               paddingVertical: 8,
+              opacity: loading ? 0.6 : 1,
             }}
           >
-            <Text style={{ color: isJoined ? colors.black : colors.white, fontSize: 14 }}>
-              {isJoined ? 'Leave' : 'Join'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={isJoined ? colors.black : colors.white} />
+            ) : (
+              <Text style={{ color: isJoined ? colors.black : colors.white, fontSize: 14 }}>
+                {isJoined ? 'Leave' : 'Join'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </Animated.View>

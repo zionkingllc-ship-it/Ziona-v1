@@ -15,9 +15,10 @@ import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { shortenBookName } from "@/utils/bibleNames";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image, ScrollView, TouchableOpacity } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 
 /* =========================
@@ -59,6 +60,7 @@ export default function CreateTextScreen() {
   const [bibleVisible, setBibleVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const newPostIdRef = useRef<string | null>(null);
 
   const MAX_LENGTH = 500;
 
@@ -125,7 +127,8 @@ export default function CreateTextScreen() {
     try {
       setUploading(true);
 
-      await publishDraftPost(draft, queryClient);
+      const result = await publishDraftPost(draft, queryClient);
+      newPostIdRef.current = result?.post?.id || null;
 
       setShowProgress(true);
     } catch (error: any) {
@@ -141,6 +144,7 @@ export default function CreateTextScreen() {
 
   function handleProgressComplete() {
     setShowProgress(false);
+    queryClient.invalidateQueries({ queryKey: ["userPosts"] });
     feedback.showSuccess();
   }
 
@@ -257,7 +261,13 @@ export default function CreateTextScreen() {
       )}
       <SuccessModal
         visible={feedback.visible}
-        onClose={feedback.handleClose}
+        onClose={() => {
+          if (newPostIdRef.current) {
+            router.replace(`/viewer/${newPostIdRef.current}`);
+          } else {
+            router.replace("/(tabs)/create");
+          }
+        }}
         title={
           feedback.type === "success"
             ? "Success"

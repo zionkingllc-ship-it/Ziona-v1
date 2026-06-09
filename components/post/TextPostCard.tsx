@@ -3,7 +3,7 @@ import React from "react";
 import { YStack } from "tamagui";
 
 import { useResponsive } from "@/hooks/useResponsive";
-import { shortenBookName } from "@/utils/bibleNames";
+
 import { Category } from "@/types/category";
 import TextPostCardOutput from "./TextPostCardOutput";
 
@@ -36,20 +36,7 @@ export default function TextPostCard({ post, onLike, onDoubleTapLike }: Props) {
 
 if (post.scripture) {
     const s = post.scripture;
-    if (s.book && s.chapter) {
-      const verses = s.verses?.map((v: any) => v.number) ?? [];
-      const sorted = [...verses].sort((a: number, b: number) => a - b);
-      const shortBook = shortenBookName(s.book);
-      if (sorted.length === 1) {
-        scriptureText = `${shortBook} ${s.chapter}:${sorted[0]}`;
-      } else if (sorted.every((v: number, i: number) => i === 0 || v === sorted[i - 1] + 1)) {
-        scriptureText = `${shortBook} ${s.chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
-      } else {
-        scriptureText = `${shortBook} ${s.chapter}:${sorted.join(", ")}`;
-      }
-    } else {
-      scriptureText = s.reference;
-    }
+    scriptureText = s.reference;
     translation = s.translation;
     verseText = s.text ?? s.verses?.map(v => v.text).join(" ") ?? "";
   }

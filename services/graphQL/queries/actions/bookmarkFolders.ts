@@ -83,6 +83,13 @@ export async function deleteBookmarkFolder(folderId: string) {
     mutation DeleteBookmarkFolder($folderId: String!) {
       deleteBookmarkFolder(folderId: $folderId) {
         success
+        errorCode
+        message
+        error {
+          code
+          message
+          details
+        }
       }
     }
   `;
@@ -91,7 +98,8 @@ export async function deleteBookmarkFolder(folderId: string) {
 
   const res = data?.deleteBookmarkFolder;
   if (!res?.success) {
-    throw new Error("Failed to delete folder");
+    console.error("🔍 [deleteBookmarkFolder] Backend error:", res?.errorCode, res?.message, res?.error);
+    throw new Error(res?.message || res?.error?.message || "Failed to delete folder");
   }
 
   return res;

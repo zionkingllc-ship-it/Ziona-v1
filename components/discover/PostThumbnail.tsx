@@ -9,9 +9,10 @@ interface Props {
   post: FeedPost;
   size: number;
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
-export default function PostThumbnail({ post, size, onPress }: Props) {
+export default function PostThumbnail({ post, size, onPress, onLongPress }: Props) {
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
 
   const isMedia = post.type === "media";
@@ -187,6 +188,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
   return (
     <TouchableOpacity
       onPress={onPress}
+      onLongPress={onLongPress}
       activeOpacity={0.85}
       style={{
         width: size,

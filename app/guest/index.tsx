@@ -1,6 +1,7 @@
 import PostThumbnail from "@/components/discover/PostThumbnail";
 import Header from "@/components/layout/header";
 import CenteredMessage from "@/components/ui/CenteredMessage";
+import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
 import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -127,6 +128,15 @@ export default function GuestProfileScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
         <Header heading="Profile" />
         <CenteredMessage text="Loading..." fontFamily={"$body"} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <Header heading="Profile" />
+        <AuthPrompt message="Please login to view this profile." />
       </SafeAreaView>
     );
   }

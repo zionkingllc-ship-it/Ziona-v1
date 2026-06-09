@@ -439,6 +439,7 @@ export default function CircleFeedScreen() {
           isCompact={hasScrolledPastHeader}
           circleName={circle.name}
           isJoined={circle.isJoined}
+          loading={joining}
           onToggleJoin={toggleJoin}
           onBack={() => router.back()}
         />

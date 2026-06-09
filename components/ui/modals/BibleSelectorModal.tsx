@@ -494,6 +494,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     borderRadius: 8,
     paddingHorizontal: 10,
+    paddingVertical: 10,
     alignItems: "center",
     gap: 8,
     borderWidth: 0.5,

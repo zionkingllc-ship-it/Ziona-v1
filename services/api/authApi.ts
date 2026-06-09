@@ -201,18 +201,31 @@ export const authApi = {
     }
   },
 
-  appleLogin: async (idToken: string, nonce: string, rawNonce?: string) => {
+  appleLogin: async (
+    idToken: string,
+    nonce: string,
+    rawNonce?: string,
+    email?: string | null,
+    givenName?: string | null,
+    familyName?: string | null,
+  ) => {
     try {
       log("appleLogin called, token exists:", !!idToken);
-      log("token type:", typeof idToken);
-      log("token length:", idToken?.length);
-      log("token first 20 chars:", idToken?.substring(0, 20));
-      log("nonce:", nonce);
-      log("rawNonce:", rawNonce);
 
-      const payload: Record<string, string> = { identityToken: idToken, nonce };
+      const payload: Record<string, any> = { identityToken: idToken, nonce };
       if (rawNonce) payload.rawNonce = rawNonce;
-      log("payload:", JSON.stringify(payload));
+
+      if (email || givenName || familyName) {
+        payload.user = {};
+        if (email) payload.user.email = email;
+        if (givenName || familyName) {
+          payload.user.name = {};
+          if (givenName) payload.user.name.firstName = givenName;
+          if (familyName) payload.user.name.lastName = familyName;
+        }
+      }
+
+      log("appleLogin payload:", JSON.stringify(payload));
 
       const response = await api.post("/auth/apple", payload);
 

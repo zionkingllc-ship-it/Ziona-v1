@@ -48,6 +48,7 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
       pathname: "/CircleExtension/anchorUnifiedView",
       params: {
         id: anchor.id || "",
+        source: "suggestion",
         ...(circleId ? { circleId } : {}),
         ...(text ? { text } : {}),
         ...(anchorImage ? { anchorImage } : {}),

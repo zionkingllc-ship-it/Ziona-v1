@@ -149,7 +149,7 @@ export default function TextPostCardInput({
               marginBottom={hp(2)}
             >
               <Text fontFamily="$body" fontSize={14} color={colors.black}>
-                {verseText.slice(0, 100)}
+                {verseText}
               </Text>
             </View>
           )}
@@ -183,22 +183,20 @@ export default function TextPostCardInput({
               />
             )}
 
-            {showInput && (
-              <Text
-                alignSelf="flex-end"
-                fontSize={fs(11)}
-                color={
-                  used < maxLength / 2
-                    ? "#836F8B"
-                    : used === maxLength
-                    ? colors.errorText
-                    : "#ac8101"
-                }
-                marginTop={hp(1)}
-              >
-                {used}/{maxLength}
-              </Text>
-            )}
+            <Text
+              alignSelf="flex-end"
+              fontSize={fs(11)}
+              color={
+                used < maxLength / 2
+                  ? "#836F8B"
+                  : used === maxLength
+                  ? colors.errorText
+                  : "#ac8101"
+              }
+              marginTop={hp(1)}
+            >
+              {used}/{maxLength}
+            </Text>
           </View>
         </YStack>
       </XStack>

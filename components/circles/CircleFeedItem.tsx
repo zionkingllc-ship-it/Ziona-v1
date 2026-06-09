@@ -168,25 +168,29 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* IMAGE */}
           {imageUri && !post.mediaUrl && !postImageError && (
-            <Image
-              source={{ uri: imageUri }}
-              width="100%"
-              height={139}
-              borderRadius={14}
-              resizeMode="cover"
-              onError={() => setPostImageError(true)}
-            />
+            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image } }); }}>
+              <Image
+                source={{ uri: imageUri }}
+                width="100%"
+                height={139}
+                borderRadius={14}
+                resizeMode="cover"
+                onError={() => setPostImageError(true)}
+              />
+            </Pressable>
           )}
           {imageUri && !post.mediaUrl && postImageError && (
-            <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
-              <Ionicons name="image-outline" size={32} color="#999" />
-              <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
-            </View>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image } }); }}>
+              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
+                <Ionicons name="image-outline" size={32} color="#999" />
+                <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
+              </View>
+            </Pressable>
           )}
 
           {/* VIDEO */}
           {post.mediaUrl && (
-            <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: post.mediaUrl } })}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: post.mediaUrl } }); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
                 <Ionicons name="videocam" size={32} color="#FFF" />
                 <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>

@@ -1,8 +1,19 @@
 import { Platform } from "react-native";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { sha256 } from "js-sha256";
+
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
+
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const decoded = atob(parts[1]);
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
 
 type AppleAuthResponse = {
   user?: {
@@ -32,19 +43,17 @@ export const useAppleAuth = () => {
         return { error: "Apple Sign-In is only available on iOS" };
       }
 
-      const rawNonce = generateNonce();
-      const hashedNonce = sha256(rawNonce);
+      const nonce = generateNonce();
 
       console.log("====== APPLE NONCE ======");
-      console.log("rawNonce:", rawNonce);
-      console.log("hashedNonce:", hashedNonce);
+      console.log("nonce:", nonce);
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
-        nonce: rawNonce,
+        nonce,
       });
 
       const token = credential?.identityToken;
@@ -62,7 +71,21 @@ export const useAppleAuth = () => {
         throw new Error("Apple Sign-In failed: No identityToken returned");
       }
 
-      const res = await authApi.appleLogin(token, hashedNonce, rawNonce);
+      const jwtPayload = decodeJwtPayload(token);
+      const jwtNonce = jwtPayload?.nonce ?? nonce;
+
+      console.log("====== JWT NONCE ======");
+      console.log("our nonce:", nonce);
+      console.log("JWT nonce:", jwtNonce);
+
+      const res = await authApi.appleLogin(
+        token,
+        jwtNonce,
+        jwtNonce,
+        credential.email,
+        credential.fullName?.givenName,
+        credential.fullName?.familyName,
+      );
 
       if (!res?.user || !res?.tokens) {
         throw new Error("Invalid auth response");

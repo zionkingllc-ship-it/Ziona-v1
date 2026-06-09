@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   Image,
+  Platform,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -16,7 +17,7 @@ interface Props {
   visible: boolean;
   post: FeedPost;
   onClose: () => void;
-  onSave: (name: string) => void;
+  onSave: (name: string, thumbnailUri?: string | null) => void;
 }
 
 export default function CreateFolderModal({
@@ -75,12 +76,13 @@ export default function CreateFolderModal({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave(name.trim());
+    onSave(name.trim(), thumbnailUri);
     setName("");
+    setThumbnailUri(null);
   };
 
   return (
-    <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.6}>
+    <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.85}>
       <Animated.View style={[styles.container, sheetAnimatedStyle]}>
         <XStack justifyContent="space-between" alignItems="center">
           <TouchableOpacity onPress={handleSave}>
@@ -108,7 +110,7 @@ export default function CreateFolderModal({
           placeholder="Create Folder Name"
           value={name}
           onChangeText={setName}
-          style={styles.input}
+          style={[styles.input, Platform.OS === "ios" && { marginTop: 10 }]}
           placeholderTextColor="#aaa"
         />
       </Animated.View>

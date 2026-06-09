@@ -20,6 +20,9 @@ type AnchorFooterProps = {
   circleId?: string;
   source?: string;
   expired?: boolean;
+  anchorText?: string;
+  bibleReference?: string;
+  bibleText?: string;
 };
 
 export default function AnchorFooter({
@@ -29,6 +32,9 @@ export default function AnchorFooter({
   circleId,
   source = "suggestion",
   expired = false,
+  anchorText,
+  bibleReference,
+  bibleText,
 }: AnchorFooterProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -66,6 +72,10 @@ export default function AnchorFooter({
         fromScreen: "circleFeed",
         mode: "action",
         source,
+        anchorText: anchorText || "",
+        bibleReference: bibleReference || "",
+        bibleText: bibleText || "",
+        prompt: "What's on your mind?",
       },
     });
   };
@@ -89,7 +99,11 @@ export default function AnchorFooter({
       </TouchableOpacity>
 
       {/*reflection comment*/}
-      <TouchableOpacity onPress={handleReflection} disabled={expired}>
+      <TouchableOpacity
+        onPress={handleReflection}
+        disabled={expired}
+        style={expired ? { opacity: 0.4 } : undefined}
+      >
         <XStack
           backgroundColor="#000"
           paddingHorizontal="$3"

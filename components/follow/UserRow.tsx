@@ -69,7 +69,7 @@ export default function FollowUserRow({
     if (onPress) {
       onPress();
     } else {
-      router.push(`/guest?userId=${id}`);
+      requireAuth(() => router.push(`/guest?userId=${id}`));
     }
   };
 

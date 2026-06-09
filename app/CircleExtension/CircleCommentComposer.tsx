@@ -27,6 +27,9 @@ import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 type Props = {
   mode?: "action" | "comment";
   anchorPreview?: string;
+  anchorText?: string;
+  bibleReference?: string;
+  bibleText?: string;
   prompt?: string;
   onClose?: () => void;
   onSend?: (text: string, image?: string | null, video?: string | null) => void;
@@ -35,6 +38,9 @@ type Props = {
 export default function CircleCommentComposer({
   mode: propMode,
   anchorPreview: propAnchorPreview,
+  anchorText: propAnchorText,
+  bibleReference: propBibleReference,
+  bibleText: propBibleText,
   prompt: propPrompt,
   onClose,
   onSend,
@@ -51,11 +57,19 @@ export default function CircleCommentComposer({
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source, anchorId } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string; anchorId?: string }>();
+  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source, anchorId, anchorText: routeAnchorText, bibleReference: routeBibleRef, bibleText: routeBibleTxt } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string; anchorId?: string; anchorText?: string; bibleReference?: string; bibleText?: string }>();
 
   const mode = propMode || (routeMode as "action" | "comment") || "comment";
-  const anchorPreview = propAnchorPreview || routeAnchorPreview;
+  const anchorPreview = propAnchorPreview || routeAnchorPreview || buildAnchorPreview();
   const prompt = propPrompt || routePrompt;
+
+  function buildAnchorPreview() {
+    const ref = propBibleReference || routeBibleRef;
+    const txt = propBibleText || routeBibleTxt;
+    const aText = propAnchorText || routeAnchorText;
+    if (ref) return `"${ref}"${txt ? `\n${txt}` : ""}`;
+    return aText || "";
+  }
   const queryClient = useQueryClient();
 
   const handleSend = async () => {

@@ -1,4 +1,6 @@
 import PostThumbnail from "@/components/discover/PostThumbnail";
+import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
+import SuccessModal from "@/components/ui/modals/successModal";
 import Header from "@/components/layout/header";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import CenteredMessage from "@/components/ui/CenteredMessage";
@@ -9,6 +11,7 @@ import { useUserPosts } from "@/hooks/useUserPost";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useDeletePost } from "@/hooks/useDeletePost";
 import { queryClient } from "@/lib/queryClient";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
@@ -24,6 +27,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { useMutation } from "@tanstack/react-query";
+import { unlikePost } from "@/services/graphQL/mutation/actions";
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
@@ -149,6 +154,54 @@ export default function ProfileScreen() {
     return posts;
   }, [activeTab, posts, likedPosts]);
   const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "U";
+
+  /* ================= DELETE POST ================= */
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState<"success" | "failed" | null>(null);
+  const [unlikeTarget, setUnlikeTarget] = useState<string | null>(null);
+  const [unlikeStatus, setUnlikeStatus] = useState<"success" | "failed" | null>(null);
+
+  const { mutate: deletePost } = useDeletePost();
+
+  const { mutate: removeFromLiked } = useMutation({
+    mutationFn: unlikePost,
+    onSuccess: () => {
+      setUnlikeStatus("success");
+      queryClient.invalidateQueries({ queryKey: ["likedPosts"] });
+    },
+    onError: () => {
+      setUnlikeStatus("failed");
+    },
+  });
+
+  const handlePostLongPress = useCallback(
+    (postId: string) => {
+      if (activeTab === "liked") {
+        setUnlikeTarget(postId);
+      } else {
+        setDeleteTarget(postId);
+      }
+    },
+    [activeTab],
+  );
+
+  const confirmDelete = useCallback(() => {
+    if (deleteTarget) {
+      deletePost(deleteTarget, {
+        onSuccess: () => setDeleteStatus("success"),
+        onError: () => setDeleteStatus("failed"),
+      });
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, deletePost]);
+
+  const confirmUnlike = useCallback(() => {
+    if (unlikeTarget) {
+      removeFromLiked(unlikeTarget);
+      setUnlikeTarget(null);
+    }
+  }, [unlikeTarget, removeFromLiked]);
 
   /* ================= PULL TO REFRESH ================= */
 
@@ -369,6 +422,7 @@ export default function ProfileScreen() {
                     },
                   })
                 }
+                onLongPress={() => handlePostLongPress(item.id)}
               />
             )}
             numColumns={3}
@@ -395,6 +449,40 @@ export default function ProfileScreen() {
           />
         )}
       </YStack>
+      <DeleteConfirmationModal
+        visible={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+
+      <DeleteConfirmationModal
+        visible={unlikeTarget !== null}
+        onClose={() => setUnlikeTarget(null)}
+        onConfirm={confirmUnlike}
+        title="Remove from liked?"
+        message="This post will be removed from your liked list."
+        confirmText="Remove"
+      />
+
+      <SuccessModal
+        visible={deleteStatus !== null}
+        type={deleteStatus === "success" ? "success" : "failed"}
+        title={deleteStatus === "success" ? "Deleted" : "Delete failed"}
+        message={deleteStatus === "success" ? "Post has been deleted." : "Could not delete post. Please try again."}
+        onClose={() => setDeleteStatus(null)}
+        autoClose
+        duration={1500}
+      />
+
+      <SuccessModal
+        visible={unlikeStatus !== null}
+        type={unlikeStatus === "success" ? "success" : "failed"}
+        title={unlikeStatus === "success" ? "Removed" : "Remove failed"}
+        message={unlikeStatus === "success" ? "Post removed from liked list." : "Could not remove post. Please try again."}
+        onClose={() => setUnlikeStatus(null)}
+        autoClose
+        duration={1500}
+      />
     </SafeAreaView>
   );
 }

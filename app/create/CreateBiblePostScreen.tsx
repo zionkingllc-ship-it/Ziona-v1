@@ -16,6 +16,7 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { shortenBookName } from "@/utils/bibleNames";
 import { useRef, useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
 import { Image, Text, XStack, YStack } from "tamagui";
 
 /* =========================
@@ -54,7 +55,8 @@ export default function CreateBiblePostScreen() {
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open
   const [uploading, setUploading] = useState(false);
-  const [showProgress, setShowProgress] = useState(false); 
+  const [showProgress, setShowProgress] = useState(false);
+  const newPostIdRef = useRef<string | null>(null);
   /* =========================
      TYPE SAFETY
   ========================= */
@@ -109,7 +111,8 @@ export default function CreateBiblePostScreen() {
 
     try {
       setUploading(true);
-      await publishDraftPost(bibleDraft, queryClient);
+      const result = await publishDraftPost(bibleDraft, queryClient);
+      newPostIdRef.current = result?.post?.id || null;
       setShowProgress(true);
     } catch (error: any) {
       const networkFeedback = getNetworkModalCopy(
@@ -124,6 +127,7 @@ export default function CreateBiblePostScreen() {
 
   function handleProgressComplete() {
     setShowProgress(false);
+    queryClient.invalidateQueries({ queryKey: ["userPosts"] });
     feedback.showSuccess();
   }
 
@@ -221,7 +225,13 @@ export default function CreateBiblePostScreen() {
 
       <SuccessModal
         visible={feedback.visible}
-        onClose={feedback.handleClose}
+        onClose={() => {
+          if (newPostIdRef.current) {
+            router.replace(`/viewer/${newPostIdRef.current}`);
+          } else {
+            router.replace("/(tabs)/create");
+          }
+        }}
         title={
           feedback.type === "success"
             ? "Success"

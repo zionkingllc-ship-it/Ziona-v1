@@ -1,56 +1,132 @@
-## Issue 1: Anchor Visibility — Why Active Anchors Aren't Visible
 
-### Visibility Architecture
+### Current Architecture
 
-In `app/(tabs)/circle/circleFeed.tsx`, five state flags control whether an anchor card renders:
+| Layer | Component | What it does |
+|-------|-----------|-------------|
+| Frontend | `providers/notificationProvider.tsx:39` | Calls `getExpoPushTokenAsync()` → gets `ExponentPushToken[xxx]` |
+| Frontend | `notifications.ts:131-140` | Sends token + platform to backend via `registerDeviceToken` GraphQL mutation |
+| Backend | `registerDeviceToken` mutation | Stores the token |
+| Backend | Internal push service | Sends Firebase push notification using the stored token |
+| Backend | Internal notification service | Creates in-app notification records (shown in notification list) |
 
-| Flag | Line | Initial | Purpose |
-|---|---|---|---|
-| `displayAnchor` | 224 | `undefined` | The actual anchor data to render |
-| `showAnchorCard` | 212 | `true` | Shows anchor in scrollable ListHeader |
-| `showFixedAnchor` | 213 | `false` | Shows fixed anchor section pinned to top |
-| `anchorCardVisible` | 218 | **`false`** | Renders the card inside the fixed section |
-| `anchorExpired` | 225 | `false` | Passes expired badge to card |
+### Root Cause — Token Type Mismatch
 
-### The Visibility Gap (Primary Bug)
+The frontend registers an **Expo push token** (`ExponentPushToken[xxx]`), but the backend sends pushes via **Firebase**, which expects a raw FCM token. The Expo token is not a valid FCM token → Firebase rejects it → no push is ever delivered to the device.
 
-There is a **scroll-dependent gap zone** where no anchor shows:
+### Proof
 
-1. **Scroll < 220px**: `showAnchorCard = true`, `showFixedAnchor = false` — anchor shows in ListHeader. ✓
-2. **Scroll between 220px and `anchorStickyThreshold`**: `showAnchorCard = false` (hidden at 220px), `showFixedAnchor = false` (not yet sticky). **No anchor renders.** ✗
-3. **Scroll >= `anchorStickyThreshold`**: `showFixedAnchor = true`, but `anchorCardVisible` is still `false` — the fixed section shows but the card inside is hidden. **No anchor renders.** ✗
-4. Only when user **taps the fixed anchor header** does `anchorCardVisible` toggle to `true`.
+- **Frontend works**: `registerDeviceToken` succeeds (confirmed in `notificationProvider.tsx:41-42`)
+- **In-app notifications work**: The notification list (`app/notifications/index.tsx`) shows data — backend creates in-app records correctly
+- **Push fails silently**: Backend tries to send via Firebase with an Expo token, Firebase rejects it
 
-So for any user who scrolls past 220px (most users), the anchor visually disappears and won't come back unless they tap the fixed header. This matches the report "active anchors but no visible anchors anywhere."
+### GraphQL Schema Confirmation
 
-### Secondary Issues
+Schema introspection of `https://ziona-api-staging.onrender.com/graphql/` shows no `sendPushNotification` mutation exists. Push sending is handled entirely server-side.
 
-- **`loadAnchor` early return** (line 240): When `anchorFilter === "Today"` but `circle.activeAnchor` is null, the function bails out without setting `displayAnchor`. Even if a later refetch returns data, `displayAnchor` stays undefined.
-- **Server fields ignored**: `isExpired` and `isActive` are returned by the server (GET_CIRCLE_FEED_DATA line 193, GET_CIRCLE_DETAIL line 93) but **not mapped** in `mapCircleFeedData` (lines 67-167). All expiration logic is client-side date comparison.
-- **Race condition on mount**: `loadAnchor` runs in a `useEffect` depenedent on `[anchorFilter, circle, circleId]`. If `circle` data isn't ready yet, it runs with null data and never re-runs when `circle` updates (because `circle` is an object reference that may not change).
+Available notification-related mutations:
+- `registerDeviceToken(token, platform)` → currently used by frontend
+- `markNotificationAsRead(notificationId)`
+- `markAllNotificationsAsRead`
+- `deleteNotification(notificationId)`
+- `updateNotificationPreferences(preferences)`
 
----
+### Fix — Option A (Recommended): Backend uses Expo Push API
 
-## Issue 2: iOS Status Bar — Invisible on Dark Background
+**Frontend: no changes required.** Backend replaces Firebase calls with:
 
-### Current Configuration
+```http
+POST https://exp.host/--/api/v2/push/send
+Content-Type: application/json
+{
+  "to": "ExponentPushToken[xxx]",
+  "title": "New like",
+  "body": "Alice liked your post",
+  "data": {
+    "referenceType": "post",
+    "referenceId": "123"
+  }
+}
+```
 
-- `app/_layout.tsx:108`: `<StatusBar style="dark" />` — **black text/icons everywhere**
-- `app.json:9`: `"userInterfaceStyle": "light"` — tells iOS the app is always light mode
-- `app.json:10-13`: Android-only nav bar config, irrelevant to iOS status bar
-- All tab layouts: **no StatusBar overrides** — they inherit the root `style="dark"`
-- Auth layouts (`app/(auth)/_layout.tsx:8`, `app/(auth)/login/_layout.tsx:7`): override to `style="dark" translucent` — still dark text
-- `useColorScheme()` (line 34): detected but **never connected to StatusBar** — only used for TamaguiProvider
+Expo forwards to APNs (iOS) / FCM (Android) automatically using their configured credentials. This is the standard Expo push flow.
 
-### Why Android Works
+### Fix — Option B: Frontend sends native device tokens (backend keeps Firebase)
 
-Android's system-level status bar icons have automatic contrast handling. The OS adjusts icon visibility based on the status bar background color. The app's `expo-navigation-bar` config (`app.json:10-13`) only affects the bottom navigation bar, not the top status bar. Android handles this natively.
+Modify `providers/notificationProvider.tsx`:
 
-### Why iOS Fails
+```typescript
+// Line 39 — change this:
+const expoPushToken = await Notifications.getExpoPushTokenAsync();
+// To this:
+const devicePushToken = await Notifications.getDevicePushTokenAsync();
+const token = devicePushToken.data;
+// ...pass token and Platform.OS to registerDeviceToken
+```
 
-iOS does not auto-adjust status bar contrast. It strictly follows the `UIStatusBarStyle`:
-- `style="dark"` → `UIStatusBarStyleDarkContent` (black text) — invisible on dark backgrounds
-- `style="light"` → `UIStatusBarStyleLightContent` (white text) — invisible on light backgrounds
-- `style="auto"` → picks based on `userInterfaceStyle` in app.json, which is locked to `"light"`, so it always picks dark content
+**iOS caveat:** `getDevicePushTokenAsync()` returns a raw **APNs token**, not an FCM token. The backend's Firebase Admin SDK needs to handle APNs tokens for iOS (possible but requires configuration). For Android, it returns a native FCM token directly.
 
-With `"userInterfaceStyle": "light"` in app.json, iOS believes the app is always in light mode with light backgrounds, so dark text is correct. But the app has screens with dark backgrounds, making the status bar invisible.
+
+## Issue 4: Apple Sign-In — `APPLE_NONCE_MISMATCH`
+
+### What the frontend does
+
+1. Generates a random 32-char nonce (`generateNonce()`)
+2. Passes it to `AppleAuthentication.signInAsync({ nonce })` 
+3. Decodes the returned JWT to extract the actual `nonce` claim
+4. Sends to `POST /auth/apple` with both `nonce` and `rawNonce` set to that extracted value
+
+### What we know
+
+- The JWT's `nonce` claim **always contains the raw nonce** (not SHA256 hashed):
+
+  | Test | Generated nonce | JWT `nonce` claim | Sent as `nonce` | Result |
+  |------|----------------|-------------------|-----------------|--------|
+  | 1 | `yXbisEpDn5KOSmLWqJY4e1X5k8orizRF` | `yXbisEpDn5KOSmLWqJY4e1X5k8orizRF` | SHA256 of raw | ❌ MISMATCH |
+  | 2 | `DZvLuiy6LTUwexNsHS1wcJldOzOcScqf` | `DZvLuiy6LTUwexNsHS1wcJldOzOcScqf` | raw (same as JWT) | ❌ MISMATCH |
+  | 3 | `7f1hgRYJL66sqZoZeun7QeyZ6TomWs1C` | `7f1hgRYJL66sqZoZeun7QeyZ6TomWs1C` | extracted from JWT | ❌ MISMATCH |
+
+- Apple's documented behavior says the JWT should contain `SHA256(nonce)`, but the actual JWT contains the raw nonce as-is. This means either:
+  - Apple changed their behavior
+  - `expo-apple-authentication` hashes the nonce before passing to Apple's native API (making the JWT's nonce = SHA256(raw), but then it would NOT match the raw value)
+
+- The `aud` claim in the JWT is `com.zionking.ziona` (the bundle identifier from `app.json`)
+
+### Files changed
+
+- `services/auth/useAppleAuth.ts` — Added `decodeJwtPayload()`, extracts nonce from JWT before sending
+- `services/api/authApi.ts` — Added `email`, `givenName`, `familyName` params, builds `user` object in payload
+
+### What we need from backend
+
+Backend error is `APPLE_NONCE_MISMATCH` despite sending the exact value Apple put in the JWT. Need the backend team to clarify:
+
+1. **Nonce validation logic**: What exactly is the comparison?
+   - Does the backend hash `rawNonce` and compare against `nonce` (e.g., `SHA256(rawNonce) === nonce`)?
+   - Does it compare `nonce` against the JWT's `nonce` claim?
+   - Does it hash values before comparison?
+   - Does it validate `rawNonce` separately?
+
+2. **Expected relationship**: What is the expected relationship between `nonce` and `rawNonce`?
+   - Based on the field names, it seems `nonce` should be `SHA256(rawNonce)` — is this correct?
+   - If so, the JWT does NOT contain the SHA256 hash (it contains the raw value), so the backend validation might be hashing `rawNonce` and failing to match the JWT
+
+3. **`aud` claim check**: What Service ID does the backend check against?
+   - JWT has `aud: "com.zionking.ziona"` (bundle ID)
+   - `AGENTS.md` mentions Service ID like `com.zionking.ziona.service` — which one is correct?
+
+### Current frontend state
+
+The frontend now sends:
+```json
+{
+  "identityToken": "...",
+  "nonce": "<extracted from JWT>",
+  "rawNonce": "<extracted from JWT>",
+  "user": {
+    "email": "user@example.com",
+    "name": { "firstName": "...", "lastName": "..." }
+  }
+}
+```
+
+Both `nonce` and `rawNonce` are set to the same value (what Apple put in the JWT). If the backend needs different values (e.g., `nonce = SHA256(rawNonce)`), the frontend can adjust once the expected relationship is confirmed.

@@ -11,7 +11,7 @@ import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Image, Pressable, TouchableOpacity } from "react-native";
@@ -71,6 +71,7 @@ export default function CreateMediaPreviewScreen() {
 
   const [uploading, setUploading] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const newPostIdRef = useRef<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -106,7 +107,8 @@ export default function CreateMediaPreviewScreen() {
     try {
       setUploading(true);
 
-      await publishMediaPost(mediaDraft, queryClient);
+      const result = await publishMediaPost(mediaDraft, queryClient);
+      newPostIdRef.current = result?.post?.id || null;
 
       setShowProgress(true);
     } catch (error: any) {
@@ -124,12 +126,17 @@ export default function CreateMediaPreviewScreen() {
 
   function handleProgressComplete() {
     setShowProgress(false);
+    queryClient.invalidateQueries({ queryKey: ["userPosts"] });
     setModalType("success");
     setModalMessage("Post uploaded successfully");
     setModalVisible(true);
 
     setTimeout(() => {
-      router.replace("/(tabs)/create");
+      if (newPostIdRef.current) {
+        router.replace(`/viewer/${newPostIdRef.current}`);
+      } else {
+        router.replace("/(tabs)/create");
+      }
     }, 1200);
   }
 

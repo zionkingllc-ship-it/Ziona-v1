@@ -1,18 +1,22 @@
 import Header from "@/components/layout/header";
 import PostThumbnail from "@/components/discover/PostThumbnail";
-import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
+import { useBookmarkFolders, useDeleteBookmarkFolder, useBulkRemoveBookmarks } from "@/hooks/useBookmarkSettings";
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useRouter, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Image, Pressable, BackHandler } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
+import { Text, View, XStack, YStack } from "tamagui";
 import colors from "@/constants/colors";
 import { FeedPost } from "@/types/feedTypes";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useMemo, useState, useEffect } from "react";
+import { useBookmarksStore } from "@/store/useBookmarkStore";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { useResponsive } from "@/hooks/useResponsive";
+import { Ionicons } from "@expo/vector-icons";
+import BaseModal from "@/components/ui/modals/BaseModal";
+import SuccessModal from "@/components/ui/modals/successModal";
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 26) / 3;
@@ -22,6 +26,16 @@ export default function BookmarksScreen() {
   const { wp, hp } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [confirmDeletePostId, setConfirmDeletePostId] = useState<string | null>(null);
+  const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
+  const [deleteFolderName, setDeleteFolderName] = useState<string>("");
+  const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
+  const postDeleteModalVisible = confirmDeletePostId !== null;
+  const folderDeleteModalVisible = confirmDeleteFolderId !== null;
+
+  const deleteFolderMutation = useDeleteBookmarkFolder();
+  const bulkRemoveMutation = useBulkRemoveBookmarks();
+  const { deleteFolder, removeBookmarks } = useBookmarksStore();
 
   const {
     data: folders,
@@ -79,7 +93,36 @@ export default function BookmarksScreen() {
     return posts.map((p: any) => normalizePost(p)).filter((p): p is FeedPost => p !== null);
   }, [folderPostsData]);
 
-  const handlePostPress = (postId: string, index: number) => {
+  const handleBack = () => {
+    setSelectedFolderId(null);
+    setConfirmDeletePostId(null);
+    setConfirmDeleteFolderId(null);
+  };
+
+  const handleFolderLongPress = useCallback((folderId: string, folderName: string) => {
+    setDeleteFolderName(folderName);
+    setConfirmDeleteFolderId(folderId);
+  }, []);
+
+  const handleConfirmDeleteFolder = useCallback(() => {
+    if (!confirmDeleteFolderId) return;
+    deleteFolderMutation.mutate(confirmDeleteFolderId, {
+      onSuccess: () => {
+        deleteFolder(confirmDeleteFolderId);
+        setConfirmDeleteFolderId(null);
+        setDeleteSuccessVisible(true);
+      },
+      onError: (err) => {
+        console.error("🔍 [deleteFolder] error:", err);
+      },
+    });
+  }, [confirmDeleteFolderId, deleteFolderMutation, deleteFolder]);
+
+  const handlePostLongPress = useCallback((postId: string) => {
+    setConfirmDeletePostId(postId);
+  }, []);
+
+  const handlePostPress = useCallback((postId: string, index: number) => {
     router.push({
       pathname: "/viewer/[postId]",
       params: {
@@ -88,11 +131,17 @@ export default function BookmarksScreen() {
         index: String(index),
       },
     });
-  };
+  }, [router]);
 
-  const handleBack = () => {
-    setSelectedFolderId(null);
-  };
+  const handleConfirmDeletePost = useCallback(() => {
+    if (!confirmDeletePostId) return;
+    bulkRemoveMutation.mutate([confirmDeletePostId], {
+      onSuccess: () => {
+        removeBookmarks([confirmDeletePostId], selectedFolderId || undefined);
+        setConfirmDeletePostId(null);
+      },
+    });
+  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId]);
 
   const folderCardWidth = (width - wp(24) - wp(4)) / 2;
 
@@ -143,6 +192,72 @@ export default function BookmarksScreen() {
         )}
       </XStack>
 
+      <BaseModal visible={postDeleteModalVisible} onClose={() => setConfirmDeletePostId(null)}>
+        <YStack
+          backgroundColor={colors.white}
+          borderRadius={32}
+          padding={wp(8)}
+          marginHorizontal={wp(6)}
+          alignItems="center"
+          gap={wp(4)}
+        >
+          <Text fontFamily="$body" fontWeight="700" fontSize={18} textAlign="center">
+            Remove from bookmarks?
+          </Text>
+          <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
+            This will be removed from your saved items. You can bookmark it again anytime.
+          </Text>
+          <Pressable onPress={handleConfirmDeletePost}>
+            <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
+              Remove
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => setConfirmDeletePostId(null)}>
+            <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
+              Cancel
+            </Text>
+          </Pressable>
+        </YStack>
+      </BaseModal>
+
+      <BaseModal visible={folderDeleteModalVisible} onClose={() => setConfirmDeleteFolderId(null)}>
+        <YStack
+          backgroundColor={colors.white}
+          borderRadius={32}
+          padding={wp(8)}
+          marginHorizontal={wp(6)}
+          alignItems="center"
+          gap={wp(4)}
+        >
+          <Text fontFamily="$body" fontWeight="700" fontSize={18} textAlign="center">
+            Delete folder?
+          </Text>
+          <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
+            "{deleteFolderName}" will be permanently deleted along with all saved posts in it.
+          </Text>
+          <Pressable onPress={handleConfirmDeleteFolder}>
+            <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
+              Delete
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => setConfirmDeleteFolderId(null)}>
+            <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
+              Cancel
+            </Text>
+          </Pressable>
+        </YStack>
+      </BaseModal>
+
+      <SuccessModal
+        visible={deleteSuccessVisible}
+        onClose={() => setDeleteSuccessVisible(false)}
+        title="Deleted!"
+        message={`"${deleteFolderName}" has been deleted.`}
+        type="success"
+        autoClose
+        duration={3000}
+      />
+
       {selectedFolderId ? (
         <>
           {postsLoading && folderPosts.length === 0 ? (
@@ -165,6 +280,7 @@ export default function BookmarksScreen() {
               keyExtractor={(item, index) => `${item.id}-${index}`}
               contentContainerStyle={{ paddingLeft: 4, paddingRight: 18, paddingTop: 8, paddingBottom: 20 }}
               columnWrapperStyle={{ gap: 2 }}
+              showsVerticalScrollIndicator={false}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
               onEndReached={() => {
                 if (hasNextPage && !isFetchingNextPage) {
@@ -176,6 +292,7 @@ export default function BookmarksScreen() {
                   post={item}
                   size={ITEM_SIZE}
                   onPress={() => handlePostPress(item.id, index)}
+                  onLongPress={() => handlePostLongPress(item.id)}
                 />
               )}
             />
@@ -184,7 +301,7 @@ export default function BookmarksScreen() {
       ) : (
         <>
           {folders && folders.length > 0 ? (
-            <YStack paddingHorizontal={wp(6)} marginBottom={hp(2)}>
+            <YStack alignItems="center" marginBottom={hp(2)}>
               <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
                 Folders
               </Text>
@@ -192,33 +309,36 @@ export default function BookmarksScreen() {
                 data={folders}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
-                columnWrapperStyle={{ gap: wp(4) }}
-                contentContainerStyle={{ gap: wp(4) }}
+                columnWrapperStyle={{ gap: wp(4), justifyContent: "center" }}
+                contentContainerStyle={{ gap: wp(4), alignSelf: "center" }}
                 scrollEnabled={false}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={{
-                      width: folderCardWidth,
-                      height: hp(12),
-                      backgroundColor: colors.lightGrayBg,
-                      borderRadius: wp(3),
-                      overflow: "hidden",
-                    }}
-                    onPress={() => {
-                      setSelectedFolderId(item.id);
-                      refetchPosts();
-                    }}
-                  >
-                    <YStack flex={1} padding={wp(3)} justifyContent="space-between">
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => {
+                  console.log("🔍 [FolderCard] id:", item.id, "name:", item.name, "cover:", item.cover);
+                  return (
+                    <TouchableOpacity
+                      style={{
+                        width: folderCardWidth,
+                        backgroundColor: colors.lightGrayBg,
+                        borderRadius: wp(3),
+                        overflow: "hidden",
+                        padding: 10,
+                      }}
+                      onPress={() => {
+                        setSelectedFolderId(item.id);
+                        refetchPosts();
+                      }}
+                      onLongPress={item.id !== "all" ? () => handleFolderLongPress(item.id, item.name) : undefined}
+                    >
                       <Image
                         source={
                           item.cover
                             ? { uri: item.cover }
                             : require("@/assets/images/FolderBaner.png")
                         }
-                        style={{ width: "100%", height: "60%", borderRadius: wp(2) }}
+                        style={{ width: "100%", height: 138 }}
                       />
-                      <YStack>
+                      <YStack padding={wp(2)} gap={2}>
                         <Text fontFamily="$body" fontWeight="600" fontSize={13} numberOfLines={1}>
                           {item.name}
                         </Text>
@@ -226,9 +346,9 @@ export default function BookmarksScreen() {
                           {item.savedCount} saved
                         </Text>
                       </YStack>
-                    </YStack>
-                  </TouchableOpacity>
-                )}
+                    </TouchableOpacity>
+                  );
+                }}
               />
             </YStack>
           ) : (

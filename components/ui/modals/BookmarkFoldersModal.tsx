@@ -1,5 +1,6 @@
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
-import React from "react";
+import { useBookmarksStore } from "@/store/useBookmarkStore";
+import React, { useMemo } from "react";
 import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Image, Text, XStack } from "tamagui";
 import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
@@ -19,7 +20,16 @@ export default function BookmarkFoldersModal({
   onToggleFolder,
   onCreateNew,
 }: Props) {
-  const { data: folders = [], isLoading } = useBookmarkFolders();
+  const { data: apiFolders = [], isLoading } = useBookmarkFolders();
+  const { folders: localFolders } = useBookmarksStore();
+
+  const folders = useMemo(() =>
+    apiFolders.map((f) => ({
+      ...f,
+      cover: localFolders.find((lf) => lf.id === f.id)?.cover || f.cover || "",
+    })),
+    [apiFolders, localFolders],
+  );
   
   const bookmarkInactive = require("@/assets/images/bookmarkBlackIcon.png");
   const bookmarkActive = require("@/assets/images/bookmarkIconActive.png");

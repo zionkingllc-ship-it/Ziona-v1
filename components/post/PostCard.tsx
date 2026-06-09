@@ -222,9 +222,8 @@ function PostCardComponent({
             <XStack gap="$4" alignItems="center">
               <TouchableOpacity
                 onPress={() => {
-                  if (post.author?.id) {
-                    router.push(`/guest?userId=${post.author.id}`);
-                  }
+                  if (!post.author?.id) return;
+                  requireAuth(() => router.push(`/guest?userId=${post.author.id}`));
                 }}
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >

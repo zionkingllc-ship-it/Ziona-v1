@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import AnchorImageView from "@/components/circles/AnchorImageView";
@@ -9,7 +10,7 @@ import { saveAnchorRef } from "@/utils/anchorRef";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
@@ -126,6 +127,7 @@ export default function AnchorUnifiedView() {
     video?: string;
     expired?: string;
     likedCount?: string;
+    source?: string;
   }>();
 
   const text = params.text;
@@ -138,6 +140,7 @@ export default function AnchorUnifiedView() {
   const circleId = params.circleId;
   const id = params.id;
   const expired = params.expired;
+  const source = params.source || "suggestion";
 
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(
@@ -195,6 +198,12 @@ export default function AnchorUnifiedView() {
           colors={gradientColors}
           style={StyleSheet.absoluteFill}
         />
+      </View>
+
+      <View style={styles.closeContainer}>
+        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#FFF" />
+        </Pressable>
       </View>
 
       <View style={styles.timerContainer}>
@@ -275,6 +284,9 @@ export default function AnchorUnifiedView() {
             circleId={circleId}
             expired={expired === "1"}
             source="suggestion"
+            anchorText={text}
+            bibleReference={bibleReference}
+            bibleText={bibleText}
           />
         </View>
       )}
@@ -298,6 +310,20 @@ const styles = StyleSheet.create({
     width: SLIDE_WIDTH,
     height: height - 200,
     justifyContent: "center",
+  },
+  closeContainer: {
+    position: "absolute",
+    top: 60,
+    left: 16,
+    zIndex: 1000,
+  },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   timerContainer: {
     position: "absolute",

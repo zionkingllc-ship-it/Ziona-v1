@@ -37,7 +37,6 @@ type Props = {
   postId: string;
 };
 
-const EMOJIS = ["😀", "🥰", "😂", "😳", "😌", "😁", "🥺", "😏", "😬"];
 
 interface MentionUser {
   id: string;
@@ -150,11 +149,6 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     );
   };
 
-  const addEmoji = (emoji: string) => {
-    if (inputRef.current) inputRef.current.focus();
-    setInputValue((prev) => prev + emoji);
-  };
-
   const onBottomLayout = (e: LayoutChangeEvent) => {
     setBottomHeight(e.nativeEvent.layout.height);
   };
@@ -260,14 +254,6 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                 opacity={createCommentMutation.isPending || !inputValue.trim() ? 0.5 : 1}
               />
             </TouchableOpacity>
-          </XStack>
-
-          <XStack paddingHorizontal="$3" paddingVertical="$2" gap="$2" flexWrap="wrap" justifyContent="center">
-            {EMOJIS.map((emoji) => (
-              <Pressable key={emoji} onPress={() => addEmoji(emoji)} hitSlop={8}>
-                <Text fontSize={24}>{emoji}</Text>
-              </Pressable>
-            ))}
           </XStack>
         </YStack>
       </Animated.View>
