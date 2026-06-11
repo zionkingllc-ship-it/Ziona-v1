@@ -10,9 +10,10 @@ interface Props {
   size: number;
   onPress: () => void;
   onLongPress?: () => void;
+  pressable?: boolean;
 }
 
-export default function PostThumbnail({ post, size, onPress, onLongPress }: Props) {
+export default function PostThumbnail({ post, size, onPress, onLongPress, pressable = true }: Props) {
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
 
   const isMedia = post.type === "media";
@@ -185,20 +186,17 @@ export default function PostThumbnail({ post, size, onPress, onLongPress }: Prop
 
   /* ================= RENDER ================= */
 
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      onLongPress={onLongPress}
-      activeOpacity={0.85}
-      style={{
-        width: size,
-        height: size,
-        margin: 2,
-        borderRadius: 2,
-        overflow: "hidden",
-        backgroundColor: colors.gray,
-      }}
-    >
+  const containerStyle = {
+    width: size,
+    height: size,
+    margin: 2,
+    borderRadius: 2,
+    overflow: "hidden" as const,
+    backgroundColor: colors.gray,
+  };
+
+  const content = (
+    <>
       {renderMedia()}
 
       {/* VIDEO ICON */}
@@ -220,6 +218,21 @@ export default function PostThumbnail({ post, size, onPress, onLongPress }: Prop
           style={{ position: "absolute", top: 6, left: 6 }}
         />
       )}
+    </>
+  );
+
+  if (!pressable) {
+    return <View style={containerStyle}>{content}</View>;
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.85}
+      style={containerStyle}
+    >
+      {content}
     </TouchableOpacity>
   );
 }

@@ -14,7 +14,6 @@ import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { useResponsive } from "@/hooks/useResponsive";
-import { Ionicons } from "@expo/vector-icons";
 import BaseModal from "@/components/ui/modals/BaseModal";
 import SuccessModal from "@/components/ui/modals/successModal";
 
@@ -143,7 +142,7 @@ export default function BookmarksScreen() {
     });
   }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId]);
 
-  const folderCardWidth = (width - wp(24) - wp(4)) / 2;
+  const folderCardWidth = (width - wp(4)) / 2 - 5;
 
   useEffect(() => {
     if (!selectedFolderId) return;
@@ -182,9 +181,9 @@ export default function BookmarksScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <XStack justifyContent="space-between" alignItems="center">
-        <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} onBackPress={selectedFolderId ? handleBack : undefined} />
+        <Header heading={selectedFolder ? selectedFolder.name : "Bookmarks"} onBackPress={selectedFolderId ? handleBack : undefined} iconAfter={selectedFolderId ? undefined : "ellipsis-horizontal"} />
         {selectedFolderId && (
-          <Pressable onPress={handleBack}>
+          <Pressable onPress={handleBack} style={{ marginRight: 16 }}>
             <Text fontFamily="$body" fontWeight="500" color={colors.primary} fontSize={14}>
               Back to folders
             </Text>
@@ -301,49 +300,57 @@ export default function BookmarksScreen() {
       ) : (
         <>
           {folders && folders.length > 0 ? (
-            <YStack alignItems="center" marginBottom={hp(2)}>
-              <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
-                Folders
-              </Text>
+            <YStack marginBottom={hp(2)}>
               <FlatList
                 data={folders}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
                 columnWrapperStyle={{ gap: wp(4), justifyContent: "center" }}
-                contentContainerStyle={{ gap: wp(4), alignSelf: "center" }}
+                contentContainerStyle={{ gap: wp(4), alignSelf: "center", paddingHorizontal: 5 }}
                 scrollEnabled={false}
                 showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => {
-                  console.log("🔍 [FolderCard] id:", item.id, "name:", item.name, "cover:", item.cover);
+                renderItem={({ item, index }) => {
+                  const isAll = item.id === "all" || item.name?.toLowerCase() === "all" || index === 0;
+                  const first4 = isAll ? folderPosts.slice(0, 4) : [];
+                  console.log(`[Folder] idx=${index} id=${item.id} name=${item.name} isAll=${isAll} folderPosts=${folderPosts.length}`);
                   return (
                     <TouchableOpacity
                       style={{
                         width: folderCardWidth,
-                        backgroundColor: colors.lightGrayBg,
-                        borderRadius: wp(3),
                         overflow: "hidden",
-                        padding: 10,
+                        marginBottom: wp(2),
                       }}
                       onPress={() => {
                         setSelectedFolderId(item.id);
                         refetchPosts();
                       }}
-                      onLongPress={item.id !== "all" ? () => handleFolderLongPress(item.id, item.name) : undefined}
+                      onLongPress={!isAll ? () => handleFolderLongPress(item.id, item.name) : undefined}
                     >
-                      <Image
-                        source={
-                          item.cover
-                            ? { uri: item.cover }
-                            : require("@/assets/images/FolderBaner.png")
-                        }
-                        style={{ width: "100%", height: 138 }}
-                      />
+                      {isAll && first4.length > 0 ? (
+                        <View style={{ width: folderCardWidth, height: folderCardWidth, backgroundColor: colors.lightGrayBg }}>
+                          <View style={{ width: "100%", height: "50%", flexDirection: "row" }}>
+                            <PostThumbnail post={first4[0]} size={folderCardWidth / 2} onPress={() => {}} pressable={false} />
+                            {first4[1] && <PostThumbnail post={first4[1]} size={folderCardWidth / 2} onPress={() => {}} pressable={false} />}
+                          </View>
+                          <View style={{ width: "100%", height: "50%", flexDirection: "row" }}>
+                            {first4[2] && <PostThumbnail post={first4[2]} size={folderCardWidth / 2} onPress={() => {}} pressable={false} />}
+                            {first4[3] && <PostThumbnail post={first4[3]} size={folderCardWidth / 2} onPress={() => {}} pressable={false} />}
+                          </View>
+                        </View>
+                      ) : (
+                        <View style={{ width: folderCardWidth, height: folderCardWidth }}>
+                          {item.savedCount > 0 && folderPosts[0] ? (
+                            <PostThumbnail post={folderPosts[0]} size={folderCardWidth} onPress={() => {}} pressable={false} />
+                          ) : item.cover ? (
+                            <Image source={{ uri: item.cover }} style={{ width: "100%", height: "100%", borderRadius: 3 }} resizeMode="cover" />
+                          ) : (
+                            <Image source={require("@/assets/images/FolderBaner.png")} style={{ width: "100%", height: "100%", borderRadius: 3 }} resizeMode="cover" />
+                          )}
+                        </View>
+                      )}
                       <YStack padding={wp(2)} gap={2}>
                         <Text fontFamily="$body" fontWeight="600" fontSize={13} numberOfLines={1}>
                           {item.name}
-                        </Text>
-                        <Text fontFamily="$body" fontSize={11} fontWeight="400" color={colors.gray}>
-                          {item.savedCount} saved
                         </Text>
                       </YStack>
                     </TouchableOpacity>

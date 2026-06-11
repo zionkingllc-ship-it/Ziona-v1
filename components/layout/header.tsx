@@ -18,6 +18,7 @@ type prop = {
   headingWeight?: any;
   headerFontFamily?: any;
   onBackPress?: () => void;
+  onIconAfterPress?: () => void;
 };
 
 export default function Header({
@@ -32,6 +33,7 @@ export default function Header({
   headingWeight = "500",
   headerFontFamily = "$body",
   onBackPress,
+  onIconAfterPress,
 }: prop) {
   return (
     <XStack width={"100%"} alignItems="center" paddingLeft={20} minHeight={48}>
@@ -51,28 +53,19 @@ export default function Header({
         </Text>
       </XStack>
 
-      {iconAfter ? (
-        <XStack gap={5} position="absolute" right={10}>
-          <Ionicons type={iconAfter} size={24} />
-          {iconAfter2 && <Ionicons type={iconAfter2} size={24} />}
-        </XStack>
-      ) : (
-        <XStack gap={5} position="absolute" right={10}>
-          {imageAfter && (
-            <Image source={imageAfter} width={24} height={24} marginRight={10} />
-          )}
-          {imageAfter2 && (
-            <Pressable onPress={imageAfter2Press}>
-              <Image
-                source={imageAfter2}
-                width={24}
-                height={24}
-                marginRight={10}
-              />
-            </Pressable>
-          )}
-        </XStack>
-      )}
+      <XStack gap={5} position="absolute" right={10}>
+        {iconAfter ? (
+          <Pressable onPress={onIconAfterPress}>
+            <Ionicons name={iconAfter} size={24} color={colors.black} />
+          </Pressable>
+        ) : imageAfter2 ? (
+          <Pressable onPress={imageAfter2Press}>
+            <Image source={imageAfter2} width={24} height={24} marginRight={10} />
+          </Pressable>
+        ) : imageAfter ? (
+          <Image source={imageAfter} width={24} height={24} marginRight={10} />
+        ) : null}
+      </XStack>
     </XStack>
   );
 }
