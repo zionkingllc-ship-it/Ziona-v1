@@ -12,10 +12,14 @@ import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { useMemo, useState, useEffect, useCallback } from "react";
+import PostFilters from "@/components/discover/PostFilters";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { useResponsive } from "@/hooks/useResponsive";
 import BaseModal from "@/components/ui/modals/BaseModal";
 import SuccessModal from "@/components/ui/modals/successModal";
+import CenteredMessage from "@/components/ui/CenteredMessage";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import ErrorBox from "@/components/ui/ErrorBox";
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 26) / 3;
@@ -81,6 +85,8 @@ export default function BookmarksScreen() {
     hasNextPage,
     isFetchingNextPage,
     isLoading: postsLoading,
+    isError: postsError,
+    error: postsErrorObj,
     refetch: refetchPosts,
   } = useUserSavedPosts({
     folderId: selectedFolderId || undefined,
@@ -91,6 +97,17 @@ export default function BookmarksScreen() {
     const posts = folderPostsData.pages.flatMap((page) => page.posts);
     return posts.map((p: any) => normalizePost(p)).filter((p): p is FeedPost => p !== null);
   }, [folderPostsData]);
+
+  const [filter, setFilter] = useState<"all" | "images" | "video" | "text">("all");
+
+  const filteredFolderPosts = useMemo(() => {
+    return folderPosts.filter((post: FeedPost) => {
+      if (filter === "images") return post.type === "media" && post.media?.[0]?.type === "image";
+      if (filter === "video") return post.type === "media" && post.media?.[0]?.type === "video";
+      if (filter === "text") return post.type === "text" || post.type === "bible";
+      return true;
+    });
+  }, [folderPosts, filter]);
 
   const handleBack = () => {
     setSelectedFolderId(null);
@@ -263,6 +280,14 @@ export default function BookmarksScreen() {
             <YStack flex={1} justifyContent="center" alignItems="center">
               <Text fontFamily="$body" fontWeight="400" color={colors.gray}>Loading posts...</Text>
             </YStack>
+          ) : postsError && folderPosts.length === 0 ? (
+            <CenteredMessage
+              text={getNetworkModalCopy(postsErrorObj, "Could not load posts. Please try again.").title}
+              subtitle={getNetworkModalCopy(postsErrorObj, "Could not load posts. Please try again.").message}
+              actionLabel="Tap to retry"
+              onActionPress={() => refetchPosts()}
+              fontFamily="$body"
+            />
           ) : folderPosts.length === 0 ? (
             <YStack flex={1} justifyContent="center" alignItems="center">
               <Text fontFamily="$body" fontWeight="400" color={colors.gray}>
@@ -273,8 +298,10 @@ export default function BookmarksScreen() {
               </Text>
             </YStack>
           ) : (
+            <>
+              <PostFilters selected={filter} onSelect={setFilter} />
             <FlatList
-              data={folderPosts}
+              data={filteredFolderPosts}
               numColumns={3}
               keyExtractor={(item, index) => `${item.id}-${index}`}
               contentContainerStyle={{ paddingLeft: 4, paddingRight: 18, paddingTop: 8, paddingBottom: 20 }}
@@ -295,11 +322,20 @@ export default function BookmarksScreen() {
                 />
               )}
             />
+            </>
           )}
         </>
       ) : (
         <>
-          {folders && folders.length > 0 ? (
+          {isError && !folders ? (
+            <CenteredMessage
+              text={getNetworkModalCopy(foldersError, "Could not load folders. Please try again.").title}
+              subtitle={getNetworkModalCopy(foldersError, "Could not load folders. Please try again.").message}
+              actionLabel="Tap to retry"
+              onActionPress={() => refetchFolders()}
+              fontFamily="$body"
+            />
+          ) : folders && folders.length > 0 ? (
             <YStack marginBottom={hp(2)}>
               <FlatList
                 data={folders}

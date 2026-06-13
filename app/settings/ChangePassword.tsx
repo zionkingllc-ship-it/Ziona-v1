@@ -183,7 +183,7 @@ export default function ChangePasswordScreen() {
         onClose={() => setErrorModalVisible(false)}
         title={errorModalTitle}
         message={errorModalMessage}
-        type="warning"
+        type="failed"
       />
     </KeyboardAvoidingWrapper>
     </SafeAreaView>

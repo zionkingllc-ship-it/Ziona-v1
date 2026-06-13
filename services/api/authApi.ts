@@ -167,6 +167,21 @@ export const authApi = {
     }
   },
 
+  getAppleNonce: async (): Promise<{ rawNonce: string; nonce: string; expiresIn: number }> => {
+    log("getAppleNonce called");
+
+    const response = await api.post("/auth/apple/nonce");
+
+    log("getAppleNonce response:", response.data);
+
+    const d = response.data?.data ?? response.data;
+    return {
+      rawNonce: d.rawNonce,
+      nonce: d.nonce,
+      expiresIn: d.expiresIn ?? 600,
+    };
+  },
+
   googleLogin: async (idToken: string) => {
     try {
       log("googleLogin called");
@@ -201,33 +216,36 @@ export const authApi = {
     }
   },
 
-  appleLogin: async (
-    idToken: string,
-    nonce: string,
-    rawNonce?: string,
-    email?: string | null,
-    givenName?: string | null,
-    familyName?: string | null,
-  ) => {
+  appleLogin: async (payload: {
+    identityToken: string;
+    rawNonce: string;
+    nonce?: string;
+    user?: {
+      email?: string | null;
+      name?: { firstName?: string | null; lastName?: string | null };
+    };
+  }) => {
     try {
-      log("appleLogin called, token exists:", !!idToken);
+      log("appleLogin called");
 
-      const payload: Record<string, any> = { identityToken: idToken, nonce };
-      if (rawNonce) payload.rawNonce = rawNonce;
-
-      if (email || givenName || familyName) {
-        payload.user = {};
-        if (email) payload.user.email = email;
-        if (givenName || familyName) {
-          payload.user.name = {};
-          if (givenName) payload.user.name.firstName = givenName;
-          if (familyName) payload.user.name.lastName = familyName;
+      const body: Record<string, any> = {
+        identityToken: payload.identityToken,
+        rawNonce: payload.rawNonce,
+      };
+      if (payload.nonce) body.nonce = payload.nonce;
+      if (payload.user?.email || payload.user?.name?.firstName || payload.user?.name?.lastName) {
+        body.user = {};
+        if (payload.user.email) body.user.email = payload.user.email;
+        if (payload.user.name?.firstName || payload.user.name?.lastName) {
+          body.user.name = {};
+          if (payload.user.name.firstName) body.user.name.firstName = payload.user.name.firstName;
+          if (payload.user.name.lastName) body.user.name.lastName = payload.user.name.lastName;
         }
       }
 
-      log("appleLogin payload:", JSON.stringify(payload));
+      log("appleLogin payload:", JSON.stringify(body));
 
-      const response = await api.post("/auth/apple", payload);
+      const response = await api.post("/auth/apple", body);
 
       log("appleLogin response:", response.data);
 

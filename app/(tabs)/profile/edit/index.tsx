@@ -1,4 +1,5 @@
 import Header from "@/components/layout/header";
+import EditableFieldRow from "@/components/ui/EditableFieldRow";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useUpdateAvatar } from "@/hooks/useProfileMutations";
@@ -37,7 +38,10 @@ export default function EditProfileScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission required", "Please grant media library access in Settings to change your profile picture.");
+      Alert.alert(
+        "Permission required",
+        "Please grant media library access in Settings to change your profile picture.",
+      );
       return;
     }
 
@@ -73,7 +77,8 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}
+      style={{ flex: 1, backgroundColor: colors.white }}
+      edges={["top"]}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -82,7 +87,7 @@ export default function EditProfileScreen() {
         }
       >
         {/* Header */}
-        <XStack paddingLeft={20}>
+        <XStack>
           <Header
             heading="Edit profile"
             headerFontFamily="$body"
@@ -122,35 +127,51 @@ export default function EditProfileScreen() {
         </YStack>
 
         {/* Info Section */}
-        <YStack flex={1} gap="$4" padding={20}>
-          <Pressable onPress={() => router.push("/profile/edit/name")}>
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text fontSize={16}>Name</Text>
-              <Text fontSize={16}>
-                {isLoading ? "fetching..." : user?.fullName || ""}
-              </Text>
-              <ChevronRight size={22} color="#444" />
-            </XStack>
-          </Pressable>
+        <YStack flex={1} gap="$1" padding={20}>
+          <EditableFieldRow
+            label="Name"
+            value={isLoading ? "fetching..." : user?.fullName || ""}
+            onPress={() => router.push("/profile/edit/name")}
+          />
 
-          <Pressable onPress={() => router.push("/profile/edit/username")}>
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text fontSize={16}>Username</Text>
-              <Text fontSize={16}>
-                {isLoading ? "fetching..." : user?.username || ""}
-              </Text>
-              <ChevronRight size={22} color="#444" />
-            </XStack>
-          </Pressable>
+          <EditableFieldRow
+            label="Username"
+            value={isLoading ? "fetching..." : user?.username || ""}
+            onPress={() => router.push("/profile/edit/username")}
+          />
 
-          <Text marginTop={10}>More info</Text>
+          <Text
+            fontFamily="$body"
+            marginTop={10}
+            fontSize={16}
+            fontWeight="500"
+          >
+            More info
+          </Text>
 
-          <YStack>
-            <Text marginBottom={4}>Bio</Text>
-
+          <YStack 
+            backgroundColor={"#FAF9FA"}
+            justifyContent="flex-start"
+            paddingVertical={12}
+            paddingHorizontal={16}
+            borderRadius={16}
+          >
+            <Text fontFamily="$body" fontSize={16} fontWeight="400" width="30%">
+              Bio
+            </Text>
             <Pressable onPress={() => router.push("/profile/edit/bio")}>
-              <XStack justifyContent="space-between" alignItems="center">
-                <Text flex={1}>
+              <XStack
+                alignItems="center"
+                paddingVertical={12}
+              >
+                <Text
+                  fontFamily="$body"
+                  fontSize={16}
+                  fontWeight="500"
+                  color="$gray"
+                  flex={1}
+                  numberOfLines={1}
+                >
                   {isLoading
                     ? "fetching..."
                     : user?.bio || "Add a short description about you"}

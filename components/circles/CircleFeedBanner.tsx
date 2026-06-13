@@ -52,74 +52,77 @@ export default function CircleFeedBanner({
   }));
 
   return (
-    <Animated.View style={{ height: bannerHeight, overflow: 'hidden', position: 'relative' }}>
-      {hasBanner ? (
-        <Image
-          source={{ uri: bannerImage }}
-          style={{ width: '100%', height: '100%' }}
-          resizeMode="cover"
+    <View style={{ position: 'relative' }}>
+      <View style={{ position: 'absolute', top: 38, left: 20, zIndex: 10 }}>
+        <BackButton/>
+      </View>
+
+      <Animated.View style={{ height: bannerHeight, overflow: 'hidden' }}>
+        {hasBanner ? (
+          <Image
+            source={{ uri: bannerImage }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={{ width: '100%', height: '100%', backgroundColor: '#D3D3D3', justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: '#666', fontSize: 12, fontWeight: '500' }}>Upload banner</Text>
+          </View>
+        )}
+
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            opacity: hasBanner ? overlayOpacity : 0,
+          }}
         />
-      ) : (
-        <View style={{ width: '100%', height: '100%', backgroundColor: '#D3D3D3', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#666', fontSize: 12, fontWeight: '500' }}>Upload banner</Text>
-        </View>
-      )}
 
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          opacity: hasBanner ? overlayOpacity : 0,
-        }}
-      />
-
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: compactHeaderOpacity,
-          justifyContent: 'center',
-          paddingLeft: 20,
-          paddingRight: 16,
-          paddingTop: 18,
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: "center"}}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <BackButton/>
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: compactHeaderOpacity,
+            justifyContent: 'center',
+            paddingLeft: 56,
+            paddingRight: 16,
+            paddingTop: 18,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: "center"}}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.white }}>
               {circleName}
             </Text>
-          </View>
 
-          <TouchableOpacity
-            onPress={onToggleJoin}
-            disabled={loading}
-            style={{
-              borderRadius: 100,
-              backgroundColor: isJoined ? "#EEEBEF" : colors.primary,
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={isJoined ? colors.black : colors.white} />
-            ) : (
-              <Text style={{ color: isJoined ? colors.black : colors.white, fontSize: 14 }}>
-                {isJoined ? 'Leave' : 'Join'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={onToggleJoin}
+              disabled={loading}
+              style={{
+                borderRadius: 100,
+                backgroundColor: isJoined ? "#EEEBEF" : colors.primary,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={isJoined ? colors.black : colors.white} />
+              ) : (
+                <Text style={{ color: isJoined ? colors.black : colors.white, fontSize: 14 }}>
+                  {isJoined ? 'Leave' : 'Join'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 }

@@ -4,17 +4,6 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
 
-function decodeJwtPayload(token: string): Record<string, any> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const decoded = atob(parts[1]);
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
-
 type AppleAuthResponse = {
   user?: {
     id: string;
@@ -25,13 +14,47 @@ type AppleAuthResponse = {
   error?: string;
 };
 
-function generateNonce(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+const APPLE_ERROR_CODES = [
+  "APPLE_NONCE_REQUIRED",
+  "APPLE_NONCE_MISMATCH",
+  "APPLE_NONCE_EXPIRED",
+  "APPLE_EMAIL_REQUIRED",
+  "INVALID_OAUTH_TOKEN",
+  "APPLE_TOKEN_EXPIRED",
+  "EMAIL_REGISTERED_WITH_PASSWORD",
+  "EMAIL_REGISTERED_WITH_DIFFERENT_PROVIDER",
+  "APPLE_ACCOUNT_MISMATCH",
+  "OAUTH_NOT_CONFIGURED",
+] as const;
+
+type AppleErrorCode = (typeof APPLE_ERROR_CODES)[number];
+
+const APPLE_ERROR_MESSAGES: Record<AppleErrorCode, string> = {
+  APPLE_NONCE_REQUIRED: "Sign in could not be verified. Please try again.",
+  APPLE_NONCE_MISMATCH: "Sign in could not be verified. Please try again.",
+  APPLE_NONCE_EXPIRED: "Sign in timed out. Please try again.",
+  APPLE_EMAIL_REQUIRED: "Email is required to sign in with Apple.",
+  INVALID_OAUTH_TOKEN: "Invalid sign in token. Please try again.",
+  APPLE_TOKEN_EXPIRED: "Sign in expired. Please try again.",
+  EMAIL_REGISTERED_WITH_PASSWORD: "This email is already registered with a password. Please sign in with your email and password.",
+  EMAIL_REGISTERED_WITH_DIFFERENT_PROVIDER: "This email is already registered with another provider.",
+  APPLE_ACCOUNT_MISMATCH: "Apple account mismatch. Please use the same Apple ID.",
+  OAUTH_NOT_CONFIGURED: "Apple Sign-In is not configured. Please try again later.",
+};
+
+function getUserFacingError(error: any): string {
+  if (!error) return "Apple login failed, try again later.";
+
+  if (error.errorCode && APPLE_ERROR_MESSAGES[error.errorCode as AppleErrorCode]) {
+    return APPLE_ERROR_MESSAGES[error.errorCode as AppleErrorCode];
   }
-  return result;
+
+  if (error._status) {
+    if (error._status === 401) return "Session expired. Please try again.";
+    if (error._status === 429) return "Too many attempts. Please wait and try again.";
+  }
+
+  return error?.message || "Apple login failed, try again later.";
 }
 
 export const useAppleAuth = () => {
@@ -43,9 +66,11 @@ export const useAppleAuth = () => {
         return { error: "Apple Sign-In is only available on iOS" };
       }
 
-      const nonce = generateNonce();
+      console.log("====== APPLE NONCE: requesting from backend ======");
 
-      console.log("====== APPLE NONCE ======");
+      const { rawNonce, nonce } = await authApi.getAppleNonce();
+
+      console.log("rawNonce:", rawNonce);
       console.log("nonce:", nonce);
 
       const credential = await AppleAuthentication.signInAsync({
@@ -56,48 +81,60 @@ export const useAppleAuth = () => {
         nonce,
       });
 
-      const token = credential?.identityToken;
+      const identityToken = credential?.identityToken;
 
       console.log("====== APPLE CREDENTIAL ======");
-      console.log("credential keys:", Object.keys(credential ?? {}));
-      console.log("identityToken type:", typeof token);
-      console.log("identityToken length:", (token as any)?.length);
-      console.log("identityToken (first 20):", token?.substring(0, 20));
+      console.log("identityToken length:", identityToken?.length);
       console.log("user:", credential?.user);
       console.log("email:", credential?.email);
 
-      if (!token) {
+      if (!identityToken) {
         console.error("Apple identityToken is null/undefined. Full credential:", JSON.stringify(credential));
         throw new Error("Apple Sign-In failed: No identityToken returned");
       }
 
-      const jwtPayload = decodeJwtPayload(token);
-      const jwtNonce = jwtPayload?.nonce ?? nonce;
+      const userPayload: {
+        email?: string | null;
+        name?: { firstName?: string | null; lastName?: string | null };
+      } = {};
+      if (credential.email) userPayload.email = credential.email;
+      if (credential.fullName?.givenName || credential.fullName?.familyName) {
+        userPayload.name = {
+          firstName: credential.fullName.givenName,
+          lastName: credential.fullName.familyName,
+        };
+      }
 
-      console.log("====== JWT NONCE ======");
-      console.log("our nonce:", nonce);
-      console.log("JWT nonce:", jwtNonce);
+      const res = await authApi.appleLogin({
+        identityToken,
+        rawNonce,
+        nonce,
+        user: credential.email || credential.fullName?.givenName || credential.fullName?.familyName
+          ? userPayload
+          : undefined,
+      });
 
-      const res = await authApi.appleLogin(
-        token,
-        jwtNonce,
-        jwtNonce,
-        credential.email,
-        credential.fullName?.givenName,
-        credential.fullName?.familyName,
-      );
+      const data = res?.data ?? res ?? {};
 
-      if (!res?.user || !res?.tokens) {
+      console.log("====== APPLE LOGIN RESPONSE ======");
+      console.log("success:", data.success);
+      console.log("errorCode:", data.errorCode);
+      console.log("hasUser:", !!data.user);
+      console.log("needsUsernameSelection:", data.needsUsernameSelection);
+
+      if (!data.success || !data.user) {
+        if (data.errorCode) {
+          return { error: getUserFacingError(data) };
+        }
         throw new Error("Invalid auth response");
       }
 
-      setAuth(res.user, res.tokens);
-      console.log("====== APPLE DATA  ======");
-      console.log("Apple User:", res.user);
+      setAuth(data.user, data.tokens);
+
       return {
-        user: res.user,
-        tokens: res.tokens,
-        suggestedUsernames: res.suggestedUsernames ?? [],
+        user: data.user,
+        tokens: data.tokens,
+        suggestedUsernames: data.suggestedUsernames ?? [],
       };
     } catch (error: any) {
       if (error?.code === "ERR_CANCELED") {
@@ -107,10 +144,7 @@ export const useAppleAuth = () => {
       console.error("Apple Sign-In error:", error);
 
       return {
-        error:
-          error?.error?.message ||
-          error?.message ||
-          "Apple login failed, try again later",
+        error: getUserFacingError(error),
       };
     }
   };

@@ -10,7 +10,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AppState, FlatList, ViewToken } from "react-native";
+import { ActivityIndicator, AppState, FlatList, View, ViewToken } from "react-native";
+import colors from "@/constants/colors";
 
 type Props = {
   posts: FeedPost[];
@@ -43,22 +44,25 @@ function PostViewerEngineComponent({
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const hasInitialized = useRef(false);
 
   const likedMap = usePostActionsStore((s) => s.likedPosts);
   const savedMap = usePostActionsStore((s) => s.savedPosts);
   const followedMap = usePostActionsStore((s) => s.followedUsers);
 
+  const origLength = posts?.length || 0;
+  const startIndex = origLength + (initialIndex ?? 0);
+
   const mergedPosts = useMemo(() => {
     if (!posts?.length) return [];
-    return posts.map((p) =>
+    const base = posts.map((p) =>
       mergePostState(p, {
         likedPosts: likedMap,
         savedPosts: savedMap,
         followedUsers: followedMap,
       }),
     );
+    // Triple the array for endless looping
+    return [...base, ...base, ...base];
   }, [posts]);
 
   const extraData = useMemo(() => ({
@@ -66,13 +70,15 @@ function PostViewerEngineComponent({
     pausedPostId,
   }), [activePostId, pausedPostId]);
 
+  // Scroll to middle copy when FlatList mounts or posts length changes
   useEffect(() => {
-    if (!hasInitialized.current && mergedPosts.length > 0 && initialIndex >= 0) {
-      hasInitialized.current = true;
-      setActivePostId(mergedPosts[initialIndex]?.id ?? null);
-      setIsReady(true);
-    }
-  }, [mergedPosts, initialIndex]);
+    if (!containerHeight || mergedPosts.length === 0) return;
+    const id = requestAnimationFrame(() => {
+      flatListRef.current?.scrollToIndex({ index: startIndex, animated: false });
+      setActivePostId(mergedPosts[startIndex]?.id ?? null);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [containerHeight, mergedPosts.length, startIndex]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -127,22 +133,36 @@ function PostViewerEngineComponent({
 
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
-      length: containerHeight,
-      offset: containerHeight * index,
+      length: containerHeight || 1,
+      offset: (containerHeight || 1) * index,
       index,
     }),
     [containerHeight],
   );
 
-  const onEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
-      fetchNextPage();
+  const onMomentumScrollEnd = useCallback((e: any) => {
+    if (!origLength) return;
+    const offsetY = e.nativeEvent.contentOffset.y;
+    const currentIndex = Math.round(offsetY / containerHeight);
+
+    if (currentIndex >= origLength * 2) {
+      // Past the end of the middle copy → jump back to middle
+      const target = currentIndex - origLength;
+      flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      // Fetch next page on loop
+      if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
+        fetchNextPage();
+      }
+    } else if (currentIndex < origLength) {
+      // Past the beginning of the middle copy → jump forward to middle
+      const target = currentIndex + origLength;
+      flatListRef.current?.scrollToIndex({ index: target, animated: false });
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const keyExtractor = useCallback((item: FeedPost) => item.id, []);
 
-  if (!containerHeight || !isReady) {
+  if (!containerHeight || !mergedPosts.length) {
     return null;
   }
 
@@ -151,28 +171,31 @@ function PostViewerEngineComponent({
       <FlatList
         ref={flatListRef}
         data={mergedPosts}
-        initialScrollIndex={initialIndex}
+        initialScrollIndex={startIndex}
         extraData={extraData}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        pagingEnabled
         snapToInterval={containerHeight}
+        snapToAlignment="start"
         decelerationRate="fast"
         windowSize={5}
         initialNumToRender={3}
         maxToRenderPerBatch={3}
         updateCellsBatchingPeriod={100}
-        removeClippedSubviews
         getItemLayout={getItemLayout}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
+        onMomentumScrollEnd={onMomentumScrollEnd}
         showsVerticalScrollIndicator={false}
         scrollsToTop={false}
         scrollEventThrottle={16}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        ListFooterComponent={isFetchingNextPage ? (
+          <View style={{ height: 60, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : null}
       />
     </>
   );

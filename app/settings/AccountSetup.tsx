@@ -1,3 +1,4 @@
+import Header from "@/components/layout/header";
 import { ChevronRight, Shield, Heart, UserX } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,16 +13,7 @@ export default function AccountSetupScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       
-      {/* HEADER */}
-      <XStack
-        alignItems="center"
-        justifyContent="center"
-        paddingVertical={12}
-      >
-        <Text fontFamily="$body" fontSize={16} fontWeight="600">
-          Account set-up
-        </Text>
-      </XStack>
+      <Header heading="Account set-up" />
 
       {/* CARD */}
       <SettingsSection title="" style={{ marginHorizontal: 16, marginTop: 10 }}>

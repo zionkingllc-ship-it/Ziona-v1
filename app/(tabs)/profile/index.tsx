@@ -98,7 +98,7 @@ export default function ProfileScreen() {
   const postActive = require("@/assets/images/postIconActive.png");
   const likedPostActive = require("@/assets/images/heartIconActive.png");
   const likedPostInActive = require("@/assets/images/heartIcon.png");
-  const settingIcon = require("@/assets/images/moreIcon.png");
+
   const profileShareIcon = require("@/assets/images/shareProfileIcon.png");
 
   /* ================= VIDEO THUMBNAILS ================= */
@@ -231,8 +231,8 @@ export default function ProfileScreen() {
       <XStack>
         <Header
           heading={`@${profile?.username || ""}`}
-          imageAfter2={settingIcon}
-          imageAfter2Press={() => router.push("/settings")}
+          iconAfter="settings-outline"
+          onIconAfterPress={() => router.push("/settings")}
         />
       </XStack>
 

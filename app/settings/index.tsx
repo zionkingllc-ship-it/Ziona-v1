@@ -1,4 +1,5 @@
 import { SettingsRow, SettingsSection } from "@/components/settings";
+import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
 import { useLogout } from "@/hooks/useAccountSettings";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -59,16 +60,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      {/* HEADER */}
-      <Text
-        fontFamily="$body"
-        fontSize={18}
-        fontWeight="600"
-        alignSelf="center"
-        marginBottom={10}
-      >
-        Settings
-      </Text>
+      <Header heading="Settings" />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* SEARCH */}
         {/* <View

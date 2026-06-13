@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useEffect, useState } from "react";
 import { TextArea, XStack, YStack,Text } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditBioScreen() {
   const userId = useAuthStore((s) => s.user?.id);
@@ -54,9 +55,10 @@ export default function EditBioScreen() {
   const charCount = bio.length;
 
   return (
-    <YStack flex={1} backgroundColor={colors.white} padding="$4">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
 
+      <YStack flex={1} padding="$4">
       <YStack gap="$2">
         <YStack>
           <Text
@@ -79,6 +81,7 @@ export default function EditBioScreen() {
           borderColor={colors.border}
           backgroundColor={colors.borderBackground}
           padding="$2"
+          maxLength={100}
         />
 
         <XStack justifyContent="flex-end">
@@ -114,5 +117,6 @@ export default function EditBioScreen() {
         autoClose={modalType === "success"}
       />
     </YStack>
+    </SafeAreaView>
   );
 }

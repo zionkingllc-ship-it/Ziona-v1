@@ -3,7 +3,7 @@ import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
 import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
-import { getFriendsList } from "@/services/graphQL/queries/follow";
+import { searchUsers } from "@/services/graphQL/queries/follow";
 
 export interface MentionUser {
   id: string;
@@ -21,23 +21,33 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (searchText.length === 0) {
-      setUsers([]);
-      return;
-    }
-
+    console.log("[MentionSuggestions] >>> starting search for:", JSON.stringify(searchText), "length:", searchText.length);
     setIsLoading(true);
-    getFriendsList(searchText)
-      .then(setUsers)
-      .catch(() => setUsers([]))
+    searchUsers(searchText)
+      .then((results) => {
+        console.log("[MentionSuggestions] <<< searchUsers returned", results?.length ?? 0, "results:", JSON.stringify(results));
+        if (!results || results.length === 0) {
+          console.log("[MentionSuggestions] no users in response - check searchUsers query/backend");
+        }
+        setUsers(results || []);
+      })
+      .catch((err) => {
+        console.error("[MentionSuggestions] searchUsers rejected with error:", err?.message ?? err, "stack:", err?.stack);
+        setUsers([]);
+      })
       .finally(() => setIsLoading(false));
   }, [searchText]);
 
   const displayUsers = useMemo(() => {
-    return users.slice(0, 8);
+    const sliced = users.slice(0, 8);
+    console.log("[MentionSuggestions] displayUsers memo: total users", users.length, "displaying", sliced.length);
+    return sliced;
   }, [users]);
 
+  console.log("[MentionSuggestions] render: isLoading=", isLoading, "displayUsers.length=", displayUsers.length, "searchText=", searchText);
+
   if (isLoading) {
+    console.log("[MentionSuggestions] rendering loading state");
     return (
       <View style={styles.container}>
         <Text fontFamily="$body" fontSize={12} color={colors.gray}>
@@ -48,6 +58,7 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
   }
 
   if (displayUsers.length === 0) {
+    console.log("[MentionSuggestions] rendering EMPTY state (no users found)");
     return (
       <View style={styles.container}>
         <Text fontFamily="$body" fontSize={12} color={colors.gray}>
@@ -64,7 +75,7 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.userItem}

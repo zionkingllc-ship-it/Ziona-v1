@@ -25,6 +25,7 @@ export default function CreatePassword() {
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("Password reset failed");
   const [errorMessage, setErrorMessage] = useState("Your reset code may have expired. Please request a new code.");
+  const [errorType, setErrorType] = useState<"success" | "failed" | "warning" | "softwarning">("failed");
 
   const checks = {
     length: passwordRules.minLength(password),
@@ -59,6 +60,7 @@ export default function CreatePassword() {
       const feedback = getNetworkModalCopy(error, "Your reset code may have expired. Please request a new code.");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
+      setErrorType(feedback.type as "warning" | "failed");
       setErrorVisible(true);
     } finally {
       setLoading(false);
@@ -143,7 +145,7 @@ export default function CreatePassword() {
 
       <SuccessModal
         visible={errorVisible}
-        type="failed"
+        type={errorType}
         autoClose
         duration={3000}
         onClose={() => setErrorVisible(false)}

@@ -107,8 +107,15 @@ export default function EditUsernameScreen() {
             marginTop={-4}
             autoCapitalize="none"
             disabled={!!rateLimitDate}
+            maxLength={24}
           />
         </YStack>
+
+        <XStack justifyContent="flex-end" marginTop={-8}>
+          <Text fontFamily="$body" fontSize={13} color={colors.termsText}>
+            {username.length}/24
+          </Text>
+        </XStack>
 
         <Text
           alignSelf="center"
@@ -147,7 +154,7 @@ export default function EditUsernameScreen() {
         onClose={() => setErrorVisible(false)}
         title={errorTitle}
         message={errorMessage}
-        type="warning"
+        type="failed"
       />
     </SafeAreaView>
   );

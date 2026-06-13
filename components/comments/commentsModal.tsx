@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Dimensions,
   FlatList,
+  InteractionManager,
   Keyboard,
   LayoutChangeEvent,
   Platform,
@@ -72,15 +73,23 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");
+    console.log("[detectMention] text:", JSON.stringify(text), "lastAtIndex:", lastAtIndex);
     if (lastAtIndex === -1) return null;
     const textAfterAt = text.slice(lastAtIndex + 1);
-    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) return null;
+    console.log("[detectMention] textAfterAt:", JSON.stringify(textAfterAt), "length:", textAfterAt.length);
+    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) {
+      console.log("[detectMention] returning null - space/newline after @");
+      return null;
+    }
+    console.log("[detectMention] returning searchText:", JSON.stringify(textAfterAt));
     return textAfterAt;
   }, []);
 
   const handleTextChange = useCallback((text: string) => {
+    console.log("[handleTextChange] input text:", JSON.stringify(text));
     setInputValue(text);
     const mention = detectMention(text);
+    console.log("[handleTextChange] detectMention returned:", JSON.stringify(mention), "type:", typeof mention);
     setMentionSearch(mention);
   }, [detectMention]);
 
@@ -92,7 +101,9 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
       setInputValue(newText);
     }
     setMentionSearch(null);
-    inputRef.current?.focus();
+    InteractionManager.runAfterInteractions(() => {
+      inputRef.current?.focus();
+    });
   }, [inputValue]);
 
   useEffect(() => {

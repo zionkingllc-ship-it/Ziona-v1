@@ -7,19 +7,22 @@ import { FeedPost } from "@/types/feedTypes";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, XStack } from "tamagui";
+import { Text, XStack, YStack } from "tamagui";
+import CenteredMessage from "@/components/ui/CenteredMessage";
+import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 export default function DiscoverCategoryScreen() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { width } = useWindowDimensions();
 
-  const { posts, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { posts, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error, refetch } =
     useDiscoverFeed(categoryId);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,6 +52,37 @@ export default function DiscoverCategoryScreen() {
     });
   }, [posts, filter]);
 
+  if (isLoading && posts.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View style={{ flex: 1 }}>
+          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} />
+          <YStack flex={1} justifyContent="center" alignItems="center">
+            <ActivityIndicator size="large" color={colors.primary} />
+          </YStack>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError && posts.length === 0) {
+    const feedback = getNetworkModalCopy(error, "We couldn't load posts right now. Please try again.");
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View style={{ flex: 1 }}>
+          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} />
+          <CenteredMessage
+            text={feedback.title}
+            subtitle={feedback.message}
+            actionLabel="Tap to retry"
+            onActionPress={() => refetch()}
+            fontFamily="$body"
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <View style={{ flex: 1 }}>
@@ -76,6 +110,16 @@ export default function DiscoverCategoryScreen() {
           ))}
         </XStack>
 
+        {filteredPosts.length === 0 ? (
+          <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={16}>
+            <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.gray}>
+              No posts yet
+            </Text>
+            <Text fontFamily="$body" fontWeight="400" fontSize={12} color={colors.gray} marginTop={4}>
+              Posts in this category will appear here
+            </Text>
+          </YStack>
+        ) : (
         <FlatList
           data={filteredPosts}
           keyExtractor={(item) => item.id}
@@ -107,6 +151,7 @@ export default function DiscoverCategoryScreen() {
           }}
           onEndReachedThreshold={0.5}
         />
+        )}
       </View>
     </SafeAreaView>
   );

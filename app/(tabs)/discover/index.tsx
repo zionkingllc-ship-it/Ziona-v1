@@ -31,6 +31,15 @@ export default function DiscoverScreen() {
           <YStack flex={1} justifyContent="center" alignItems="center">
             <ActivityIndicator size={40} color={colors.primary}/>
           </YStack>
+        ) : categories.length === 0 ? (
+          <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={16}>
+            <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.gray}>
+              No categories yet
+            </Text>
+            <Text fontFamily="$body" fontWeight="400" fontSize={12} color={colors.gray} marginTop={4}>
+              Check back later for new categories
+            </Text>
+          </YStack>
         ) : (
           <CategoryGrid
             categories={categories}

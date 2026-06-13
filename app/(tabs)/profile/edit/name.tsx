@@ -94,8 +94,15 @@ export default function EditNameScreen() {
             fontFamily={"$body"}
             fontWeight={"400"}
             marginTop={-4}
+            maxLength={30}
           />
         </YStack>
+
+        <XStack justifyContent="flex-end" marginTop={-8}>
+          <Text fontFamily="$body" fontSize={13} color={colors.termsText}>
+            {name.length}/30
+          </Text>
+        </XStack>
 
         <Text alignSelf="center" fontFamily={"$body"} fontWeight={"400"} fontSize={13} color={colors.tertiary}>
           Name changes are limited to once every 14 days
@@ -126,7 +133,7 @@ export default function EditNameScreen() {
         onClose={() => setErrorVisible(false)}
         title={errorTitle}
         message={errorMessage}
-        type="warning"
+        type="failed"
       />
     </SafeAreaView>
   );

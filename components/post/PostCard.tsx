@@ -25,6 +25,8 @@ import OptionsModal from "../ui/modals/OptionsModal";
 import { useToggleLike } from "@/hooks/useToggleLike";
 import { useToggleFollow } from "@/hooks/useFollow";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useReportContent } from "@/hooks/useReportContent";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
@@ -68,7 +70,12 @@ function PostCardComponent({
   const [successVisible, setSuccessVisible] = useState(false);
   const [successTitle, setSuccessTitle] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [successType, setSuccessType] = useState<"success" | "failed" | "warning" | "softwarning">("success");
   const [shareVisible, setShareVisible] = useState(false);
+
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const { data: currentProfile } = useUserProfile(currentUserId || "", { enabled: !!currentUserId });
+  const hideLikeCount = currentProfile?.hideLikeCount ?? false;
 
   const likedState = usePostActionsStore(
     (s) => s.likedPosts[post.id] ?? post.viewerState?.liked ?? false,
@@ -309,9 +316,11 @@ function PostCardComponent({
                   />
                 </Pressable>
               </GestureDetector>
-              <Text color={colors.white} fontSize={12}>
-                {likeCount}
-              </Text>
+              {!hideLikeCount && (
+                <Text color={colors.white} fontSize={12}>
+                  {likeCount}
+                </Text>
+              )}
             </YStack>
 
             <YStack alignItems="center">
@@ -390,11 +399,14 @@ function PostCardComponent({
               {
                 onSuccess: () => {
                   setSuccessVisible(true);
+                  setSuccessType("success");
                   setSuccessTitle("Report Submitted");
                   setSuccessMessage("Thank you for your report. We'll review it shortly.");
                 },
-                onError: () => {
+                onError: (err) => {
+                  console.error("[ReportFlow] reason report failed:", err);
                   setSuccessVisible(true);
+                  setSuccessType("failed");
                   setSuccessTitle("Something went wrong");
                   setSuccessMessage("Please try again later.");
                 },
@@ -418,11 +430,14 @@ function PostCardComponent({
               {
                 onSuccess: () => {
                   setSuccessVisible(true);
+                  setSuccessType("success");
                   setSuccessTitle("Report Submitted");
                   setSuccessMessage("Thank you for your report. We'll review it shortly.");
                 },
-                onError: () => {
+                onError: (err) => {
+                  console.error("[ReportFlow] other report failed:", err);
                   setSuccessVisible(true);
+                  setSuccessType("failed");
                   setSuccessTitle("Something went wrong");
                   setSuccessMessage("Please try again later.");
                 },
@@ -444,6 +459,7 @@ function PostCardComponent({
           onClose={() => setSuccessVisible(false)}
           title={successTitle}
           message={successMessage}
+          type={successType}
         />
       )}
       {foldersVisible && (
@@ -463,8 +479,8 @@ function PostCardComponent({
           visible={createVisible}
           post={post}
           onClose={() => setCreateVisible(false)}
-          onSave={(name) => {
-            createFolder(name);
+          onSave={(name, thumbnailUri) => {
+            createFolder(name, thumbnailUri);
             setCreateVisible(false);
           }}
         />

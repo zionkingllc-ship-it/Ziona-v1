@@ -19,12 +19,24 @@ export const REPORT_REASONS: { value: ReportReason; label: string; description: 
   { value: "OTHER", label: "Other", description: "" },
 ];
 
+const REASON_MAP: Record<ReportReason, string> = {
+  DISRESPECTFUL: "disrespectful_to_faith",
+  MISUSE_SCRIPTURE: "misuse_scripture",
+  ATTACKING_FAITH: "attacking_church",
+  SCAM_FRAUD: "scam",
+  HATE_SPEECH: "hate_speech",
+  AGAINST_POLICY: "policy_violation",
+  OTHER: "other",
+};
+
 export async function reportContent(
   reason: ReportReason,
   postId?: string,
   commentId?: string,
   description?: string
 ): Promise<{ success: boolean; report?: { id: string; status: string } }> {
+  const mappedReason = REASON_MAP[reason];
+
   const query = `
     mutation ReportContent($reason: String!, $postId: String, $commentId: String, $description: String) {
       reportContent(reason: $reason, postId: $postId, commentId: $commentId, description: $description) {
@@ -41,7 +53,7 @@ export async function reportContent(
     }
   `;
 
-  const data = await graphqlRequest(query, { reason, postId, commentId, description });
+  const data = await graphqlRequest(query, { reason: mappedReason, postId, commentId, description });
 
   const res = data?.reportContent;
 

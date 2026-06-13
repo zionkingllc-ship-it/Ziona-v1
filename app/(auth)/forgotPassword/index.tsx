@@ -20,6 +20,7 @@ export default function ForgotPassword() {
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorType, setErrorType] = useState<"success" | "failed" | "warning" | "softwarning">("failed");
 
   const isValidEmail = emailRegex.test(email);
 
@@ -49,6 +50,7 @@ export default function ForgotPassword() {
       const feedback = getNetworkModalCopy(error, "Failed to send reset code. Please try again.");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
+      setErrorType(feedback.type as "warning" | "failed");
       setErrorVisible(true);
     } finally {
       setLoading(false);
@@ -132,7 +134,7 @@ export default function ForgotPassword() {
         onClose={() => setErrorVisible(false)}
         title={errorTitle}
         message={errorMessage}
-        type="warning"
+        type={errorType}
       />
     </KeyboardAvoidingWrapper>
   );

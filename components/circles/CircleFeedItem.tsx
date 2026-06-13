@@ -3,11 +3,11 @@ import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useReportContent } from "@/hooks/useReportContent";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
+import { useMutation } from "@tanstack/react-query";
+import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
 import { useEffect } from "react";
 import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
-import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
@@ -70,9 +70,15 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const [reasonsVisible, setReasonsVisible] = useState(false);
   const [otherVisible, setOtherVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [successType, setSuccessType] = useState<"success" | "failed" | "warning" | "softwarning">("success");
+  const [successTitle, setSuccessTitle] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
 
-  const reportMutation = useReportContent();
+  const reportMutation = useMutation({
+    mutationFn: (reason: string) =>
+      reportCircleContent(reason, circleId || "", post.id, "circle_post"),
+  });
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [postImageError, setPostImageError] = useState(false);
   const [anchorImageError, setAnchorImageError] = useState(false);
@@ -277,10 +283,20 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onSelectReason={(reason) => {
             setReasonsVisible(false);
             reportMutation.mutate(
-              { reason: reason as ReportReason, postId: post.id },
+              reason,
               {
                 onSuccess: () => {
                   setSuccessVisible(true);
+                  setSuccessType("success");
+                  setSuccessTitle("Report Submitted");
+                  setSuccessMessage("Thank you for your report. We'll review it shortly.");
+                },
+                onError: (err) => {
+                  console.error("[ReportFlow] circle reason report failed:", err);
+                  setSuccessVisible(true);
+                  setSuccessType("failed");
+                  setSuccessTitle("Something went wrong");
+                  setSuccessMessage("Please try again later.");
                 },
               }
             );
@@ -296,10 +312,20 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onSubmit={(description) => {
             setOtherVisible(false);
             reportMutation.mutate(
-              { reason: "OTHER" as ReportReason, postId: post.id, description },
+              "other",
               {
                 onSuccess: () => {
                   setSuccessVisible(true);
+                  setSuccessType("success");
+                  setSuccessTitle("Report Submitted");
+                  setSuccessMessage("Thank you for your report. We'll review it shortly.");
+                },
+                onError: (err) => {
+                  console.error("[ReportFlow] circle other report failed:", err);
+                  setSuccessVisible(true);
+                  setSuccessType("failed");
+                  setSuccessTitle("Something went wrong");
+                  setSuccessMessage("Please try again later.");
                 },
               }
             );
@@ -308,8 +334,9 @@ const CircleFeedItem = memo(function CircleFeedItem({
         <SuccessModal
           visible={successVisible}
           onClose={() => setSuccessVisible(false)}
-          title="Report Submitted"
-          message="Thank you for your report. We'll review it shortly."
+          type={successType}
+          title={successTitle}
+          message={successMessage}
         />
       </YStack>
     </Pressable>

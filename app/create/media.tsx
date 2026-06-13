@@ -141,6 +141,7 @@ export default function CreateMediaScreen() {
 
     const assets = result.assets;
 
+    const hasExistingVideo = existing.some((m) => m.type === "VIDEO");
     const video = assets.find((a) => a.type === "video");
 
     if (video) {
@@ -158,6 +159,12 @@ export default function CreateMediaScreen() {
 
       setMedia([normalizeMedia(video)]);
       setTimeout(() => router.push("/create/mediaPreview"), 50);
+      return;
+    }
+
+    if (hasExistingVideo) {
+      setError("Cannot add media when a video is selected.");
+      setErrorVisible(true);
       return;
     }
 

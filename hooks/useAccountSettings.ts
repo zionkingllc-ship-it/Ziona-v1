@@ -1,23 +1,24 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
 import { authApi } from "@/services/api/authApi";
+import { changePassword as changePasswordMutation } from "@/services/graphQL/mutation/changePassword";
 
 /* =========================
    CHANGE PASSWORD
  ========================= */
 
 export function useChangePassword() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (payload: {
       currentPassword: string;
       newPassword: string;
+      signOutOtherDevices?: boolean;
     }) => {
-      return await authApi.changePassword(payload);
-    },
-    onSuccess: () => {
-      // Optionally clear sensitive data or show success
+      return await changePasswordMutation(
+        payload.currentPassword,
+        payload.newPassword,
+        payload.signOutOtherDevices ?? true,
+      );
     },
   });
 }
