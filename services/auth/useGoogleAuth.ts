@@ -53,19 +53,20 @@ export const useGoogleAuth = () => {
       }
 
       const res = await authApi.googleLogin(idToken);
+      const data = res?.data ?? res ?? {};
 
-      if (!res?.user || !res?.tokens) {
+      if (!data?.user || !data?.tokens) {
         throw new Error("Invalid auth response");
       }
 
-      setAuth(res.user, res.tokens);
+      setAuth(data.user, data.tokens);
       console.log("====== GOOGLE DATA  ======");
       console.log("Google ID Token:", idToken);
       console.log("Google User:", userInfo.data?.user || userInfo.user);
       return {
-        user: res.user,
-        tokens: res.tokens,
-        suggestedUsernames: res.suggestedUsernames ?? [],
+        user: data.user,
+        tokens: data.tokens,
+        suggestedUsernames: data.suggestedUsernames ?? [],
       };
     } catch (error: any) {
       console.error("Google Sign-In error:", error);

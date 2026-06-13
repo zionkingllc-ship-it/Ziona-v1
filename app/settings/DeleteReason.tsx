@@ -21,12 +21,14 @@ export default function DeleteReasonScreen() {
   const deleteAccount = useDeleteAccount();
   const [selected, setSelected] = useState<Reason>(null);
   const [otherText, setOtherText] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const isValid =
     selected &&
-    (selected !== "other" || otherText.trim().length > 0);
+    (selected !== "other" || otherText.trim().length > 0) &&
+    acknowledged;
 
   const handleDelete = () => {
     if (!isValid) return;
@@ -145,6 +147,33 @@ export default function DeleteReasonScreen() {
               fontFamily="$body"
             />
           </YStack>
+        )}
+
+        {/* ACKNOWLEDGMENT CHECKBOX */}
+        {selected && (
+          <RNPressable onPress={() => setAcknowledged((p) => !p)} style={{ marginTop: 8 }}>
+            <XStack alignItems="center" gap="$3">
+              <XStack
+                width={20}
+                height={20}
+                borderRadius={4}
+                borderWidth={1.5}
+                borderColor={acknowledged ? colors.primary : colors.gray}
+                backgroundColor={acknowledged ? colors.primary : "transparent"}
+                alignItems="center"
+                justifyContent="center"
+              >
+                {acknowledged && (
+                  <Text fontSize={14} color={colors.white} fontWeight="700">
+                    ✓
+                  </Text>
+                )}
+              </XStack>
+              <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} flex={1}>
+                I understand this action is permanent and my account will be deleted
+              </Text>
+            </XStack>
+          </RNPressable>
         )}
       </YStack>
 

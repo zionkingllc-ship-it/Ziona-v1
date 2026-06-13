@@ -278,8 +278,7 @@ export const authApi = {
 
       log("signOut response:", response?.data);
     } catch (err: any) {
-      errorLog("signOut failed", err);
-      throw err;
+      console.warn("signOut failed (non-critical):", err?.message);
     }
   },
 
@@ -321,9 +320,9 @@ export const authApi = {
 
   deleteAccount: async (reason?: { reason: string; detail?: string }) => {
     try {
-      log("deleteAccount called");
+      log("deleteAccount called", { reason });
 
-      const response = await api.delete("/auth/account", {
+      const response = await api.delete("/auth/me", {
         data: reason,
       });
 

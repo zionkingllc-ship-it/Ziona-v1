@@ -132,7 +132,5 @@ The frontend now sends:
 Both `nonce` and `rawNonce` are set to the same value (what Apple put in the JWT). If the backend needs different values (e.g., `nonce = SHA256(rawNonce)`), the frontend can adjust once the expected relationship is confirmed.
 
 
- 1.add a pull down refresh on feed, 
- 2.add a loading state on slow loading items and network issue related across app including feed.
- 3. 
+
 targetType for circlepost flow, should be -----
