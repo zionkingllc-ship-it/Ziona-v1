@@ -152,8 +152,17 @@ export const GET_CIRCLE_FEED = `
       posts {
         id
         text
-        image
-        # mediaUrl
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
+        mediaUrl
+        mediaType
         createdAt
         likes
         likesCount
@@ -248,8 +257,17 @@ export const GET_CIRCLE_FEED_DATA = `
       posts {
         id
         text
-        image
-        # mediaUrl
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
+        mediaUrl
+        mediaType
         createdAt
         likes
         likesCount
@@ -498,7 +516,17 @@ export const GET_CIRCLE_POST = `
     circlePost(id: $id) {
       id
       text
-      image
+      media {
+        id
+        url
+        type
+        thumbnailUrl
+        width
+        height
+        duration
+      }
+      mediaUrl
+      mediaType
       createdAt
       likes
       likesCount

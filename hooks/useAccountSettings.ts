@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
 import { authApi } from "@/services/api/authApi";
 import { changePassword as changePasswordMutation } from "@/services/graphQL/mutation/changePassword";
-
 /* =========================
    CHANGE PASSWORD
  ========================= */
@@ -48,8 +47,8 @@ export function useDeleteAccount() {
   const { clearSession } = useAuthStore();
 
   return useMutation({
-    mutationFn: async (reason?: { reason: string; detail?: string }) => {
-      return await authApi.deleteAccount(reason);
+    mutationFn: async (payload: { reason: string; detail?: string; acknowledgePermanentDeletion: boolean; password: string }) => {
+      return await authApi.deleteAccount(payload);
     },
     onSuccess: async () => {
       await clearSession();

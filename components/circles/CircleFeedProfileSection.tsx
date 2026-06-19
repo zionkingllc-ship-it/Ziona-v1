@@ -27,7 +27,7 @@ const CircleFeedProfileSection = ({ circle, onToggleJoin, joining }: CircleFeedP
         </View>
       )}
       <SimpleButton
-        text={circle.isJoined ? 'Leave' : 'Join'}
+        text={joining ? (circle.isJoined ? 'Leaving...' : 'Joining...') : (circle.isJoined ? 'Leave' : 'Join')}
         onPress={onToggleJoin}
         loading={joining}
         textSize={13}

@@ -2,6 +2,7 @@ import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
+import { waitForMediaProcessing } from "@/services/graphQL/mutation/media/mediaUpload";
 import { saveAnchorRef } from "@/utils/anchorRef";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -78,23 +79,25 @@ export default function CircleCommentComposer({
     setPosting(true);
 
     try {
-      let permanentImage: string | undefined;
+      const mediaIds: string[] = [];
 
       const uploadTasks: Promise<void>[] = [];
       if (image) {
         uploadTasks.push(
-          uploadCircleMedia(image, "image/jpeg").then((url) => { permanentImage = url; }),
+          uploadCircleMedia(image, "image/jpeg").then(({ mediaId }) => {
+            mediaIds.push(mediaId);
+          }),
         );
       }
       if (video) {
         uploadTasks.push(
           (async () => {
             const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(video, { time: 0 });
-            const [thumbUrl] = await Promise.all([
+            const [thumb, videoMedia] = await Promise.all([
               uploadCircleMedia(thumbUri, "image/jpeg"),
               uploadCircleMedia(video, "video/mp4"),
             ]);
-            permanentImage = thumbUrl;
+            mediaIds.push(thumb.mediaId, videoMedia.mediaId);
           })(),
         );
       }
@@ -103,7 +106,22 @@ export default function CircleCommentComposer({
       let result: any = null;
       // If we have a circleId, create a circle post
       if (circleId) {
-        result = await createCirclePost(circleId, text.trim() || undefined, permanentImage);
+        const mediaType = video ? "VIDEO" : image ? "IMAGE" : undefined;
+
+        if (mediaIds.length > 0) {
+          await waitForMediaProcessing(mediaIds);
+        }
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+          result = await createCirclePost(circleId, mediaIds, mediaType);
+
+          if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
+            const delay = Math.min(2000 * Math.pow(2, attempt), 8000);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+          break;
+        }
       } else if (onSend) {
         onSend(text, image, video);
         return;

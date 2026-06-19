@@ -263,6 +263,7 @@ export default function BibleSelectorModal({
 
   function selectVerse(v: number) {
     if (loadingVerses || verses.length === 0) return;
+    setSearch("");
 
     // FIRST selection → open reader immediately
     if (selected.length === 0) {
@@ -391,7 +392,7 @@ export default function BibleSelectorModal({
             data={filteredBooks}
             keyExtractor={(item) => item.slug}
             renderItem={({ item }) => (
-              <Pressable style={styles.row} onPress={() => setBook(item)}>
+              <Pressable style={styles.row} onPress={() => { setSearch(""); setBook(item); }}>
                 <Text>{shortenBookName(item.name)}</Text>
               </Pressable>
             )}
@@ -404,7 +405,7 @@ export default function BibleSelectorModal({
             data={filteredChapters}
             keyExtractor={(item) => String(item)}
             renderItem={({ item }) => (
-              <Pressable style={styles.row} onPress={() => setChapter(item)}>
+              <Pressable style={styles.row} onPress={() => { setSearch(""); setChapter(item); }}>
                 <Text>{item}</Text>
               </Pressable>
             )}

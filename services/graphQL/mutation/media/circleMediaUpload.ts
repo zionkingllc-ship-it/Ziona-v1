@@ -1,27 +1,46 @@
-import * as FileSystem from "expo-file-system/legacy";
 import {
   requestMediaUpload,
-  uploadFileToStorage,
-  extractPublicUrl,
+  confirmMediaUpload,
 } from "@/services/graphQL/mutation/media/mediaUpload";
 
 export async function uploadCircleMedia(
   fileUri: string,
   fileType: string,
-): Promise<string> {
+): Promise<{ mediaId: string; mediaUrl: string }> {
   const fileName = fileUri.split("/").pop() || `upload-${Date.now()}`;
-  const fileInfo = await FileSystem.getInfoAsync(fileUri);
-  if (!fileInfo.exists) {
-    throw new Error("File not found");
+
+  // Read the blob to get file size before requesting upload
+  let blob: Blob;
+  let fileSize: number;
+  try {
+    const resp = await fetch(fileUri);
+    blob = await resp.blob();
+    fileSize = blob.size;
+  } catch {
+    throw new Error("Could not read file");
   }
 
-  const { uploadUrl } = await requestMediaUpload(
-    fileName,
-    fileType,
-    fileInfo.size || 0,
-  );
+  if (fileSize <= 0) {
+    throw new Error("File is empty");
+  }
 
-  await uploadFileToStorage(uploadUrl, fileUri, fileType);
+  const result = await requestMediaUpload(fileName, fileType, fileSize);
 
-  return extractPublicUrl(uploadUrl);
+  const { uploadUrl, mediaId } = result;
+
+  // Upload file blob to storage, then confirm to trigger processing
+  const uploadResp = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": fileType },
+    body: blob,
+  });
+
+  if (!uploadResp.ok) {
+    const text = await uploadResp.text().catch(() => "");
+    throw new Error(`File upload failed (${uploadResp.status}${text ? ": " + text : ""})`);
+  }
+
+  const { mediaUrl } = await confirmMediaUpload(mediaId);
+
+  return { mediaId, mediaUrl };
 }

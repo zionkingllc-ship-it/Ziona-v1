@@ -8,6 +8,7 @@ import CircleFeedProfileSection, {
   CircleFeedNameRow,
 } from "@/components/circles/CircleFeedProfileSection";
 
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 
 import { ActiveAnchor, CircleFeedData } from "@/constants/circleTypes";
@@ -182,10 +183,14 @@ function mapCircleFeedData(data: any): CircleFeedData {
         }))
       : undefined,
     posts: data.posts
-      ? data.posts.map((p: any) => ({
+      ? data.posts.map((p: any) => {
+          console.log("[mapCircleFeedData] raw post:", JSON.stringify({ id: p.id, text: p.text?.substring(0,30), media: p.media?.map((m:any) => ({ url: m.url?.substring(0,30), thumb: m.thumbnailUrl?.substring(0,30) })), mediaUrl: p.mediaUrl?.substring(0,30), mediaType: p.mediaType }));
+          return {
           id: p.id,
           text: p.text || undefined,
-          image: p.image || undefined,
+          image: p.media?.[0]?.thumbnailUrl || p.media?.[0]?.url || p.mediaUrl || undefined,
+          mediaUrl: p.mediaUrl || undefined,
+          mediaType: p.mediaType || undefined,
           createdAt: p.createdAt,
           likes: p.likes,
           comments: p.comments,
@@ -199,7 +204,8 @@ function mapCircleFeedData(data: any): CircleFeedData {
             name: p.user.name || "",
             avatar: p.user.avatar || "",
           },
-        }))
+        };
+      })
       : [],
     memberAvatars: data.memberAvatars || [],
     rules: data.rules
@@ -324,18 +330,39 @@ export default function CircleFeedScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [joining, setJoining] = useState(false);
+  const [joinErrorVisible, setJoinErrorVisible] = useState(false);
+  const [joinErrorMessage, setJoinErrorMessage] = useState("");
+  const [joinErrorTitle, setJoinErrorTitle] = useState("");
+  const [joinSuccessVisible, setJoinSuccessVisible] = useState(false);
+  const [joinSuccessTitle, setJoinSuccessTitle] = useState("");
+  const [joinSuccessMessage, setJoinSuccessMessage] = useState("");
 
   const toggleJoin = async () => {
     if (joining) return;
     setJoining(true);
     try {
-      if (circle?.isJoined) {
-        await leaveMutation.mutateAsync(circleId);
+      let result;
+      const wasJoined = circle?.isJoined;
+      if (wasJoined) {
+        result = await leaveMutation.mutateAsync(circleId);
       } else {
-        await joinMutation.mutateAsync(circleId);
+        result = await joinMutation.mutateAsync(circleId);
+      }
+      const payload = result?.joinCircle ?? result?.leaveCircle ?? result;
+      if (payload?.success === false) {
+        setJoinErrorTitle(wasJoined ? "Unable to leave" : "Unable to join");
+        setJoinErrorMessage(payload?.error?.message || "Something went wrong. Please try again.");
+        setJoinErrorVisible(true);
+      } else {
+        setJoinSuccessTitle(wasJoined ? "Left circle" : "Joined circle");
+        setJoinSuccessMessage(wasJoined ? "You have left this circle." : "You have joined this circle.");
+        setJoinSuccessVisible(true);
       }
     } catch (err: any) {
       console.error("Failed to toggle join:", err);
+      setJoinErrorTitle("Action failed");
+      setJoinErrorMessage(err?.message || "Something went wrong. Please try again.");
+      setJoinErrorVisible(true);
     } finally {
       setJoining(false);
     }
@@ -633,6 +660,26 @@ export default function CircleFeedScreen() {
           </Button>
         </View>
       )}
+      <SuccessModal
+        visible={joinSuccessVisible}
+        onClose={() => setJoinSuccessVisible(false)}
+        title={joinSuccessTitle}
+        message={joinSuccessMessage}
+        type="success"
+        autoClose
+        duration={3000}
+      />
+      <SuccessModal
+        visible={joinErrorVisible}
+        onClose={() => setJoinErrorVisible(false)}
+        title={joinErrorTitle}
+        message={joinErrorMessage}
+        type="failed"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setJoinErrorVisible(false)}
+      />
     </SafeAreaView>
   );
 }

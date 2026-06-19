@@ -2,6 +2,7 @@ import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
+import { waitForMediaProcessing } from "@/services/graphQL/mutation/media/mediaUpload";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,31 +45,51 @@ export default function PostComposer() {
     setPosting(true);
 
     try {
-      let permanentImage: string | undefined;
+      const mediaIds: string[] = [];
 
       const uploadTasks: Promise<void>[] = [];
       if (image) {
         uploadTasks.push(
-          uploadCircleMedia(image, "image/jpeg").then((url) => { permanentImage = url; }),
+          uploadCircleMedia(image, "image/jpeg").then(({ mediaId }) => {
+            mediaIds.push(mediaId);
+          }),
         );
       }
       if (video) {
         uploadTasks.push(
           (async () => {
             const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(video, { time: 0 });
-            const [thumbUrl] = await Promise.all([
+            const [thumb, videoMedia] = await Promise.all([
               uploadCircleMedia(thumbUri, "image/jpeg"),
               uploadCircleMedia(video, "video/mp4"),
             ]);
-            permanentImage = thumbUrl;
+            mediaIds.push(thumb.mediaId, videoMedia.mediaId);
           })(),
         );
       }
       await Promise.all(uploadTasks);
 
-      console.log("[PostComposer] Sending post:", { circleId: circleId || "", text: text.trim() || undefined, image: permanentImage });
-      const result = await createCirclePost(circleId || "", text.trim() || undefined, permanentImage);
-      console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
+      const mediaType = video ? "VIDEO" : image ? "IMAGE" : undefined;
+
+      if (mediaIds.length > 0) {
+        await waitForMediaProcessing(mediaIds);
+      }
+
+      console.log("[PostComposer] Sending post:", { circleId: circleId || "", mediaIds, mediaType });
+
+      let result: any;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        result = await createCirclePost(circleId || "", mediaIds, mediaType);
+        console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
+
+        if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
+          const delay = Math.min(2000 * Math.pow(2, attempt), 8000);
+          console.log(`[PostComposer] Still processing, retrying in ${delay}ms (attempt ${attempt + 1})`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        break;
+      }
 
       if (result?.error?.code === "NOT_MEMBER") {
         Alert.alert("Join First", "You need to join this circle to post. Tap the Join button on the circle feed.");

@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $text: String, $image: String) {
-    createCirclePost(circleId: $circleId, text: $text, image: $image) {
+  mutation CreateCirclePost($circleId: String!, $mediaIds: [String!], $mediaType: MediaType) {
+    createCirclePost(circleId: $circleId, mediaIds: $mediaIds, mediaType: $mediaType) {
       success
       error {
         code
@@ -50,26 +50,16 @@ export const CREATE_CIRCLE_POST = `
       }
       post {
         id
-        text
-        image
-        # mediaUrl
-        createdAt
-        likes
-        likesCount
-        likeCount
-        likedImage
-        comments
-        commentsCount
-        prayedCount
-        anchorLikedCount
-        savedCount
-        sharedCount
-        user {
+        media {
           id
-          name
-          avatar
-          avatarUrl
+          url
+          thumbnailUrl
+          type
+          width
+          height
+          duration
         }
+        mediaType
       }
     }
   }
@@ -125,16 +115,14 @@ export async function leaveCircle(circleId: string) {
 
 export async function createCirclePost(
   circleId: string,
-  text?: string,
-  image?: string,
-  // mediaUrl?: string
+  mediaIds: string[],
+  mediaType: string,
 ) {
-  console.log("[createCirclePost] Sending mutation:", { circleId, text: text ? text.substring(0, 50) : undefined, image: image ? image.substring(0, 50) : undefined });
+  console.log("[createCirclePost] Sending mutation:", { circleId, mediaIds, mediaType });
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,
-    text,
-    image,
-    // mediaUrl,
+    mediaIds,
+    mediaType,
   });
   console.log("[createCirclePost] Raw response:", JSON.stringify(res));
   return res?.createCirclePost;
@@ -177,6 +165,25 @@ export const LIKE_ANCHOR = `
     }
   }
 `;
+
+export const ENSURE_CIRCLE_POST_LIKED = `
+  mutation EnsureCirclePostLiked($postId: String!) {
+    ensureCirclePostLiked(postId: $postId) {
+      success
+      liked
+      likesCount
+      error {
+        code
+        message
+      }
+    }
+  }
+`;
+
+export async function ensureCirclePostLiked(postId: string) {
+  const res = await graphqlRequest(ENSURE_CIRCLE_POST_LIKED, { postId });
+  return res?.ensureCirclePostLiked;
+}
 
 export async function likeAnchor(anchorId: string) {
   const res = await graphqlRequest(LIKE_ANCHOR, { anchorId });

@@ -1,10 +1,11 @@
 import Header from "@/components/layout/header";
 import { SimpleButton } from "@/components/ui/centerTextButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import ErrorModal from "@/components/ui/modals/ErrorModal";
 import colors from "@/constants/colors";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable as RNPressable } from "react-native";
+import { Modal, Pressable as RNPressable, TextInput as RNTextInput } from "react-native";
 import { Text, XStack, YStack, TextArea } from "tamagui";
 import { useRouter } from "expo-router";
 import { useDeleteAccount } from "@/hooks/useAccountSettings";
@@ -25,6 +26,12 @@ export default function DeleteReasonScreen() {
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+
   const isValid =
     selected &&
     (selected !== "other" || otherText.trim().length > 0) &&
@@ -32,16 +39,41 @@ export default function DeleteReasonScreen() {
 
   const handleDelete = () => {
     if (!isValid) return;
+    setPassword("");
+    setPasswordError("");
+    setPasswordVisible(true);
+  };
+
+  const confirmWithPassword = async () => {
+    if (!password.trim()) {
+      setPasswordError("Please enter your password");
+      return;
+    }
+
+    setVerifying(true);
+    setPasswordError("");
+
     deleteAccount.mutate(
       {
         reason: selected!,
         detail: selected === "other" ? otherText.trim() : undefined,
+        acknowledgePermanentDeletion: acknowledged,
+        password: password.trim(),
       },
       {
-        onSuccess: () => router.replace("/(auth)"),
+        onSuccess: () => setSuccessModalVisible(true),
         onError: (error: any) => {
-          setErrorMessage(error?.message || "Failed to delete account. Please try again.");
-          setErrorVisible(true);
+          setPasswordVisible(false);
+          setVerifying(false);
+          if (error?.message?.toLowerCase().includes("password") || error?._status === 401 || error?._status === 403) {
+            setPasswordError("Incorrect password. Please try again.");
+          } else {
+            setErrorMessage(error?.message || "Failed to delete account. Please try again.");
+            setErrorVisible(true);
+          }
+        },
+        onSettled: () => {
+          setVerifying(false);
         },
       },
     );
@@ -187,6 +219,87 @@ export default function DeleteReasonScreen() {
           textColor={colors.white}
         />
       </YStack>
+
+      {/* PASSWORD CONFIRMATION MODAL */}
+      <Modal
+        visible={passwordVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPasswordVisible(false)}
+      >
+        <RNPressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}
+          onPress={() => setPasswordVisible(false)}
+        >
+          <RNPressable
+            onPress={() => {}}
+            style={{ width: "85%", backgroundColor: "white", borderRadius: 16, padding: 24 }}
+          >
+            <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black} marginBottom={8}>
+              Confirm Password
+            </Text>
+            <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginBottom={20}>
+              Enter your password to confirm account deletion.
+            </Text>
+
+            <RNTextInput
+              value={password}
+              onChangeText={(t) => { setPassword(t); setPasswordError(""); }}
+              placeholder="Password"
+              placeholderTextColor={colors.placeholderText}
+              secureTextEntry
+              autoFocus
+              style={{
+                borderWidth: 1,
+                borderColor: passwordError ? colors.DEBIT_RED : colors.border,
+                borderRadius: 10,
+                padding: 14,
+                fontSize: 14,
+                fontFamily: "System",
+                color: colors.black,
+              }}
+            />
+
+            {passwordError ? (
+              <Text fontFamily="$body" fontSize={12} color={colors.DEBIT_RED} marginTop={8}>
+                {passwordError}
+              </Text>
+            ) : null}
+
+            <XStack gap={12} marginTop={20} justifyContent="flex-end">
+              <SimpleButton
+                text="Cancel"
+                onPress={() => setPasswordVisible(false)}
+                color={colors.lightGrayBg}
+                textColor={colors.black}
+                paddingHorizontal={20}
+                paddingVertical={10}
+              />
+              <SimpleButton
+                text={verifying ? "Verifying..." : "Confirm"}
+                onPress={confirmWithPassword}
+                loading={verifying}
+                color={colors.DEBIT_RED}
+                textColor={colors.white}
+                paddingHorizontal={20}
+                paddingVertical={10}
+              />
+            </XStack>
+          </RNPressable>
+        </RNPressable>
+      </Modal>
+
+      <SuccessModal
+        visible={successModalVisible}
+        onClose={() => { setSuccessModalVisible(false); router.replace("/(auth)"); }}
+        title="Account deleted"
+        message="Your account has been permanently deleted."
+        type="success"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => router.replace("/(auth)")}
+      />
 
       <ErrorModal
         visible={errorVisible}

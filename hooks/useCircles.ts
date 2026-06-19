@@ -14,6 +14,7 @@ import {
   createCirclePost as createCirclePostMutation,
   prayForCirclePost as prayForCirclePostMutation,
   likeCirclePost as likeCirclePostMutation,
+  ensureCirclePostLiked as ensureCirclePostLikedMutation,
 } from "@/services/graphQL/mutation/circles";
 
 export function useCircleFeedData(
@@ -119,15 +120,13 @@ export function useCreateCirclePost() {
   return useMutation({
     mutationFn: ({
       circleId,
-      text,
-      image,
-      mediaUrl,
+      mediaIds,
+      mediaType,
     }: {
       circleId: string;
-      text?: string;
-      image?: string;
-      mediaUrl?: string;
-    }) => createCirclePostMutation(circleId, text, image, mediaUrl),
+      mediaIds: string[];
+      mediaType: string;
+    }) => createCirclePostMutation(circleId, mediaIds, mediaType),
     onSuccess: (_, { circleId }) => {
       queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });
     },
@@ -147,5 +146,11 @@ export function useLikeCirclePost() {
 
   return useMutation({
     mutationFn: (postId: string) => likeCirclePostMutation(postId),
+  });
+}
+
+export function useEnsureCirclePostLiked() {
+  return useMutation({
+    mutationFn: (postId: string) => ensureCirclePostLikedMutation(postId),
   });
 }

@@ -318,12 +318,19 @@ export const authApi = {
     }
   },
 
-  deleteAccount: async (reason?: { reason: string; detail?: string }) => {
+  deleteAccount: async (payload: { reason: string; detail?: string; acknowledgePermanentDeletion: boolean; password: string }) => {
     try {
-      log("deleteAccount called", { reason });
+      log("deleteAccount called", { reason: payload.reason });
 
-      const response = await api.delete("/auth/me", {
-        data: reason,
+      const response = await api({
+        method: "delete",
+        url: "/auth/me",
+        data: {
+          reason: payload.reason,
+          password: payload.password,
+          acknowledgePermanentDeletion: payload.acknowledgePermanentDeletion,
+          ...(payload.detail ? { detail: payload.detail } : {}),
+        },
       });
 
       log("deleteAccount response:", response.data);

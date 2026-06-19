@@ -17,6 +17,21 @@ export type Scalars = {
   Upload: { input: unknown; output: unknown; }
 };
 
+export type AccountDetails = {
+  __typename: 'AccountDetails';
+  accountStatus: Scalars['String']['output'];
+  location: Scalars['String']['output'];
+  memberSince: Scalars['String']['output'];
+  memberSinceDate: Scalars['String']['output'];
+};
+
+export type AccountDetailsPayload = {
+  __typename: 'AccountDetailsPayload';
+  accountDetails: Maybe<AccountDetails>;
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type ActivityType = {
   __typename: 'ActivityType';
   action: Scalars['String']['output'];
@@ -165,8 +180,10 @@ export type AdminContactType = {
   name: Scalars['String']['output'];
   repliedAt: Maybe<Scalars['String']['output']>;
   replies: Array<ContactReplyType>;
+  requesterUsername: Scalars['String']['output'];
   source: Scalars['String']['output'];
   status: Scalars['String']['output'];
+  topic: Scalars['String']['output'];
 };
 
 export type AdminContactsPaginatedType = {
@@ -329,6 +346,7 @@ export type AnchorResponseType = {
 
 export type AnchorType = {
   __typename: 'AnchorType';
+  anchorDate: Scalars['String']['output'];
   anchorImage: Maybe<Scalars['String']['output']>;
   anchorImageText: Maybe<Scalars['String']['output']>;
   anchorLikedCount: Scalars['Int']['output'];
@@ -344,6 +362,7 @@ export type AnchorType = {
   bibleText: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
+  date: Scalars['String']['output'];
   expiresAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
   isActive: Scalars['Boolean']['output'];
@@ -385,6 +404,8 @@ export type AuthPayload = {
   message: Maybe<Scalars['String']['output']>;
   /** JWT refresh token (valid for 7 days) */
   refreshToken: Maybe<Scalars['String']['output']>;
+  /** Whether the user must complete email verification before tokens are issued */
+  requiresVerification: Scalars['Boolean']['output'];
   /** Whether the authentication operation was successful */
   success: Scalars['Boolean']['output'];
   /** The authenticated user data */
@@ -432,6 +453,7 @@ export type BookmarkFolderType = {
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
   savedCount: Scalars['Int']['output'];
+  thumbnailUrl: Maybe<Scalars['String']['output']>;
 };
 
 export type BulkRemovePayload = {
@@ -484,6 +506,7 @@ export type ChartDataType = {
 export type CircleFeedDataType = {
   __typename: 'CircleFeedDataType';
   activeAnchor: Maybe<AnchorType>;
+  anchorDates: Array<Scalars['String']['output']>;
   bannerImage: Maybe<Scalars['String']['output']>;
   coverImage: Maybe<Scalars['String']['output']>;
   description: Scalars['String']['output'];
@@ -576,6 +599,12 @@ export type CirclePostEngagementPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export enum CirclePostFilterEnum {
+  New = 'NEW',
+  Trending = 'TRENDING',
+  ViewerPosts = 'VIEWER_POSTS'
+}
+
 export type CirclePostType = {
   __typename: 'CirclePostType';
   anchorLikedCount: Scalars['Int']['output'];
@@ -583,16 +612,22 @@ export type CirclePostType = {
   commentsCount: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['String']['output'];
-  image: Maybe<Scalars['String']['output']>;
+  /** Image data array mapping */
+  image: Maybe<ImageData>;
   likeCount: Scalars['Int']['output'];
   likedImage: Maybe<Scalars['Int']['output']>;
   likes: Scalars['Int']['output'];
   likesCount: Scalars['Int']['output'];
+  media: Array<MediaFileType>;
+  mediaType: Maybe<Scalars['String']['output']>;
+  mediaUrl: Maybe<Scalars['String']['output']>;
   prayedCount: Scalars['Int']['output'];
   savedCount: Scalars['Int']['output'];
   sharedCount: Scalars['Int']['output'];
   text: Maybe<Scalars['String']['output']>;
   user: CirclePostAuthorType;
+  /** Video metadata mapping */
+  video: Maybe<VideoData>;
   viewerState: Maybe<CirclePostViewerState>;
 };
 
@@ -626,6 +661,7 @@ export type CircleSummaryType = {
 export type CircleType = {
   __typename: 'CircleType';
   activeAnchor: Maybe<AnchorType>;
+  anchorDates: Array<Scalars['String']['output']>;
   avatars: Array<Scalars['String']['output']>;
   bannerImage: Maybe<Scalars['String']['output']>;
   coverImage: Scalars['String']['output'];
@@ -659,6 +695,7 @@ export type CommentPayload = {
   error: Maybe<ErrorType>;
   errorCode: Maybe<Scalars['String']['output']>;
   message: Maybe<Scalars['String']['output']>;
+  stats: Maybe<PostStats>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -764,6 +801,7 @@ export type CreatePostPayload = {
 
 export type CurrentUserResponse = {
   __typename: 'CurrentUserResponse';
+  accountDetails: AccountDetails;
   createdAt: Scalars['String']['output'];
   displayName: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
@@ -841,6 +879,10 @@ export type FeedPost = {
   id: Scalars['String']['output'];
   /** Image data array mapping */
   image: Maybe<ImageData>;
+  /** Primary flat media type: image, video, or null. */
+  mediaType: Maybe<Scalars['String']['output']>;
+  /** Primary flat media URL for image/video posts. */
+  mediaUrl: Maybe<Scalars['String']['output']>;
   savedInFolders: Maybe<Array<BookmarkFolderType>>;
   scripture: Maybe<FeedPostScripture>;
   shareUrl: Scalars['String']['output'];
@@ -958,6 +1000,53 @@ export type GoogleOAuthPayload = {
   user: Maybe<UserType>;
 };
 
+export type HelpArticleType = {
+  __typename: 'HelpArticleType';
+  categorySlug: Scalars['String']['output'];
+  categoryTitle: Scalars['String']['output'];
+  content: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  summary: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type HelpCategoryType = {
+  __typename: 'HelpCategoryType';
+  articleCount: Scalars['Int']['output'];
+  articles: Array<HelpArticleType>;
+  description: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  slug: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type HelpConversationMessageType = {
+  __typename: 'HelpConversationMessageType';
+  id: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+  senderName: Scalars['String']['output'];
+  senderType: Scalars['String']['output'];
+  sentAt: Scalars['String']['output'];
+};
+
+export type HelpConversationPayload = {
+  __typename: 'HelpConversationPayload';
+  contact: Maybe<HelpConversationType>;
+  error: Maybe<ErrorType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type HelpConversationType = {
+  __typename: 'HelpConversationType';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  messages: Array<HelpConversationMessageType>;
+  repliedAt: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
+  topic: Scalars['String']['output'];
+};
+
 export type HiddenPostsResponse = {
   __typename: 'HiddenPostsResponse';
   hasMore: Scalars['Boolean']['output'];
@@ -995,6 +1084,8 @@ export type LegalDocumentPayload = {
 export type LegalDocumentType = {
   __typename: 'LegalDocumentType';
   content: Scalars['String']['output'];
+  documentType: Scalars['String']['output'];
+  documentUrl: Scalars['String']['output'];
   lastUpdated: Scalars['String']['output'];
   version: Scalars['String']['output'];
 };
@@ -1034,6 +1125,16 @@ export type MediaFileType = {
   width: Maybe<Scalars['Int']['output']>;
 };
 
+export type MediaStatusPayload = {
+  __typename: 'MediaStatusPayload';
+  error: Maybe<ErrorType>;
+  mediaId: Maybe<Scalars['String']['output']>;
+  mediaUrl: Maybe<Scalars['String']['output']>;
+  status: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  thumbnailUrl: Maybe<Scalars['String']['output']>;
+};
+
 export enum MediaType {
   Image = 'IMAGE',
   Video = 'VIDEO'
@@ -1045,6 +1146,7 @@ export type MediaUploadPayload = {
   expiresIn: Maybe<Scalars['Int']['output']>;
   mediaId: Maybe<Scalars['String']['output']>;
   mediaUrl: Maybe<Scalars['String']['output']>;
+  status: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
   uploadUrl: Maybe<Scalars['String']['output']>;
 };
@@ -1107,8 +1209,10 @@ export type Mutation = {
   checkUsernameAvailability: UsernameCheckResult;
   /** Add an inline comment to a CirclePost. */
   commentOnCirclePost: CirclePostCommentPayload;
-  /** Complete password reset using resetToken from OTP verification. Sets new password and optionally signs out all other devices. */
-  confirmPasswordReset: ChangePasswordPayload;
+  /** Confirm direct-to-GCS media upload and start processing */
+  confirmMediaUpload: MediaUploadPayload;
+  /** Complete password reset using the resetToken returned by verifyOtp(password_reset). Returns the authenticated user and a fresh token pair. */
+  confirmPasswordReset: AuthPayload;
   createAnchor: CreateAnchorPayload;
   /** Create a bookmark folder */
   createBookmarkFolder: BookmarkFolderPayload;
@@ -1157,7 +1261,7 @@ export type Mutation = {
   likeComment: LikePayload;
   /** Optimistically toggle a 'like' on a specific post. */
   likePost: LikePayload;
-  /** Authenticate existing user with email/password. Returns user data and access/refresh tokens. */
+  /** Authenticate existing user with email/password. Verified users receive tokens; unverified users receive requiresVerification and a fresh OTP. */
   login: AuthPayload;
   markAllNotificationsAsRead: SuccessResponse;
   markNotificationAsRead: SuccessResponse;
@@ -1170,22 +1274,26 @@ export type Mutation = {
   reactivateUser: ModerationActionPayload;
   /** Rotate refresh token for new token pair. */
   refreshToken: AuthPayload;
-  /** Create a new user account with email and password. Returns user object and JWT tokens for immediate login. */
-  register: AuthPayload;
+  /** Create a new unverified user account with email, password, username, and date of birth. Queues an OTP and returns requiresVerification instead of tokens. */
+  register: RegisterPayload;
   registerDeviceToken: SuccessResponse;
   replyToResponse: AnchorResponsePayload;
   reportCircleContent: CircleReportPayload;
   /** File a Community Guidelines violation against an active node. */
   reportContent: ReportPayload;
-  /** Request password reset via email. Sends OTP code to user's email address. */
-  resetPassword: OtpPayload;
+  /** Resend the verification OTP for an unverified password account. Returns timing metadata for resend countdown UI. */
+  resendVerificationOtp: OtpPayload;
+  /** Request a password reset code for the email/password flow. Returns a generic success message to avoid exposing account existence. */
+  resetPassword: PasswordResetRequestPayload;
+  /** Mark a support conversation as resolved for the authenticated user. */
+  resolveHelpConversation: HelpConversationPayload;
   respondToAnchor: AnchorResponsePayload;
   /** Update specific report processing state dynamically (Admin only). */
   reviewReport: ReportPayload;
   /** Add bookmark saving a post strictly. */
   savePost: SavePayload;
   sendAdminAnnouncement: SuccessResponse;
-  /** Send one-time password code via email. Supports three purposes: registration, email_verification, password_reset. Rate-limited to 3 requests per 10 minutes. */
+  /** Send a purpose-scoped OTP via the unified OTP service. Use this for generic OTP flows; use register/login/verifyEmail/resendVerificationOtp for the password signup verification path. */
   sendOtp: OtpPayload;
   /** Set user interests for feed personalization */
   setInterests: SetInterestsPayload;
@@ -1197,6 +1305,8 @@ export type Mutation = {
   submitContact: ContactPayload;
   /** Public: submit a contact/support message (no auth required). */
   submitContactMessage: SubmitContactPayload;
+  /** Authenticated in-app help/support submission. */
+  submitHelpMessage: HelpConversationPayload;
   /** Get username suggestions based on a name */
   suggestUsernames: Array<Scalars['String']['output']>;
   /** Suspend a user (admin only). */
@@ -1209,6 +1319,8 @@ export type Mutation = {
   unlikePost: LikePayload;
   /** Unsave/remove a bookmark */
   unsavePost: SavePayload;
+  /** Update settings account details for the authenticated user. */
+  updateAccountDetails: AccountDetailsPayload;
   /** Publish a new version of a legal document. Admin only. */
   updateLegalDocument: LegalDocumentPayload;
   updateNotificationPreferences: NotificationPreferencesType;
@@ -1220,9 +1332,9 @@ export type Mutation = {
   updateUsername: UpdateUsernamePayload;
   /** Request a signed URL for media upload correctly matching uploadMedia mapping */
   uploadMedia: MediaUploadPayload;
-  /** Verify email address using verification token. Returns tokens for registration/verification or resetToken for password reset. */
+  /** Verify the email OTP issued by password registration or unverified login. Returns the authenticated user and JWT tokens on success. */
   verifyEmail: AuthPayload;
-  /** Verify OTP code and complete action. For registration/email_verification returns tokens. For password_reset returns resetToken for next step. */
+  /** Verify a purpose-scoped OTP through the unified OTP service. For OTPs issued by password register/login, use verifyEmail instead. */
   verifyOtp: VerifyOtpPayload;
   /** Warn a user (admin only). */
   warnUser: ModerationActionPayload;
@@ -1382,6 +1494,11 @@ export type MutationCommentOnCirclePostArgs = {
 };
 
 
+export type MutationConfirmMediaUploadArgs = {
+  mediaId: Scalars['String']['input'];
+};
+
+
 export type MutationConfirmPasswordResetArgs = {
   newPassword: Scalars['String']['input'];
   resetToken: Scalars['String']['input'];
@@ -1420,9 +1537,14 @@ export type MutationCreateBookmarkFolderArgs = {
 
 export type MutationCreateCirclePostArgs = {
   circleId: Scalars['String']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
-  mediaUrl?: InputMaybe<Scalars['String']['input']>;
+  duration?: InputMaybe<Scalars['Int']['input']>;
+  height?: InputMaybe<Scalars['Int']['input']>;
+  mediaIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  mediaType?: InputMaybe<MediaType>;
+  mediaUrls?: InputMaybe<Array<Scalars['String']['input']>>;
   text?: InputMaybe<Scalars['String']['input']>;
+  thumbnailUrl?: InputMaybe<Scalars['String']['input']>;
+  width?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1617,9 +1739,10 @@ export type MutationRefreshTokenArgs = {
 
 
 export type MutationRegisterArgs = {
+  dateOfBirth: Scalars['String']['input'];
   email: Scalars['String']['input'];
-  fullName?: Scalars['String']['input'];
   password: Scalars['String']['input'];
+  username: Scalars['String']['input'];
 };
 
 
@@ -1653,8 +1776,18 @@ export type MutationReportContentArgs = {
 };
 
 
+export type MutationResendVerificationOtpArgs = {
+  email: Scalars['String']['input'];
+};
+
+
 export type MutationResetPasswordArgs = {
   email: Scalars['String']['input'];
+};
+
+
+export type MutationResolveHelpConversationArgs = {
+  contactId: Scalars['String']['input'];
 };
 
 
@@ -1720,9 +1853,18 @@ export type MutationSubmitContactArgs = {
 
 
 export type MutationSubmitContactMessageArgs = {
-  email: Scalars['String']['input'];
+  categorySlug?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
   message: Scalars['String']['input'];
-  name: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type MutationSubmitHelpMessageArgs = {
+  categorySlug?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  message: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -1757,8 +1899,15 @@ export type MutationUnsavePostArgs = {
 };
 
 
+export type MutationUpdateAccountDetailsArgs = {
+  location: Scalars['String']['input'];
+};
+
+
 export type MutationUpdateLegalDocumentArgs = {
-  content: Scalars['String']['input'];
+  content?: Scalars['String']['input'];
+  documentType?: Scalars['String']['input'];
+  documentUrl?: Scalars['String']['input'];
   type: LegalDocumentTypeEnum;
   version: Scalars['String']['input'];
 };
@@ -1778,6 +1927,7 @@ export type MutationUpdatePostArgs = {
 export type MutationUpdateProfileArgs = {
   avatarUrl?: InputMaybe<Scalars['String']['input']>;
   bio?: InputMaybe<Scalars['String']['input']>;
+  bioLink?: InputMaybe<Scalars['String']['input']>;
   fullName?: InputMaybe<Scalars['String']['input']>;
   hideLikeCount?: InputMaybe<Scalars['Boolean']['input']>;
   location?: InputMaybe<Scalars['String']['input']>;
@@ -1797,7 +1947,8 @@ export type MutationUploadMediaArgs = {
 
 
 export type MutationVerifyEmailArgs = {
-  token: Scalars['String']['input'];
+  code: Scalars['String']['input'];
+  email: Scalars['String']['input'];
 };
 
 
@@ -1873,6 +2024,17 @@ export type PageInfo = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type PasswordResetRequestPayload = {
+  __typename: 'PasswordResetRequestPayload';
+  error: Maybe<ErrorType>;
+  /** Specific error code if the request failed */
+  errorCode: Maybe<Scalars['String']['output']>;
+  /** Success or error message */
+  message: Maybe<Scalars['String']['output']>;
+  /** Whether the request was accepted */
+  success: Scalars['Boolean']['output'];
+};
+
 export type Post = {
   __typename: 'Post';
   /** Post author info */
@@ -1887,6 +2049,10 @@ export type Post = {
   id: Scalars['String']['output'];
   /** Media files array */
   media: Array<MediaFileType>;
+  /** Primary flat media type: image, video, or null. */
+  mediaType: Maybe<Scalars['String']['output']>;
+  /** Primary flat media URL for image/video posts. */
+  mediaUrl: Maybe<Scalars['String']['output']>;
   savedInFolders: Maybe<Array<BookmarkFolderType>>;
   /** Attached scripture reference */
   scripture: Maybe<PostScripture>;
@@ -2002,6 +2168,8 @@ export type ProfileViewerState = {
 
 export type Query = {
   __typename: 'Query';
+  /** Get settings account details for the authenticated user */
+  accountDetails: AccountDetails;
   activeAnchor: Maybe<AnchorType>;
   /** Get analytics charts for a time range. */
   adminAnalytics: AdminAnalyticsType;
@@ -2073,6 +2241,10 @@ export type Query = {
   friendsList: Array<FriendType>;
   /** Simple health check for the GraphQL endpoint. */
   health: Scalars['String']['output'];
+  /** List public help-center articles. */
+  helpArticles: Array<HelpArticleType>;
+  /** List public help-center categories. */
+  helpCategories: Array<HelpCategoryType>;
   /** Get paginated list of hidden posts */
   hiddenPosts: HiddenPostsResponse;
   /** Get paginated list of posts the targeted user has liked. */
@@ -2081,7 +2253,11 @@ export type Query = {
   listReports: ReportListResponse;
   /** Get the currently authenticated user's complete data */
   me: CurrentUserResponse;
+  /** Return media processing status by media ID */
+  mediaStatus: MediaStatusPayload;
   myCircles: Array<CircleType>;
+  /** List support conversations for the authenticated user. */
+  myHelpConversations: Array<HelpConversationType>;
   notificationPreferences: NotificationPreferencesType;
   notifications: NotificationConnection;
   /** Retrieve a single post by its UUID with full engagement metrics and viewer context. */
@@ -2235,6 +2411,7 @@ export type QueryCircleArgs = {
 
 export type QueryCircleFeedArgs = {
   authorId?: InputMaybe<Scalars['String']['input']>;
+  circleFilter?: InputMaybe<CirclePostFilterEnum>;
   circleId: Scalars['String']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
@@ -2244,6 +2421,7 @@ export type QueryCircleFeedArgs = {
 
 export type QueryCircleFeedDataArgs = {
   authorId?: InputMaybe<Scalars['String']['input']>;
+  circleFilter?: InputMaybe<CirclePostFilterEnum>;
   circleId: Scalars['String']['input'];
   historyLimit?: Scalars['Int']['input'];
   page?: Scalars['Int']['input'];
@@ -2266,6 +2444,7 @@ export type QueryCirclePostCommentsArgs = {
 
 export type QueryCirclePostsArgs = {
   authorId?: InputMaybe<Scalars['String']['input']>;
+  circleFilter?: InputMaybe<CirclePostFilterEnum>;
   circleId: Scalars['String']['input'];
   page?: Scalars['Int']['input'];
   pageSize?: Scalars['Int']['input'];
@@ -2331,6 +2510,17 @@ export type QueryFriendsListArgs = {
 };
 
 
+export type QueryHelpArticlesArgs = {
+  categorySlug?: InputMaybe<Scalars['String']['input']>;
+  search?: Scalars['String']['input'];
+};
+
+
+export type QueryHelpCategoriesArgs = {
+  search?: Scalars['String']['input'];
+};
+
+
 export type QueryHiddenPostsArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   limit?: Scalars['Int']['input'];
@@ -2351,8 +2541,18 @@ export type QueryListReportsArgs = {
 };
 
 
+export type QueryMediaStatusArgs = {
+  mediaId: Scalars['String']['input'];
+};
+
+
 export type QueryMyCirclesArgs = {
   limit?: Scalars['Int']['input'];
+};
+
+
+export type QueryMyHelpConversationsArgs = {
+  status?: Scalars['String']['input'];
 };
 
 
@@ -2405,6 +2605,7 @@ export type QueryScriptureRangeArgs = {
 
 
 export type QuerySuggestUsernamesArgs = {
+  dateOfBirth?: InputMaybe<Scalars['String']['input']>;
   dob?: InputMaybe<Scalars['String']['input']>;
   email: Scalars['String']['input'];
 };
@@ -2436,6 +2637,21 @@ export type ReactionPayload = {
   error: Maybe<ErrorType>;
   reaction: Maybe<AnchorResponseReactionType>;
   success: Scalars['Boolean']['output'];
+};
+
+export type RegisterPayload = {
+  __typename: 'RegisterPayload';
+  error: Maybe<ErrorType>;
+  /** Specific error code if the operation failed (e.g. USERNAME_TAKEN) */
+  errorCode: Maybe<Scalars['String']['output']>;
+  /** Success or error message */
+  message: Maybe<Scalars['String']['output']>;
+  /** Whether the client must verify the user's email before login tokens are issued */
+  requiresVerification: Scalars['Boolean']['output'];
+  /** Whether the registration operation succeeded */
+  success: Scalars['Boolean']['output'];
+  /** The registered user data in its current unverified state */
+  user: Maybe<UserType>;
 };
 
 export type ReportListResponse = {
@@ -2573,6 +2789,7 @@ export type StatisticsType = {
 
 export type SubmitContactPayload = {
   __typename: 'SubmitContactPayload';
+  contact: Maybe<HelpConversationType>;
   contactId: Maybe<Scalars['String']['output']>;
   error: Maybe<ErrorType>;
   message: Maybe<Scalars['String']['output']>;
@@ -2614,6 +2831,7 @@ export type UserProfileType = {
   __typename: 'UserProfileType';
   avatarUrl: Maybe<Scalars['String']['output']>;
   bio: Scalars['String']['output'];
+  bioLink: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   fullName: Scalars['String']['output'];
   hideLikeCount: Scalars['Boolean']['output'];
@@ -2648,12 +2866,14 @@ export type UserType = {
   __typename: 'UserType';
   avatarUrl: Scalars['String']['output'];
   bio: Scalars['String']['output'];
+  bioLink: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   email: Scalars['String']['output'];
   fullName: Scalars['String']['output'];
   id: Scalars['String']['output'];
   isEmailVerified: Scalars['Boolean']['output'];
   location: Scalars['String']['output'];
+  needsUsernameSelection: Scalars['Boolean']['output'];
   role: Scalars['String']['output'];
   username: Maybe<Scalars['String']['output']>;
 };

@@ -122,7 +122,7 @@ export const useAppleAuth = () => {
       console.log("hasUser:", !!data.user);
       console.log("needsUsernameSelection:", data.needsUsernameSelection);
 
-      if (!data.success || !data.user) {
+      if (data.success === false || !data.user) {
         if (data.errorCode) {
           return { error: getUserFacingError(data) };
         }

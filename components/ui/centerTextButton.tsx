@@ -33,14 +33,25 @@ export function SimpleButton({
     <Button
       onPress={onPress}
       disabled={isDisabled}
-      backgroundColor={isDisabled ? colors.inactiveButton : color}
+      backgroundColor={color}
       borderWidth={1}
       borderRadius={borderRadius}
+      opacity={isDisabled ? 0.7 : 1}
       pressStyle={{ opacity: 0.85 }}
       {...buttonProps}
     >
       {loading ? (
-        <Spinner color={textColor ?? "#F6EAFA"} size="small" />
+        <XStack gap={6} alignItems="center">
+          <Spinner color={textColor ?? "#F6EAFA"} size="small" />
+          <Text
+            color={textColor ?? "black"}
+            fontFamily={fontFamily}
+            fontSize={textSize}
+            fontWeight={textWeight}
+          >
+            {text}
+          </Text>
+        </XStack>
       ) : (
         <Text
           color={textColor ?? "black"}
