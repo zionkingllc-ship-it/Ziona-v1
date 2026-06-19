@@ -8,10 +8,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
-import React, { useState } from "react";
+import { useVideoPlayer, VideoView } from "expo-video";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -32,7 +34,28 @@ export default function PostComposer() {
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const player = useVideoPlayer(video || "", (p) => {
+    p.loop = false;
+  });
+
+  useEffect(() => {
+    if (!player) return;
+    if (videoPlaying) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [player, videoPlaying]);
+
+  useEffect(() => {
+    if (!player) return;
+    const sub = player.addListener("playToEnd", () => {
+      setVideoPlaying(false);
+    });
+    return () => sub.remove();
+  }, [player]);
   const user = useAuthStore((state) => state.user);
   const userName = user?.username || "You";
   const userAvatar = user?.avatarUrl || null;
@@ -133,11 +156,11 @@ export default function PostComposer() {
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="never"
             showsVerticalScrollIndicator={false}
           >
             <XStack justifyContent="flex-end">
-              <Pressable onPress={() => router.back()}>
+              <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }}>
                 <Text color="#666">Cancel</Text>
               </Pressable>
             </XStack>
@@ -174,16 +197,23 @@ export default function PostComposer() {
 
             {video && (
               <YStack marginTop="$3">
-                <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
-                  <Image source={{ uri: videoThumbnail || video }} height={120} />
+                <Pressable onPress={() => setVideoPlaying(!videoPlaying)} style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
+                  {player && (
+                    <VideoView
+                      player={player}
+                      style={{ width: "100%", height: "100%" }}
+                      contentFit="cover"
+                      nativeControls={false}
+                    />
+                  )}
                   <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
                     <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
-                      <Ionicons name="play" size={20} color="#FFF" />
+                      <Ionicons name={videoPlaying ? "pause" : "play"} size={20} color="#FFF" />
                     </View>
                   </View>
-                </View>
+                </Pressable>
                 <Pressable
-                  onPress={() => { setVideo(null); setVideoThumbnail(null); }}
+                  onPress={() => { setVideo(null); setVideoThumbnail(null); setVideoPlaying(false); }}
                   style={{
                     position: "absolute",
                     right: 8,

@@ -11,7 +11,7 @@ import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Image, Pressable, TouchableOpacity } from "react-native";
@@ -23,14 +23,30 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
   const player = useVideoPlayer(uri, (instance) => {
-    instance.loop = true;
+    instance.loop = false;
   });
-  const [showing, setShowing] = useState(true);
+  const [playing, setPlaying] = useState(true);
+
+  useEffect(() => {
+    if (playing) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [playing, player]);
+
+  useEffect(() => {
+    const sub = player.addListener("playToEnd", () => {
+      player.currentTime = 0;
+      setPlaying(false);
+    });
+    return () => sub.remove();
+  }, [player]);
 
   return (
     <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
       <Pressable
-        onPress={() => setShowing((p) => !p)}
+        onPress={() => setPlaying((p) => !p)}
         disabled={uploading}
         style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
       >
@@ -41,7 +57,7 @@ function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
           nativeControls={false}
         />
 
-        {!showing && (
+        {!playing && (
           <View
             style={{
               position: "absolute",

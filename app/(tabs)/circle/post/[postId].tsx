@@ -206,7 +206,7 @@ export default function CirclePostDetailScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <YStack padding="$3" gap="$3" borderBottomWidth={1} borderBottomColor="#EEE">
+          <YStack padding="$3" gap="$3">
             <XStack alignItems="center" gap="$2">
               <AvatarWithInitials
                 uri={userAvatar}
@@ -296,7 +296,7 @@ export default function CirclePostDetailScreen() {
               ) : null
             )}
 
-            <XStack gap="$4" paddingTop="$2" borderTopWidth={1} borderTopColor="#EEE">
+            <XStack gap="$4" paddingTop="$2">
               <TouchableOpacity onPress={handleToggleLike} disabled={togglingLike}>
                 <XStack alignItems="center" gap="$1">
                   <Ionicons
@@ -310,7 +310,7 @@ export default function CirclePostDetailScreen() {
                 </XStack>
               </TouchableOpacity>
               <XStack alignItems="center" gap="$1">
-                <Ionicons name="chatbubble" size={16} color="#666" />
+                <Ionicons name="chatbubble-outline" size={16} color="#666" />
                 <Text fontSize={12} color="#666">
                   {postComments} {Number(postComments) === 1 ? "comment" : "comments"}
                 </Text>
@@ -318,7 +318,7 @@ export default function CirclePostDetailScreen() {
             </XStack>
           </YStack>
 
-          <YStack paddingHorizontal="$3" paddingVertical="$2">
+          <YStack paddingHorizontal="$3" paddingVertical="$2" borderTopWidth={1} borderTopColor="#EEE">
             <Text fontSize={14} fontWeight="600" color="#333">
               Comments
             </Text>

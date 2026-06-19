@@ -667,7 +667,7 @@ export default function CircleFeedScreen() {
         message={joinSuccessMessage}
         type="success"
         autoClose
-        duration={3000}
+        duration={1500}
       />
       <SuccessModal
         visible={joinErrorVisible}

@@ -15,7 +15,7 @@ import { router } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
-import { FlatList, Image, TextInput, TouchableOpacity } from "react-native";
+import { FlatList, Image, Keyboard, Pressable, ScrollView, TextInput, TouchableOpacity } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 
 function MediaPreviewTile({
@@ -206,7 +206,13 @@ export default function CreateMediaScreen() {
     >
       <Header heading="Add details" />
 
-      <YStack>
+      <ScrollView
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="never"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: hp(4) }}
+      >
+        <Pressable onPress={Keyboard.dismiss}>
         <FlatList
           data={mediaItems}
           renderItem={({ item }) => (
@@ -267,11 +273,13 @@ export default function CreateMediaScreen() {
           placeholder="Write a caption..."
           placeholderTextColor={colors.placeHolderText}
           style={{
-            minHeight: hp(8),
+            minHeight: 35,
+            maxHeight: 35,
             borderBottomWidth: 1,
             borderColor: "#E5E5E5",
             fontSize: fs(14),
             color: colors.black,
+            paddingVertical: 0,
           }}
         />
 
@@ -283,24 +291,28 @@ export default function CreateMediaScreen() {
         >
           {(mediaDraft.caption ?? "").length}/500
         </Text>
-      </YStack>
 
-      <XStack marginTop={hp(3)}>
-        <TagSelectorCard
-          category={mediaDraft.category}
-          onPress={() => setCategoryVisible(true)}
-        />
-      </XStack>
+        <XStack marginTop={hp(3)}>
+          <TagSelectorCard
+            category={mediaDraft.category}
+            onPress={() => {
+              Keyboard.dismiss();
+              setCategoryVisible(true);
+            }}
+          />
+        </XStack>
 
-      <YStack marginTop={hp(7)} marginBottom={hp(4)}>
-        <SimpleButton
-          text="Preview"
-          onPress={() => router.push("/create/mediaPreview")}
-          disabled={!mediaDraft.category.id || mediaItems.length === 0}
-          color={colors.primary}
-          textColor={colors.buttonText}
-        />
-      </YStack>
+        <YStack marginTop={hp(7)} marginBottom={hp(4)}>
+          <SimpleButton
+            text="Preview"
+            onPress={() => router.push("/create/mediaPreview")}
+            disabled={!mediaDraft.category.id || mediaItems.length === 0}
+            color={colors.primary}
+            textColor={colors.buttonText}
+          />
+        </YStack>
+        </Pressable>
+      </ScrollView>
 
       {categoryVisible && (
         <CategoryModal
