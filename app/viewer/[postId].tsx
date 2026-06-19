@@ -10,11 +10,11 @@ import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useIsFocused } from "@react-navigation/native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View } from "tamagui";
+import { Text, View, XStack } from "tamagui";
 
 export default function PostViewerScreen() {
   const { source, index, postId, categoryId, filter } = useLocalSearchParams<{
@@ -209,13 +209,54 @@ export default function PostViewerScreen() {
     setModalVisible(true);
   }, [isError, error]);
 
+  const postNotFound = !isLoading && posts.length > 0 && targetIndex === -1;
+
   /* ================= LOADING ================= */
 
-  if (isLoading || !isReady) {
+  if (isLoading || (!postNotFound && !isReady)) {
     return (
       <View flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size={40} color={colors.primary} />
       </View>
+    );
+  }
+
+  if (postNotFound) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View flex={1} justifyContent="center" alignItems="center" paddingHorizontal={24}>
+          <Text fontSize={20} fontWeight="600" color={colors.black} marginBottom={8}>
+            Post not found
+          </Text>
+          <Text fontSize={14} color={colors.gray} textAlign="center" marginBottom={24}>
+            This post could not be found in your feed. It may have been removed.
+          </Text>
+          <XStack gap={12}>
+            <TouchableOpacity
+              onPress={() => refetch()}
+              style={{
+                backgroundColor: colors.primary,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 8,
+              }}
+            >
+              <Text color="white" fontWeight="600">Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{
+                backgroundColor: colors.gray,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 8,
+              }}
+            >
+              <Text color="white" fontWeight="600">Go Back</Text>
+            </TouchableOpacity>
+          </XStack>
+        </View>
+      </SafeAreaView>
     );
   }
 

@@ -68,7 +68,8 @@ function PostViewerEngineComponent({
   const extraData = useMemo(() => ({
     activePostId,
     pausedPostId,
-  }), [activePostId, pausedPostId]);
+    isScreenFocused,
+  }), [activePostId, pausedPostId, isScreenFocused]);
 
   // Scroll to middle copy when FlatList mounts or posts length changes
   useEffect(() => {
@@ -90,6 +91,12 @@ function PostViewerEngineComponent({
     return () => sub.remove();
   }, []);
 
+  useEffect(() => {
+    if (!isScreenFocused) {
+      setActivePostId(null);
+    }
+  }, [isScreenFocused]);
+
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 150,
@@ -97,9 +104,15 @@ function PostViewerEngineComponent({
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (!viewableItems?.length) return;
+      if (!viewableItems?.length) {
+        setActivePostId(null);
+        return;
+      }
       const current = viewableItems[0]?.item;
-      if (!current?.id) return;
+      if (!current?.id) {
+        setActivePostId(null);
+        return;
+      }
       setActivePostId(current.id);
       setPausedPostId(null);
     },
@@ -160,7 +173,7 @@ function PostViewerEngineComponent({
     }
   }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const keyExtractor = useCallback((item: FeedPost) => item.id, []);
+  const keyExtractor = useCallback((item: FeedPost, index: number) => `${item.id}-${index}`, []);
 
   if (!containerHeight || !mergedPosts.length) {
     return null;

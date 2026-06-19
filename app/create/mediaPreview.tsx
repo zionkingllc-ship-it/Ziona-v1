@@ -140,9 +140,9 @@ export default function CreateMediaPreviewScreen() {
     }
   }
 
-  function handleProgressComplete() {
+  async function handleProgressComplete() {
     setShowProgress(false);
-    queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    await queryClient.refetchQueries({ queryKey: ["userPosts"] });
     setModalType("success");
     setModalMessage("Post uploaded successfully");
     setModalVisible(true);

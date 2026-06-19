@@ -125,9 +125,9 @@ export default function CreateBiblePostScreen() {
     }
   }
 
-  function handleProgressComplete() {
+  async function handleProgressComplete() {
     setShowProgress(false);
-    queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    await queryClient.refetchQueries({ queryKey: ["userPosts"] });
     feedback.showSuccess();
   }
 
