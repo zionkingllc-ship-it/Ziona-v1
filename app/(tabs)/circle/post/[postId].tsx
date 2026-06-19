@@ -71,6 +71,8 @@ export default function CirclePostDetailScreen() {
     anchorMediaUrl?: string;
   }>();
 
+  const isVideo = !!postMediaUrl && /\.(mp4|mov|avi|webm|mkv)$/i.test(postMediaUrl);
+
   const [commentText, setCommentText] = useState("");
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
@@ -229,10 +231,19 @@ export default function CirclePostDetailScreen() {
               </Text>
             )}
 
-            {postImage && !postMediaUrl && !postImageError && (
-              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: postImage } })}>
+            {isVideo && postMediaUrl && (
+              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: postMediaUrl } })}>
+                <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="videocam" size={40} color="#FFF" />
+                  <Text fontFamily="$body" color="#FFF" fontSize={14}>Tap to view video</Text>
+                </View>
+              </Pressable>
+            )}
+
+            {!isVideo && (postImage || postMediaUrl) && !postImageError && (
+              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: postImage || postMediaUrl } })}>
                 <Image
-                  source={{ uri: postImage }}
+                  source={{ uri: postImage || postMediaUrl }}
                   width="100%"
                   height={200}
                   borderRadius={12}
@@ -241,20 +252,11 @@ export default function CirclePostDetailScreen() {
                 />
               </Pressable>
             )}
-            {postImage && !postMediaUrl && postImageError && (
+            {!isVideo && (postImage || postMediaUrl) && postImageError && (
               <View style={{ height: 200, borderRadius: 12, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
                 <Ionicons name="image-outline" size={40} color="#999" />
                 <Text fontFamily="$body" fontSize={13} color="#999" marginTop={4}>Image unavailable</Text>
               </View>
-            )}
-
-            {postMediaUrl && (
-              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: postMediaUrl } })}>
-                <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
-                  <Ionicons name="videocam" size={40} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={14}>Tap to view video</Text>
-                </View>
-              </Pressable>
             )}
 
             {anchorType && (
