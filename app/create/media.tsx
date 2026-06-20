@@ -15,8 +15,8 @@ import { router } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
-import { FlatList, Image, Keyboard, Pressable, ScrollView, TextInput, TouchableOpacity } from "react-native";
-import { Text, XStack, YStack } from "tamagui";
+import { FlatList, Image, Keyboard, ScrollView, TextInput, TouchableOpacity } from "react-native";
+import { Text, View, XStack, YStack } from "tamagui";
 
 function MediaPreviewTile({
   item,
@@ -27,12 +27,7 @@ function MediaPreviewTile({
   width: number;
   height: number;
 }) {
-  const getVideoUri = (uri: string) => {
-    if (uri.startsWith("file://")) {
-      return uri.replace("file://", "");
-    }
-    return uri;
-  };
+  const getVideoUri = (uri: string) => uri;
 
   const player = useVideoPlayer(
     item.type === "VIDEO" ? getVideoUri(item.uri) : "",
@@ -93,6 +88,9 @@ export default function CreateMediaScreen() {
   }
   const mediaDraft = draft;
   const mediaItems = mediaDraft.media?.items ?? [];
+  const hasVideo = mediaItems.some((m) => m.type === "VIDEO");
+  const addDisabled = hasVideo || mediaItems.length >= 4;
+
   /* =========================
      NORMALIZE MEDIA
   ========================= */
@@ -158,7 +156,6 @@ export default function CreateMediaScreen() {
       }
 
       setMedia([normalizeMedia(video)]);
-      setTimeout(() => router.push("/create/mediaPreview"), 50);
       return;
     }
 
@@ -168,25 +165,26 @@ export default function CreateMediaScreen() {
       return;
     }
 
-    const remainingSlots = 5 - existing.length;
+    const remainingSlots = 4 - existing.length;
 
     if (remainingSlots <= 0) {
-      setError("Maximum 5 images allowed");
+      setError("Maximum 4 images allowed");
       setErrorVisible(true);
       return;
     }
 
     const images = assets
       .filter((a) => a.type !== "video")
-      .slice(0, remainingSlots)
       .map(normalizeMedia);
+
+    if (images.length > remainingSlots) {
+      setError(`Maximum 4 images allowed. You can only add ${remainingSlots} more.`);
+      setErrorVisible(true);
+      return;
+    }
 
     const updated = [...existing, ...images];
     setMedia(updated);
-
-    if (existing.length === 0 && updated.length > 0) {
-      setTimeout(() => router.push("/create/mediaPreview"), 50);
-    }
   }
 
   function removeMedia(id: string) {
@@ -208,55 +206,76 @@ export default function CreateMediaScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        keyboardShouldPersistTaps="never"
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: hp(4) }}
       >
-        <Pressable onPress={Keyboard.dismiss}>
-        <FlatList
-          data={mediaItems}
-          renderItem={({ item }) => (
-            <YStack>
-              {item.type === "VIDEO" ? (
-                <MediaPreviewTile item={item} width={wp(40)} height={wp(45)} />
-              ) : (
-                <Image
-                  source={{ uri: item.uri }}
-                  style={{
-                    width: wp(40),
-                    height: wp(45),
-                    borderRadius: 6,
-                    marginRight: wp(2),
-                  }}
-                />
-              )}
+        <View height={wp(45) + hp(2)} marginTop={hp(2)}>
+          <FlatList
+            data={mediaItems}
+            renderItem={({ item }) => (
+              <YStack>
+                {item.type === "VIDEO" ? (
+                  <MediaPreviewTile item={item} width={wp(40)} height={wp(45)} />
+                ) : (
+                  <Image
+                    source={{ uri: item.uri }}
+                    style={{
+                      width: wp(40),
+                      height: wp(45),
+                      borderRadius: 6,
+                      marginRight: wp(2),
+                    }}
+                  />
+                )}
 
               <TouchableOpacity
                 onPress={() => removeMedia(item.id)}
-                style={{ position: "absolute", top: "40%", left: "40%" }}
+                style={{ position: "absolute", top: 6, right: wp(2) + 6 }}
               >
-                <Trash color={colors.white} size={24} />
+                <Trash color={colors.white} size={20} />
               </TouchableOpacity>
-            </YStack>
-          )}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ marginTop: hp(2) }}
-        />
+              </YStack>
+            )}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={wp(40) + wp(2)}
+            decelerationRate="fast"
+            contentContainerStyle={{ paddingRight: wp(2) }}
+          />
+        </View>
+
+        {mediaItems.length > 2 && (
+          <XStack justifyContent="center" marginTop={hp(1.5)} gap={wp(1.5)}>
+            {mediaItems.map((_, i) => (
+              <View
+                key={i}
+                width={wp(2.5)}
+                height={wp(2.5)}
+                borderRadius={wp(1.25)}
+                backgroundColor={i === 0 ? colors.primary : "#D9D9D9"}
+              />
+            ))}
+          </XStack>
+        )}
 
         <TouchableOpacity
-          onPress={pickMedia}
+          onPress={addDisabled ? undefined : pickMedia}
+          disabled={addDisabled}
           style={{
-            backgroundColor: "#F1EFF2",
+            backgroundColor: addDisabled ? "#E5E3E5" : "#F1EFF2",
             paddingVertical: hp(0.7),
             marginTop: hp(2),
             borderRadius: 6,
             alignItems: "center",
             width: wp(40),
+            opacity: addDisabled ? 0.5 : 1,
           }}
         >
-          <Text fontSize={fs(12)}>Add media</Text>
+          <Text fontSize={fs(12)} color={addDisabled ? "#A09DA0" : "#000"}>
+            {hasVideo ? "Video selected" : mediaItems.length >= 4 ? "Max images reached" : "Add media"}
+          </Text>
         </TouchableOpacity>
 
         <Text marginVertical={hp(1)}>Write a caption</Text>
@@ -311,7 +330,6 @@ export default function CreateMediaScreen() {
             textColor={colors.buttonText}
           />
         </YStack>
-        </Pressable>
       </ScrollView>
 
       {categoryVisible && (

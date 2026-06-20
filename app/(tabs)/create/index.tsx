@@ -119,10 +119,10 @@ export default function CreateScreen() {
         return;
       }
 
-      const images = assets.filter((a) => !a.type?.toLowerCase().includes("video")).slice(0, 5);
+      const images = assets.filter((a) => !a.type?.toLowerCase().includes("video")).slice(0, 4);
 
-      if (assets.length > 5) {
-        alert("Maximum 5 images allowed.");
+      if (assets.length > 4) {
+        alert("Maximum 4 images allowed.");
       }
 
       startDraft("MEDIA", "IMAGE");

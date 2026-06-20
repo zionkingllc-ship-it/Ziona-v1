@@ -10,18 +10,47 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "autoIncrement": true
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
+      "distribution": "internal"
+    },
+    "beta": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
+      }
     }
   },
   "submit": {
+    "preview": {
+      "android": {
+        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "track": "closed"
+      }
+    },
+    "beta": {
+      "android": {
+        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "track": "open"
+      }
+    },
     "production": {
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "internal"
+        "track": "production"
       }
     }
   }

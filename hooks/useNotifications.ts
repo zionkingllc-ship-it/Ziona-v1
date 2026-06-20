@@ -6,6 +6,14 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
 } from "@/services/graphQL/queries/actions/notifications";
+import { setBadgeCountAsync } from "expo-notifications";
+
+async function syncBadgeCount() {
+  try {
+    const count = await getUnreadNotificationCount();
+    await setBadgeCountAsync(count);
+  } catch {}
+}
 
 export function useNotifications(limit: number = 20) {
   return useInfiniteQuery({
@@ -13,6 +21,7 @@ export function useNotifications(limit: number = 20) {
     queryFn: ({ pageParam }) => getNotifications(limit, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage?.hasMore ? lastPage.nextCursor : undefined,
+    staleTime: 0,
   });
 }
 
@@ -31,6 +40,8 @@ export function useMarkNotificationAsRead() {
     mutationFn: markNotificationAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["unreadNotificationCount"] });
+      syncBadgeCount();
     },
   });
 }
@@ -42,6 +53,8 @@ export function useMarkAllNotificationsAsRead() {
     mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["unreadNotificationCount"] });
+      syncBadgeCount();
     },
   });
 }
@@ -53,6 +66,8 @@ export function useDeleteNotification() {
     mutationFn: deleteNotification,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["unreadNotificationCount"] });
+      syncBadgeCount();
     },
   });
 }

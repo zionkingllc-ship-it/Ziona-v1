@@ -28,6 +28,7 @@ function getMimeType(uri: string, type: "IMAGE" | "VIDEO") {
 export async function publishMediaPost(
   draft: MediaDraft,
   queryClient: QueryClient,
+  onProgress?: (percent: number) => void,
 ) {
   console.log("━━━━━━━━ PUBLISH MEDIA START ━━━━━━━━");
   console.log("Draft received:", draft);
@@ -55,7 +56,11 @@ export async function publishMediaPost(
      MEDIA UPLOAD
   ========================= */
 
-  const uploads = draft.media.items.map(async (item, index: number) => {
+  const items = draft.media.items;
+  const itemWeight = 100 / items.length;
+  let completedItems = 0;
+
+  const uploads = items.map(async (item, index: number) => {
     try {
       console.log(`Uploading item ${index}`, item);
 
@@ -76,7 +81,15 @@ export async function publishMediaPost(
         fileInfo.size,
       );
 
-      await uploadFileToStorage(upload.uploadUrl, item.uri, fileType);
+      const itemProgress = (pct: number) => {
+        const overall = Math.round((completedItems * itemWeight) + (pct * itemWeight / 100));
+        onProgress?.(overall);
+      };
+
+      await uploadFileToStorage(upload.uploadUrl, item.uri, fileType, itemProgress, fileInfo.size);
+
+      completedItems++;
+      onProgress?.(Math.round(completedItems * itemWeight));
 
       const publicUrl = extractPublicUrl(upload.uploadUrl);
 

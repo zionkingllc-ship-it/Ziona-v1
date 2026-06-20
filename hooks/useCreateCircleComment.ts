@@ -79,7 +79,7 @@ export function useCreateCircleComment() {
               index === 0
                 ? {
                     ...page,
-                    comments: [optimisticTop, ...page.comments],
+                    comments: [optimisticTop, ...(page.comments ?? [])],
                     pageInfo: {
                       ...page.pageInfo,
                       totalCount: page.pageInfo.totalCount + 1,
@@ -166,7 +166,7 @@ export function useCreateCircleComment() {
                       comments: [response.comment, ...page.comments],
                       pageInfo: {
                         ...page.pageInfo,
-                        totalCount: page.pageInfo.totalCount + 1,
+                    totalCount: (page.pageInfo?.totalCount ?? 0) + 1,
                       },
                     }
                   : page

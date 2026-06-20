@@ -68,7 +68,7 @@ export default function BibleVerseModal({
           onPress={() => {
             const text = verses
               .filter((v) => selected.includes(v.number))
-              .map((v) => v.text)
+              .map((v) => `(${v.number}) ${v.text}`)
               .join(" ");
 
             onDone(selected, text);

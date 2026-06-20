@@ -81,13 +81,13 @@ function PostCardComponent({
     (s) => s.likedPosts[post.id] ?? post.viewerState?.liked ?? false,
   );
   const baseLiked = post.viewerState?.liked ?? false;
-  const baseCount = Number(post.stats.likesCount) || 0;
+  const baseCount = Number(post.stats?.likesCount) || 0;
   const effectiveBaseCount = (baseLiked && baseCount === 0) ? 1 : baseCount;
   const likeCount = likedState !== baseLiked
     ? effectiveBaseCount + (likedState ? 1 : -1)
     : effectiveBaseCount;
-  const commentCount = post.stats.commentsCount;
-  const savedCount = post.stats.savesCount;
+  const commentCount = post.stats?.commentsCount ?? 0;
+  const savedCount = post.stats?.savesCount ?? 0;
 
   const [authorAvatarSource, setAuthorAvatarSource] = useState(
     post.author?.avatarUrl && post.author.avatarUrl.trim()
@@ -116,7 +116,7 @@ function PostCardComponent({
     toggleFolder,
     createFolder,
     isCreating,
-  } = useBookmarkFlow(post.id, post.viewerState.saved || isBookmarked);
+  } = useBookmarkFlow(post.id, post.viewerState?.saved || isBookmarked);
   const isLikePending = usePostActionsStore(
     (s) => s.pendingLikes[post.id] ?? false,
   );

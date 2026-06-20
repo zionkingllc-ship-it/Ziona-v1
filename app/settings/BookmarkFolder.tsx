@@ -18,7 +18,7 @@ export default function BookmarkFolderScreen() {
     isFetchingNextPage,
   } = useUserSavedPosts({ folderId: id });
 
-  const posts = savedPostsData?.pages.flatMap((p) => p.posts) || [];
+  const posts = savedPostsData?.pages?.flatMap((p) => p.posts) || [];
 
   const folderNames: Record<string, string> = {
     all: "All",

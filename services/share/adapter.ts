@@ -31,8 +31,9 @@ export function mapFeedPostToShare(post: FeedPost): SharePayload {
 
   if (post.type === "bible") {
     const biblePost = post as FeedBiblePost;
-    const verses = biblePost.scripture?.verses;
-    const text = verses?.map(v => v.text).join(" ") ?? biblePost.scripture?.reference;
+    const text = biblePost.scripture?.text ??
+      biblePost.scripture?.verses?.map(v => `(${v.number}) ${v.text}`).join(" ") ??
+      biblePost.scripture?.reference;
     return {
       ...base,
       text,

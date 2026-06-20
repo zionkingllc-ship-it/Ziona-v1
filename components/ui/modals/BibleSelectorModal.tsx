@@ -465,7 +465,7 @@ export default function BibleSelectorModal({
             ordered.includes(v.number),
           );
 
-          const text = selectedVerses.map((v: any) => v.text).join(" ");
+          const text = selectedVerses.map((v: any) => `(${v.number}) ${v.text}`).join(" ");
 
           const data = {
             translation,

@@ -1,9 +1,10 @@
-import { Image, Text, View, XStack } from "tamagui";
+import { Image, Text, View } from "tamagui";
 import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
 import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
-import { searchUsers } from "@/services/graphQL/queries/follow";
+import { getFollowers, getFollowing } from "@/services/graphQL/queries/follow";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export interface MentionUser {
   id: string;
@@ -19,24 +20,40 @@ interface Props {
 export function MentionSuggestions({ searchText, onSelectUser }: Props) {
   const [users, setUsers] = useState<MentionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
-    console.log("[MentionSuggestions] >>> starting search for:", JSON.stringify(searchText), "length:", searchText.length);
+    if (!currentUserId) {
+      setUsers([]);
+      return;
+    }
+
     setIsLoading(true);
-    searchUsers(searchText)
-      .then((results) => {
-        console.log("[MentionSuggestions] <<< searchUsers returned", results?.length ?? 0, "results:", JSON.stringify(results));
-        if (!results || results.length === 0) {
-          console.log("[MentionSuggestions] no users in response - check searchUsers query/backend");
+    const query = searchText.toLowerCase().trim();
+
+    async function loadConnections() {
+      const [followersRes, followingRes] = await Promise.all([
+        getFollowers(currentUserId),
+        getFollowing(currentUserId),
+      ]);
+
+      const merged = new Map<string, MentionUser>();
+      for (const u of followersRes.users) {
+        if (!query || u.username.toLowerCase().includes(query)) {
+          merged.set(u.id, { id: u.id, username: u.username, avatarUrl: u.avatarUrl });
         }
-        setUsers(results || []);
-      })
-      .catch((err) => {
-        console.error("[MentionSuggestions] searchUsers rejected with error:", err?.message ?? err, "stack:", err?.stack);
-        setUsers([]);
-      })
-      .finally(() => setIsLoading(false));
-  }, [searchText]);
+      }
+      for (const u of followingRes.users) {
+        if (!query || u.username.toLowerCase().includes(query)) {
+          merged.set(u.id, { id: u.id, username: u.username, avatarUrl: u.avatarUrl });
+        }
+      }
+
+      setUsers(Array.from(merged.values()));
+    }
+
+    loadConnections().catch(() => setUsers([])).finally(() => setIsLoading(false));
+  }, [searchText, currentUserId]);
 
   const displayUsers = useMemo(() => {
     const sliced = users.slice(0, 8);

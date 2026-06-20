@@ -143,12 +143,6 @@ export default function Feed() {
         }
       });
 
-    // Shuffle for varied feed
-    for (let i = uniquePosts.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [uniquePosts[i], uniquePosts[j]] = [uniquePosts[j], uniquePosts[i]];
-    }
-
     return uniquePosts;
   }, [pages]);
 
@@ -242,8 +236,10 @@ export default function Feed() {
             <FollowSuggestions
               onDone={() => {
                 if (Object.keys(followedUsers).length >= 1) {
+                  queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
                   setFeedType("following");
                 } else {
+                  queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
                   setFeedType("forYou");
                 }
               }}

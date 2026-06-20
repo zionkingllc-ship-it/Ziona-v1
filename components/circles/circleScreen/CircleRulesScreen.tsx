@@ -26,9 +26,14 @@ export default function CircleRulesScreen() {
 
   const [openId, setOpenId] = useState<number | null>(null);
 
-  const rules: Rule[] = rulesParam 
-    ? JSON.parse(rulesParam) 
-    : DEFAULT_CIRCLE_RULES;
+  const rules: Rule[] = (() => {
+    if (!rulesParam) return DEFAULT_CIRCLE_RULES;
+    try {
+      return JSON.parse(rulesParam);
+    } catch {
+      return DEFAULT_CIRCLE_RULES;
+    }
+  })();
 
   const toggle = (id: number) => {
     setOpenId((prev) => (prev === id ? null : id));

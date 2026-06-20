@@ -102,7 +102,7 @@ export default function CirclesSuggestion() {
         })
         .filter(Boolean);
       setActiveAnchors(anchors);
-      getViewedStatus(anchors.map((a: any) => a.id)).then(setViewedAnchors);
+      getViewedStatus(anchors.map((a: any) => a.id)).then(setViewedAnchors).catch(() => {});
     } catch (err) {
       console.error("Failed to load circles", err);
       setError("Failed to load circles");

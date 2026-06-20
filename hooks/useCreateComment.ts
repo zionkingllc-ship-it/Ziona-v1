@@ -53,14 +53,14 @@ export function useCreateComment() {
             ...old,
             pages: old.pages.map((page: any) => ({
               ...page,
-              comments: page.comments.map((comment: Comment) =>
+              comments: (page.comments ?? []).map((comment: Comment) =>
                 comment.id === parentCommentId
                   ? {
                       ...comment,
                       replies: [optimisticComment, ...(comment.replies || [])],
                       stats: {
-                        ...comment.stats,
-                        repliesCount: (comment.stats.repliesCount || 0) + 1,
+                        ...(comment.stats ?? {}),
+                        repliesCount: (comment.stats?.repliesCount || 0) + 1,
                       },
                     }
                   : comment
@@ -75,7 +75,7 @@ export function useCreateComment() {
             ...old,
             pages: old.pages.map((page: any, index: number) =>
               index === 0
-                ? { ...page, comments: [optimisticComment, ...page.comments] }
+                ? { ...page, comments: [optimisticComment, ...(page.comments ?? [])] }
                 : page
             ),
           };

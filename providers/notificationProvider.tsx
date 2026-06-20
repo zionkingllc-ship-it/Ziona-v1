@@ -2,7 +2,10 @@ import React, { useEffect, useRef } from "react";
 import { Alert, AppState, AppStateStatus, Linking, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import { registerDeviceToken } from "@/services/graphQL/queries/actions/notifications";
+import {
+  getUnreadNotificationCount,
+  registerDeviceToken,
+} from "@/services/graphQL/queries/actions/notifications";
 import { useAuthStore } from "@/store/useAuthStore";
 
 Notifications.setNotificationHandler({
@@ -45,6 +48,24 @@ async function requestPermissionsAndRegister() {
   }
 }
 
+async function syncBadgeFromServer() {
+  try {
+    const count = await getUnreadNotificationCount();
+    await Notifications.setBadgeCountAsync(count);
+  } catch {}
+}
+
+let lastNavPath = "";
+let lastNavTime = 0;
+
+function pushOnce(path: string) {
+  const now = Date.now();
+  if (path === lastNavPath && now - lastNavTime < 2000) return;
+  lastNavPath = path;
+  lastNavTime = now;
+  router.push(path);
+}
+
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const appState = useRef(AppState.currentState);
@@ -58,6 +79,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
       if (appState.current.match(/inactive|background/) && nextState === "active") {
         if (isAuthenticated) {
           requestPermissionsAndRegister();
+          syncBadgeFromServer();
         }
       }
       appState.current = nextState;
@@ -65,6 +87,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
 
     if (isAuthenticated) {
       requestPermissionsAndRegister();
+      syncBadgeFromServer();
     }
 
     return () => subscription.remove();
@@ -78,21 +101,22 @@ export default function NotificationProvider({ children }: { children: React.Rea
       const { referenceType, referenceId } = data;
 
       if (referenceType === "post" && referenceId) {
-        router.push(`/viewer/${referenceId}`);
+        pushOnce(`/viewer/${referenceId}`);
       } else if (referenceType === "comment" && referenceId) {
-        router.push(`/notifications`);
+        pushOnce(`/notifications`);
       } else if ((referenceType === "circle" || referenceType === "circle_post") && referenceId) {
-        router.push(`/(tabs)/circle/circleFeed?id=${referenceId}`);
+        pushOnce(`/(tabs)/circle/circleFeed?id=${referenceId}`);
       } else {
-        router.push("/notifications");
+        pushOnce("/notifications");
       }
     });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
       if (Platform.OS === "ios") {
-        Notifications.setBadgeCountAsync(
-          (notification.request.content.badge as number) || 1,
-        ).catch(() => {});
+        const badge = notification.request.content.badge;
+        if (badge != null) {
+          Notifications.setBadgeCountAsync(Number(badge)).catch(() => {});
+        }
       }
     });
 

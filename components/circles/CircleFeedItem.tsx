@@ -94,7 +94,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   useEffect(() => {
     console.log("[CircleFeedItem] post data:", { id: post.id, text: post.text?.substring(0, 30), image: post.image?.substring(0, 30), mediaUrl: post.mediaUrl?.substring(0, 30) });
-    getAnchorRef(post.id).then(setAnchorRef);
+    getAnchorRef(post.id).then(setAnchorRef).catch(() => {});
   }, [post.id]);
 
   const handleLike = (e: any) => {

@@ -35,13 +35,13 @@ const asyncStoragePersister = createAsyncStoragePersister({
    ENABLE PERSISTENCE
 ========================= */
 
-// Clear any malformed data cached by old prefetchQuery (before prefetchInfiniteQuery fix)
-// The old format ({ items, hasMore, nextCursor }) clashes with useInfiniteQuery's
-// expected format ({ pages, pageParams }), causing "Cannot read property 'length' of undefined"
-queryClient.removeQueries({ queryKey: ["notifications"] });
-
 persistQueryClient({
   queryClient,
   persister: asyncStoragePersister,
   maxAge: 1000 * 60 * 60 * 24,
+  buster: "v2",
 });
+
+// Force-clear any malformed notification data that may have survived
+// hydration (old regular-query format clashes with infinite-query shape)
+queryClient.removeQueries({ queryKey: ["notifications"] });

@@ -125,7 +125,7 @@ export default function CirclePostDetailScreen() {
   const toggleCommentLikeMutation = useToggleCircleCommentLike();
   const deleteCommentMutation = useDeleteCircleComment();
 
-  const comments = commentsData?.pages.flatMap((page) => page.comments) || [];
+  const comments = commentsData?.pages?.flatMap((page) => page.comments) || [];
 
   const handleCreateComment = async () => {
     if (!commentText.trim() || posting) return;

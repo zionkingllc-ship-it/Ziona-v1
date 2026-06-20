@@ -69,7 +69,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const createCommentMutation = useCreateComment();
   const toggleLikeMutation = useToggleCommentLike();
 
-  const comments = data?.pages.flatMap((page) => page.comments) || [];
+  const comments = data?.pages?.flatMap((page) => page.comments) || [];
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");

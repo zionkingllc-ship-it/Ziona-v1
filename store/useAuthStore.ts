@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthStore>()(
 
       /* -------- LOGOUT -------- */
 
-      clearSession: async () => {
+        clearSession: async () => {
         clearAuthTokens();
 
         set({
@@ -88,7 +88,9 @@ export const useAuthStore = create<AuthStore>()(
           mode: "unauthenticated",
         });
 
-        await AsyncStorage.removeItem("auth-storage");
+        try {
+          await AsyncStorage.removeItem("auth-storage");
+        } catch {}
         clearAuthQueries();
       },
 
@@ -115,8 +117,13 @@ export const useAuthStore = create<AuthStore>()(
           // Ignore signOut failures - we cleared the store anyway
         }
 
+        // Clear all cached data
+        queryClient.clear();
+
         // Clean up persisted storage
-        await AsyncStorage.removeItem("auth-storage");
+        try {
+          await AsyncStorage.removeItem("auth-storage");
+        } catch {}
 
         // Navigate to login
         get().onLogoutNavigate?.();
@@ -218,7 +225,8 @@ export const useAuthStore = create<AuthStore>()(
             }
           }
 
-          console.log("Silent getMe refresh exhausted, keeping stored session");
+          console.log("Silent getMe refresh exhausted, clearing session");
+          get().clearSession();
         };
 
         bootstrap(); // Don't await - let it run silently

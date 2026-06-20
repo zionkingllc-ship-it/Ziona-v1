@@ -7,6 +7,7 @@ import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { publishMediaPost } from "@/services/graphQL/drafts/mediaDraft";
+import { movePostToFeedTop } from "@/services/feed/invalidateFeed";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -14,7 +15,7 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 
 import { useVideoPlayer, VideoView } from "expo-video";
-import { Image, Pressable, TouchableOpacity } from "react-native";
+import { FlatList, Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 import { Play } from "@tamagui/lucide-icons";
 
@@ -83,11 +84,20 @@ function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
 export default function CreateMediaPreviewScreen() {
   const { wp, hp, fs } = useResponsive();
   const { draft } = useCreatePostStore();
+  const resetDraft = useCreatePostStore((s) => s.resetDraft);
   const currentUser = useAuthStore((s) => s.user);
 
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [showProgress, setShowProgress] = useState(false);
-  const newPostIdRef = useRef<string | null>(null);
+  const progressRef = useRef(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
 
   const queryClient = useQueryClient();
 
@@ -100,18 +110,18 @@ export default function CreateMediaPreviewScreen() {
   if (!draft || draft.type !== "MEDIA") return null;
 
   const mediaDraft = draft;
-  const media = mediaDraft.media.items[0];
+  const items = mediaDraft.media.items;
 
-  const getVideoUri = (uri: string) =>
-    uri.startsWith("file://") ? uri.replace("file://", "") : uri;
+  const getVideoUri = (uri: string) => uri;
+  const cardWidth = wp(100) - wp(12);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const caption = mediaDraft.caption ?? "";
 
-  const canUpload =
-    mediaDraft.media.items.length > 0 && !!mediaDraft.category?.id;
+  const canUpload = items.length > 0 && !!mediaDraft.category?.id;
 
   async function handleUpload() {
-    if (uploading) return;
+    if (showProgress) return;
 
     if (!canUpload) {
       setModalType("failed");
@@ -120,14 +130,39 @@ export default function CreateMediaPreviewScreen() {
       return;
     }
 
+    progressRef.current = 0;
+    setUploadProgress(0);
+    setShowProgress(true);
+
+    const onProgress = (pct: number) => {
+      console.log("📊 PROGRESS CALLBACK:", pct);
+      progressRef.current = pct;
+    };
+
     try {
-      setUploading(true);
+      const result = await publishMediaPost(
+        mediaDraft,
+        queryClient,
+        onProgress,
+      );
+      resetDraft();
+      setUploadProgress(100);
 
-      const result = await publishMediaPost(mediaDraft, queryClient);
-      newPostIdRef.current = result?.post?.id || null;
+      if (result?.post?.id) {
+        await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
+        movePostToFeedTop(queryClient, result.post.id);
+      }
+      await queryClient.refetchQueries({ queryKey: ["userPosts"] });
+      setModalType("success");
+      setModalMessage("Post uploaded successfully");
+      setModalVisible(true);
 
-      setShowProgress(true);
+      timeoutRef.current = setTimeout(() => {
+        setShowProgress(false);
+        router.replace("/(tabs)/feed");
+        }, 1200);
     } catch (error: any) {
+      setShowProgress(false);
       const feedback = getNetworkModalCopy(
         error,
         error?.message || "Upload failed",
@@ -135,29 +170,24 @@ export default function CreateMediaPreviewScreen() {
       setModalType(feedback.type);
       setModalMessage(feedback.message);
       setModalVisible(true);
-    } finally {
-      setUploading(false);
     }
   }
 
-  async function handleProgressComplete() {
-    setShowProgress(false);
-    await queryClient.refetchQueries({ queryKey: ["userPosts"] });
-    setModalType("success");
-    setModalMessage("Post uploaded successfully");
-    setModalVisible(true);
+  useEffect(() => {
+    if (!showProgress) return;
+    const interval = setInterval(() => {
+      setUploadProgress(progressRef.current);
+    }, 150);
+    return () => clearInterval(interval);
+  }, [showProgress]);
 
-    setTimeout(() => {
-      if (newPostIdRef.current) {
-        router.replace(`/viewer/${newPostIdRef.current}`);
-      } else {
-        router.replace("/(tabs)/create");
-      }
-    }, 1200);
-  }
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const page = Math.round(e.nativeEvent.contentOffset.x / cardWidth);
+    setCurrentPage(page);
+  };
 
   const handleBack = () => {
-    if (uploading) return;
+    if (showProgress) return;
     router.back();
   };
 
@@ -179,20 +209,45 @@ export default function CreateMediaPreviewScreen() {
           marginTop: hp(2),
         }}
       >
-        {media?.type === "IMAGE" && (
-          <Image
-            source={{ uri: media.uri }}
-            style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
-          />
-        )}
+        <FlatList
+          data={items}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          renderItem={({ item }) => (
+            <View width={cardWidth} height="100%">
+              {item.type === "IMAGE" ? (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: "100%", height: "100%", opacity: showProgress ? 0.5 : 1 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View width={cardWidth} height="100%">
+                  <VideoPreview uri={getVideoUri(item.uri)} uploading={showProgress} />
+                </View>
+              )}
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+        />
 
-        {media?.type === "VIDEO" && (
-          <VideoPreview uri={getVideoUri(media.uri)} uploading={uploading} />
-        )}
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.25)",
+          }}
+          pointerEvents="none"
+        />
 
         <TouchableOpacity
           onPress={handleBack}
-          disabled={uploading}
+          disabled={showProgress}
           style={{
             position: "absolute",
             top: 14,
@@ -203,56 +258,72 @@ export default function CreateMediaPreviewScreen() {
             borderRadius: 13,
             alignItems: "center",
             justifyContent: "center",
-            opacity: uploading ? 0.5 : 1,
+            opacity: showProgress ? 0.5 : 1,
           }}
         >
           <Text color="white">✕</Text>
         </TouchableOpacity>
 
-        <XStack
-          position="absolute"
-          bottom={14}
-          left={14}
-          right={60}
-          gap={10}
-          alignItems="center"
+        <View
+          style={{
+            position: "absolute",
+            bottom: 14,
+            left: 14,
+            right: 60,
+          }}
         >
-          <Image
-            source={
-              currentUser?.avatarUrl
-                ? { uri: currentUser.avatarUrl }
-                : require("@/assets/images/profile.png")
-            }
-            width={36}
-            height={36}
-            borderRadius={18}
-          />
-          <YStack flex={1}>
-            <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
-              {currentUser?.username || "User"}
-            </Text>
-            {caption ? (
-              <Text
-                color="white"
-                fontFamily="$body"
-                fontSize={12}
-                numberOfLines={2}
-              >
-                {caption}
+          {items.length > 1 && (
+            <XStack justifyContent="center" marginBottom={hp(1)} gap={wp(1.5)}>
+              {items.map((_, i) => (
+                <View
+                  key={i}
+                  width={wp(2.5)}
+                  height={wp(2.5)}
+                  borderRadius={wp(1.25)}
+                  backgroundColor={i === currentPage ? "white" : "rgba(255,255,255,0.4)"}
+                />
+              ))}
+            </XStack>
+          )}
+
+          <XStack gap={10} alignItems="center">
+            <Image
+              source={
+                currentUser?.avatarUrl
+                  ? { uri: currentUser.avatarUrl }
+                  : require("@/assets/images/profile.png")
+              }
+              width={36}
+              height={36}
+              borderRadius={18}
+            />
+            <YStack flex={1}>
+              <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
+                {currentUser?.username || "User"}
               </Text>
-            ) : null}
-          </YStack>
-        </XStack>
+              {caption ? (
+                <Text
+                  color="white"
+                  fontFamily="$body"
+                  fontSize={12}
+                  numberOfLines={2}
+                >
+                  {caption}
+                </Text>
+              ) : null}
+            </YStack>
+          </XStack>
+        </View>
       </View>
 
       <XStack justifyContent="center" marginTop={hp(5)}>
-        <TagSelectorCard category={mediaDraft.category} disabled={uploading} onPress={() => {}} />
+        <TagSelectorCard category={mediaDraft.category} disabled={showProgress} onPress={() => {}} />
       </XStack>
 
       <YStack marginTop={hp(3)}>
         <SimpleButton
-          text={uploading ? "Uploading..." : "Upload"}
-          disabled={!canUpload || uploading}
+          text={showProgress ? "Uploading..." : "Upload"}
+          disabled={!canUpload || showProgress}
           onPress={handleUpload}
           color={colors.primary}
           textColor={colors.buttonText}
@@ -278,7 +349,7 @@ export default function CreateMediaPreviewScreen() {
       {showProgress && (
         <PostProgressModal
           visible={showProgress}
-          onComplete={handleProgressComplete}
+          progress={uploadProgress}
         />
       )}
       </YStack>

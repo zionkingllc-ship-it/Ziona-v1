@@ -5,21 +5,21 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
 import SuccessModal from "@/components/ui/modals/successModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 
 import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
 import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
+import { invalidateFeed, movePostToFeedTop } from "@/services/feed/invalidateFeed";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { shortenBookName } from "@/utils/bibleNames";
-import { useEffect, useRef, useState } from "react";
-import { Image, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Image, Modal, ScrollView, TouchableOpacity } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Text, XStack, YStack } from "tamagui";
+import { Text, View, XStack, YStack } from "tamagui";
 
 /* =========================
    HELPER
@@ -55,12 +55,12 @@ export default function CreateTextScreen() {
   const setText = useCreatePostStore((s) => s.setText);
   const setCategory = useCreatePostStore((s) => s.setCategory);
   const setBibleVerse = useCreatePostStore((s) => s.setBibleVerse);
+  const resetDraft = useCreatePostStore((s) => s.resetDraft);
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const newPostIdRef = useRef<string | null>(null);
+
 
   const MAX_LENGTH = 500;
 
@@ -128,24 +128,25 @@ export default function CreateTextScreen() {
       setUploading(true);
 
       const result = await publishDraftPost(draft, queryClient);
-      newPostIdRef.current = result?.post?.id || null;
-
-      setShowProgress(true);
+      resetDraft();
+      await invalidateFeed(queryClient);
+      if (result?.post?.id) {
+        await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
+        movePostToFeedTop(queryClient, result.post.id);
+      }
+      await queryClient.refetchQueries({ queryKey: ["userPosts"] });
+      setUploading(false);
+      setTimeout(() => {
+        router.replace("/(tabs)/feed");
+      }, 500);
     } catch (error: any) {
+      setUploading(false);
       const networkFeedback = getNetworkModalCopy(
         error,
         error?.message || "We couldn't create your post.",
       );
       feedback.showError(networkFeedback.message, networkFeedback.type);
-    } finally {
-      setUploading(false);
     }
-  }
-
-  async function handleProgressComplete() {
-    setShowProgress(false);
-    await queryClient.refetchQueries({ queryKey: ["userPosts"] });
-    feedback.showSuccess();
   }
 
   /* =========================
@@ -259,14 +260,19 @@ export default function CreateTextScreen() {
           }}
         />
       )}
+      <Modal transparent animationType="fade" visible={uploading} statusBarTranslucent>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+          <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 30, alignItems: "center", minWidth: 250 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text marginTop={16} fontSize={16} fontWeight="500" fontFamily="$body">Creating post...</Text>
+          </View>
+        </View>
+      </Modal>
+
       <SuccessModal
         visible={feedback.visible}
         onClose={() => {
-          if (newPostIdRef.current) {
-            router.replace(`/viewer/${newPostIdRef.current}`);
-          } else {
-            router.replace("/(tabs)/create");
-          }
+          feedback.handleClose();
         }}
         title={
           feedback.type === "success"
@@ -278,10 +284,6 @@ export default function CreateTextScreen() {
         message={feedback.message}
         type={feedback.type}
         autoClose
-      />
-      <PostProgressModal
-        visible={showProgress}
-        onComplete={handleProgressComplete}
       />
     </YStack>
   );

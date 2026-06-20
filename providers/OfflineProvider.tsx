@@ -26,6 +26,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
       const connected = state.isConnected ?? true;
       setIsConnected(connected);
       if (!connected) setShowModal(true);
+    }).catch(() => {
+      setIsConnected(true);
     });
 
     const unsubscribe = NetInfo.addEventListener((state) => {

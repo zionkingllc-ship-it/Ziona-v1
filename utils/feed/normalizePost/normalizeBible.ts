@@ -12,7 +12,7 @@ export function normalizeBible(p: any, base: any) {
   // Handle both single `text` and `verses[]` array from API
   const verseText =
     p.scripture.text ??
-    (p.scripture.verses?.map((v: any) => v.text).join(" ") ?? "");
+    (p.scripture.verses?.map((v: any) => `(${v.number}) ${v.text}`).join(" ") ?? "");
 
   const result = {
     ...base,

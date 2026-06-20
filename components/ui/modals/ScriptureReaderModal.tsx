@@ -90,7 +90,7 @@ export default function ScriptureReaderModal({
 
   const selectedText = safeVerses
     .filter((v) => selected.includes(v.number))
-    .map((v) => v.text)
+    .map((v) => `(${v.number}) ${v.text}`)
     .join(" ");
 
   const isTooLong = selectedText.length > 500;

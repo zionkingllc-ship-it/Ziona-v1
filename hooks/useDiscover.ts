@@ -30,6 +30,7 @@ export function useDiscoverCategories() {
   useEffect(() => {
     fetchDiscoverCategories()
       .then((data) => setCategories(data ?? []))
+      .catch(() => setCategories([]))
       .finally(() => setLoading(false));
   }, []);
 

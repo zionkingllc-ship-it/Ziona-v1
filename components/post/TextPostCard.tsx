@@ -38,7 +38,7 @@ if (post.scripture) {
     const s = post.scripture;
     scriptureText = s.reference;
     translation = s.translation;
-    verseText = s.text ?? s.verses?.map(v => v.text).join(" ") ?? "";
+    verseText = s.text ?? s.verses?.map(v => `(${v.number}) ${v.text}`).join(" ") ?? "";
   }
 
   if (post.type === "text") {

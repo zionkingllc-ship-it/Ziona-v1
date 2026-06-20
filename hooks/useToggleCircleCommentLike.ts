@@ -69,7 +69,7 @@ export function useToggleCircleCommentLike() {
               ...old,
               pages: old.pages.map((page: any) => ({
                 ...page,
-                comments: page.comments.map(updateComment),
+                comments: (page.comments ?? []).map(updateComment),
               })),
             };
           }

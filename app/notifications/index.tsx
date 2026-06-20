@@ -1,9 +1,9 @@
 import { Image, Text, XStack, YStack, View } from "tamagui";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
-import { useNotifications, useMarkNotificationAsRead, useDeleteNotification } from "@/hooks/useNotifications";
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, useDeleteNotification, useUnreadCount } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
 import Header from "@/components/layout/header";
@@ -57,18 +57,28 @@ function NotificationAvatar({ avatarUrl, type, size = 40 }: { avatarUrl?: string
 
 export default function ActivityScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useNotifications(50);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useNotifications(50);
+  const [refreshing, setRefreshing] = useState(false);
   const markAsRead = useMarkNotificationAsRead();
+  const markAllRead = useMarkAllNotificationsAsRead();
   const deleteNotif = useDeleteNotification();
+  const { data: unreadCount } = useUnreadCount();
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const isSelecting = selectedIds.size > 0;
 
   const notifications: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
+  console.log("📋 NOTIF SCREEN: isLoading:", isLoading, "pages:", data?.pages?.length, "notifCount:", notifications.length, "dataKeys:", data ? Object.keys(data) : "null");
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -222,7 +232,11 @@ export default function ActivityScreen() {
           </XStack>
         </XStack>
       ) : (
-        <Header heading="Activity" />
+        <Header
+          heading="Activity"
+          iconAfter={unreadCount > 0 ? "checkmark-done" : undefined}
+          onIconAfterPress={unreadCount > 0 ? () => markAllRead.mutate() : undefined}
+        />
       )}
       <YStack flex={1}>
         {isLoading ? (
@@ -244,6 +258,7 @@ export default function ActivityScreen() {
             removeClippedSubviews={true}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
             ListFooterComponent={isFetchingNextPage ? (
               <YStack paddingVertical={16} alignItems="center">
                 <ActivityIndicator size="small" color={colors.primary} />

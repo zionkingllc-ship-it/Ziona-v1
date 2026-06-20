@@ -1,3 +1,4 @@
+import * as FileSystem from "expo-file-system/legacy";
 import { graphqlRequest } from "../../graphqlClient";
 
 const REQUEST_UPLOAD_MUTATION = `
@@ -134,33 +135,58 @@ export async function waitForMediaProcessing(
 }
 
 /* =========================
-   FILE UPLOAD
+   FILE UPLOAD (with size-based progress estimate)
    ========================= */
 
-export async function uploadFileToStorage(
+export function uploadFileToStorage(
   uploadUrl: string,
   fileUri: string,
   fileType: string,
-) {
-  try {
-    const response = await fetch(fileUri);
-    const blob = await response.blob();
+  onProgress?: (percent: number) => void,
+  fileSize?: number,
+): Promise<{ size: number }> {
+  return new Promise(async (resolve, reject) => {
+    const size = fileSize ?? 0;
+    let settled = false;
+    let progressInterval: ReturnType<typeof setInterval> | null = null;
 
-    const upload = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": fileType,
-      },
-      body: blob,
-    });
-
-    if (!upload.ok) {
-      const text = await upload.text().catch(() => "");
-      throw new Error(`File upload failed (${upload.status}${text ? ": " + text : ""})`);
+    function done(err?: any, result?: { size: number }) {
+      if (settled) return;
+      settled = true;
+      if (progressInterval) clearInterval(progressInterval);
+      if (err) reject(err);
+      else resolve(result!);
     }
 
-    return { size: blob.size };
-  } catch (error: any) {
-    throw new Error(error.message || "Upload to storage failed");
-  }
+    try {
+      // Estimate progress based on assumed upload speed
+      if (onProgress && size > 0) {
+        const ASSUMED_BYTES_PER_SEC = 500 * 1024; // 500 KB/s
+        const estimatedSeconds = size / ASSUMED_BYTES_PER_SEC;
+        const startTime = Date.now();
+        progressInterval = setInterval(() => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          const pct = Math.min(Math.round((elapsed / estimatedSeconds) * 85), 85);
+          onProgress(pct);
+        }, 200);
+      }
+
+      const result = await FileSystem.uploadAsync(uploadUrl, fileUri, {
+        httpMethod: "PUT",
+        headers: { "Content-Type": fileType },
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        sessionType: FileSystem.FileSystemSessionType.FOREGROUND,
+      });
+
+      if (settled) return;
+
+      if (!result || result.status < 200 || result.status >= 300) {
+        done(new Error(`File upload failed (${result?.status ?? "unknown"})`));
+      } else {
+        done(undefined, { size });
+      }
+    } catch (error: any) {
+      done(new Error(error.message || "Upload to storage failed"));
+    }
+  });
 }

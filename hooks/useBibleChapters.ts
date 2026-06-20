@@ -12,6 +12,8 @@ export function useBibleChapters(book: BibleBook | null) {
     bibleRepository.getChapters(book).then((res) => {
       setChapters(res ?? []);
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, [book]);
 

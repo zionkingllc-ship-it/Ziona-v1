@@ -93,7 +93,7 @@ export default function BookmarksScreen() {
   });
 
   const folderPosts = useMemo(() => {
-    if (!folderPostsData) return [];
+    if (!folderPostsData?.pages) return [];
     const posts = folderPostsData.pages.flatMap((page) => page.posts);
     return posts.map((p: any) => normalizePost(p)).filter((p): p is FeedPost => p !== null);
   }, [folderPostsData]);

@@ -1,41 +1,14 @@
 import colors from "@/constants/colors";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Modal, View, StyleSheet } from "react-native";
 import { Text } from "tamagui";
 
 interface Props {
   visible: boolean;
-  onComplete: () => void;
+  progress: number;
 }
 
-const DURATION = 2000;
-
-export default function PostProgressModal({ visible, onComplete }: Props) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    if (!visible) {
-      setProgress(0);
-      return;
-    }
-
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min(Math.floor((elapsed / DURATION) * 100), 100);
-      setProgress(newProgress);
-
-      if (newProgress >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          onComplete();
-        }, 200);
-      }
-    }, 20);
-
-    return () => clearInterval(interval);
-  }, [visible, onComplete]);
-
+export default function PostProgressModal({ visible, progress }: Props) {
   return (
     <Modal
       visible={visible}
@@ -46,18 +19,20 @@ export default function PostProgressModal({ visible, onComplete }: Props) {
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Creating your post...</Text>
+          <Text style={styles.title}>
+            {progress < 100 ? "Uploading please wait..." : "Processing..."}
+          </Text>
 
           <View style={styles.progressContainer}>
             <View style={styles.progressBackground}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${progress}%` },
+                  { width: `${Math.min(progress, 100)}%` },
                 ]}
               />
             </View>
-            <Text style={styles.percentText}>{progress}%</Text>
+            <Text style={styles.percentText}>{Math.min(progress, 100)}%</Text>
           </View>
         </View>
       </View>

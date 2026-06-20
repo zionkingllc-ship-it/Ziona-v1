@@ -29,6 +29,9 @@ function SyncHooks() {
   return null;
 }
 
+let lastDeepLinkPath = "";
+let lastDeepLinkTime = 0;
+
 export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
 
@@ -76,16 +79,20 @@ export default function RootLayout() {
     function handleDeepLink(event: { url: string }) {
       const url = event.url;
       const match = url.match(/\/post\/(.+)/) || url.match(/\/viewer\/(.+)/);
-      if (match) {
-        router.push(`/viewer/${match[1]}`);
-      }
+      if (!match?.[1]) return;
+      const path = `/viewer/${match[1]}`;
+      const now = Date.now();
+      if (path === lastDeepLinkPath && now - lastDeepLinkTime < 2000) return;
+      lastDeepLinkPath = path;
+      lastDeepLinkTime = now;
+      router.push(path);
     }
 
     const subscription = Linking.addEventListener("url", handleDeepLink);
 
     Linking.getInitialURL().then((url) => {
       if (url) handleDeepLink({ url });
-    });
+    }).catch(() => {});
 
     return () => {
       subscription.remove();
