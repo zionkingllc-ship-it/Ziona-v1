@@ -20,7 +20,7 @@ query GetPost($id: ID!) {
     mediaType
     mediaUrl
     stats { likesCount commentsCount savesCount sharesCount }
-    viewerState { liked saved followingAuthor followedByAuthor isOwner }
+    viewerState { liked saved followingAuthor isOwner }
   }
 }
 `;

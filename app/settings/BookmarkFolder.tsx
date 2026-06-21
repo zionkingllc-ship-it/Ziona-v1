@@ -2,9 +2,10 @@ import Header from "@/components/layout/header";
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable, ActivityIndicator, FlatList } from "react-native";
+import { Pressable, ActivityIndicator, FlatList, RefreshControl } from "react-native";
 import { Image, Text, YStack, View } from "tamagui";
 import colors from "@/constants/colors";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 export default function BookmarkFolderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function BookmarkFolderScreen() {
     hasNextPage,
     isFetchingNextPage,
   } = useUserSavedPosts({ folderId: id });
+  const { refreshing, onRefresh } = usePullToRefresh([["userSavedPosts", id]]);
 
   const posts = savedPostsData?.pages?.flatMap((p) => p.posts) || [];
 
@@ -50,6 +52,7 @@ export default function BookmarkFolderScreen() {
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
           onEndReachedThreshold={0.5}
           ListFooterComponent={isFetchingNextPage ? <ActivityIndicator size="small" color={colors.primary} /> : null}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           renderItem={({ item }) => (
             <Pressable
               style={{ flex: 1 }}

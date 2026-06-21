@@ -169,7 +169,7 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
           <Text
             numberOfLines={3}
             style={{
-              color: "#fff",
+              color: colors.black,
               fontSize: 12,
               fontWeight: "600",
               textAlign: "center",

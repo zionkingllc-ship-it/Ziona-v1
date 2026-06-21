@@ -77,7 +77,6 @@ export const GET_DISCOVER_FEED = `
           liked
           saved
           followingAuthor
-          followedByAuthor
           isOwner
         }
       }

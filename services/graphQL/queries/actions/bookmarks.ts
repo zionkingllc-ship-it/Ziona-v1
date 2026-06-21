@@ -17,7 +17,6 @@ interface PostViewerState {
   liked: boolean;
   saved: boolean;
   followingAuthor: boolean;
-  followedByAuthor: boolean;
   isOwner: boolean;
 }
 
@@ -100,7 +99,6 @@ export async function getSavedPosts(): Promise<SavedPostsResponse | undefined> {
             liked
             saved
             followingAuthor
-            followedByAuthor
             isOwner
           }
           shareUrl

@@ -36,7 +36,6 @@ type BaseFeedPost = {
     liked: boolean;
     saved: boolean;
     followingAuthor: boolean;
-    followedByAuthor: boolean;
     isOwner: boolean;
   };
 };

@@ -391,14 +391,25 @@ export default function ProfileScreen() {
           </YStack>
         ) : filteredPosts.length === 0 ? (
           <YStack marginTop={"$7"}>
-            <CenteredMessage
-              fontFamily={"$body"}
-              text="Your message matters"
-              subtitle="Create with intention. Post with purpose."
-              actionLabel="Create Post"
-              onActionPress={() => router.navigate("/(tabs)/create")}
-              fullScreen={false}
-            />
+            {activeTab === "liked" ? (
+              <CenteredMessage
+                fontFamily={"$body"}
+                text="No liked posts yet"
+                subtitle="Explore the feed and tap the heart icon to like posts you enjoy."
+                actionLabel="Go to Feed"
+                onActionPress={() => router.navigate("/(tabs)/feed")}
+                fullScreen={false}
+              />
+            ) : (
+              <CenteredMessage
+                fontFamily={"$body"}
+                text="Your message matters"
+                subtitle="Create with intention. Post with purpose."
+                actionLabel="Create Post"
+                onActionPress={() => router.navigate("/(tabs)/create")}
+                fullScreen={false}
+              />
+            )}
           </YStack>
         ) : (
           <FlatList

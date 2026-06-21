@@ -31,7 +31,6 @@ export function normalizeBase(p: any) {
       liked: p.viewerState?.liked ?? false,
       saved: p.viewerState?.saved ?? false,
       followingAuthor: p.viewerState?.followingAuthor ?? false,
-      followedByAuthor: p.viewerState?.followedByAuthor ?? false,
       isOwner: p.viewerState?.isOwner ?? false,
     },
   };

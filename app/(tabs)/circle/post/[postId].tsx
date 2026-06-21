@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   Alert,
   View,
@@ -10,6 +10,7 @@ import {
   Platform,
   TextInput,
   Pressable,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -120,7 +121,19 @@ export default function CirclePostDetailScreen() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch: refetchComments,
   } = useCirclePostComments(postId || "");
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetchComments();
+    } catch {} finally {
+      setRefreshing(false);
+    }
+  }, [refetchComments]);
 
   const createCommentMutation = useCreateCircleComment();
   const toggleCommentLikeMutation = useToggleCircleCommentLike();
@@ -206,7 +219,8 @@ export default function CirclePostDetailScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
           <YStack padding="$3" gap="$3">
             <XStack alignItems="center" gap="$2">
               <AvatarWithInitials

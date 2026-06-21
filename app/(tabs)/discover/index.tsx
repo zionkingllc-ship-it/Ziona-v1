@@ -1,17 +1,25 @@
 import CategoryGrid from "@/components/discover/CategoryGrid";
-// import SearchHeader from "@/components/SearchHeader";
 import colors from "@/constants/colors";
 import { router } from "expo-router";
-// import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, YStack } from "tamagui";
 import { ActivityIndicator } from "react-native";
 
 import { useDiscoverCategories } from "@/hooks/useDiscover";
+import { useState, useCallback } from "react";
 
 export default function DiscoverScreen() {
-  // const [searchQuery, setSearchQuery] = useState("");
-  const { categories, loading } = useDiscoverCategories();
+  const { categories, loading, refetch } = useDiscoverCategories();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch {} finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   const handleCategoryPress = (categoryId: string) => {
     router.push({
@@ -44,6 +52,8 @@ export default function DiscoverScreen() {
           <CategoryGrid
             categories={categories}
             onCategoryPress={handleCategoryPress}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
           />
         )}
       </YStack>

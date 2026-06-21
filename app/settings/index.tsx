@@ -15,8 +15,8 @@ import {
 } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, TextInput } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack } from "tamagui";
 
@@ -26,7 +26,8 @@ export default function SettingsScreen() {
   const setOnLogoutNavigate = useAuthStore((s) => s.setHasHydrated);
 
   const userId = useAuthStore((s) => s.user?.id);
-  const { data: profile } = useUserProfile(userId);
+  const { data: profile, refetch: refetchProfile } = useUserProfile(userId);
+  const [refreshing, setRefreshing] = useState(false);
   const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(
     null,
   );
@@ -49,6 +50,15 @@ export default function SettingsScreen() {
     }
   }, [profile?.avatarUrl, imageError]);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetchProfile();
+    } catch {} finally {
+      setRefreshing(false);
+    }
+  }, [refetchProfile]);
+
   const handleLogout = async () => {
     if (logout.isPending) return;
     try {
@@ -61,7 +71,8 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Settings" />
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* SEARCH */}
         {/* <View
           backgroundColor={colors.lightGrayBg}

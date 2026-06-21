@@ -17,7 +17,6 @@ export function mergePostState(
   const baseLiked = post.viewerState?.liked ?? false;
   const baseSaved = post.viewerState?.saved ?? false;
   const baseFollowing = post.viewerState?.followingAuthor ?? false;
-  const baseFollowedBy = post.viewerState?.followedByAuthor ?? false;
   const baseOwner = post.viewerState?.isOwner ?? false;
 
   // 🔥 LOCK override ONCE
@@ -56,7 +55,6 @@ export function mergePostState(
       liked,
       saved,
       followingAuthor: isFollowing,
-      followedByAuthor: baseFollowedBy,
       isOwner: baseOwner,
     },
 

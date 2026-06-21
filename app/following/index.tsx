@@ -5,9 +5,10 @@ import colors from "@/constants/colors";
 import { useFollowing } from "@/hooks/useFollow";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCallback } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 export default function FollowingScreen() {
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -17,6 +18,7 @@ export default function FollowingScreen() {
   const isOwnProfile = !userId || userId === currentUserId;
   
   const { data, refetch, isLoading } = useFollowing(targetUserId);
+  const { refreshing, onRefresh } = usePullToRefresh([["following", targetUserId]]);
 
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
@@ -49,6 +51,7 @@ export default function FollowingScreen() {
               />
             )}
             showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           />
         )}
       </View>

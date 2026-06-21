@@ -28,13 +28,19 @@ export function useDiscoverCategories() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchDiscoverCategories()
       .then((data) => setCategories(data ?? []))
       .catch(() => setCategories([]))
       .finally(() => setLoading(false));
   }, []);
 
-  return { categories, loading };
+  const refetch = () =>
+    fetchDiscoverCategories()
+      .then((data) => setCategories(data ?? []))
+      .catch(() => {});
+
+  return { categories, loading, refetch };
 }
 
 /* =========================

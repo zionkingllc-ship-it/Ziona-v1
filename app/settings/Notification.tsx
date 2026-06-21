@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
 import { useNotificationPreferences, useUpdateNotificationPreferences } from "@/hooks/useUserSettings";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Switch } from "react-native";
+import { Switch, RefreshControl } from "react-native";
 import { ScrollView } from "react-native";
 import { Text, XStack, YStack, View } from "tamagui";
 
@@ -38,8 +38,18 @@ const DEFAULTS: Prefs = {
 };
 
 export default function NotificationScreen() {
-  const { data: backend, isLoading } = useNotificationPreferences();
+  const { data: backend, isLoading, refetch } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch {} finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
   const [local, setLocal] = useState<Prefs>(DEFAULTS);
 
   // Seed local state from backend when it loads
@@ -99,7 +109,8 @@ export default function NotificationScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Notification" />
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         <YStack gap="$5">
           {/* IN-APP NOTIFICATIONS */}
           <YStack>

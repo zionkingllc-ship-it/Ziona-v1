@@ -55,8 +55,7 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
           </View>
           <View style={styles.footer}>
             <SimpleButtonWithStyle
-              disabled={true}
-              text="Done"
+              text="Back to feed"
               style={{ alignSelf: "center", paddingHorizontal: 24 }}
               color={colors.primary}
               textColor={colors.white}
