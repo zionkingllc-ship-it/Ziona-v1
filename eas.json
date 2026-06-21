@@ -38,7 +38,7 @@
     "preview": {
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "closed"
+        "track": "internal"
       }
     },
     "beta": {
