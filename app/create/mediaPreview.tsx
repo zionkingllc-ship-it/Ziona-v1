@@ -101,11 +101,20 @@ export default function CreateMediaPreviewScreen() {
 
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (!showProgress) return;
+    const interval = setInterval(() => {
+      setUploadProgress(progressRef.current);
+    }, 150);
+    return () => clearInterval(interval);
+  }, [showProgress]);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<
     "success" | "failed" | "warning"
   >("success");
   const [modalMessage, setModalMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
 
   if (!draft || draft.type !== "MEDIA") return null;
 
@@ -114,7 +123,6 @@ export default function CreateMediaPreviewScreen() {
 
   const getVideoUri = (uri: string) => uri;
   const cardWidth = wp(100) - wp(12);
-  const [currentPage, setCurrentPage] = useState(0);
 
   const caption = mediaDraft.caption ?? "";
 
@@ -145,7 +153,6 @@ export default function CreateMediaPreviewScreen() {
         queryClient,
         onProgress,
       );
-      resetDraft();
       setUploadProgress(100);
 
       if (result?.post?.id) {
@@ -159,8 +166,9 @@ export default function CreateMediaPreviewScreen() {
 
       timeoutRef.current = setTimeout(() => {
         setShowProgress(false);
+        resetDraft();
         router.replace("/(tabs)/feed");
-        }, 1200);
+      }, 1200);
     } catch (error: any) {
       setShowProgress(false);
       const feedback = getNetworkModalCopy(
@@ -172,14 +180,6 @@ export default function CreateMediaPreviewScreen() {
       setModalVisible(true);
     }
   }
-
-  useEffect(() => {
-    if (!showProgress) return;
-    const interval = setInterval(() => {
-      setUploadProgress(progressRef.current);
-    }, 150);
-    return () => clearInterval(interval);
-  }, [showProgress]);
 
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const page = Math.round(e.nativeEvent.contentOffset.x / cardWidth);

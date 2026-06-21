@@ -7,10 +7,6 @@ const DOMAIN = process.env.EXPO_PUBLIC_SHARE_DOMAIN || "https://ziona.app";
 const DEEP_LINK_SCHEME = process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME || "ziona";
 
 export function buildPostUrl(postId: string) {
-  return `${DOMAIN}/post/${postId}`;
-}
-
-export function buildDeepLink(postId: string) {
   return `${DEEP_LINK_SCHEME}://viewer/${postId}`;
 }
  

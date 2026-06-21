@@ -1,7 +1,7 @@
 import {
   requestMediaUpload,
+  confirmMediaUpload,
   uploadFileToStorage,
-  extractPublicUrl,
 } from "../mutation/media/mediaUpload";
 import { createMediaPost } from "../mutation/createPost";
 
@@ -88,19 +88,22 @@ export async function publishMediaPost(
 
       await uploadFileToStorage(upload.uploadUrl, item.uri, fileType, itemProgress, fileInfo.size);
 
+      const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
+
       completedItems++;
       onProgress?.(Math.round(completedItems * itemWeight));
 
-      const publicUrl = extractPublicUrl(upload.uploadUrl);
-
-      return publicUrl;
+      return { mediaId: upload.mediaId, mediaUrl };
     } catch (err) {
       console.error(`Media upload failed at index ${index}`, err);
       throw err;
     }
   });
 
-  const mediaUrls = await Promise.all(uploads);
+  const mediaResults = await Promise.all(uploads);
+
+  const mediaIds = mediaResults.map((r) => r.mediaId);
+  const mediaUrls = mediaResults.map((r) => r.mediaUrl);
 
   console.log("All media uploaded. URLs:", mediaUrls);
 
@@ -110,8 +113,9 @@ export async function publishMediaPost(
 
   const input: any = {
     postType: "MEDIA",
-    mediaType: derivedMediaType, // ✅ FIXED (DO NOT TRUST draft.mediaType)
+    mediaType: derivedMediaType,
     category: String(draft.category.id),
+    mediaIds,
     mediaUrls,
   };
 

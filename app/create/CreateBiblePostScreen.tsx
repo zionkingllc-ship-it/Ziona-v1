@@ -4,6 +4,7 @@ import TextPostCardInput from "@/components/post/TextPostCardInput";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
+import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { usePostFeedback } from "@/hooks/usePostFeedback";
@@ -14,8 +15,8 @@ import { invalidateFeed, movePostToFeedTop } from "@/services/feed/invalidateFee
 import { useCreatePostStore } from "@/store/createPostStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { shortenBookName } from "@/utils/bibleNames";
-import { useState } from "react";
-import { ActivityIndicator, Modal, ScrollView, TouchableOpacity } from "react-native";
+import { useRef, useState } from "react";
+import { ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 
@@ -56,6 +57,10 @@ export default function CreateBiblePostScreen() {
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open
   const [uploading, setUploading] = useState(false);
+  const [createProgress, setCreateProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const feedback = usePostFeedback("/(tabs)/create");
 
   /* =========================
      TYPE SAFETY
@@ -104,27 +109,39 @@ export default function CreateBiblePostScreen() {
      SUBMIT
   ========================= */
 
-  const feedback = usePostFeedback("/(tabs)/create");
-
   async function handleUpload() {
     if (!canUpload) return;
 
     try {
       setUploading(true);
+      setShowProgress(true);
+      setCreateProgress(0);
+
+      progressTimerRef.current = setInterval(() => {
+        setCreateProgress((prev) => Math.min(prev + 5, 90));
+      }, 300);
+
       const result = await publishDraftPost(bibleDraft, queryClient);
-      resetDraft();
       await invalidateFeed(queryClient);
       if (result?.post?.id) {
         await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
         movePostToFeedTop(queryClient, result.post.id);
       }
       await queryClient.refetchQueries({ queryKey: ["userPosts"] });
-      setUploading(false);
+
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+      setCreateProgress(100);
+
       setTimeout(() => {
+        setUploading(false);
+        setShowProgress(false);
+        resetDraft();
         router.replace("/(tabs)/feed");
-      }, 500);
+      }, 800);
     } catch (error: any) {
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
       setUploading(false);
+      setShowProgress(false);
       const networkFeedback = getNetworkModalCopy(
         error,
         error?.message || "We couldn't create your post.",
@@ -225,14 +242,10 @@ export default function CreateBiblePostScreen() {
         </YStack>
       </ScrollView>
 
-      <Modal transparent animationType="fade" visible={uploading} statusBarTranslucent>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-          <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 30, alignItems: "center", minWidth: 250 }}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text marginTop={16} fontSize={16} fontWeight="500" fontFamily="$body">Creating post...</Text>
-          </View>
-        </View>
-      </Modal>
+      <PostProgressModal
+        visible={showProgress}
+        progress={createProgress}
+      />
 
       <SuccessModal
         visible={feedback.visible}

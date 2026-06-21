@@ -202,6 +202,9 @@ function PostCardComponent({
     [post, isPlaying, screenWidth, screenHeight, tabBarHeight, isActive],
   );
 
+  const isTextPost = post.type === "text" || post.type === "bible";
+  const textColor = isTextPost ? colors.black : colors.white;
+
   return (
     <YStack height={screenHeight} width="100%" backgroundColor="black">
       {/* MEDIA */}
@@ -214,7 +217,7 @@ function PostCardComponent({
         left={0}
         right={0}
         bottom={0}
-        backgroundColor="rgba(0,0,0,0.15)"
+        backgroundColor={isTextPost ? "transparent" : "rgba(0,0,0,0.15)"}
         pointerEvents="box-none"
       >
         <XStack
@@ -246,7 +249,7 @@ function PostCardComponent({
                   }}
                 />
 
-                <Text color={colors.white} fontSize={16} fontWeight="500">
+                <Text color={textColor} fontSize={16} fontWeight="500">
                   {post.author?.username ?? "user"}
                 </Text>
               </TouchableOpacity>
@@ -256,7 +259,7 @@ function PostCardComponent({
                   onPress={handleFollow}
                   style={{
                     borderWidth: 1,
-                    borderColor: colors.white,
+                    borderColor: textColor,
                     height: 22,
                     borderRadius: 8,
                     paddingHorizontal: 6,
@@ -264,7 +267,7 @@ function PostCardComponent({
                     alignItems: "center",
                   }}
                 >
-                  <Text color={colors.white} fontSize={13}>
+                  <Text color={textColor} fontSize={13}>
                     {isFollowing ? "following" : "follow"}
                   </Text>
                 </TouchableOpacity>
@@ -275,7 +278,7 @@ function PostCardComponent({
             {"caption" in post && post.caption && (
               <XStack maxWidth="80%" alignItems="flex-end">
                 <Text
-                  color={colors.white}
+                  color={textColor}
                   fontSize={16}
                   numberOfLines={expanded ? undefined : 3}
                 >
@@ -294,7 +297,7 @@ function PostCardComponent({
                           width: "100%",
                         }}
                       />
-                      <Text color={colors.white} fontSize={14}>
+                      <Text color={textColor} fontSize={14}>
                         {expanded ? "less" : "more"}
                       </Text>
                     </Pressable>
@@ -317,7 +320,7 @@ function PostCardComponent({
                 </Pressable>
               </GestureDetector>
               {!hideLikeCount && (
-                <Text color={colors.white} fontSize={12}>
+                <Text color={textColor} fontSize={12}>
                   {likeCount}
                 </Text>
               )}
@@ -329,7 +332,7 @@ function PostCardComponent({
                   <Image source={commentIcon} width={30} height={30} />
                 </Pressable>
               </GestureDetector>
-              <Text color={colors.white} fontSize={12}>{commentCount}</Text>
+              <Text color={textColor} fontSize={12}>{commentCount}</Text>
             </YStack>
 
             <YStack alignItems="center">
@@ -342,7 +345,7 @@ function PostCardComponent({
                   />
                 </Pressable>
               </GestureDetector>
-              <Text color={colors.white} fontSize={12}>{savedCount}</Text>
+              <Text color={textColor} fontSize={12}>{savedCount}</Text>
             </YStack>
 
             <GestureDetector gesture={Gesture.Native()}>
@@ -353,7 +356,7 @@ function PostCardComponent({
 
             <GestureDetector gesture={Gesture.Native()}>
                 <Pressable onPress={handleOptions}>
-                  <MoreHorizontal size={32} color={colors.white} />
+                  <MoreHorizontal size={32} color={textColor} />
               </Pressable>
             </GestureDetector>
           </YStack>

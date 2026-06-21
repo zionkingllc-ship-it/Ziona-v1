@@ -1,11 +1,11 @@
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
-import { useUserPosts } from "@/hooks/useUserPost";
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useDiscoverFeed } from "@/hooks/useDiscover";
+import { usePostById } from "@/hooks/usePostById";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -33,12 +33,12 @@ export default function PostViewerScreen() {
   /* ================= DATA ================= */
 
   const {
-    posts: userPosts,
-    isLoading: isUserLoading,
-    isError: isUserError,
-    error: userError,
-    refetch: refetchUserPosts,
-  } = useUserPosts();
+    data: singlePost,
+    isLoading: isSingleLoading,
+    isError: isSingleError,
+    error: singleError,
+    refetch: refetchSinglePost,
+  } = usePostById(postId);
 
   const {
     posts: discoverPosts,
@@ -171,12 +171,12 @@ export default function PostViewerScreen() {
     isError = isDiscoverError;
     refetch = () => {}; // No refetch for discover
   } else {
-    // Default: user posts
-    posts = userPosts;
-    isLoading = isUserLoading;
-    isError = isUserError;
-    error = userError;
-    refetch = refetchUserPosts;
+    // Default: fetch post by ID (deep link from share)
+    posts = singlePost ? [singlePost] : [];
+    isLoading = isSingleLoading;
+    isError = isSingleError;
+    error = singleError;
+    refetch = refetchSinglePost;
   }
 
   const [containerHeight, setContainerHeight] = useState(0);

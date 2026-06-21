@@ -22,11 +22,17 @@ export async function requestMediaUpload(
   fileType: string,
   fileSize: number,
 ) {
-  const data = await graphqlRequest(REQUEST_UPLOAD_MUTATION, {
-    fileName,
-    fileType,
-    fileSize,
-  });
+  let data: any;
+  try {
+    data = await graphqlRequest(REQUEST_UPLOAD_MUTATION, {
+      fileName,
+      fileType,
+      fileSize,
+    });
+  } catch (err: any) {
+    console.error("[requestMediaUpload] Network error:", err?.message ?? err);
+    throw err;
+  }
 
   const payload = data?.uploadMedia;
 
