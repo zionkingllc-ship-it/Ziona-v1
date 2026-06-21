@@ -86,7 +86,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const [anchorImageError, setAnchorImageError] = useState(false);
 
   const imageUri = post.image || "";
-  const isVideoByUrl = !!post.mediaUrl && /\.(mp4|mov|avi|webm|mkv)$/i.test(post.mediaUrl);
+  const isVideoByUrl = !!post.mediaUrl && /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(post.mediaUrl);
   const isVideo = post.mediaType === "VIDEO" || isVideoByUrl;
 
   const { isLiked, likeCount: localLikeCount, handleToggleLike, togglingLike } = useCirclePostLike(

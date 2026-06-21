@@ -71,7 +71,7 @@ export default function CirclePostDetailScreen() {
     anchorMediaUrl?: string;
   }>();
 
-  const isVideo = !!postMediaUrl && /\.(mp4|mov|avi|webm|mkv)$/i.test(postMediaUrl);
+  const isVideo = !!postMediaUrl && /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(postMediaUrl);
 
   const [commentText, setCommentText] = useState("");
   const [commentImage, setCommentImage] = useState<string | null>(null);
