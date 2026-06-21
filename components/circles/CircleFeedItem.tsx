@@ -82,9 +82,12 @@ const CircleFeedItem = memo(function CircleFeedItem({
   });
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [postImageError, setPostImageError] = useState(false);
+  const [videoThumbError, setVideoThumbError] = useState(false);
   const [anchorImageError, setAnchorImageError] = useState(false);
 
   const imageUri = post.image || "";
+  const isVideoByUrl = !!post.mediaUrl && /\.(mp4|mov|avi|webm|mkv)$/i.test(post.mediaUrl);
+  const isVideo = post.mediaType === "VIDEO" || isVideoByUrl;
 
   const { isLiked, likeCount: localLikeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     post.id,
@@ -174,17 +177,28 @@ const CircleFeedItem = memo(function CircleFeedItem({
           )}
 
           {/* VIDEO */}
-          {post.mediaType === "VIDEO" && post.mediaUrl && (
+          {isVideo && post.mediaUrl && (
             <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: post.mediaUrl } }); }}>
-              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
-                <Ionicons name="videocam" size={32} color="#FFF" />
-                <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
+              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                {imageUri && !videoThumbError ? (
+                  <>
+                    <Image source={{ uri: imageUri }} width="100%" height={139} resizeMode="cover" onError={() => setVideoThumbError(true)} />
+                    <View style={{ position: "absolute", width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+                      <Ionicons name="play" size={24} color="#FFF" />
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="videocam" size={32} color="#FFF" />
+                    <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
+                  </>
+                )}
               </View>
             </Pressable>
           )}
 
           {/* IMAGE */}
-          {post.mediaType !== "VIDEO" && imageUri && !postImageError && (
+          {!isVideo && imageUri && !postImageError && (
             <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image || post.mediaUrl } }); }}>
               <Image
                 source={{ uri: post.image || post.mediaUrl }}
@@ -196,7 +210,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
               />
             </Pressable>
           )}
-          {post.mediaType !== "VIDEO" && imageUri && postImageError && (
+          {!isVideo && imageUri && postImageError && (
             <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image || post.mediaUrl } }); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
                 <Ionicons name="image-outline" size={32} color="#999" />

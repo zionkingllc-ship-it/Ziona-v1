@@ -190,9 +190,8 @@ export const GET_CIRCLE_FEED = `
 `;
 
 export const GET_CIRCLE_FEED_DATA = `
-  # Backend TODO: add $sortBy: String, $authorId: String params and pass to circleFeedData
-  query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int) {
-    circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize) {
+  query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int, $sortBy: String, $authorId: String) {
+    circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize, sortBy: $sortBy, authorId: $authorId) {
       name
       description
       bannerImage
@@ -637,6 +636,8 @@ export async function fetchCircleFeedData(
     historyLimit: historyLimit ?? 10,
     page,
     pageSize,
+    sortBy,
+    authorId,
   });
   console.log("🔍 [API] fetchCircleFeedData response:", JSON.stringify({
     hasData: !!res?.circleFeedData,

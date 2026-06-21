@@ -29,6 +29,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   Pressable,
   StyleSheet,
   TouchableOpacity,
@@ -188,7 +189,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
           return {
           id: p.id,
           text: p.text || undefined,
-          image: p.media?.[0]?.thumbnailUrl || p.media?.[0]?.url || p.mediaUrl || undefined,
+          image: (p.mediaType === "VIDEO" ? p.media?.[0]?.thumbnailUrl : p.media?.[0]?.thumbnailUrl || p.media?.[0]?.url || p.mediaUrl) || undefined,
           mediaUrl: p.mediaUrl || undefined,
           mediaType: p.mediaType || undefined,
           createdAt: p.createdAt,
@@ -231,8 +232,8 @@ export default function CircleFeedScreen() {
       };
     }, [])
   );
-  const { id, source } =
-    useLocalSearchParams<{ id: string; source?: string }>();
+  const { id, source, _name, _desc, _image, _members, _avatars } =
+    useLocalSearchParams<{ id: string; source?: string; _name?: string; _desc?: string; _image?: string; _members?: string; _avatars?: string }>();
 
   const router = useRouter();
   const circleId = id || "1";
@@ -248,7 +249,23 @@ export default function CircleFeedScreen() {
     circleId, 10, 1, 20, sortBy, authorId,
   );
 
-  const circle = useMemo(() => mapCircleFeedData(data), [data]);
+  const fallbackAvatars = useMemo(() => {
+    try { return _avatars ? JSON.parse(_avatars) : []; } catch { return []; }
+  }, [_avatars]);
+
+  const circle = useMemo(() => {
+    const feed = mapCircleFeedData(data);
+    if (feed.name) return feed;
+    return {
+      ...feed,
+      name: feed.name || _name || "",
+      description: feed.description || _desc || "",
+      bannerImage: feed.bannerImage || _image || "",
+      profileImage: feed.profileImage || _image || "",
+      memberCount: feed.memberCount || Number(_members) || 0,
+      memberAvatars: feed.memberAvatars.length > 0 ? feed.memberAvatars : fallbackAvatars,
+    };
+  }, [data, _name, _desc, _image, _members, fallbackAvatars]);
 
   console.log("📦 [circleFeed] circle data:", {
     activeAnchor: circle.activeAnchor ? {
@@ -336,30 +353,54 @@ export default function CircleFeedScreen() {
   const [joinSuccessVisible, setJoinSuccessVisible] = useState(false);
   const [joinSuccessTitle, setJoinSuccessTitle] = useState("");
   const [joinSuccessMessage, setJoinSuccessMessage] = useState("");
+  const [leaveConfirmVisible, setLeaveConfirmVisible] = useState(false);
 
   const toggleJoin = async () => {
     if (joining) return;
+    if (circle?.isJoined) {
+      setLeaveConfirmVisible(true);
+      return;
+    }
     setJoining(true);
     try {
-      let result;
-      const wasJoined = circle?.isJoined;
-      if (wasJoined) {
-        result = await leaveMutation.mutateAsync(circleId);
-      } else {
-        result = await joinMutation.mutateAsync(circleId);
-      }
-      const payload = result?.joinCircle ?? result?.leaveCircle ?? result;
+      const result = await joinMutation.mutateAsync(circleId);
+      const payload = result?.joinCircle ?? result;
       if (payload?.success === false) {
-        setJoinErrorTitle(wasJoined ? "Unable to leave" : "Unable to join");
+        setJoinErrorTitle("Unable to join");
         setJoinErrorMessage(payload?.error?.message || "Something went wrong. Please try again.");
         setJoinErrorVisible(true);
       } else {
-        setJoinSuccessTitle(wasJoined ? "Left circle" : "Joined circle");
-        setJoinSuccessMessage(wasJoined ? "You have left this circle." : "You have joined this circle.");
+        setJoinSuccessTitle("Joined circle");
+        setJoinSuccessMessage("You have joined this circle.");
         setJoinSuccessVisible(true);
       }
     } catch (err: any) {
-      console.error("Failed to toggle join:", err);
+      console.error("Failed to join:", err);
+      setJoinErrorTitle("Action failed");
+      setJoinErrorMessage(err?.message || "Something went wrong. Please try again.");
+      setJoinErrorVisible(true);
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const confirmLeave = async () => {
+    setLeaveConfirmVisible(false);
+    setJoining(true);
+    try {
+      const result = await leaveMutation.mutateAsync(circleId);
+      const payload = result?.leaveCircle ?? result;
+      if (payload?.success === false) {
+        setJoinErrorTitle("Unable to leave");
+        setJoinErrorMessage(payload?.error?.message || "Something went wrong. Please try again.");
+        setJoinErrorVisible(true);
+      } else {
+        setJoinSuccessTitle("Left circle");
+        setJoinSuccessMessage("You have left this circle.");
+        setJoinSuccessVisible(true);
+      }
+    } catch (err: any) {
+      console.error("Failed to leave:", err);
       setJoinErrorTitle("Action failed");
       setJoinErrorMessage(err?.message || "Something went wrong. Please try again.");
       setJoinErrorVisible(true);
@@ -428,7 +469,7 @@ export default function CircleFeedScreen() {
       paddingVertical={40}
     >
       <Text fontFamily="$body" fontWeight="400" color={colors.gray}>
-        No posts yet
+        {circle.isJoined ? "No posts yet" : "No posts to show"}
       </Text>
       <Text
         fontFamily="$body"
@@ -437,7 +478,9 @@ export default function CircleFeedScreen() {
         color={colors.gray}
         marginTop={4}
       >
-        Be the first to post in this circle!
+        {circle.isJoined
+          ? "Be the first to post in this circle!"
+          : "Join this circle to see posts and anchors"}
       </Text>
     </YStack>
   );
@@ -680,6 +723,51 @@ export default function CircleFeedScreen() {
         buttonText="OK"
         onButtonPress={() => setJoinErrorVisible(false)}
       />
+
+      <Modal
+        visible={leaveConfirmVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}
+          onPress={() => setLeaveConfirmVisible(false)}
+        >
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 28,
+              marginHorizontal: 32,
+              width: "85%",
+              maxWidth: 340,
+            }}
+          >
+            <Text fontFamily="$body" fontSize={20} fontWeight="600" color="#181419" marginBottom={12} textAlign="center">
+              Are you sure you want to leave?
+            </Text>
+
+            <Text fontFamily="$body" fontSize={13} fontWeight="400" color="#4E4252" lineHeight={18} marginBottom={24} textAlign="center">
+              Leaving means you'll no longer see daily anchors, shared reflections, and discussions from this faith community. You're always welcome back anytime.
+            </Text>
+
+            <YStack gap={16} alignItems="center">
+              <Pressable onPress={confirmLeave}>
+                <Text fontFamily="$body" fontSize={13} fontWeight="400" color="red">
+                  Leave
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => setLeaveConfirmVisible(false)}>
+                <Text fontFamily="$body" fontSize={13} fontWeight="400" color="#4E4252">
+                  Stay
+                </Text>
+              </Pressable>
+            </YStack>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

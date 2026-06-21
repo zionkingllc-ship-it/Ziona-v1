@@ -81,12 +81,8 @@ export default function PostComposer() {
       if (video) {
         uploadTasks.push(
           (async () => {
-            const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(video, { time: 0 });
-            const [thumb, videoMedia] = await Promise.all([
-              uploadCircleMedia(thumbUri, "image/jpeg"),
-              uploadCircleMedia(video, "video/mp4"),
-            ]);
-            mediaIds.push(thumb.mediaId, videoMedia.mediaId);
+            const videoMedia = await uploadCircleMedia(video, "video/mp4");
+            mediaIds.push(videoMedia.mediaId);
           })(),
         );
       }

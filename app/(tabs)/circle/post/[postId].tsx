@@ -78,6 +78,7 @@ export default function CirclePostDetailScreen() {
   const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [postImageError, setPostImageError] = useState(false);
+  const [videoThumbError, setVideoThumbError] = useState(false);
   const [anchorImageError, setAnchorImageError] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
@@ -233,9 +234,20 @@ export default function CirclePostDetailScreen() {
 
             {isVideo && postMediaUrl && (
               <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: postMediaUrl } })}>
-                <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 8 }}>
-                  <Ionicons name="videocam" size={40} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={14}>Tap to view video</Text>
+                <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                  {(postImage || postMediaUrl) && !videoThumbError ? (
+                    <>
+                      <Image source={{ uri: postImage || postMediaUrl }} width="100%" height={200} resizeMode="cover" onError={() => setVideoThumbError(true)} />
+                      <View style={{ position: "absolute", width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+                        <Ionicons name="play" size={26} color="#FFF" />
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="videocam" size={40} color="#FFF" />
+                      <Text fontFamily="$body" color="#FFF" fontSize={14}>Tap to view video</Text>
+                    </>
+                  )}
                 </View>
               </Pressable>
             )}

@@ -117,10 +117,18 @@ export default function CirclesSuggestion() {
     [allCircles, joinedIds]
   );
 
-  function handleCirclePress(circleId: string) {
+  function handleCirclePress(circle: any) {
     router.push({
       pathname: "/(tabs)/circle/circleFeed",
-      params: { id: circleId, source: "suggestion" },
+      params: {
+        id: circle.id,
+        source: "suggestion",
+        _name: circle.title,
+        _desc: circle.description,
+        _image: circle.image,
+        _members: String(circle.members),
+        _avatars: JSON.stringify(circle.avatars),
+      },
     });
   }
 
@@ -222,7 +230,7 @@ export default function CirclesSuggestion() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {myCircles.map((circle: any) => (
                   <View key={circle.id} style={styles.compactCardWrapper}>
-                    <CircleCard {...circle} onPress={() => handleCirclePress(circle.id)} />
+                    <CircleCard {...circle} onPress={() => handleCirclePress(circle)} />
                   </View>
                 ))}
               </ScrollView>
@@ -238,7 +246,7 @@ export default function CirclesSuggestion() {
             renderEmptyState()
           ) : (
             suggestedCircles.map((item: any) => (
-              <CircleCard key={item.id} {...item} onPress={() => handleCirclePress(item.id)} />
+              <CircleCard key={item.id} {...item} onPress={() => handleCirclePress(item)} />
             ))
           )}
         </YStack>
