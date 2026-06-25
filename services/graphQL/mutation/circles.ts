@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $mediaIds: [String!], $mediaType: MediaType) {
-    createCirclePost(circleId: $circleId, mediaIds: $mediaIds, mediaType: $mediaType) {
+  mutation CreateCirclePost($circleId: String!, $text: String, $mediaIds: [String!], $mediaType: MediaType) {
+    createCirclePost(circleId: $circleId, text: $text, mediaIds: $mediaIds, mediaType: $mediaType) {
       success
       error {
         code
@@ -50,6 +50,7 @@ export const CREATE_CIRCLE_POST = `
       }
       post {
         id
+        text
         media {
           id
           url
@@ -115,12 +116,14 @@ export async function leaveCircle(circleId: string) {
 
 export async function createCirclePost(
   circleId: string,
+  text: string,
   mediaIds: string[],
   mediaType: string,
 ) {
-  console.log("[createCirclePost] Sending mutation:", { circleId, mediaIds, mediaType });
+  console.log("[createCirclePost] Sending mutation:", { circleId, text, mediaIds, mediaType });
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,
+    text,
     mediaIds,
     mediaType,
   });

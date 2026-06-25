@@ -2,6 +2,7 @@ import colors from "@/constants/colors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
+import { getMimeType } from "@/services/utils/mime";
 import { waitForMediaProcessing } from "@/services/graphQL/mutation/media/mediaUpload";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -10,6 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useState, useEffect } from "react";
+import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import {
   ActivityIndicator,
   Alert,
@@ -26,13 +28,22 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 
-export default function PostComposer() {
-  const { circleId } = useLocalSearchParams<{ circleId?: string }>();
+type Props = {
+  /** Optional circleId passed from a wrapper route to ensure the param is available */
+  initialCircleId?: string;
+};
+
+export default function PostComposer({ initialCircleId }: Props) {
+  const localParams = useLocalSearchParams<{ circleId?: string }>();
+  const circleId = initialCircleId ?? localParams.circleId;
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [picking, setPicking] = useState(false);
   const [posting, setPosting] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
@@ -61,8 +72,9 @@ export default function PostComposer() {
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  console.log("[PostComposer] circleId (initial/local):", { initialCircleId, local: localParams.circleId, resolved: circleId });
   const queryClient = useQueryClient();
-
+console.log("circleId", circleId);
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting) return;
     setPosting(true);
@@ -73,7 +85,7 @@ export default function PostComposer() {
       const uploadTasks: Promise<void>[] = [];
       if (image) {
         uploadTasks.push(
-          uploadCircleMedia(image, "image/jpeg").then(({ mediaId }) => {
+          uploadCircleMedia(image, getMimeType(image, "IMAGE")).then(({ mediaId }) => {
             mediaIds.push(mediaId);
           }),
         );
@@ -81,7 +93,7 @@ export default function PostComposer() {
       if (video) {
         uploadTasks.push(
           (async () => {
-            const videoMedia = await uploadCircleMedia(video, "video/mp4");
+            const videoMedia = await uploadCircleMedia(video, getMimeType(video, "VIDEO"));
             mediaIds.push(videoMedia.mediaId);
           })(),
         );
@@ -98,7 +110,7 @@ export default function PostComposer() {
 
       let result: any;
       for (let attempt = 0; attempt < 3; attempt++) {
-        result = await createCirclePost(circleId || "", mediaIds, mediaType);
+        result = await createCirclePost(circleId || "", text, mediaIds, mediaType);
         console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
 
         if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
@@ -133,9 +145,10 @@ export default function PostComposer() {
         setShowSuccess(false);
         router.back();
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create post:", error);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      const message = error?.message || "Something went wrong. Please try again.";
+      Alert.alert("Error", message);
     } finally {
       setPosting(false);
     }
@@ -239,6 +252,9 @@ export default function PostComposer() {
           >
             <Pressable
               onPress={async () => {
+                if (picking) return;
+                setPicking(true);
+                try {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== "granted") {
                   Alert.alert("Permission required", "Please grant media library access in Settings to attach media.");
@@ -250,22 +266,37 @@ export default function PostComposer() {
                   quality: 0.8,
                 });
                 if (!result.canceled && result.assets?.[0]?.uri) {
-                  if (result.assets[0].type === "video") {
-                    setVideo(result.assets[0].uri);
+                  const asset = result.assets[0];
+                  if (asset.type === "video") {
+                    setVideo(asset.uri);
                     setImage(null);
-                    VideoThumbnails.getThumbnailAsync(result.assets[0].uri)
+                    setVideoThumbnail(null);
+                    VideoThumbnails.getThumbnailAsync(asset.uri)
                       .then(({ uri }) => setVideoThumbnail(uri))
                       .catch(() => setVideoThumbnail(null));
                   } else {
-                    setImage(result.assets[0].uri);
-                    setVideo(null);
-                    setVideoThumbnail(null);
+                    try {
+                      const convertedUri = await convertToSupportedFormat(asset.uri, asset.mimeType);
+                      setImage(convertedUri);
+                      setVideo(null);
+                      setVideoThumbnail(null);
+                    } catch {
+                      setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
+                      setShowError(true);
+                    }
                   }
+                }
+                } finally {
+                  setPicking(false);
                 }
               }}
               style={{ paddingVertical: 8 }}
             >
-              <Ionicons name="image-outline" size={24} color="#333" />
+              {picking ? (
+                <ActivityIndicator size="small" color="#333" />
+              ) : (
+                <Ionicons name="image-outline" size={24} color="#333" />
+              )}
             </Pressable>
 
             <TextInput
@@ -326,6 +357,44 @@ export default function PostComposer() {
             <Text fontSize={18} fontWeight="600">Post Created!</Text>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={showError} transparent animationType="fade">
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => setShowError(false)}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFF",
+              padding: 24,
+              borderRadius: 16,
+              alignItems: "center",
+              gap: 12,
+              marginHorizontal: 32,
+            }}
+          >
+            <Ionicons name="alert-circle" size={48} color="#E53935" />
+            <Text fontSize={16} fontWeight="600" textAlign="center">{errorMessage}</Text>
+            <Pressable
+              onPress={() => setShowError(false)}
+              style={{
+                backgroundColor: "#E53935",
+                paddingHorizontal: 24,
+                paddingVertical: 8,
+                borderRadius: 20,
+                marginTop: 4,
+              }}
+            >
+              <Text color="#FFF" fontWeight="600">OK</Text>
+            </Pressable>
+          </View>
+        </Pressable>
       </Modal>
     </>
   );

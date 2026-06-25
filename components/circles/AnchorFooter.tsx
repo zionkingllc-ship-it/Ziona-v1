@@ -64,20 +64,20 @@ export default function AnchorFooter({
   }, [anchorId, isLiked, toggling]);
 
   const handleReflection = () => {
-    router.push({
-      pathname: "/CircleExtension/CircleCommentComposer",
-      params: {
-        anchorId,
-        ...(circleId ? { circleId } : {}),
-        fromScreen: "circleFeed",
-        mode: "action",
-        source,
-        anchorText: anchorText || "",
-        bibleReference: bibleReference || "",
-        bibleText: bibleText || "",
-        prompt: "What's on your mind?",
-      },
+    const qs = new URLSearchParams({
+      ...(anchorId ? { anchorId } : {}),
+      ...(circleId ? { circleId } : {}),
+      fromScreen: "circleFeed",
+      mode: "action",
+      source,
+      anchorText: anchorText || "",
+      bibleReference: bibleReference || "",
+      bibleText: bibleText || "",
+      prompt: "What's on your mind?",
     });
+    const path = `/(tabs)/circle/CircleCommentComposer?${qs.toString()}`;
+    console.log("[AnchorFooter] navigating to CircleCommentComposer", { path });
+    router.push(path as any);
   };
 
   return (

@@ -189,9 +189,13 @@ export default function CirclePostDetailScreen() {
 
   const handleAnchorMediaTap = () => {
     if (anchorType === "video" && anchorMediaUrl) {
-      router.push({ pathname: "/CircleExtension/circleVideoViewer", params: { video: anchorMediaUrl } });
+      const path = `/(tabs)/circle/circleVideoViewer?video=${encodeURIComponent(anchorMediaUrl)}`;
+      console.log("[CirclePostDetail] navigating to circleVideoViewer", { path });
+      router.push(path as any);
     } else if (anchorType === "image" && anchorMediaUrl) {
-      router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: anchorMediaUrl } });
+      const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(anchorMediaUrl)}`;
+      console.log("[CirclePostDetail] navigating to circleImageViewer", { path });
+      router.push(path as any);
     }
   };
 

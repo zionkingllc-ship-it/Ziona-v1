@@ -120,13 +120,15 @@ export function useCreateCirclePost() {
   return useMutation({
     mutationFn: ({
       circleId,
+      text,
       mediaIds,
       mediaType,
     }: {
       circleId: string;
+      text: string;
       mediaIds: string[];
       mediaType: string;
-    }) => createCirclePostMutation(circleId, mediaIds, mediaType),
+    }) => createCirclePostMutation(circleId, text, mediaIds, mediaType),
     onSuccess: (_, { circleId }) => {
       queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });
     },

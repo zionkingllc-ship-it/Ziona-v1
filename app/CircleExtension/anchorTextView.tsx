@@ -137,20 +137,20 @@ export default function AnchorTextView() {
       mediaUrl: anchorImage || undefined,
     });
 
-    router.push({
-      pathname: "/CircleExtension/anchorResponse",
-      params: {
-        action,
-        text: anchorText || "",
-        anchorRefId: tempId,
-        fromScreen: "circleFeed",
-        anchorType: anchorImage ? "image" : "text",
-        anchorImage: anchorImage || "",
-        anchorColors: colors || "",
-        ...(circleId ? { circleId } : {}),
-        source: "suggestion",
-      },
+    const qs = new URLSearchParams({
+      action,
+      text: anchorText || "",
+      anchorRefId: tempId,
+      fromScreen: "circleFeed",
+      anchorType: anchorImage ? "image" : "text",
+      anchorImage: anchorImage || "",
+      anchorColors: colors || "",
+      ...(circleId ? { circleId } : {}),
+      source: "suggestion",
     });
+    const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
+    console.log("[AnchorTextView] navigating to anchorResponse", { path });
+    router.push(path as any);
   };
 
   const handleScroll = useCallback(

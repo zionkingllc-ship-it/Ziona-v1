@@ -77,8 +77,8 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
 
   const reportMutation = useMutation({
-    mutationFn: (reason: string) =>
-      reportCircleContent(reason, circleId || "", post.id, "circle_post"),
+    mutationFn: ({ reason, description }: { reason: string; description?: string }) =>
+      reportCircleContent(reason, circleId || "", post.id, "circle_post", description),
   });
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [postImageError, setPostImageError] = useState(false);
@@ -135,9 +135,13 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const handleAnchorMediaTap = () => {
     if (!resolved) return;
     if (resolved.type === "video" && resolved.mediaUrl) {
-      router.push({ pathname: "/CircleExtension/circleVideoViewer", params: { video: resolved.mediaUrl } });
+      const path = `/(tabs)/circle/circleVideoViewer?video=${encodeURIComponent(resolved.mediaUrl)}`;
+      console.log("[CircleFeedItem] navigating to circleVideoViewer", { path });
+      router.push(path as any);
     } else if (resolved.type === "image" && resolved.mediaUrl) {
-      router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: resolved.mediaUrl } });
+      const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(resolved.mediaUrl)}`;
+      console.log("[CircleFeedItem] navigating to circleImageViewer", { path });
+      router.push(path as any);
     }
   };
 
@@ -178,7 +182,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* VIDEO */}
           {isVideo && post.mediaUrl && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: post.mediaUrl } }); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to postVideoViewer", { path }); router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                 {imageUri && !videoThumbError ? (
                   <>
@@ -199,7 +203,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* IMAGE */}
           {!isVideo && imageUri && !postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image || post.mediaUrl } }); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
               <Image
                 source={{ uri: post.image || post.mediaUrl }}
                 width="100%"
@@ -211,7 +215,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </Pressable>
           )}
           {!isVideo && imageUri && postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: post.image || post.mediaUrl } }); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
                 <Ionicons name="image-outline" size={32} color="#999" />
                 <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
@@ -297,17 +301,19 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onClose={() => setReasonsVisible(false)}
           onSelectReason={(reason) => {
             setReasonsVisible(false);
+            console.log("[CircleFeedItem] submitting reason report:", { reason, postId: post.id });
             reportMutation.mutate(
-              reason,
+              { reason },
               {
                 onSuccess: () => {
+                  console.log("[CircleFeedItem] reason report succeeded:", { reason, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("success");
                   setSuccessTitle("Report Submitted");
                   setSuccessMessage("Thank you for your report. We'll review it shortly.");
                 },
                 onError: (err) => {
-                  console.error("[ReportFlow] circle reason report failed:", err);
+                  console.error("[CircleFeedItem] reason report failed:", err, { reason, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("failed");
                   setSuccessTitle("Something went wrong");
@@ -326,17 +332,19 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onClose={() => setOtherVisible(false)}
           onSubmit={(description) => {
             setOtherVisible(false);
+            console.log("[CircleFeedItem] submitting other report:", { description, postId: post.id });
             reportMutation.mutate(
-              "other",
+              { reason: "other", description },
               {
                 onSuccess: () => {
+                  console.log("[CircleFeedItem] other report succeeded:", { description, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("success");
                   setSuccessTitle("Report Submitted");
                   setSuccessMessage("Thank you for your report. We'll review it shortly.");
                 },
                 onError: (err) => {
-                  console.error("[ReportFlow] circle other report failed:", err);
+                  console.error("[CircleFeedItem] other report failed:", err, { description, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("failed");
                   setSuccessTitle("Something went wrong");

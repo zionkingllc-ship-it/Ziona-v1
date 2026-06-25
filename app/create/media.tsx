@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
+import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import { FlatList, Image, Keyboard, ScrollView, TextInput, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 
@@ -72,6 +73,7 @@ export default function CreateMediaScreen() {
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [error, setError] = useState("");
   const [errorVisible, setErrorVisible] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   /* =========================
      ENSURE DRAFT EXISTS
@@ -124,8 +126,11 @@ export default function CreateMediaScreen() {
   ========================= */
 
   async function pickMedia() {
+    if (picking) return;
+    setPicking(true);
+    try {
     const allowed = await ensurePermission();
-    if (!allowed) return;
+    if (!allowed) { setPicking(false); return; }
 
     const existing = mediaItems;
 
@@ -135,7 +140,7 @@ export default function CreateMediaScreen() {
       quality: 1,
     });
 
-    if (result.canceled) return;
+    if (result.canceled) { setPicking(false); return; }
 
     const assets = result.assets;
 
@@ -173,9 +178,16 @@ export default function CreateMediaScreen() {
       return;
     }
 
-    const images = assets
-      .filter((a) => a.type !== "video")
-      .map(normalizeMedia);
+    const imageAssets = assets.filter((a) => a.type !== "video");
+
+    const converted = await Promise.all(
+      imageAssets.map(async (a) => {
+        const uri = await convertToSupportedFormat(a.uri, a.mimeType);
+        return { ...a, uri };
+      }),
+    );
+
+    const images = converted.map(normalizeMedia);
 
     if (images.length > remainingSlots) {
       setError(`Maximum 4 images allowed. You can only add ${remainingSlots} more.`);
@@ -185,6 +197,12 @@ export default function CreateMediaScreen() {
 
     const updated = [...existing, ...images];
     setMedia(updated);
+    } catch {
+      setError("Could not load that image. Try a different one.");
+      setErrorVisible(true);
+    } finally {
+      setPicking(false);
+    }
   }
 
   function removeMedia(id: string) {
@@ -261,20 +279,20 @@ export default function CreateMediaScreen() {
         )}
 
         <TouchableOpacity
-          onPress={addDisabled ? undefined : pickMedia}
-          disabled={addDisabled}
+          onPress={addDisabled || picking ? undefined : pickMedia}
+          disabled={addDisabled || picking}
           style={{
-            backgroundColor: addDisabled ? "#E5E3E5" : "#F1EFF2",
+            backgroundColor: addDisabled ? "#E5E3E5" : picking ? "#E5E3E5" : "#F1EFF2",
             paddingVertical: hp(0.7),
             marginTop: hp(2),
             borderRadius: 6,
             alignItems: "center",
             width: wp(40),
-            opacity: addDisabled ? 0.5 : 1,
+            opacity: addDisabled || picking ? 0.5 : 1,
           }}
         >
-          <Text fontSize={fs(12)} color={addDisabled ? "#A09DA0" : "#000"}>
-            {hasVideo ? "Video selected" : mediaItems.length >= 4 ? "Max images reached" : "Add media"}
+          <Text fontSize={fs(12)} color={addDisabled || picking ? "#A09DA0" : "#000"}>
+            {picking ? "Loading..." : hasVideo ? "Video selected" : mediaItems.length >= 4 ? "Max images reached" : "Add media"}
           </Text>
         </TouchableOpacity>
 

@@ -23,6 +23,7 @@ export async function requestMediaUpload(
   fileSize: number,
 ) {
   let data: any;
+  console.log("[requestMediaUpload] Requesting upload:", { fileName, fileType, fileSize });
   try {
     data = await graphqlRequest(REQUEST_UPLOAD_MUTATION, {
       fileName,
@@ -35,10 +36,11 @@ export async function requestMediaUpload(
   }
 
   const payload = data?.uploadMedia;
+  console.log("[requestMediaUpload] Server response:", JSON.stringify(payload));
 
   if (!payload?.success) {
     console.error("[requestMediaUpload] Server rejected:", JSON.stringify(payload));
-    throw new Error(payload?.error?.message || "Media upload request failed");
+    throw new Error(payload?.error?.message || `Media upload request failed (${fileName}, ${fileType}, ${fileSize})`);
   }
 
   return payload as { uploadUrl: string; mediaId: string; mediaUrl?: string; status?: string };

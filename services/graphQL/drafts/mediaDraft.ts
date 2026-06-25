@@ -2,6 +2,7 @@ import {
   requestMediaUpload,
   confirmMediaUpload,
   uploadFileToStorage,
+  waitForMediaProcessing,
 } from "../mutation/media/mediaUpload";
 import { createMediaPost } from "../mutation/createPost";
 
@@ -11,58 +12,22 @@ import * as FileSystem from "expo-file-system/legacy";
 
 import { QueryClient } from "@tanstack/react-query";
 
-/* =========================
-   MIME TYPE
-========================= */
-
-function getMimeType(uri: string, type: "IMAGE" | "VIDEO") {
-  if (type === "IMAGE") return "image/jpg";
-  if (type === "VIDEO") return "video/mp4";
-  return "application/octet-stream";
-}
+import { getMimeType } from "@/services/utils/mime";
 
 /* =========================
    MAIN FUNCTION
 ========================= */
 
-export async function publishMediaPost(
-  draft: MediaDraft,
-  queryClient: QueryClient,
+export async function preUploadMedia(
+  items: { uri: string; type: string }[],
   onProgress?: (percent: number) => void,
-) {
-  console.log("━━━━━━━━ PUBLISH MEDIA START ━━━━━━━━");
-  console.log("Draft received:", draft);
-
-  if (!draft) throw new Error("Draft is missing");
-  if (!draft.category?.id) throw new Error("Category is required");
-  if (!draft.media?.items?.length) throw new Error("Media is required");
-
-  /* =========================
-     🔥 DERIVE MEDIA TYPE (SOURCE OF TRUTH FIX)
-  ========================= */
-
-  const firstItem = draft.media.items[0];
-
-  if (!firstItem?.type) {
-    throw new Error("Invalid media item: missing type");
-  }
-
-  const derivedMediaType: "IMAGE" | "VIDEO" =
-    firstItem.type === "VIDEO" ? "VIDEO" : "IMAGE";
-
-  console.log("Derived mediaType:", derivedMediaType);
-
-  /* =========================
-     MEDIA UPLOAD
-  ========================= */
-
-  const items = draft.media.items;
+): Promise<{ mediaIds: string[]; mediaUrls: string[] }> {
   const itemWeight = 100 / items.length;
   let completedItems = 0;
 
   const uploads = items.map(async (item, index: number) => {
     try {
-      console.log(`Uploading item ${index}`, item);
+      console.log(`[preUpload] Uploading item ${index}`, item);
 
       const fileName =
         item.uri?.split("/").pop() || `file-${Date.now()}-${index}`;
@@ -95,7 +60,7 @@ export async function publishMediaPost(
 
       return { mediaId: upload.mediaId, mediaUrl };
     } catch (err) {
-      console.error(`Media upload failed at index ${index}`, err);
+      console.error(`[preUpload] failed at index ${index}`, err);
       throw err;
     }
   });
@@ -105,7 +70,100 @@ export async function publishMediaPost(
   const mediaIds = mediaResults.map((r) => r.mediaId);
   const mediaUrls = mediaResults.map((r) => r.mediaUrl);
 
-  console.log("All media uploaded. URLs:", mediaUrls);
+  await waitForMediaProcessing(mediaIds);
+
+  return { mediaIds, mediaUrls };
+}
+
+export async function publishMediaPost(
+  draft: MediaDraft,
+  queryClient: QueryClient,
+  onProgress?: (percent: number) => void,
+  preUploaded?: { mediaIds: string[]; mediaUrls: string[] },
+) {
+  console.log("━━━━━━━━ PUBLISH MEDIA START ━━━━━━━━");
+  console.log("Draft received:", draft);
+
+  if (!draft) throw new Error("Draft is missing");
+  if (!draft.category?.id) throw new Error("Category is required");
+  if (!draft.media?.items?.length) throw new Error("Media is required");
+
+  const firstItem = draft.media.items[0];
+
+  if (!firstItem?.type) {
+    throw new Error("Invalid media item: missing type");
+  }
+
+  const derivedMediaType: "IMAGE" | "VIDEO" =
+    firstItem.type === "VIDEO" ? "VIDEO" : "IMAGE";
+
+  console.log("Derived mediaType:", derivedMediaType);
+
+  /* =========================
+     MEDIA UPLOAD (skip if pre-uploaded)
+  ========================= */
+
+  let mediaIds: string[];
+  let mediaUrls: string[];
+
+  if (preUploaded) {
+    mediaIds = preUploaded.mediaIds;
+    mediaUrls = preUploaded.mediaUrls;
+    console.log("Using pre-uploaded media:", { mediaIds, mediaUrls });
+  } else {
+    const items = draft.media.items;
+    const itemWeight = 100 / items.length;
+    let completedItems = 0;
+
+    const uploads = items.map(async (item, index: number) => {
+      try {
+        console.log(`Uploading item ${index}`, item);
+
+        const fileName =
+          item.uri?.split("/").pop() || `file-${Date.now()}-${index}`;
+
+        const fileType = getMimeType(item.uri, item.type);
+
+        const fileInfo = await FileSystem.getInfoAsync(item.uri);
+
+        if (!fileInfo.exists) throw new Error("File does not exist");
+        if (!fileInfo.size || fileInfo.size <= 0)
+          throw new Error("Invalid file size");
+
+        const upload = await requestMediaUpload(
+          fileName,
+          fileType,
+          fileInfo.size,
+        );
+
+        const itemProgress = (pct: number) => {
+          const overall = Math.round((completedItems * itemWeight) + (pct * itemWeight / 100));
+          onProgress?.(overall);
+        };
+
+        await uploadFileToStorage(upload.uploadUrl, item.uri, fileType, itemProgress, fileInfo.size);
+
+        const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
+
+        completedItems++;
+        onProgress?.(Math.round(completedItems * itemWeight));
+
+        return { mediaId: upload.mediaId, mediaUrl };
+      } catch (err) {
+        console.error(`Media upload failed at index ${index}`, err);
+        throw err;
+      }
+    });
+
+    const mediaResults = await Promise.all(uploads);
+
+    mediaIds = mediaResults.map((r) => r.mediaId);
+    mediaUrls = mediaResults.map((r) => r.mediaUrl);
+
+    console.log("All media uploaded. URLs:", mediaUrls);
+
+    await waitForMediaProcessing(mediaIds);
+  }
 
   /* =========================
      FINAL PAYLOAD (FIXED)

@@ -6,7 +6,7 @@ import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
-import { publishMediaPost } from "@/services/graphQL/drafts/mediaDraft";
+import { publishMediaPost, preUploadMedia } from "@/services/graphQL/drafts/mediaDraft";
 import { movePostToFeedTop } from "@/services/feed/invalidateFeed";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -21,6 +21,8 @@ import { Play } from "@tamagui/lucide-icons";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { getMimeType } from "@/services/utils/mime";
+import { isImageTypeAllowed } from "@/services/utils/imageConversion";
 
 function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
   const player = useVideoPlayer(uri, (instance) => {
@@ -91,11 +93,23 @@ export default function CreateMediaPreviewScreen() {
   const [showProgress, setShowProgress] = useState(false);
   const progressRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preUploadedRef = useRef<{ mediaIds: string[]; mediaUrls: string[] } | null>(null);
 
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const items = draft?.type === "MEDIA" ? draft.media?.items : undefined;
+    if (!items?.length) return;
+    preUploadMedia(items).then((result) => {
+      preUploadedRef.current = result;
+      console.log("[preUpload] complete:", result);
+    }).catch((err) => {
+      console.log("[preUpload] failed, will upload on publish:", err?.message);
+    });
   }, []);
 
 
@@ -114,6 +128,7 @@ export default function CreateMediaPreviewScreen() {
     "success" | "failed" | "warning"
   >("success");
   const [modalMessage, setModalMessage] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
 
   if (!draft || draft.type !== "MEDIA") return null;
@@ -133,7 +148,19 @@ export default function CreateMediaPreviewScreen() {
 
     if (!canUpload) {
       setModalType("failed");
+      setModalTitle("Required Fields");
       setModalMessage("Add media and category");
+      setModalVisible(true);
+      return;
+    }
+
+    const unsupported = items.filter(
+      (m) => m.type === "IMAGE" && !isImageTypeAllowed(getMimeType(m.uri, "IMAGE")),
+    );
+    if (unsupported.length > 0) {
+      setModalType("failed");
+      setModalTitle("Unsupported Image");
+      setModalMessage("This image format is not supported. Please use JPEG or PNG.");
       setModalVisible(true);
       return;
     }
@@ -152,6 +179,7 @@ export default function CreateMediaPreviewScreen() {
         mediaDraft,
         queryClient,
         onProgress,
+        preUploadedRef.current ?? undefined,
       );
       setUploadProgress(100);
 
@@ -160,15 +188,17 @@ export default function CreateMediaPreviewScreen() {
         movePostToFeedTop(queryClient, result.post.id);
       }
       await queryClient.refetchQueries({ queryKey: ["userPosts"] });
+      setShowProgress(false);
       setModalType("success");
+      setModalTitle("Success");
       setModalMessage("Post uploaded successfully");
       setModalVisible(true);
 
       timeoutRef.current = setTimeout(() => {
-        setShowProgress(false);
+        setModalVisible(false);
         resetDraft();
         router.replace("/(tabs)/feed");
-      }, 1200);
+      }, 1500);
     } catch (error: any) {
       setShowProgress(false);
       const feedback = getNetworkModalCopy(
@@ -176,6 +206,7 @@ export default function CreateMediaPreviewScreen() {
         error?.message || "Upload failed",
       );
       setModalType(feedback.type);
+      setModalTitle(feedback.title);
       setModalMessage(feedback.message);
       setModalVisible(true);
     }
@@ -334,13 +365,7 @@ export default function CreateMediaPreviewScreen() {
         <SuccessModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
-          title={
-            modalType === "success"
-              ? "Success"
-              : modalType === "warning"
-                ? "Network issue"
-                : "Failed"
-          }
+          title={modalTitle}
           message={modalMessage}
           type={modalType}
           autoClose

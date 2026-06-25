@@ -44,21 +44,21 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
     const isVideo = (anchor.anchorType || anchor.type || "") === "video";
     const anchorVideo = anchor.anchorVideo || (isVideo && url ? url : "");
     const anchorImage = !isVideo && url ? url : anchor.anchorImage || "";
-    router.push({
-      pathname: "/CircleExtension/anchorUnifiedView",
-      params: {
-        id: anchor.id || "",
-        source: "suggestion",
-        ...(circleId ? { circleId } : {}),
-        ...(text ? { text } : {}),
-        ...(anchorImage ? { anchorImage } : {}),
-        ...(anchorVideo ? { video: anchorVideo } : {}),
-        ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
-        ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
-        ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
-        ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
-      },
+    const qs = new URLSearchParams({
+      id: anchor.id || "",
+      source: "suggestion",
+      ...(circleId ? { circleId } : {}),
+      ...(text ? { text } : {}),
+      ...(anchorImage ? { anchorImage } : {}),
+      ...(anchorVideo ? { video: anchorVideo } : {}),
+      ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+      ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
+      ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
+      ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
     });
+    const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
+    console.log("[AnchorCardSmall] navigating to anchorUnifiedView", { path });
+    router.push(path as any);
   };
 
   const mediaSource = anchor.mediaUrl || anchor.anchorThumbnail || anchor.anchorImage;

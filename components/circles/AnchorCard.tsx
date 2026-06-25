@@ -30,23 +30,23 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
     const anchorImage = anchor.type !== "video" && url ? url : anchor.anchorImage || "";
     const text = anchor.anchorText || anchor.content || "";
 
-    router.push({
-      pathname: "/CircleExtension/anchorUnifiedView",
-      params: {
-        id: anchor.id || "",
-        likedCount: anchor.anchorLikedCount?.toString() || "0",
-        expired: expired ? "1" : "0",
-        source: "feed",
-        ...(circleId ? { circleId } : {}),
-        ...(text ? { text } : {}),
-        ...(anchorImage ? { anchorImage } : {}),
-        ...(anchorVideo ? { video: anchorVideo } : {}),
-        ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
-        ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
-        ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
-        ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
-      },
+    const qs = new URLSearchParams({
+      id: anchor.id || "",
+      likedCount: anchor.anchorLikedCount?.toString() || "0",
+      expired: expired ? "1" : "0",
+      source: "feed",
+      ...(circleId ? { circleId } : {}),
+      ...(text ? { text } : {}),
+      ...(anchorImage ? { anchorImage } : {}),
+      ...(anchorVideo ? { video: anchorVideo } : {}),
+      ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+      ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
+      ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
+      ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
     });
+    const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
+    console.log("[AnchorCard] navigating to anchorUnifiedView", { path });
+    router.push(path as any);
     
     setTimeout(() => setLoading(false), 500);
   }, [disabled, loading, anchor, router, circleId, isEmpty]);

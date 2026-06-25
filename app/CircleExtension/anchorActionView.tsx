@@ -27,18 +27,18 @@ export default function AnchorActionView() {
         : action === "encouraged"
           ? "What encouraged you?"
           : "What's on your mind?";
-    router.push({
-      pathname: "/CircleExtension/anchorResponse",
-      params: {
-        action,
-        text: anchorText || "",
-        fromScreen: "circleFeed",
-        anchorType: anchorType || "text",
-        anchorColors: colors || "",
-        ...(circleId ? { circleId } : {}),
-        ...(source ? { source } : { source: "suggestion" }),
-      },
+    const qs = new URLSearchParams({
+      action,
+      text: anchorText || "",
+      fromScreen: "circleFeed",
+      anchorType: anchorType || "text",
+      anchorColors: colors || "",
+      ...(circleId ? { circleId } : {}),
+      ...(source ? { source } : { source: "suggestion" }),
     });
+    const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
+    console.log("[AnchorActionView] navigating to anchorResponse", { path });
+    router.push(path as any);
   };
 
   return (

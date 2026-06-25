@@ -683,16 +683,18 @@ export default function CircleFeedScreen() {
 
       {circle?.isJoined && (
         <View style={styles.fabContainer}>
-          <Button
-            circular
-            size="$6"
-            backgroundColor={colors.primary}
-            onPress={() => {
-              router.push({
-                pathname: "/CircleExtension/PostComposer",
-                params: { circleId },
-              });
-            }}
+            <Button
+              circular
+              size="$6"
+              backgroundColor={colors.primary}
+              onPress={() => {
+                // Use explicit query string to guarantee the circleId appears in the URL
+                // The route path should not include group folder names such as (tabs).
+                // Use explicit URL with querystring to ensure the circleId becomes a search param
+                const path = `/(tabs)/circle/PostComposerScreen?circleId=${encodeURIComponent(circleId)}`;
+                console.log("[FAB] navigating to PostComposerScreen", { path });
+                router.push(path as any);
+              }}
             elevation={4}
             shadowColor="#000"
             shadowOffset={{ width: 0, height: 2 }}
