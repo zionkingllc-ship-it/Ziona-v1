@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import {
   ActivityIndicator,
@@ -47,6 +47,7 @@ export default function PostComposer({ initialCircleId }: Props) {
   const [posting, setPosting] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const cancelledRef = useRef(false);
   const player = useVideoPlayer(video || "", (p) => {
     p.loop = false;
   });
@@ -75,8 +76,14 @@ export default function PostComposer({ initialCircleId }: Props) {
   console.log("[PostComposer] circleId (initial/local):", { initialCircleId, local: localParams.circleId, resolved: circleId });
   const queryClient = useQueryClient();
 console.log("circleId", circleId);
+  const handleCancelPosting = () => {
+    cancelledRef.current = true;
+    setPosting(false);
+  };
+
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting) return;
+    cancelledRef.current = false;
     setPosting(true);
 
     try {
@@ -86,6 +93,7 @@ console.log("circleId", circleId);
       if (image) {
         uploadTasks.push(
           uploadCircleMedia(image, getMimeType(image, "IMAGE")).then(({ mediaId }) => {
+            if (cancelledRef.current) return;
             mediaIds.push(mediaId);
           }),
         );
@@ -94,17 +102,20 @@ console.log("circleId", circleId);
         uploadTasks.push(
           (async () => {
             const videoMedia = await uploadCircleMedia(video, getMimeType(video, "VIDEO"));
+            if (cancelledRef.current) return;
             mediaIds.push(videoMedia.mediaId);
           })(),
         );
       }
       await Promise.all(uploadTasks);
+      if (cancelledRef.current) return;
 
       const mediaType = video ? "VIDEO" : image ? "IMAGE" : undefined;
 
       if (mediaIds.length > 0) {
         await waitForMediaProcessing(mediaIds);
       }
+      if (cancelledRef.current) return;
 
       console.log("[PostComposer] Sending post:", { circleId: circleId || "", mediaIds, mediaType });
 
@@ -112,6 +123,7 @@ console.log("circleId", circleId);
       for (let attempt = 0; attempt < 3; attempt++) {
         result = await createCirclePost(circleId || "", text, mediaIds, mediaType);
         console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
+        if (cancelledRef.current) return;
 
         if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
           const delay = Math.min(2000 * Math.pow(2, attempt), 8000);
@@ -146,6 +158,7 @@ console.log("circleId", circleId);
         router.back();
       }, 1500);
     } catch (error: any) {
+      if (cancelledRef.current) return;
       console.error("Failed to create post:", error);
       const message = error?.message || "Something went wrong. Please try again.";
       Alert.alert("Error", message);
@@ -169,9 +182,15 @@ console.log("circleId", circleId);
             showsVerticalScrollIndicator={false}
           >
             <XStack justifyContent="flex-end">
-              <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }}>
-                <Text color="#666">Cancel</Text>
-              </Pressable>
+              {posting ? (
+                <Pressable onPress={handleCancelPosting}>
+                  <Text color="#FF3B30" fontWeight="600">Stop</Text>
+                </Pressable>
+              ) : (
+                <Pressable onPress={() => { Keyboard.dismiss(); router.back(); }}>
+                  <Text color="#666">Cancel</Text>
+                </Pressable>
+              )}
             </XStack>
 
             <XStack alignItems="center" gap="$2" marginTop="$2">
@@ -189,7 +208,7 @@ console.log("circleId", circleId);
               <YStack marginTop="$3">
                 <Image source={{ uri: image }} height={120} borderRadius={12} />
                 <Pressable
-                  onPress={() => setImage(null)}
+                  onPress={() => !posting && setImage(null)}
                   style={{
                     position: "absolute",
                     right: 8,
@@ -197,6 +216,7 @@ console.log("circleId", circleId);
                     backgroundColor: "rgba(0,0,0,0.6)",
                     borderRadius: 20,
                     padding: 6,
+                    opacity: posting ? 0.4 : 1,
                   }}
                 >
                   <Ionicons name="trash-outline" size={16} color="#FFF" />
@@ -206,7 +226,7 @@ console.log("circleId", circleId);
 
             {video && (
               <YStack marginTop="$3">
-                <Pressable onPress={() => setVideoPlaying(!videoPlaying)} style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
+                <Pressable onPress={() => !posting && setVideoPlaying(!videoPlaying)} style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
                   {player && (
                     <VideoView
                       player={player}
@@ -222,7 +242,7 @@ console.log("circleId", circleId);
                   </View>
                 </Pressable>
                 <Pressable
-                  onPress={() => { setVideo(null); setVideoThumbnail(null); setVideoPlaying(false); }}
+                  onPress={() => { if (posting) return; setVideo(null); setVideoThumbnail(null); setVideoPlaying(false); }}
                   style={{
                     position: "absolute",
                     right: 8,
@@ -230,6 +250,7 @@ console.log("circleId", circleId);
                     backgroundColor: "rgba(0,0,0,0.6)",
                     borderRadius: 20,
                     padding: 6,
+                    opacity: posting ? 0.4 : 1,
                   }}
                 >
                   <Ionicons name="trash-outline" size={16} color="#FFF" />
@@ -252,7 +273,7 @@ console.log("circleId", circleId);
           >
             <Pressable
               onPress={async () => {
-                if (picking) return;
+                if (picking || posting) return;
                 setPicking(true);
                 try {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -290,12 +311,13 @@ console.log("circleId", circleId);
                   setPicking(false);
                 }
               }}
-              style={{ paddingVertical: 8 }}
+              style={{ paddingVertical: 8, opacity: posting ? 0.4 : 1 }}
+              disabled={posting}
             >
               {picking ? (
                 <ActivityIndicator size="small" color="#333" />
               ) : (
-                <Ionicons name="image-outline" size={24} color="#333" />
+                <Ionicons name="image-outline" size={26} color={posting ? "#999" : "#333"} />
               )}
             </Pressable>
 
@@ -313,6 +335,7 @@ console.log("circleId", circleId);
               }}
               multiline
               autoFocus
+              editable={!posting}
             />
 
             <Pressable onPress={handleSend} disabled={posting} style={{ paddingVertical: 8 }}>

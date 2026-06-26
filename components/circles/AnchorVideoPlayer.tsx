@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useState } from "react";
-import { AppState, Dimensions, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, AppState, Dimensions, Pressable, StyleSheet, View } from "react-native";
 
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -22,6 +22,9 @@ export default function AnchorVideoPlayer({
 }: AnchorVideoPlayerProps) {
   const [showControls, setShowControls] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+  const [playerStatus, setPlayerStatus] = useState<
+    "idle" | "loading" | "readyToPlay" | "error"
+  >("idle");
 
   const progress = useSharedValue(0);
 
@@ -34,6 +37,14 @@ export default function AnchorVideoPlayer({
       playerInstance.loop = false;
     }
   });
+
+  useEffect(() => {
+    if (!player) return;
+    const sub = player.addListener("statusChange", ({ status }) => {
+      setPlayerStatus(status);
+    });
+    return () => sub.remove();
+  }, [player]);
 
   const seekTo = useCallback((position: number) => {
     if (!player) return;
@@ -138,6 +149,18 @@ export default function AnchorVideoPlayer({
             nativeControls={false}
           />
 
+          {playerStatus === "loading" && (
+            <View style={[StyleSheet.absoluteFill, styles.loadingOverlay]}>
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+
+          {playerStatus === "error" && (
+            <View style={[StyleSheet.absoluteFill, styles.errorOverlay]}>
+              <Ionicons name="videocam" size={40} color="#FFF" />
+            </View>
+          )}
+
           {showControls && (
             <>
               <View style={styles.overlay}>
@@ -231,5 +254,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingOverlay: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  errorOverlay: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
 });

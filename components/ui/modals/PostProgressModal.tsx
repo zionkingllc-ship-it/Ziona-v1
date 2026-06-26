@@ -1,14 +1,15 @@
 import colors from "@/constants/colors";
 import React from "react";
-import { Modal, View, StyleSheet } from "react-native";
+import { ActivityIndicator, Modal, Pressable, View, StyleSheet } from "react-native";
 import { Text } from "tamagui";
 
 interface Props {
   visible: boolean;
   progress: number;
+  onCancel?: () => void;
 }
 
-export default function PostProgressModal({ visible, progress }: Props) {
+export default function PostProgressModal({ visible, progress, onCancel }: Props) {
   return (
     <Modal
       visible={visible}
@@ -23,6 +24,14 @@ export default function PostProgressModal({ visible, progress }: Props) {
             {progress < 100 ? "Uploading please wait..." : "Processing..."}
           </Text>
 
+          {progress >= 100 && (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
           <View style={styles.progressContainer}>
             <View style={styles.progressBackground}>
               <View
@@ -34,6 +43,12 @@ export default function PostProgressModal({ visible, progress }: Props) {
             </View>
             <Text style={styles.percentText}>{Math.min(progress, 100)}%</Text>
           </View>
+
+          {onCancel && (
+            <Pressable onPress={onCancel} style={styles.cancelButton}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>
@@ -84,6 +99,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.black,
+    fontFamily: "$body",
+  },
+  cancelButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+  },
+  cancelText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF3B30",
     fontFamily: "$body",
   },
 });

@@ -169,12 +169,12 @@ export function uploadFileToStorage(
     try {
       // Estimate progress based on assumed upload speed
       if (onProgress && size > 0) {
-        const ASSUMED_BYTES_PER_SEC = 500 * 1024; // 500 KB/s
+        const ASSUMED_BYTES_PER_SEC = 2 * 1024 * 1024; // 2 MB/s
         const estimatedSeconds = size / ASSUMED_BYTES_PER_SEC;
         const startTime = Date.now();
         progressInterval = setInterval(() => {
           const elapsed = (Date.now() - startTime) / 1000;
-          const pct = Math.min(Math.round((elapsed / estimatedSeconds) * 85), 85);
+          const pct = Math.min(Math.round((elapsed / estimatedSeconds) * 90), 90);
           onProgress(pct);
         }, 200);
       }

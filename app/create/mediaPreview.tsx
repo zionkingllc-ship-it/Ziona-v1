@@ -94,6 +94,7 @@ export default function CreateMediaPreviewScreen() {
   const progressRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preUploadedRef = useRef<{ mediaIds: string[]; mediaUrls: string[] } | null>(null);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -143,6 +144,11 @@ export default function CreateMediaPreviewScreen() {
 
   const canUpload = items.length > 0 && !!mediaDraft.category?.id;
 
+  function handleCancel() {
+    cancelledRef.current = true;
+    setShowProgress(false);
+  }
+
   async function handleUpload() {
     if (showProgress) return;
 
@@ -165,6 +171,18 @@ export default function CreateMediaPreviewScreen() {
       return;
     }
 
+    const oversizedVideo = items.find(
+      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > 90 * 1024 * 1024,
+    );
+    if (oversizedVideo) {
+      setModalType("failed");
+      setModalTitle("Video Too Large");
+      setModalMessage("Video should not be more than 90MB.");
+      setModalVisible(true);
+      return;
+    }
+
+    cancelledRef.current = false;
     progressRef.current = 0;
     setUploadProgress(0);
     setShowProgress(true);
@@ -181,6 +199,9 @@ export default function CreateMediaPreviewScreen() {
         onProgress,
         preUploadedRef.current ?? undefined,
       );
+
+      if (cancelledRef.current) return;
+
       setUploadProgress(100);
 
       if (result?.post?.id) {
@@ -200,6 +221,7 @@ export default function CreateMediaPreviewScreen() {
         router.replace("/(tabs)/feed");
       }, 1500);
     } catch (error: any) {
+      if (cancelledRef.current) return;
       setShowProgress(false);
       const feedback = getNetworkModalCopy(
         error,
@@ -375,6 +397,7 @@ export default function CreateMediaPreviewScreen() {
         <PostProgressModal
           visible={showProgress}
           progress={uploadProgress}
+          onCancel={handleCancel}
         />
       )}
       </YStack>

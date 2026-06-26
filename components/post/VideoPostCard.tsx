@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import React, { useCallback, useEffect, useRef, useState, memo } from "react";
-import { StyleSheet } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -42,12 +42,23 @@ function VideoPostCardComponent({
 
   const progress = useSharedValue(0);
   const [hasFirstFrame, setHasFirstFrame] = useState(false);
+  const [playerStatus, setPlayerStatus] = useState<
+    "idle" | "loading" | "readyToPlay" | "error"
+  >("idle");
 
   const player = useVideoPlayer(videoUrl ?? "", (playerInstance) => {
     if (playerInstance) {
       playerInstance.loop = true;
     }
   });
+
+  useEffect(() => {
+    if (!player) return;
+    const sub = player.addListener("statusChange", ({ status }) => {
+      setPlayerStatus(status);
+    });
+    return () => sub.remove();
+  }, [player]);
 
   const seekTo = useCallback(
     (position: number) => {
@@ -78,6 +89,7 @@ function VideoPostCardComponent({
   useEffect(() => {
     if (!player || !videoUrl) return;
     setHasFirstFrame(false);
+    setPlayerStatus("idle");
     progress.value = 0;
   }, [post.id]);
 
@@ -174,6 +186,34 @@ function VideoPostCardComponent({
                 backgroundColor="black"
               />
             ))}
+
+          {!hasFirstFrame && playerStatus === "loading" && (
+            <View
+              position="absolute"
+              width="100%"
+              height="100%"
+              justifyContent="center"
+              alignItems="center"
+              backgroundColor="rgba(0,0,0,0.3)"
+              pointerEvents="none"
+            >
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+          )}
+
+          {playerStatus === "error" && (
+            <View
+              position="absolute"
+              width="100%"
+              height="100%"
+              justifyContent="center"
+              alignItems="center"
+              backgroundColor="rgba(0,0,0,0.6)"
+              pointerEvents="none"
+            >
+              <Play size={28} color={colors.white} />
+            </View>
+          )}
 
           {!isPlaying && (
             <View

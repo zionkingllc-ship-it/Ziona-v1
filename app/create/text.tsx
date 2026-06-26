@@ -162,7 +162,7 @@ export default function CreateTextScreen() {
         error,
         error?.message || "We couldn't create your post.",
       );
-      feedback.showError(networkFeedback.message, networkFeedback.type);
+      feedback.showError(networkFeedback.message, networkFeedback.type, networkFeedback.title);
     }
   }
 
@@ -287,13 +287,7 @@ export default function CreateTextScreen() {
         onClose={() => {
           feedback.handleClose();
         }}
-        title={
-          feedback.type === "success"
-            ? "Success"
-            : feedback.type === "warning"
-              ? "Network issue"
-              : "Failed"
-        }
+        title={feedback.title}
         message={feedback.message}
         type={feedback.type}
         autoClose

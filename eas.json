@@ -9,50 +9,27 @@
       "autoIncrement": true,
       "distribution": "internal"
     },
-    "preview": {
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "autoIncrement": true,
-      "distribution": "internal"
-    },
-    "beta": {
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
-        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
-      }
-    },
     "production": {
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
-        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
-      }
+      "ios": {
+        "distribution": "store"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
-    "preview": {
-      "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "internal"
-      }
-    },
-    "beta": {
-      "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "open"
-      }
-    },
     "production": {
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "production"
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "onyeama.a.k@gmail.com",
+        "ascAppId": "6768301878",
+        "appleTeamId": "RLL2NX9J5Z"
       }
     }
   }
 }
-

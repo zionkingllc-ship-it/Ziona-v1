@@ -134,11 +134,10 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="(auth)" />
                   <Stack.Screen name="viewer" />
-                  <Stack.Screen name="guest" />
-                  <Stack.Screen name="notifications" />
-                  <Stack.Screen name="create" />
-                  <Stack.Screen name="followers" />
-                  <Stack.Screen name="following" />
+                  <Stack.Screen name="guest/index" />
+                  <Stack.Screen name="notifications/index" />
+                  <Stack.Screen name="followers/index" />
+                  <Stack.Screen name="following/index" />
                   <Stack.Screen name="circleRules" />
                 </Stack>
                 </AuthGate>

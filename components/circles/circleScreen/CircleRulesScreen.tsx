@@ -73,23 +73,16 @@ export default function CircleRulesScreen() {
 
               return (
                 <YStack key={rule.id}>
-                  {/* Row */}
-                  <XStack
-                    justifyContent="space-between"
-                    alignItems="center"
-                    paddingVertical="$2"
-                    onPress={() => toggle(rule.id)}
-                  >
-                    <Text>
-                      {rule.id}. {rule.title}
-                    </Text>
+                  {/* Row - use Pressable so press events work reliably */}
+                  <TouchableOpacity onPress={() => toggle(rule.id)} activeOpacity={0.8}>
+                    <XStack justifyContent="space-between" alignItems="center" paddingVertical="$2">
+                      <Text>
+                        {rule.id}. {rule.title}
+                      </Text>
 
-                    <Ionicons
-                      name={isOpen ? "chevron-up" : "chevron-down"}
-                      size={18}
-                      color="#555"
-                    />
-                  </XStack>
+                      <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={18} color="#555" />
+                    </XStack>
+                  </TouchableOpacity>
 
                   {/* Expanded */}
                   {isOpen && (

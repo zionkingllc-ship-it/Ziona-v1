@@ -1,5 +1,6 @@
 import PostThumbnail from "@/components/discover/PostThumbnail";
 import Header from "@/components/layout/header";
+import BackButton from "@/components/ui/BackButton";
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
@@ -24,7 +25,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { Image, Text, View, XStack, YStack } from "tamagui";
 
 export default function GuestProfileScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -158,6 +159,9 @@ export default function GuestProfileScreen() {
       <XStack>
         <Header heading={`@${profile?.username || ""}`} />
       </XStack>
+      <View style={{ position: "absolute", top: 55, left: 16, zIndex: 10 }}>
+        <BackButton />
+      </View>
 
       <YStack width={"100%"} padding={20}>
         <XStack width={"100%"} justifyContent="space-between" alignItems="flex-start">

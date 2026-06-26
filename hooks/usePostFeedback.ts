@@ -7,9 +7,11 @@ export function usePostFeedback(successRoute: string = "/(tabs)/create") {
     "success",
   );
   const [message, setMessage] = useState("");
+  const [title, setTitle] = useState("");
 
   function showSuccess(msg = "Post uploaded successfully") {
     setType("success");
+    setTitle("Success");
     setMessage(msg);
     setVisible(true);
   }
@@ -17,8 +19,10 @@ export function usePostFeedback(successRoute: string = "/(tabs)/create") {
   function showError(
     msg = "Something went wrong",
     feedbackType: "failed" | "warning" = "failed",
+    feedbackTitle?: string,
   ) {
     setType(feedbackType);
+    setTitle(feedbackTitle || (feedbackType === "warning" ? "Network issue" : "Something went wrong"));
     setMessage(msg);
     setVisible(true);
   }
@@ -34,6 +38,7 @@ export function usePostFeedback(successRoute: string = "/(tabs)/create") {
   return {
     visible,
     type,
+    title,
     message,
     showSuccess,
     showError,
