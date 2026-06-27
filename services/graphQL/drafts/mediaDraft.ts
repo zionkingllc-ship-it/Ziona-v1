@@ -13,6 +13,8 @@ import * as FileSystem from "expo-file-system/legacy";
 import { QueryClient } from "@tanstack/react-query";
 
 import { getMimeType } from "@/services/utils/mime";
+import { compressImage } from "@/services/utils/imageConversion";
+import { compressVideo } from "@/services/utils/videoCompression";
 
 /* =========================
    MAIN FUNCTION
@@ -29,12 +31,20 @@ export async function preUploadMedia(
     try {
       console.log(`[preUpload] Uploading item ${index}`, item);
 
+      let fileUri = item.uri;
+
+      if (item.type === "IMAGE") {
+        fileUri = await compressImage(fileUri);
+      } else if (item.type === "VIDEO") {
+        fileUri = await compressVideo(fileUri, "medium");
+      }
+
       const fileName =
-        item.uri?.split("/").pop() || `file-${Date.now()}-${index}`;
+        fileUri?.split("/").pop() || `file-${Date.now()}-${index}`;
 
-      const fileType = getMimeType(item.uri, item.type);
+      const fileType = getMimeType(fileUri, item.type as "IMAGE" | "VIDEO");
 
-      const fileInfo = await FileSystem.getInfoAsync(item.uri);
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
 
       if (!fileInfo.exists) throw new Error("File does not exist");
       if (!fileInfo.size || fileInfo.size <= 0)
@@ -51,7 +61,7 @@ export async function preUploadMedia(
         onProgress?.(overall);
       };
 
-      await uploadFileToStorage(upload.uploadUrl, item.uri, fileType, itemProgress, fileInfo.size);
+      await uploadFileToStorage(upload.uploadUrl, fileUri, fileType, itemProgress, fileInfo.size);
 
       const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
 
@@ -119,12 +129,20 @@ export async function publishMediaPost(
       try {
         console.log(`Uploading item ${index}`, item);
 
+        let fileUri = item.uri;
+
+        if (item.type === "IMAGE") {
+          fileUri = await compressImage(fileUri);
+        } else if (item.type === "VIDEO") {
+          fileUri = await compressVideo(fileUri, "medium");
+        }
+
         const fileName =
-          item.uri?.split("/").pop() || `file-${Date.now()}-${index}`;
+          fileUri?.split("/").pop() || `file-${Date.now()}-${index}`;
 
-        const fileType = getMimeType(item.uri, item.type);
+        const fileType = getMimeType(fileUri, item.type as "IMAGE" | "VIDEO");
 
-        const fileInfo = await FileSystem.getInfoAsync(item.uri);
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
 
         if (!fileInfo.exists) throw new Error("File does not exist");
         if (!fileInfo.size || fileInfo.size <= 0)
@@ -141,7 +159,7 @@ export async function publishMediaPost(
           onProgress?.(overall);
         };
 
-        await uploadFileToStorage(upload.uploadUrl, item.uri, fileType, itemProgress, fileInfo.size);
+        await uploadFileToStorage(upload.uploadUrl, fileUri, fileType, itemProgress, fileInfo.size);
 
         const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
 

@@ -1,4 +1,5 @@
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import ImageCompressor from "react-native-compressor";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -28,11 +29,28 @@ export async function convertToSupportedFormat(
 
 export async function compressImage(uri: string): Promise<string> {
   try {
-    const result = await manipulateAsync(uri, [{ resize: { width: 1920 } }], {
-      format: SaveFormat.JPEG,
-      compress: 0.8,
+    const result = await ImageCompressor.Image.compress(uri, {
+      compressionMethod: "auto",
+      maxWidth: 1920,
     });
-    return result.uri;
+    return result;
+  } catch {
+    return uri;
+  }
+}
+
+export async function compressImageManual(
+  uri: string,
+  quality?: number,
+  maxWidth?: number,
+): Promise<string> {
+  try {
+    const result = await ImageCompressor.Image.compress(uri, {
+      compressionMethod: "manual",
+      quality: quality ?? 0.7,
+      maxWidth: maxWidth ?? 1920,
+    });
+    return result;
   } catch {
     return uri;
   }

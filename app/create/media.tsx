@@ -15,7 +15,7 @@ import { router } from "expo-router";
 import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
-import { convertToSupportedFormat } from "@/services/utils/imageConversion";
+import { convertToSupportedFormat, compressImage } from "@/services/utils/imageConversion";
 import { FlatList, Image, Keyboard, ScrollView, TextInput, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 
@@ -183,7 +183,8 @@ export default function CreateMediaScreen() {
 
     const converted = await Promise.all(
       imageAssets.map(async (a) => {
-        const uri = await convertToSupportedFormat(a.uri, a.mimeType);
+        let uri = await convertToSupportedFormat(a.uri, a.mimeType);
+        uri = await compressImage(uri);
         return { ...a, uri };
       }),
     );

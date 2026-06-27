@@ -14,7 +14,9 @@
     "ios": {
       "bundleIdentifier": "com.zionking.ziona",
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
       },
       "associatedDomains": [
         "applinks:ziona.app"
@@ -35,7 +37,9 @@
             ]
           }
         ],
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -68,9 +72,15 @@
         "android.permission.POST_NOTIFICATIONS"
       ],
       "queries": [
-        { "scheme": "whatsapp" },
-        { "scheme": "sms" },
-        { "scheme": "mailto" }
+        {
+          "scheme": "whatsapp"
+        },
+        {
+          "scheme": "sms"
+        },
+        {
+          "scheme": "mailto"
+        }
       ]
     },
     "web": {
@@ -113,7 +123,8 @@
         {
           "color": "#742092"
         }
-      ]
+      ],
+      "react-native-compressor"
     ],
     "extra": {
       "router": {},
