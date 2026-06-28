@@ -103,6 +103,7 @@ export default function CreateMediaScreen() {
       uri: asset.uri,
       type: asset.type === "video" ? "VIDEO" : "IMAGE",
       fileSize: asset.fileSize ?? undefined,
+      duration: asset.duration ?? undefined,
     };
   }
 

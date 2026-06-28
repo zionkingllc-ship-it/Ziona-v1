@@ -94,7 +94,7 @@ if (post.scripture) {
           justifyContent="center"
           alignItems="center"
           paddingHorizontal={wp(6)}
-          paddingVertical={hp(16)}
+          paddingVertical={hp(16) + 20}
         >
           <TextPostCardOutput
             category={category as Category}

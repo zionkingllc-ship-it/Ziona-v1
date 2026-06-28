@@ -3,7 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef } from "react";
 import { AppState, Platform, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import themeColors from "@/constants/colors";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -99,7 +99,7 @@ export default function CircleVideoViewer() {
   }, [player]);
 
   return (
-    <View style={[styles.container, { backgroundColor: "#000" }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: "#000" }]}>
       <View style={styles.progressBar}>
         <GestureDetector gesture={progressPan}>
           <View style={styles.progressTrackContainer}>
@@ -115,7 +115,7 @@ export default function CircleVideoViewer() {
         </GestureDetector>
       </View>
 
-      <View style={[styles.header, { marginTop: insets.top + 10 }]}>
+      <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons name="close" size={24} color="#FFF" />
         </Pressable>
@@ -135,7 +135,7 @@ export default function CircleVideoViewer() {
           </View>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -163,6 +163,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     paddingHorizontal: 16,
+    paddingTop: 45,
     paddingBottom: 10,
   },
   closeButton: {

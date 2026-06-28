@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import MentionText from "@/components/comments/MentionText";
+import React, { useMemo, useState } from "react";
 import { TouchableOpacity, Alert, Image } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ type Props = {
 
 type ReplyRowProps = {
   reply: CircleComment;
+  mentionMap: Record<string, string>;
   onLike: (id: string, liked: boolean) => void;
   onDelete: (id: string) => void;
   isPending: boolean;
@@ -56,7 +58,7 @@ function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string 
   );
 }
 
-function ReplyRow({ reply, onLike, onDelete, isPending }: ReplyRowProps) {
+function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending }: ReplyRowProps) {
   return (
     <TouchableOpacity
       onLongPress={() => {
@@ -78,9 +80,7 @@ function ReplyRow({ reply, onLike, onDelete, isPending }: ReplyRowProps) {
               {formatDate(reply.createdAt)}
             </Text>
           </XStack>
-          <Text fontSize={12} color="#333" lineHeight={16}>
-            {reply.text}
-          </Text>
+          <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} lineHeight={16} />
           <XStack gap="$2" paddingTop="$1" alignItems="center">
             <TouchableOpacity
               onPress={() => onLike(reply.id, reply.viewerState?.liked ?? false)}
@@ -108,6 +108,15 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
   const [showReplies, setShowReplies] = useState(true);
   const hasReplies = (comment.replies?.length || 0) > 0;
 
+  const mentionMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (comment.author?.name && comment.author?.id) map[comment.author.name] = comment.author.id;
+    for (const r of comment.replies || []) {
+      if (r.author?.name && r.author?.id) map[r.author.name] = r.author.id;
+    }
+    return map;
+  }, [comment]);
+
   return (
     <TouchableOpacity
       onLongPress={() => {
@@ -131,9 +140,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
           </YStack>
         </XStack>
 
-        <Text fontSize={13} color="#333" lineHeight={18} paddingLeft="$4">
-          {comment.text}
-        </Text>
+        <MentionText text={comment.text} mentionMap={mentionMap} fontSize={13} lineHeight={18} />
 
         <XStack gap="$3" paddingLeft="$4" alignItems="center">
           <TouchableOpacity
@@ -168,6 +175,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
               <ReplyRow
                 key={reply.id}
                 reply={reply}
+                mentionMap={mentionMap}
                 onLike={onLike}
                 onDelete={onDelete}
                 isPending={isPending}

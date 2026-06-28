@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Pressable, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -122,7 +122,7 @@ export default function PostVideoViewer() {
     });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={handleTap}
@@ -150,14 +150,14 @@ export default function PostVideoViewer() {
       {showControls && (
         <Pressable
           onPress={() => router.back()}
-          style={[styles.closeButton, { top: insets.top + 10 }]}
+          style={styles.closeButton}
         >
           <Ionicons name="close" size={24} color="#FFF" />
         </Pressable>
       )}
 
       {showControls && (
-        <View style={[styles.progressBarContainer, { paddingBottom: insets.bottom || 8 }]}>
+        <View style={styles.progressBarContainer}>
           <GestureDetector gesture={progressPan}>
             <View style={styles.progressTrackContainer}>
               <View style={styles.progressTrack}>
@@ -167,7 +167,7 @@ export default function PostVideoViewer() {
           </GestureDetector>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   closeButton: {
     position: "absolute",
+    top: 45,
     left: 16,
     width: 36,
     height: 36,

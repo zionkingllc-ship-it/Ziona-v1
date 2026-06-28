@@ -189,11 +189,11 @@ export default function CirclePostDetailScreen() {
 
   const handleAnchorMediaTap = () => {
     if (anchorType === "video" && anchorMediaUrl) {
-      const path = `/(tabs)/circle/circleVideoViewer?video=${encodeURIComponent(anchorMediaUrl)}`;
+      const path = `/circleVideoViewer?video=${encodeURIComponent(anchorMediaUrl)}`;
       console.log("[CirclePostDetail] navigating to circleVideoViewer", { path });
       router.push(path as any);
     } else if (anchorType === "image" && anchorMediaUrl) {
-      const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(anchorMediaUrl)}`;
+      const path = `/circleImageViewer?image=${encodeURIComponent(anchorMediaUrl)}`;
       console.log("[CirclePostDetail] navigating to circleImageViewer", { path });
       router.push(path as any);
     }
@@ -251,7 +251,7 @@ export default function CirclePostDetailScreen() {
             )}
 
             {isVideo && postMediaUrl && (
-              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/postVideoViewer", params: { video: postMediaUrl } })}>
+              <Pressable onPress={() => router.push({ pathname: "/postVideoViewer", params: { video: postMediaUrl } })}>
                 <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                   {(postImage || postMediaUrl) && !videoThumbError ? (
                     <>
@@ -271,7 +271,7 @@ export default function CirclePostDetailScreen() {
             )}
 
             {!isVideo && (postImage || postMediaUrl) && !postImageError && (
-              <Pressable onPress={() => router.push({ pathname: "/CircleExtension/circleImageViewer", params: { image: postImage || postMediaUrl } })}>
+              <Pressable onPress={() => router.push({ pathname: "/circleImageViewer", params: { image: postImage || postMediaUrl } })}>
                 <Image
                   source={{ uri: postImage || postMediaUrl }}
                   width="100%"

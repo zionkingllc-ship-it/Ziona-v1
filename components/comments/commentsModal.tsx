@@ -5,11 +5,12 @@ import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import { useCommentReplies } from "@/hooks/useCommentReplies";
+import MentionText from "./MentionText";
 import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
 import { Comment } from "@/services/graphQL/mutation/actions/comments";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Dimensions,
   FlatList,
@@ -70,6 +71,17 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const toggleLikeMutation = useToggleCommentLike();
 
   const comments = data?.pages?.flatMap((page) => page.comments) || [];
+
+  const mentionMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of comments) {
+      if (c.user?.username && c.user?.id) map[c.user.username] = c.user.id;
+      for (const r of c.replies || []) {
+        if (r.user?.username && r.user?.id) map[r.user.username] = r.user.id;
+      }
+    }
+    return map;
+  }, [comments]);
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");
@@ -200,6 +212,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
             renderItem={({ item }) => (
               <CommentItem
                 comment={item}
+                mentionMap={mentionMap}
                 expandedComments={expandedComments}
                 setExpandedComments={setExpandedComments}
                 expandedReplies={expandedReplies}
@@ -274,6 +287,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
 
 function CommentItem({
   comment,
+  mentionMap,
   expandedComments,
   setExpandedComments,
   expandedReplies,
@@ -285,6 +299,7 @@ function CommentItem({
   toggleLikeMutation,
 }: {
   comment: Comment;
+  mentionMap: Record<string, string>;
   expandedComments: Set<string>;
   setExpandedComments: React.Dispatch<React.SetStateAction<Set<string>>>;
   expandedReplies: Set<string>;
@@ -317,7 +332,7 @@ function CommentItem({
               <Text color="#999" fontFamily="$body" fontSize={11}>{formatDate(comment.createdAt)}</Text>
             </XStack>
 
-            <Text fontSize={13} fontFamily="$body" marginTop={4}>{displayText}</Text>
+            <MentionText text={displayText} mentionMap={mentionMap} fontSize={13} />
 
             {shouldTruncate && !isExpanded && (
               <TouchableOpacity onPress={() => setExpandedComments((prev) => new Set([...prev, comment.id]))}>
@@ -351,6 +366,7 @@ function CommentItem({
                   <ReplyItem
                     key={reply.id}
                     reply={reply}
+                    mentionMap={mentionMap}
                     failedAvatarUrls={failedAvatarUrls}
                     setFailedAvatarUrls={setFailedAvatarUrls}
                     toggleLike={toggleLike}
@@ -377,12 +393,14 @@ function CommentItem({
 
 function ReplyItem({
   reply,
+  mentionMap,
   failedAvatarUrls,
   setFailedAvatarUrls,
   toggleLike,
   startReply,
 }: {
   reply: any;
+  mentionMap: Record<string, string>;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
   toggleLike: (id: string, liked: boolean) => void;
@@ -402,7 +420,7 @@ function ReplyItem({
           <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
         </XStack>
-        <Text fontSize={12} fontFamily="$body" marginTop={2}>{reply.text}</Text>
+        <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>
       <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
         {reply.viewerState?.liked ? (

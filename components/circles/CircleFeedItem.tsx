@@ -135,11 +135,11 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const handleAnchorMediaTap = () => {
     if (!resolved) return;
     if (resolved.type === "video" && resolved.mediaUrl) {
-      const path = `/(tabs)/circle/circleVideoViewer?video=${encodeURIComponent(resolved.mediaUrl)}`;
+      const path = `/circleVideoViewer?video=${encodeURIComponent(resolved.mediaUrl)}`;
       console.log("[CircleFeedItem] navigating to circleVideoViewer", { path });
       router.push(path as any);
     } else if (resolved.type === "image" && resolved.mediaUrl) {
-      const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(resolved.mediaUrl)}`;
+      const path = `/circleImageViewer?image=${encodeURIComponent(resolved.mediaUrl)}`;
       console.log("[CircleFeedItem] navigating to circleImageViewer", { path });
       router.push(path as any);
     }
@@ -182,7 +182,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* VIDEO */}
           {isVideo && post.mediaUrl && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to postVideoViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to postVideoViewer", { path }); router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                 {imageUri && !videoThumbError ? (
                   <>
@@ -203,7 +203,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* IMAGE */}
           {!isVideo && imageUri && !postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
               <Image
                 source={{ uri: post.image || post.mediaUrl }}
                 width="100%"
@@ -215,7 +215,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </Pressable>
           )}
           {!isVideo && imageUri && postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/(tabs)/circle/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
                 <Ionicons name="image-outline" size={32} color="#999" />
                 <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>

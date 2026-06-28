@@ -146,39 +146,63 @@ export async function waitForMediaProcessing(
    FILE UPLOAD (with size-based progress estimate)
    ========================= */
 
-export function uploadFileToStorage(
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000];
+
+function isRetryableError(error: any): boolean {
+  const msg = error?.message ?? error ?? "";
+  return (
+    msg.includes("network") ||
+    msg.includes("Network") ||
+    msg.includes("timeout") ||
+    msg.includes("Timeout") ||
+    msg.includes("connection") ||
+    msg.includes("Connection") ||
+    msg.includes("NSURLErrorDomain") ||
+    msg.includes("kCFErrorDomain") ||
+    msg.includes("ECONNRESET") ||
+    msg.includes("ETIMEDOUT") ||
+    msg.includes("ENETUNREACH") ||
+    msg.includes("socket hang up") ||
+    msg.includes("Client network socket")
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function uploadFileToStorage(
   uploadUrl: string,
   fileUri: string,
   fileType: string,
   onProgress?: (percent: number) => void,
   fileSize?: number,
 ): Promise<{ size: number }> {
-  return new Promise(async (resolve, reject) => {
-    const size = fileSize ?? 0;
-    let settled = false;
-    let progressInterval: ReturnType<typeof setInterval> | null = null;
+  const size = fileSize ?? 0;
+  let progressInterval: ReturnType<typeof setInterval> | null = null;
 
-    function done(err?: any, result?: { size: number }) {
-      if (settled) return;
-      settled = true;
-      if (progressInterval) clearInterval(progressInterval);
-      if (err) reject(err);
-      else resolve(result!);
+  // Estimate progress based on assumed upload speed
+  if (onProgress && size > 0) {
+    const ASSUMED_BYTES_PER_SEC = 2 * 1024 * 1024; // 2 MB/s
+    const estimatedSeconds = size / ASSUMED_BYTES_PER_SEC;
+    const startTime = Date.now();
+    progressInterval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const pct = Math.min(Math.round((elapsed / estimatedSeconds) * 90), 90);
+      onProgress(pct);
+    }, 200);
+  }
+
+  function cleanup() {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
     }
+  }
 
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // Estimate progress based on assumed upload speed
-      if (onProgress && size > 0) {
-        const ASSUMED_BYTES_PER_SEC = 2 * 1024 * 1024; // 2 MB/s
-        const estimatedSeconds = size / ASSUMED_BYTES_PER_SEC;
-        const startTime = Date.now();
-        progressInterval = setInterval(() => {
-          const elapsed = (Date.now() - startTime) / 1000;
-          const pct = Math.min(Math.round((elapsed / estimatedSeconds) * 90), 90);
-          onProgress(pct);
-        }, 200);
-      }
-
       const result = await FileSystem.uploadAsync(uploadUrl, fileUri, {
         httpMethod: "PUT",
         headers: { "Content-Type": fileType },
@@ -186,15 +210,25 @@ export function uploadFileToStorage(
         sessionType: FileSystem.FileSystemSessionType.FOREGROUND,
       });
 
-      if (settled) return;
-
       if (!result || result.status < 200 || result.status >= 300) {
-        done(new Error(`File upload failed (${result?.status ?? "unknown"})`));
-      } else {
-        done(undefined, { size });
+        throw new Error(`File upload failed (${result?.status ?? "unknown"})`);
       }
+
+      cleanup();
+      return { size };
     } catch (error: any) {
-      done(new Error(error.message || "Upload to storage failed"));
+      const isLastAttempt = attempt >= MAX_RETRIES;
+
+      if (isLastAttempt || !isRetryableError(error)) {
+        cleanup();
+        throw new Error(error.message || "Upload to storage failed");
+      }
+
+      const delay = RETRY_DELAYS[attempt] ?? 4000;
+      await sleep(delay);
     }
-  });
+  }
+
+  cleanup();
+  throw new Error("Upload to storage failed");
 }

@@ -171,6 +171,18 @@ export default function CreateMediaPreviewScreen() {
       return;
     }
 
+    const longVideo = items.find(
+      (m) => m.type === "VIDEO" && (m.duration ?? 0) >= 90000,
+    );
+    if (longVideo) {
+      const secs = Math.round((longVideo.duration ?? 0) / 1000);
+      setModalType("failed");
+      setModalTitle("Video Too Long");
+      setModalMessage(`Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      setModalVisible(true);
+      return;
+    }
+
     const oversizedVideo = items.find(
       (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > 90 * 1024 * 1024,
     );

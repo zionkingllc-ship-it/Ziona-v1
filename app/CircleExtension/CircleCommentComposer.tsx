@@ -51,6 +51,7 @@ export default function CircleCommentComposer({
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
@@ -80,6 +81,12 @@ export default function CircleCommentComposer({
 
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting) return;
+
+    if (video && (videoDuration ?? 0) >= 90000) {
+      const secs = Math.round((videoDuration ?? 0) / 1000);
+      Alert.alert("Video Too Long", `Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      return;
+    }
 
     setPosting(true);
 
@@ -263,7 +270,7 @@ export default function CircleCommentComposer({
                   </View>
                 </View>
                 <Pressable
-                  onPress={() => { setVideo(null); setVideoThumbnail(null); }}
+                  onPress={() => { setVideo(null); setVideoDuration(null); setVideoThumbnail(null); }}
                   style={{
                     position: "absolute",
                     right: 8,
@@ -310,6 +317,7 @@ export default function CircleCommentComposer({
                   const asset = result.assets[0];
                   if (asset.type === "video") {
                     setVideo(asset.uri);
+                    setVideoDuration(asset.duration ?? null);
                     setImage(null);
                     setVideoThumbnail(null);
                     VideoThumbnails.getThumbnailAsync(asset.uri)
