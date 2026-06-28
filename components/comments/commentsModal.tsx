@@ -5,11 +5,14 @@ import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
 import { useCommentReplies } from "@/hooks/useCommentReplies";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import GuestProfileContent from "@/components/profile/GuestProfileContent";
 import MentionText from "./MentionText";
 import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
 import { Comment } from "@/services/graphQL/mutation/actions/comments";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Dimensions,
@@ -53,6 +56,11 @@ interface ReplyState {
 
 export function CommentsSheet({ visible, onClose, postId }: Props) {
   const insets = useSafeAreaInsets();
+  const { requireAuth, AuthModal } = useRequireAuth();
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const goToProfile = useCallback((userId: string) => {
+    requireAuth(() => setViewingUserId(userId));
+  }, [requireAuth]);
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [bottomHeight, setBottomHeight] = useState(10);
@@ -222,6 +230,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                 toggleLike={toggleLike}
                 startReply={startReply}
                 toggleLikeMutation={toggleLikeMutation}
+                onViewProfile={goToProfile}
               />
             )}
             onEndReached={() => hasNextPage && fetchNextPage()}
@@ -241,7 +250,11 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
           )}
 
           {mentionSearch !== null && (
-            <MentionSuggestions searchText={mentionSearch} onSelectUser={handleSelectUser} />
+            <MentionSuggestions
+              searchText={mentionSearch}
+              onSelectUser={handleSelectUser}
+              onViewProfile={(user) => requireAuth(() => router.push(`/guest?userId=${user.id}`))}
+            />
           )}
 
           <XStack
@@ -281,6 +294,14 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
           </XStack>
         </YStack>
       </Animated.View>
+
+      {viewingUserId && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, backgroundColor: colors.white }}>
+          <GuestProfileContent userId={viewingUserId} onBack={() => setViewingUserId(null)} />
+        </View>
+      )}
+
+      {AuthModal}
     </BaseModal>
   );
 }
@@ -297,6 +318,7 @@ function CommentItem({
   toggleLike,
   startReply,
   toggleLikeMutation,
+  onViewProfile,
 }: {
   comment: Comment;
   mentionMap: Record<string, string>;
@@ -309,6 +331,7 @@ function CommentItem({
   toggleLike: (id: string, liked: boolean) => void;
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
+  onViewProfile: (userId: string) => void;
 }) {
   const isExpanded = expandedComments.has(comment.id);
   const areRepliesExpanded = expandedReplies.has(comment.id);
@@ -319,16 +342,20 @@ function CommentItem({
     <View paddingVertical="$3" borderBottomWidth={1} borderBottomColor="#f0f0f0">
       <XStack justifyContent="space-between">
         <XStack gap="$2" flex={1}>
-          <AvatarWithInitials
-            uri={comment.user?.avatarUrl}
-            name={comment.user?.username}
-            size={36}
-            failedUris={failedAvatarUrls}
-            setFailedUris={setFailedAvatarUrls}
-          />
+          <Pressable onPress={() => comment.user?.id && onViewProfile(comment.user.id)}>
+            <AvatarWithInitials
+              uri={comment.user?.avatarUrl}
+              name={comment.user?.username}
+              size={36}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
+            />
+          </Pressable>
           <YStack flex={1}>
             <XStack gap="$2" alignItems="center">
-              <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
+              <Pressable onPress={() => comment.user?.id && onViewProfile(comment.user.id)}>
+                <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
+              </Pressable>
               <Text color="#999" fontFamily="$body" fontSize={11}>{formatDate(comment.createdAt)}</Text>
             </XStack>
 
@@ -371,6 +398,7 @@ function CommentItem({
                     setFailedAvatarUrls={setFailedAvatarUrls}
                     toggleLike={toggleLike}
                     startReply={startReply}
+                    onViewProfile={onViewProfile}
                   />
                 ))}
               </View>
@@ -398,6 +426,7 @@ function ReplyItem({
   setFailedAvatarUrls,
   toggleLike,
   startReply,
+  onViewProfile,
 }: {
   reply: any;
   mentionMap: Record<string, string>;
@@ -405,19 +434,24 @@ function ReplyItem({
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
   toggleLike: (id: string, liked: boolean) => void;
   startReply: (id: string, username: string) => void;
+  onViewProfile: (userId: string) => void;
 }) {
   return (
     <XStack gap="$2" marginTop="$2" alignItems="flex-start">
-      <AvatarWithInitials
-        uri={reply.user?.avatarUrl}
-        name={reply.user?.username}
-        size={28}
-        failedUris={failedAvatarUrls}
-        setFailedUris={setFailedAvatarUrls}
-      />
+      <Pressable onPress={() => reply.user?.id && onViewProfile(reply.user.id)}>
+        <AvatarWithInitials
+          uri={reply.user?.avatarUrl}
+          name={reply.user?.username}
+          size={28}
+          failedUris={failedAvatarUrls}
+          setFailedUris={setFailedAvatarUrls}
+        />
+      </Pressable>
       <YStack flex={1}>
         <XStack gap="$2" alignItems="center">
-          <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
+          <Pressable onPress={() => reply.user?.id && onViewProfile(reply.user.id)}>
+            <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
+          </Pressable>
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
         </XStack>
         <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />

@@ -118,6 +118,7 @@ export async function getCommentReplies(
           text
           createdAt
           user {
+            id
             username
             avatarUrl
           }

@@ -11,8 +11,10 @@ import { shortenBookName } from "@/utils/bibleNames";
 import { Search } from "@tamagui/lucide-icons";
 
 import {
+  Alert,
   Dimensions,
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -234,18 +236,18 @@ export default function BibleSelectorModal({
     return books.filter(
       (b) =>
         b.testament === testament &&
-        b.name.toLowerCase().includes(search.toLowerCase()),
+        b.name.toLowerCase().includes(search.trim().toLowerCase()),
     );
   }, [books, search, testament]);
 
   const filteredChapters = useMemo(() => {
     if (!search) return chapters;
-    return chapters.filter((c) => String(c).includes(search));
+    return chapters.filter((c) => String(c).includes(search.trim()));
   }, [chapters, search]);
 
   const filteredVerses = useMemo(() => {
     if (!search) return verses;
-    const s = search.toLowerCase();
+    const s = search.trim().toLowerCase();
     return verses.filter(
       (v) => v.text.toLowerCase().includes(s) || String(v.number).includes(s),
     );
@@ -347,8 +349,10 @@ export default function BibleSelectorModal({
         </XStack>
 
         {/* SEARCH */}
-        <XStack style={styles.searchContainer}>
-          <Search size={16} color="#777" />
+        <View style={styles.searchContainer}>
+          <View style={styles.searchIconWrap}>
+            <Search size={16} color="#777" />
+          </View>
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -356,7 +360,7 @@ export default function BibleSelectorModal({
             placeholder="Search..."
             placeholderTextColor={colors.placeHolderText}
           />
-        </XStack>
+        </View>
 
         {/* TESTAMENT TOGGLE */}
 
@@ -467,6 +471,11 @@ export default function BibleSelectorModal({
 
           const text = selectedVerses.map((v: any) => `(${v.number}) ${v.text}`).join(" ");
 
+          if (text.length > 500) {
+            Alert.alert("Selection too long", "You can select up to 500 characters. Please reduce your selection.");
+            return;
+          }
+
           const data = {
             translation,
             book: cached.book,
@@ -494,14 +503,19 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    alignItems: "center",
-    gap: 8,
     borderWidth: 0.5,
     borderColor: "#EEEBEF",
+    height: 36,
+    justifyContent: "center",
   },
-  searchInput: { flex: 1, color: colors.black },
+  searchIconWrap: {
+    position: "absolute",
+    left: 10,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchInput: { flex: 1, color: colors.black, paddingLeft: 30, paddingTop: 0, paddingBottom: 0, margin: 0, textAlignVertical: "center", includeFontPadding: false, fontSize: 15 },
   row: { paddingVertical: 12 },
   verseSelected: { backgroundColor: "black" },
 

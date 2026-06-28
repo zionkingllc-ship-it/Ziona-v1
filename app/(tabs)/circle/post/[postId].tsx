@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,6 +39,7 @@ const formatDate = (dateString?: string): string => {
 
 export default function CirclePostDetailScreen() {
   const router = useRouter();
+  const { requireAuth } = useRequireAuth();
   const {
     postId,
     circleId,
@@ -411,6 +413,7 @@ export default function CirclePostDetailScreen() {
             <MentionSuggestions
               searchText={mentionSearch}
               onSelectUser={handleSelectUser}
+              onViewProfile={(user) => requireAuth(() => router.push(`/guest?userId=${user.id}`))}
             />
           )}
           <XStack

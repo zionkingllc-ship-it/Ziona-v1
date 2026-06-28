@@ -93,8 +93,8 @@ if (post.scripture) {
           flex={1}
           justifyContent="center"
           alignItems="center"
-          paddingHorizontal={wp(6)}
-          paddingVertical={hp(16) + 20}
+          paddingHorizontal={Math.max(5, wp(6) - 5)}
+          paddingVertical={hp(16) + 10}
         >
           <TextPostCardOutput
             category={category as Category}

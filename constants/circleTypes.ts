@@ -12,6 +12,7 @@ export type AnchorType = "text" | "image" | "video" | "image_text";
 export type CirclePost = {
   id: string;
   user: {
+    id: string;
     name: string;
     avatar: string;
   };

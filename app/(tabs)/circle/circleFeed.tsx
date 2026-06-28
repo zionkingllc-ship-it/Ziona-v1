@@ -107,6 +107,7 @@ type CirclePost = {
   };
   userId?: string;
   user: {
+    id: string;
     name: string;
     avatar: string;
   };
@@ -202,6 +203,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
           viewerState: p.viewerState || undefined,
           userId: p.user?.id,
           user: {
+            id: p.user.id || "",
             name: p.user.name || "",
             avatar: p.user.avatar || "",
           },

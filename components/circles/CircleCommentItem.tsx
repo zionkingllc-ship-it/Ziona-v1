@@ -1,10 +1,12 @@
 import MentionText from "@/components/comments/MentionText";
 import React, { useMemo, useState } from "react";
-import { TouchableOpacity, Alert, Image } from "react-native";
+import { TouchableOpacity, Alert, Image, Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { CircleComment } from "@/services/graphQL/mutation/actions/circleComments";
 import themeColors from "@/constants/colors";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 type Props = {
   comment: CircleComment;
@@ -20,6 +22,7 @@ type ReplyRowProps = {
   onLike: (id: string, liked: boolean) => void;
   onDelete: (id: string) => void;
   isPending: boolean;
+  onViewProfile: (userId: string) => void;
 };
 
 function formatDate(dateString?: string): string {
@@ -58,7 +61,7 @@ function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string 
   );
 }
 
-function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending }: ReplyRowProps) {
+function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfile }: ReplyRowProps) {
   return (
     <TouchableOpacity
       onLongPress={() => {
@@ -70,12 +73,16 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending }: ReplyRowPr
       activeOpacity={1}
     >
       <XStack gap="$2" paddingLeft="$4" paddingTop="$2" alignItems="flex-start">
-        <AvatarCircle uri={reply.author?.avatarUrl} name={reply.author?.name} size={24} />
+        <Pressable onPress={() => reply.author?.id && onViewProfile(reply.author.id)}>
+          <AvatarCircle uri={reply.author?.avatarUrl} name={reply.author?.name} size={24} />
+        </Pressable>
         <YStack flex={1} gap={1}>
           <XStack gap="$2" alignItems="center">
-            <Text fontSize={12} fontWeight="600">
-              {reply.author?.name || "User"}
-            </Text>
+            <Pressable onPress={() => reply.author?.id && onViewProfile(reply.author.id)}>
+              <Text fontSize={12} fontWeight="600">
+                {reply.author?.name || "User"}
+              </Text>
+            </Pressable>
             <Text fontSize={10} color="#999">
               {formatDate(reply.createdAt)}
             </Text>
@@ -107,6 +114,10 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending }: ReplyRowPr
 export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPending }: Props) {
   const [showReplies, setShowReplies] = useState(true);
   const hasReplies = (comment.replies?.length || 0) > 0;
+  const { requireAuth, AuthModal } = useRequireAuth();
+  const goToProfile = useMemo(() => (userId: string) => {
+    requireAuth(() => router.push(`/guest?userId=${userId}`));
+  }, [requireAuth]);
 
   const mentionMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -129,11 +140,15 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
     >
       <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
         <XStack alignItems="center" gap="$2">
-          <AvatarCircle uri={comment.author?.avatarUrl} name={comment.author?.name} size={32} />
+          <Pressable onPress={() => comment.author?.id && goToProfile(comment.author.id)}>
+            <AvatarCircle uri={comment.author?.avatarUrl} name={comment.author?.name} size={32} />
+          </Pressable>
           <YStack gap={2} flex={1}>
-            <Text fontSize={12} fontWeight="600">
-              {comment.author?.name || "User"}
-            </Text>
+            <Pressable onPress={() => comment.author?.id && goToProfile(comment.author.id)}>
+              <Text fontSize={12} fontWeight="600">
+                {comment.author?.name || "User"}
+              </Text>
+            </Pressable>
             <Text fontSize={11} color="#999">
               {formatDate(comment.createdAt)}
             </Text>
@@ -179,6 +194,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
                 onLike={onLike}
                 onDelete={onDelete}
                 isPending={isPending}
+                onViewProfile={goToProfile}
               />
             ))}
           </YStack>
@@ -192,6 +208,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
           </TouchableOpacity>
         )}
       </YStack>
+      {AuthModal}
     </TouchableOpacity>
   );
 }

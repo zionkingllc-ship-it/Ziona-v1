@@ -3,6 +3,7 @@ import React, { memo, useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { useMutation } from "@tanstack/react-query";
 import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
@@ -51,6 +52,7 @@ type CirclePost = {
   anchorLikedCount?: number;
   prayedCount?: number;
   user: {
+    id: string;
     name: string;
     avatar: string;
   };
@@ -66,6 +68,11 @@ const CircleFeedItem = memo(function CircleFeedItem({
   circleId,
 }: Props) {
   const router = useRouter();
+  const { requireAuth, AuthModal } = useRequireAuth();
+  const goToProfile = (userId: string, e?: any) => {
+    e?.stopPropagation?.();
+    requireAuth(() => router.push(`/guest?userId=${userId}`));
+  };
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [reasonsVisible, setReasonsVisible] = useState(false);
@@ -151,17 +158,21 @@ const CircleFeedItem = memo(function CircleFeedItem({
         {/* HEADER */}
         <XStack justifyContent="space-between" alignItems="flex-start">
           <XStack alignItems="flex-start" gap="$2">
-            <AvatarWithInitials
-              uri={post.user.avatar}
-              name={post.user.name}
-              size={36}
-              failedUris={failedAvatarUrls}
-              setFailedUris={setFailedAvatarUrls}
-            />
+            <Pressable onPress={(e) => goToProfile(post.user.id, e)}>
+              <AvatarWithInitials
+                uri={post.user.avatar}
+                name={post.user.name}
+                size={36}
+                failedUris={failedAvatarUrls}
+                setFailedUris={setFailedAvatarUrls}
+              />
+            </Pressable>
             <XStack gap={6} alignItems="flex-start">
-              <Text fontFamily="$body" fontSize={13} fontWeight="600">
-                {post.user.name}
-              </Text>
+              <Pressable onPress={(e) => goToProfile(post.user.id, e)}>
+                <Text fontFamily="$body" fontSize={13} fontWeight="600">
+                  {post.user.name}
+                </Text>
+              </Pressable>
               <Text fontFamily="$body" fontSize={12} color="#888">
                 {formatTimeAgo(post.createdAt)}
               </Text>
@@ -361,6 +372,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
           title={successTitle}
           message={successMessage}
         />
+        {AuthModal}
       </YStack>
     </Pressable>
   );

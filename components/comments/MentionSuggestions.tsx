@@ -15,9 +15,10 @@ export interface MentionUser {
 interface Props {
   searchText: string;
   onSelectUser: (user: MentionUser) => void;
+  onViewProfile?: (user: MentionUser) => void;
 }
 
-export function MentionSuggestions({ searchText, onSelectUser }: Props) {
+export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: Props) {
   const [users, setUsers] = useState<MentionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -97,6 +98,7 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
           <TouchableOpacity
             style={styles.userItem}
             onPress={() => onSelectUser(item)}
+            onLongPress={() => onViewProfile?.(item)}
           >
             <Image
               source={
