@@ -2,10 +2,8 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import {
   getCommentReplies,
   likeComment,
-  unlikeComment,
   CommentReply,
 } from "@/services/graphQL/mutation/actions/comments";
-import { useAuthStore } from "@/store/useAuthStore";
 
 export function useCommentReplies(commentId: string) {
   return useInfiniteQuery({
@@ -24,16 +22,13 @@ export function useReplyLike() {
     mutationFn: async ({
       commentId,
       replyId,
-      isLiked,
     }: {
       commentId: string;
       replyId: string;
-      isLiked: boolean;
     }) => {
-      const fn = isLiked ? unlikeComment : likeComment;
-      return fn(replyId);
+      return likeComment(replyId);
     },
-    onMutate: async ({ commentId, replyId, isLiked }) => {
+    onMutate: async ({ commentId, replyId }) => {
       await queryClient.cancelQueries({
         queryKey: ["commentReplies", commentId],
       });
@@ -55,9 +50,13 @@ export function useReplyLike() {
                 reply.id === replyId
                   ? {
                       ...reply,
+                      viewerState: {
+                        ...reply.viewerState,
+                        liked: !reply.viewerState?.liked,
+                      },
                       stats: {
                         ...reply.stats,
-                        likesCount: isLiked
+                        likesCount: reply.viewerState?.liked
                           ? reply.stats.likesCount - 1
                           : reply.stats.likesCount + 1,
                       },

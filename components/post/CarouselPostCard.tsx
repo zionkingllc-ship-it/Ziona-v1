@@ -33,9 +33,9 @@ function CarouselPostCardComponent({
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const mediaItems = (post?.media ?? []).filter(
-    (item) => item?.type === "image" && item?.url,
-  );
+  const mediaItems = (post?.media ?? [])
+    .filter((item) => item?.type === "image" && item?.url)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   if (!mediaItems?.length) {
     return (

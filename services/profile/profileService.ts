@@ -15,6 +15,7 @@ import * as FileSystem from "expo-file-system/legacy";
 export async function updateProfile(input: {
   fullName?: string;
   bio?: string;
+  bioLink?: string;
   avatarUrl?: string;
   location?: string;
   hideLikeCount?: boolean;
@@ -24,14 +25,15 @@ export async function updateProfile(input: {
   const query = `
 mutation UpdateProfile(
   $bio: String
+  $bioLink: String
   $fullName: String
   $avatarUrl: String
   $location: String
   $hideLikeCount: Boolean
-  
 ) {
   updateProfile(
     bio: $bio
+    bioLink: $bioLink
     fullName: $fullName
     avatarUrl: $avatarUrl
     location: $location
@@ -41,6 +43,7 @@ mutation UpdateProfile(
     profile {
       id
       bio
+      bioLink
       fullName
       username
       avatarUrl

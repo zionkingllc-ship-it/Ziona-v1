@@ -18,6 +18,7 @@ export const POST_FEED_FIELDS = `
       url
       thumbnailUrl
       type
+      sortOrder
     }
   }
   video {

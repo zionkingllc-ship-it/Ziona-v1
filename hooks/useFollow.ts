@@ -71,6 +71,7 @@ export function useToggleFollow() {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
+    mutationKey: ["followUser"],
     mutationFn: async ({ userId, currentFollowing }: ToggleFollowInput) => {
       return currentFollowing ? unfollowUser(userId) : followUser(userId);
     },

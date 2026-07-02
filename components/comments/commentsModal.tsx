@@ -146,9 +146,9 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
         : Math.max(0, keyboardHeight.value - insets.bottom),
   }));
 
-  const toggleLike = (commentId: string, currentLiked: boolean) => {
+  const toggleLike = (commentId: string) => {
     if (toggleLikeMutation.isPending) return;
-    toggleLikeMutation.mutate({ commentId, currentLiked });
+    toggleLikeMutation.mutate({ commentId });
   };
 
   const startReply = (commentId: string, username: string) => {
@@ -328,7 +328,7 @@ function CommentItem({
   toggleReplies: (id: string) => void;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string, liked: boolean) => void;
+  toggleLike: (id: string) => void;
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
   onViewProfile: (userId: string) => void;
@@ -406,7 +406,7 @@ function CommentItem({
           </YStack>
         </XStack>
 
-        <Pressable onPress={() => toggleLike(comment.id, comment.viewerState?.liked || false)} disabled={toggleLikeMutation.isPending}>
+        <Pressable onPress={() => toggleLike(comment.id)} disabled={toggleLikeMutation.isPending}>
           {comment.viewerState?.liked ? (
             <Image source={likeIconActive} width={20} height={20} />
           ) : (
@@ -432,7 +432,7 @@ function ReplyItem({
   mentionMap: Record<string, string>;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string, liked: boolean) => void;
+  toggleLike: (id: string) => void;
   startReply: (id: string, username: string) => void;
   onViewProfile: (userId: string) => void;
 }) {
@@ -456,7 +456,7 @@ function ReplyItem({
         </XStack>
         <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>
-      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
+      <Pressable onPress={() => toggleLike(reply.id)}>
         {reply.viewerState?.liked ? (
           <Image source={likeIconActive} width={16} height={16} />
         ) : (

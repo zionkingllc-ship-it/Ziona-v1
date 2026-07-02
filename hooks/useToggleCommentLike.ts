@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { likeComment, unlikeComment } from "@/services/graphQL/mutation/actions/comments";
+import { likeComment } from "@/services/graphQL/mutation/actions/comments";
 
 export function useToggleCommentLike() {
   const queryClient = useQueryClient();
@@ -7,54 +7,56 @@ export function useToggleCommentLike() {
   return useMutation({
     mutationFn: ({
       commentId,
-      currentLiked,
     }: {
       commentId: string;
-      currentLiked: boolean;
     }) => {
-      if (currentLiked) {
-        return unlikeComment(commentId);
-      }
       return likeComment(commentId);
     },
 
-    onMutate: async ({ commentId, currentLiked }) => {
-      // Cancel outgoing refetches
+    onMutate: async ({ commentId }) => {
       await queryClient.cancelQueries({
         queryKey: ["postComments"],
         exact: false,
       });
 
-      // Snapshot previous value
       const previousComments = queryClient.getQueryData(["postComments"]);
 
-      // Optimistically update
       queryClient.setQueriesData(
         { queryKey: ["postComments"], exact: false },
         (old: any) => {
           if (!old) return old;
 
+          const findAndToggle = (item: any) => {
+            if (item.id !== commentId) return item;
+            const wasLiked = item.viewerState?.liked ?? false;
+            return {
+              ...item,
+              viewerState: {
+                ...item.viewerState,
+                liked: !wasLiked,
+              },
+              stats: {
+                ...item.stats,
+                likesCount: wasLiked
+                  ? item.stats.likesCount - 1
+                  : item.stats.likesCount + 1,
+              },
+            };
+          };
+
           const updateComment = (comment: any) => {
-            if (comment.id === commentId) {
+            const toggled = findAndToggle(comment);
+            if (toggled !== comment) return toggled;
+            if (comment.replies) {
               return {
                 ...comment,
-                viewerState: {
-                  ...comment.viewerState,
-                  liked: !currentLiked,
-                },
-                stats: {
-                  ...comment.stats,
-                  likesCount: currentLiked
-                    ? comment.stats.likesCount - 1
-                    : comment.stats.likesCount + 1,
-                },
+                replies: comment.replies.map(findAndToggle),
               };
             }
             return comment;
           };
 
           if (old.pages) {
-            // Infinite query
             return {
               ...old,
               pages: old.pages.map((page: any) => ({
@@ -63,7 +65,6 @@ export function useToggleCommentLike() {
               })),
             };
           } else if (old.comments) {
-            // Regular query
             return {
               ...old,
               comments: old.comments.map(updateComment),
@@ -78,23 +79,39 @@ export function useToggleCommentLike() {
     },
 
     onSuccess: (response, { commentId }) => {
-      if (!response?.stats?.likesCount) return;
+      if (!response) return;
       queryClient.setQueriesData(
         { queryKey: ["postComments"], exact: false },
         (old: any) => {
           if (!old) return old;
+
+          const findAndSync = (item: any) => {
+            if (item.id !== commentId) return item;
+            return {
+              ...item,
+              viewerState: {
+                ...item.viewerState,
+                liked: response.liked,
+              },
+              stats: {
+                ...item.stats,
+                likesCount: response.stats.likesCount,
+              },
+            };
+          };
+
           const syncComment = (comment: any) => {
-            if (comment.id === commentId) {
+            const synced = findAndSync(comment);
+            if (synced !== comment) return synced;
+            if (comment.replies) {
               return {
                 ...comment,
-                stats: {
-                  ...comment.stats,
-                  likesCount: response.stats.likesCount,
-                },
+                replies: comment.replies.map(findAndSync),
               };
             }
             return comment;
           };
+
           if (old.pages) {
             return {
               ...old,

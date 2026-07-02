@@ -14,7 +14,7 @@ export async function reportCircleContent(
   reason: string,
   circleId: string,
   targetId: string,
-  targetType: string = "POST",
+  targetType: string = "CIRCLE_POST",
   description?: string,
 ): Promise<{ success: boolean }> {
   const mappedReason = REASON_MAP[reason] || reason;
@@ -62,8 +62,9 @@ export async function reportCircleContent(
   console.log("[ReportFlow] reportCircleContent response:", JSON.stringify(res));
 
   if (!res?.success) {
-    const errorMsg = res?.error?.message || res?.error?.code || "Failed to submit circle report";
-    console.error("[ReportFlow] reportCircleContent failed:", errorMsg);
+    const errorCode = res?.error?.code || "UNKNOWN";
+    const errorMsg = res?.error?.message || errorCode || "Failed to submit circle report";
+    console.error("[ReportFlow] reportCircleContent failed:", { code: errorCode, message: errorMsg });
     throw new Error(errorMsg);
   }
 

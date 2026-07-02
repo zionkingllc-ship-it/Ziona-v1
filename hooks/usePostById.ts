@@ -16,7 +16,7 @@ query GetPost($id: ID!) {
     bibleMessage
     scripture { verses { text number } verseEnd verseStart translation book chapter reference }
     author { id username avatarUrl }
-    media { id url thumbnailUrl type duration height width }
+    media { id url thumbnailUrl type duration height width sortOrder }
     mediaType
     mediaUrl
     stats { likesCount commentsCount savesCount sharesCount }

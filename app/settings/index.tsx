@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import {
   Bell,
   Bookmark,
+  BookOpen,
   ChevronRight,
   FileText,
   HelpCircle,
@@ -158,6 +159,14 @@ export default function SettingsScreen() {
 
         {/* TERMS AND POLICIES */}
         <SettingsSection title="Terms and policies">
+          <SettingsRow
+            icon={<BookOpen size={18} color={colors.secondaryGray} />}
+            label="Community guidelines"
+            onPress={() => {
+              console.log("📄 [settings] Pressed: Community guidelines");
+              router.push("/settings/terms/community");
+            }}
+          />
           <SettingsRow
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Privacy policy"

@@ -74,6 +74,7 @@ type ImageMedia = {
   type: "image";
   url: string;
   thumbnailUrl?: string;
+  sortOrder?: number;
 };
 
 type VideoMedia = {

@@ -1,6 +1,6 @@
 import colors from "@/constants/colors";
 import { useSuggestedCreators } from "@/hooks/useFollow";
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { YStack, Text } from "tamagui"; 
@@ -9,6 +9,7 @@ import FollowUserRow from "@/components/follow/UserRow";
 import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useIsMutating } from "@tanstack/react-query";
 import type { UserSuggestion } from "@/hooks/useFeed";
 
 interface FollowSuggestionsProps {
@@ -20,6 +21,25 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: creators, isLoading } = useSuggestedCreators();
   const suggestions = preloaded ?? creators;
+  const pendingFollows = useIsMutating({ mutationKey: ["followUser"] });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const doneTriggeredRef = useRef(false);
+
+  const handleDone = useCallback(() => {
+    if (doneTriggeredRef.current) return;
+    doneTriggeredRef.current = true;
+    setIsProcessing(true);
+  }, []);
+
+  useEffect(() => {
+    if (isProcessing && pendingFollows === 0) {
+      setIsProcessing(false);
+      doneTriggeredRef.current = false;
+      onDone();
+    }
+  }, [isProcessing, pendingFollows, onDone]);
+
+  const isButtonLoading = isProcessing || pendingFollows > 0;
 
   if (!isAuthenticated) {
     return (
@@ -96,14 +116,15 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
         />
         <View style={styles.footer}>
           <SimpleButtonWithStyle
-          disabled={false}
             text="Done"
+            loading={isButtonLoading}
+            disabled={isButtonLoading}
             style={{ alignSelf: "center", paddingHorizontal: 24 }}
             color={colors.primary}
             textColor={colors.white}
             textWeight={"400"}
             borderRadius={8}
-            onPress={onDone}
+            onPress={handleDone}
           />
         </View>
       </View>

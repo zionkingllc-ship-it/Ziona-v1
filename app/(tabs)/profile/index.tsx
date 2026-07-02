@@ -21,6 +21,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   RefreshControl,
   TouchableOpacity,
   useWindowDimensions,
@@ -311,6 +312,27 @@ export default function ProfileScreen() {
         >
           {profile?.bio || "No bio yet"}
         </Text>
+
+        {profile?.bioLink ? (
+          <TouchableOpacity
+            onPress={() => {
+              const url = profile.bioLink!.startsWith("http")
+                ? profile.bioLink!
+                : `https://${profile.bioLink!}`;
+              Linking.openURL(url);
+            }}
+          >
+            <Text
+              fontFamily={"$body"}
+              fontSize={13}
+              color={"#0000EE"}
+              textDecorationLine="underline"
+              marginTop={4}
+            >
+              {profile.bioLink}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </YStack>
 
       {/* STATS */}

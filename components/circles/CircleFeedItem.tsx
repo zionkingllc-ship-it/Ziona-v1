@@ -51,6 +51,10 @@ type CirclePost = {
   likeCount?: number;
   anchorLikedCount?: number;
   prayedCount?: number;
+  viewerState?: {
+    liked: boolean;
+    prayed: boolean;
+  };
   user: {
     id: string;
     name: string;
@@ -85,7 +89,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const reportMutation = useMutation({
     mutationFn: ({ reason, description }: { reason: string; description?: string }) =>
-      reportCircleContent(reason, circleId || "", post.id, "circle_post", description),
+      reportCircleContent(reason, circleId || "", post.id, "CIRCLE_POST", description),
   });
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [postImageError, setPostImageError] = useState(false);
@@ -98,7 +102,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const { isLiked, likeCount: localLikeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     post.id,
-    !!post.likedImage,
+    post.viewerState?.liked ?? false,
     post.likeCount ?? post.likes,
   );
 
@@ -179,8 +183,8 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </XStack>
           </XStack>
 
-          <Pressable onPress={() => setOptionsVisible(true)}>
-            <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
+          <Pressable onPress={() => setOptionsVisible(true)} style={{ padding: 8, margin: -8 }}>
+            <Ionicons name="ellipsis-horizontal" size={22} color="#777" />
           </Pressable>
         </XStack>
         <YStack paddingLeft={50} gap={6}>
@@ -345,7 +349,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             setOtherVisible(false);
             console.log("[CircleFeedItem] submitting other report:", { description, postId: post.id });
             reportMutation.mutate(
-              { reason: "other", description },
+              { reason: "OTHER", description },
               {
                 onSuccess: () => {
                   console.log("[CircleFeedItem] other report succeeded:", { description, postId: post.id });

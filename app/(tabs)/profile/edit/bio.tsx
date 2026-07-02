@@ -7,7 +7,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useEffect, useState } from "react";
-import { TextArea, XStack, YStack,Text } from "tamagui";
+import { TextArea, XStack, YStack, Text, Input } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditBioScreen() {
@@ -20,6 +20,7 @@ export default function EditBioScreen() {
   const mutation = useUpdateBio();
 
   const [bio, setBio] = useState("");
+  const [bioLink, setBioLink] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failed" | "warning">(
     "success",
@@ -31,17 +32,24 @@ export default function EditBioScreen() {
     if (user?.bio !== undefined) {
       setBio(user.bio);
     }
-  }, [user?.bio]);
+    if (user?.bioLink !== undefined) {
+      setBioLink(user.bioLink ?? "");
+    }
+  }, [user?.bio, user?.bioLink]);
 
   const handleSave = async () => {
-    if (!bio.trim() || mutation.isPending) return;
+    if (mutation.isPending) return;
+    if (!bio.trim() && !bioLink.trim()) return;
 
     try {
-      await mutation.mutateAsync(bio);
+      await mutation.mutateAsync({
+        bio: bio.trim(),
+        bioLink: bioLink.trim() || undefined,
+      });
 
       setModalType("success");
-      setModalTitle("Bio Updated");
-      setModalMessage("Your bio has been updated successfully.");
+      setModalTitle("Updated");
+      setModalMessage("Your changes have been saved successfully.");
       setModalVisible(true);
     } catch (e: any) {
       const feedback = getNetworkModalCopy(e, e?.message || "Failed to update bio");
@@ -59,64 +67,96 @@ export default function EditBioScreen() {
       <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
 
       <YStack flex={1} padding="$4">
-      <YStack gap="$2">
-        <YStack>
-          <Text
-            fontFamily="$body"
-            fontSize={13}
-            fontWeight="400"
-          >
-            You can update your bio at any time.
-          </Text>
-        </YStack>
-
-        <TextArea
-          value={bio}
-          onChangeText={setBio}
-          height={120}
-          fontFamily="$body"
-          fontSize={13}
-          fontWeight="400"
-          borderWidth={0.5}
-          borderColor={colors.border}
-          backgroundColor={colors.borderBackground}
-          padding="$2"
-          maxLength={100}
-        />
-
-        <XStack justifyContent="flex-end">
+        <YStack gap="$2">
           <YStack>
             <Text
               fontFamily="$body"
               fontSize={13}
               fontWeight="400"
-              color={colors.termsText}
             >
-              {charCount}/100
+              You can update your bio at any time.
             </Text>
           </YStack>
-        </XStack>
-      </YStack>
 
-      <YStack marginTop="$4">
-        <SimpleButton
-          disabled={bio.length < 3 || mutation.isPending}
-          onPress={handleSave}
-          color={colors.primary}
-          textColor={colors.white}
-          text={mutation.isPending ? "Saving..." : "Save"}
+          <TextArea
+            value={bio}
+            onChangeText={setBio}
+            height={120}
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="400"
+            borderWidth={0.5}
+            borderColor={colors.border}
+            backgroundColor={colors.borderBackground}
+            padding="$2"
+            maxLength={100}
+          />
+
+          <XStack justifyContent="flex-end">
+            <YStack>
+              <Text
+                fontFamily="$body"
+                fontSize={13}
+                fontWeight="400"
+                color={colors.termsText}
+              >
+                {charCount}/100
+              </Text>
+            </YStack>
+          </XStack>
+        </YStack>
+
+        <YStack marginTop="$4" gap="$2">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="500"
+          >
+            Social Link
+          </Text>
+          <Text
+            fontFamily="$body"
+            fontSize={12}
+            fontWeight="400"
+            color={colors.termsText}
+          >
+            Add a link to your social profile or personal website (optional).
+          </Text>
+          <Input
+            value={bioLink}
+            onChangeText={setBioLink}
+            placeholder="https://instagram.com/yourhandle"
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="400"
+            borderWidth={0.5}
+            borderColor={colors.border}
+            backgroundColor={colors.borderBackground}
+            padding="$2"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </YStack>
+
+        <YStack marginTop="$4">
+          <SimpleButton
+            disabled={mutation.isPending || (!bio.trim() && !bioLink.trim())}
+            onPress={handleSave}
+            color={colors.primary}
+            textColor={colors.white}
+            text={mutation.isPending ? "Saving..." : "Save"}
+          />
+        </YStack>
+
+        <SuccessModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+          autoClose={modalType === "success"}
         />
       </YStack>
-
-      <SuccessModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={modalTitle}
-        message={modalMessage}
-        type={modalType}
-        autoClose={modalType === "success"}
-      />
-    </YStack>
     </SafeAreaView>
   );
 }

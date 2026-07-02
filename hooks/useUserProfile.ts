@@ -10,6 +10,7 @@ query GetUserProfile($userId: String!) {
     username
     fullName
     bio
+    bioLink
     avatarUrl
     location
     hideLikeCount

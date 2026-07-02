@@ -86,6 +86,10 @@ export async function getPostComments(
               likesCount
               repliesCount
             }
+            viewerState {
+              isOwner
+              liked
+            }
           }
         }
       }
@@ -124,6 +128,10 @@ export async function getCommentReplies(
           }
           stats {
             likesCount
+          }
+          viewerState {
+            isOwner
+            liked
           }
         }
       }
@@ -235,6 +243,7 @@ export async function likeComment(commentId: string) {
     mutation LikeComment($commentId: String!) {
       likeComment(commentId: $commentId) {
         success
+        liked
         stats {
           likesCount
         }
@@ -256,29 +265,4 @@ export async function likeComment(commentId: string) {
   return res;
 }
 
-/* UNLIKE COMMENT */
-export async function unlikeComment(commentId: string) {
-  const query = `
-    mutation UnlikeComment($commentId: String!) {
-      unlikeComment(commentId: $commentId) {
-        success
-        stats {
-          likesCount
-        }
-        error {
-          code
-          message
-        }
-      }
-    }
-  `;
 
-  const data = await graphqlRequest(query, { commentId });
-
-  const res = data?.unlikeComment;
-  if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to unlike comment");
-  }
-
-  return res;
-}

@@ -91,7 +91,7 @@ export default function CreateMediaScreen() {
   const mediaDraft = draft;
   const mediaItems = mediaDraft.media?.items ?? [];
   const hasVideo = mediaItems.some((m) => m.type === "VIDEO");
-  const addDisabled = hasVideo || mediaItems.length >= 4;
+  const addDisabled = hasVideo || mediaItems.length >= 5;
 
   /* =========================
      NORMALIZE MEDIA
@@ -172,10 +172,10 @@ export default function CreateMediaScreen() {
       return;
     }
 
-    const remainingSlots = 4 - existing.length;
+    const remainingSlots = 5 - existing.length;
 
     if (remainingSlots <= 0) {
-      setError("Maximum 4 images allowed");
+      setError("Maximum 5 images allowed");
       setErrorVisible(true);
       return;
     }
@@ -193,7 +193,7 @@ export default function CreateMediaScreen() {
     const images = converted.map(normalizeMedia);
 
     if (images.length > remainingSlots) {
-      setError(`Maximum 4 images allowed. You can only add ${remainingSlots} more.`);
+      setError(`Maximum 5 images allowed. You can only add ${remainingSlots} more.`);
       setErrorVisible(true);
       return;
     }
@@ -295,7 +295,7 @@ export default function CreateMediaScreen() {
           }}
         >
           <Text fontSize={fs(12)} color={addDisabled || picking ? "#A09DA0" : "#000"}>
-            {picking ? "Loading..." : hasVideo ? "Video selected" : mediaItems.length >= 4 ? "Max images reached" : "Add media"}
+            {picking ? "Loading..." : hasVideo ? "Video selected" : mediaItems.length >= 5 ? "Max images reached" : "Add media"}
           </Text>
         </TouchableOpacity>
 

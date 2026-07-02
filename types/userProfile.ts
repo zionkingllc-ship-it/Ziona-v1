@@ -3,6 +3,7 @@ export type UserProfile = {
   username: string
   fullName?: string
   bio?: string
+  bioLink?: string
   avatarUrl?: string | null
   location?: string
   hideLikeCount?: boolean

@@ -180,6 +180,7 @@ export default function EditProfileScreen() {
               </XStack>
             </Pressable>
           </YStack>
+
         </YStack>
       </ScrollView>
 
