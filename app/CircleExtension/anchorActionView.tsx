@@ -1,4 +1,5 @@
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
+import { saveAnchorRef } from "@/utils/anchorRef";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
@@ -20,16 +21,29 @@ export default function AnchorActionView() {
   }>();
   const insets = useSafeAreaInsets();
 
-  const handleActionSelected = (action: string, anchorText?: string) => {
+  const handleActionSelected = async (action: string, anchorText?: string) => {
     const prompt =
       action === "pray"
         ? "How can we pray for you?"
         : action === "encouraged"
           ? "What encouraged you?"
           : "What's on your mind?";
+
+    const tempId = `tempAnchor_${Date.now()}`;
+    await saveAnchorRef(tempId, {
+      type: "text",
+      title: "Anchor",
+      content: text || "",
+      anchorId: id,
+      circleId,
+      expiresAt: expiresAt || undefined,
+      backgroundColors: colors || undefined,
+    });
+
     const qs = new URLSearchParams({
       action,
       text: anchorText || "",
+      anchorRefId: tempId,
       fromScreen: "circleFeed",
       anchorType: anchorType || "text",
       anchorColors: colors || "",

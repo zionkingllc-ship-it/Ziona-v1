@@ -4,7 +4,7 @@ import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
 import { getMimeType } from "@/services/utils/mime";
 import { waitForMediaProcessing } from "@/services/graphQL/mutation/media/mediaUpload";
-import { saveAnchorRef } from "@/utils/anchorRef";
+import { saveAnchorRef, getAnchorRef, removeAnchorRef } from "@/utils/anchorRef";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -150,7 +150,6 @@ export default function CircleCommentComposer({
       // Re-key anchor ref from temp ID to the new post ID
       const newPostId = result?.post?.id;
       if (anchorRefId && newPostId && anchorRefId.startsWith("tempAnchor_")) {
-        const { getAnchorRef, removeAnchorRef } = await import("@/utils/anchorRef");
         const refData = await getAnchorRef(anchorRefId);
         if (refData) {
           await saveAnchorRef(newPostId, refData);

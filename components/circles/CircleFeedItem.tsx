@@ -86,6 +86,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const [successTitle, setSuccessTitle] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [anchorRef, setAnchorRef] = useState<AnchorRefData | null>(null);
+  const [anchorExpiredVisible, setAnchorExpiredVisible] = useState(false);
 
   const reportMutation = useMutation({
     mutationFn: ({ reason, description }: { reason: string; description?: string }) =>
@@ -145,15 +146,28 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const handleAnchorMediaTap = () => {
     if (!resolved) return;
-    if (resolved.type === "video" && resolved.mediaUrl) {
-      const path = `/circleVideoViewer?video=${encodeURIComponent(resolved.mediaUrl)}`;
-      console.log("[CircleFeedItem] navigating to circleVideoViewer", { path });
-      router.push(path as any);
-    } else if (resolved.type === "image" && resolved.mediaUrl) {
-      const path = `/circleImageViewer?image=${encodeURIComponent(resolved.mediaUrl)}`;
-      console.log("[CircleFeedItem] navigating to circleImageViewer", { path });
-      router.push(path as any);
+
+    const isExpired = resolved.expiresAt ? new Date(resolved.expiresAt).getTime() <= Date.now() : false;
+    if (isExpired) {
+      setAnchorExpiredVisible(true);
+      return;
     }
+
+    const qs = new URLSearchParams({
+      id: resolved.anchorId || "",
+      source: "feed",
+      ...(circleId ? { circleId } : {}),
+      ...(resolved.content ? { text: resolved.content } : {}),
+      ...(resolved.anchorImage ? { anchorImage: resolved.anchorImage } : {}),
+      ...(resolved.anchorVideo ? { video: resolved.anchorVideo } : {}),
+      ...(resolved.backgroundColors ? { colors: resolved.backgroundColors } : {}),
+      ...(resolved.bibleReference ? { bibleReference: resolved.bibleReference } : {}),
+      ...(resolved.bibleText ? { bibleText: resolved.bibleText } : {}),
+      ...(resolved.expiresAt ? { expiresAt: resolved.expiresAt } : {}),
+    });
+    const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
+    console.log("[CircleFeedItem] navigating to anchorUnifiedView", { path });
+    router.push(path as any);
   };
 
   return (
@@ -375,6 +389,13 @@ const CircleFeedItem = memo(function CircleFeedItem({
           type={successType}
           title={successTitle}
           message={successMessage}
+        />
+        <SuccessModal
+          visible={anchorExpiredVisible}
+          onClose={() => setAnchorExpiredVisible(false)}
+          type="failed"
+          title="Anchor Expired"
+          message="This anchor has expired."
         />
         {AuthModal}
       </YStack>

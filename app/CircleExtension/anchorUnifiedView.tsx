@@ -155,13 +155,21 @@ export default function AnchorUnifiedView() {
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleActionSelected = (action: string, anchorText?: string) => {
+  const handleActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
-    saveAnchorRef(tempId, {
+    await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
       title: "Anchor",
       content: text || "",
       mediaUrl: anchorImage || undefined,
+      anchorId: id,
+      circleId,
+      expiresAt: expiresAt || undefined,
+      bibleReference: bibleReference || undefined,
+      bibleText: bibleText || undefined,
+      anchorImage: anchorImage || undefined,
+      anchorVideo: video || undefined,
+      backgroundColors: colors || undefined,
     });
 
     const qs = new URLSearchParams({
@@ -287,6 +295,10 @@ export default function AnchorUnifiedView() {
             anchorText={text}
             bibleReference={bibleReference}
             bibleText={bibleText}
+            expiresAt={expiresAt}
+            colors={colors}
+            anchorImage={anchorImage}
+            anchorVideo={video}
           />
         </View>
       )}

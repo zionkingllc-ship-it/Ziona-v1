@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
 import { likeAnchor } from "@/services/graphQL/mutation/circles";
+import { saveAnchorRef } from "@/utils/anchorRef";
 
 type AnchorFooterProps = {
   prayIcon?: any;
@@ -23,6 +24,12 @@ type AnchorFooterProps = {
   anchorText?: string;
   bibleReference?: string;
   bibleText?: string;
+  initialLiked?: boolean;
+  initialCount?: number;
+  expiresAt?: string;
+  colors?: string;
+  anchorImage?: string;
+  anchorVideo?: string;
 };
 
 export default function AnchorFooter({
@@ -35,6 +42,10 @@ export default function AnchorFooter({
   anchorText,
   bibleReference,
   bibleText,
+  expiresAt,
+  colors,
+  anchorImage,
+  anchorVideo,
 }: AnchorFooterProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -63,10 +74,27 @@ export default function AnchorFooter({
     }
   }, [anchorId, isLiked, toggling]);
 
-  const handleReflection = () => {
+  const handleReflection = async () => {
+    const tempId = `tempAnchor_${Date.now()}`;
+    await saveAnchorRef(tempId, {
+      type: anchorImage ? "image" : "text",
+      title: "Anchor",
+      content: anchorText || "",
+      mediaUrl: anchorImage || undefined,
+      anchorId,
+      circleId,
+      expiresAt: expiresAt || undefined,
+      bibleReference: bibleReference || undefined,
+      bibleText: bibleText || undefined,
+      anchorImage: anchorImage || undefined,
+      anchorVideo: anchorVideo || undefined,
+      backgroundColors: colors || undefined,
+    });
+
     const qs = new URLSearchParams({
       ...(anchorId ? { anchorId } : {}),
       ...(circleId ? { circleId } : {}),
+      anchorRefId: tempId,
       fromScreen: "circleFeed",
       mode: "action",
       source,

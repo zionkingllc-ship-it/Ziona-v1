@@ -5,6 +5,14 @@ export type AnchorRefData = {
   title: string;
   content?: string;
   mediaUrl?: string;
+  anchorId?: string;
+  circleId?: string;
+  expiresAt?: string;
+  bibleReference?: string;
+  bibleText?: string;
+  anchorImage?: string;
+  anchorVideo?: string;
+  backgroundColors?: string;
 };
 
 const ANCHOR_REF_PREFIX = "anchorRef_";

@@ -1,10 +1,11 @@
-import { Image, Text, View } from "tamagui";
+import { Text, View } from "tamagui";
 import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
 import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
 import { getFollowers, getFollowing } from "@/services/graphQL/queries/follow";
 import { useAuthStore } from "@/store/useAuthStore";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 
 export interface MentionUser {
   id: string;
@@ -21,6 +22,7 @@ interface Props {
 export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: Props) {
   const [users, setUsers] = useState<MentionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
@@ -100,15 +102,12 @@ export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: 
             onPress={() => onSelectUser(item)}
             onLongPress={() => onViewProfile?.(item)}
           >
-            <Image
-              source={
-                item.avatarUrl
-                  ? { uri: item.avatarUrl }
-                  : { uri: "https://i.pravatar.cc/100?d=mp" }
-              }
-              width={40}
-              height={40}
-              borderRadius={20}
+            <AvatarWithInitials
+              uri={item.avatarUrl}
+              name={item.username}
+              size={40}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
             />
             <Text
               fontFamily="$body"

@@ -121,7 +121,7 @@ export default function AnchorTextView() {
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt, anchorImage);
 
-  const handleActionSelected = (action: string, anchorText?: string) => {
+  const handleActionSelected = async (action: string, anchorText?: string) => {
     const prompt =
       action === "pray"
         ? "How can we pray for you?"
@@ -130,11 +130,18 @@ export default function AnchorTextView() {
           : "What's on your mind?";
 
     const tempId = `tempAnchor_${Date.now()}`;
-    saveAnchorRef(tempId, {
+    await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
       title: "Anchor",
       content: text || "",
       mediaUrl: anchorImage || undefined,
+      anchorId: id,
+      circleId,
+      expiresAt: expiresAt || undefined,
+      bibleReference: bibleReference || undefined,
+      bibleText: bibleText || undefined,
+      anchorImage: anchorImage || undefined,
+      backgroundColors: colors || undefined,
     });
 
     const qs = new URLSearchParams({
@@ -281,7 +288,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} colors={colors} anchorImage={anchorImage} />
       </View>
     </SafeAreaView>
   );
