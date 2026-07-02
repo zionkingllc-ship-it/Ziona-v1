@@ -33,7 +33,6 @@ export async function createMediaPost(variables: {
             thumbnailUrl
             width
             height
-            sortOrder
           }
         }
         error {

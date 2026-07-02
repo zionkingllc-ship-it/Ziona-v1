@@ -122,7 +122,6 @@ export async function getSavedPosts(): Promise<SavedPostsResponse | undefined> {
               url
               type
               thumbnailUrl
-              sortOrder
             }
           }
           video {

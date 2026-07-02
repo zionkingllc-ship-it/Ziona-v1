@@ -48,7 +48,6 @@ export const GET_DISCOVER_FEED = `
             url
             thumbnailUrl
             type
-            sortOrder
           }
         }
 

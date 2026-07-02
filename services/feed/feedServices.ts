@@ -13,7 +13,7 @@ query GetForYouFeed($cursor: String, $limit: Int = 20) {
       bibleMessage
       scripture { verses { text number } verseEnd verseStart translation book chapter reference }
       author { id username avatarUrl }
-      image { items { id url thumbnailUrl type sortOrder } }
+      image { items { id url thumbnailUrl type } }
       video { url thumbnailUrl }
       stats { likesCount commentsCount savesCount sharesCount }
       viewerState { liked saved followingAuthor isOwner }
@@ -34,7 +34,7 @@ query GetFollowingFeed($cursor: String, $limit: Int = 20) {
       bibleMessage
       scripture { verses { text number } verseEnd verseStart translation book chapter reference }
       author { id username avatarUrl }
-      image { items { id url thumbnailUrl type sortOrder } }
+      image { items { id url thumbnailUrl type } }
       video { url thumbnailUrl }
       stats { likesCount commentsCount savesCount sharesCount }
       viewerState { liked saved followingAuthor isOwner }
