@@ -296,7 +296,7 @@ export default function AnchorUnifiedView() {
             bibleReference={bibleReference}
             bibleText={bibleText}
             expiresAt={expiresAt}
-            colors={colors}
+            anchorColors={colors}
             anchorImage={anchorImage}
             anchorVideo={video}
           />

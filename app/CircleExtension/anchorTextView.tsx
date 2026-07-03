@@ -288,7 +288,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} colors={colors} anchorImage={anchorImage} />
+        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} anchorColors={colors} anchorImage={anchorImage} />
       </View>
     </SafeAreaView>
   );

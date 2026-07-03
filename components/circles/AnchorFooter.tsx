@@ -27,7 +27,7 @@ type AnchorFooterProps = {
   initialLiked?: boolean;
   initialCount?: number;
   expiresAt?: string;
-  colors?: string;
+  anchorColors?: string;
   anchorImage?: string;
   anchorVideo?: string;
 };
@@ -43,7 +43,7 @@ export default function AnchorFooter({
   bibleReference,
   bibleText,
   expiresAt,
-  colors,
+  anchorColors,
   anchorImage,
   anchorVideo,
 }: AnchorFooterProps) {
@@ -88,7 +88,7 @@ export default function AnchorFooter({
       bibleText: bibleText || undefined,
       anchorImage: anchorImage || undefined,
       anchorVideo: anchorVideo || undefined,
-      backgroundColors: colors || undefined,
+      backgroundColors: anchorColors || undefined,
     });
 
     const qs = new URLSearchParams({
