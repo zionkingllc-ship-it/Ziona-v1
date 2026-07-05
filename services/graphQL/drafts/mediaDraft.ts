@@ -150,6 +150,8 @@ export async function publishMediaPost(
         if (!fileInfo.size || fileInfo.size <= 0)
           throw new Error("Invalid file size");
 
+        console.log(`[mediaDraft.publishMediaPost] uploading: fileName=${fileName} fileType=${fileType} size=${fileInfo.size} uri=${fileUri}`);
+
         const upload = await requestMediaUpload(
           fileName,
           fileType,

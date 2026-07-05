@@ -184,8 +184,11 @@ export default function CreateMediaScreen() {
 
     const converted = await Promise.all(
       imageAssets.map(async (a) => {
+        const ext = a.uri?.split(".").pop()?.toLowerCase() ?? "unknown";
+        console.log(`[media.tsx] picker asset: uri=${a.uri} mimeType=${a.mimeType} ext=${ext} type=${a.type}`);
         let uri = await convertToSupportedFormat(a.uri, a.mimeType);
         uri = await compressImage(uri);
+        console.log(`[media.tsx] after convert+compress: ${uri}`);
         return { ...a, uri };
       }),
     );

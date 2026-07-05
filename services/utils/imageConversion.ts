@@ -9,19 +9,38 @@ export function isImageTypeAllowed(mimeType?: string): boolean {
   return ALLOWED_IMAGE_TYPES.includes(mimeType);
 }
 
+function getExtension(uri: string): string {
+  const match = uri.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
+  return match?.[1]?.toLowerCase() ?? "unknown";
+}
+
 export async function convertToSupportedFormat(
   uri: string,
   mimeType?: string,
 ): Promise<string> {
-  if (isImageTypeAllowed(mimeType)) return uri;
+  const ext = getExtension(uri);
+
+  if (isImageTypeAllowed(mimeType)) {
+    console.log(`[convertToSupportedFormat] mimeType "${mimeType}" is allowed, skipping conversion (ext: ${ext})`);
+    return uri;
+  }
+
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+    console.log(`[convertToSupportedFormat] extension "${ext}" is allowed, skipping conversion`);
+    return uri;
+  }
+
+  console.log(`[convertToSupportedFormat] converting uri=${uri} mimeType=${mimeType} ext=${ext}`);
 
   try {
     const result = await manipulateAsync(uri, [], {
       format: SaveFormat.JPEG,
       compress: 0.92,
     });
+    console.log(`[convertToSupportedFormat] success: ${uri} → ${result.uri}`);
     return result.uri;
-  } catch {
+  } catch (err) {
+    console.error(`[convertToSupportedFormat] failed: uri=${uri} mimeType=${mimeType} ext=${ext} error=`, err);
     throw new Error(
       `Could not convert image to a supported format. Only JPEG, PNG, and WebP are allowed.`,
     );
