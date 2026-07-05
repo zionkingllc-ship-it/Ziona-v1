@@ -14,12 +14,21 @@ import {
   Lock,
   User,
 } from "@tamagui/lucide-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack } from "tamagui";
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -33,7 +42,7 @@ export default function SettingsScreen() {
     null,
   );
   const [imageError, setImageError] = useState(false);
-  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Z";
+  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Ur";
 
   useEffect(() => {
     useAuthStore.setState({ onLogoutNavigate: () => router.replace("/(auth)") });
@@ -104,14 +113,12 @@ export default function SettingsScreen() {
                   style={{ width: 40, height: 40, borderRadius: 20 }}
                 />
               ) : (
-                <LinearGradient
-                  colors={["#D396E8", "#9D4C76"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+                <View
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
+                    backgroundColor: getColorFromName(profile?.username),
                     alignItems: "center",
                     justifyContent: "center",
                   }}
@@ -124,7 +131,7 @@ export default function SettingsScreen() {
                   >
                     {initials}
                   </Text>
-                </LinearGradient>
+                </View>
               )}
               <YStack>
                 <Text fontFamily="$body" fontWeight="600" fontSize={14}>

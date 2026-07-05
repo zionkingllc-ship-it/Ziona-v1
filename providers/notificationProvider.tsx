@@ -39,9 +39,9 @@ async function requestPermissionsAndRegister() {
     }
   }
   try {
-    const expoPushToken = await Notifications.getExpoPushTokenAsync();
-    console.log("🔔 Got push token:", expoPushToken.data);
-    const success = await registerDeviceToken(expoPushToken.data, Platform.OS);
+    const devicePushToken = await Notifications.getDevicePushTokenAsync();
+    console.log("🔔 Got device push token:", devicePushToken.data);
+    const success = await registerDeviceToken(devicePushToken.data, Platform.OS);
     console.log("🔔 Token registered:", success);
   } catch (err) {
     console.warn("🔔 Push token registration failed:", err);

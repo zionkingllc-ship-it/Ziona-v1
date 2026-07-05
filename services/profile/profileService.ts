@@ -6,6 +6,7 @@ import {
 } from "@/services/graphQL/mutation/media/mediaUpload";
 import { cleanAvatarUrl } from "@/services/utils/cleanAvatarUrl";
 import { getMimeType } from "@/services/utils/mime";
+import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import * as FileSystem from "expo-file-system/legacy";
 
 /* =========================
@@ -133,13 +134,16 @@ export async function updateAvatar(file: { uri: string }) {
 
   if (!fileInfo.exists) throw new Error("Avatar file does not exist");
 
+  const convertedUri = await convertToSupportedFormat(file.uri, fileType);
+  const compressedUri = await compressImage(convertedUri);
+
   const upload = await requestMediaUpload(
     fileName,
     fileType,
     fileInfo.size || 0,
   );
   console.log("Upload URL from backend:", upload.uploadUrl);
-  await uploadFileToStorage(upload.uploadUrl, file.uri, fileType);
+  await uploadFileToStorage(upload.uploadUrl, compressedUri, fileType);
   const avatarUrl = cleanAvatarUrl(extractPublicUrl(upload.uploadUrl));
   console.log("Public avatar URL:", avatarUrl);
 

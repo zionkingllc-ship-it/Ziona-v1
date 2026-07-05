@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
-import { Image, View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import type { ActiveAnchor } from "@/constants/circleTypes";
 import { YStack } from "tamagui";
 import React, { useCallback, useState } from "react";
@@ -94,13 +95,13 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
           <Image
             source={FALLBACK_IMAGE}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
           />
           {!imageError && remoteImageUri && (
             <Image
               source={{ uri: remoteImageUri }}
               style={styles.image}
-              resizeMode="cover"
+              contentFit="cover"
               onError={() => setImageError(true)}
             />
           )}

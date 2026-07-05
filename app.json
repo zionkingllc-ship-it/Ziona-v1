@@ -3,14 +3,9 @@
     "name": "Ziona",
     "slug": "ziona",
     "version": "1.0.0",
-    "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ziona",
     "userInterfaceStyle": "light",
-    "androidNavigationBar": {
-      "backgroundColor": "#ffffff",
-      "barStyle": "dark-content"
-    },
     "ios": {
       "bundleIdentifier": "com.zionking.ziona",
       "entitlements": {
@@ -97,7 +92,8 @@
           },
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "edgeToEdge": true
           }
         }
       ],
@@ -118,6 +114,7 @@
       "expo-web-browser",
       "expo-video",
       "expo-apple-authentication",
+      "./plugins/withAndroidOrientation",
       [
         "expo-notifications",
         {

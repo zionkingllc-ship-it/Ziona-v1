@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, View, Text as RNText } from 'react-native';
+import { Image } from "expo-image";
+import { StyleSheet, View, Text as RNText } from 'react-native';
 import { XStack, YStack, Text } from 'tamagui';
 import { SimpleButton } from '@/components/ui/centerTextButton';
 import colors from '@/constants/colors';
@@ -66,13 +67,17 @@ const CircleFeedNameRow = ({ circle, memberAvatars }: {
       <YStack alignItems="center">
         {avatars.length > 0 && (
           <View style={styles.avatarStack}>
-            {avatars.map((avatar, index) => (
-              <Image
-                key={index}
-                source={avatar ? { uri: avatar } : require('@/assets/images/emptyDP.png')}
-                style={[styles.memberAvatar, { left: index * 12 }]}
-              />
-            ))}
+            {avatars.map((avatar, index) =>
+              avatar ? (
+                <Image
+                  key={index}
+                  source={{ uri: avatar }}
+                  style={[styles.memberAvatar, { left: index * 12 }]}
+                />
+              ) : (
+                <View key={index} style={[styles.memberAvatar, { left: index * 12, backgroundColor: '#7A2E8A', justifyContent: 'center', alignItems: 'center' }]} />
+              )
+            )}
           </View>
         )}
         <Text

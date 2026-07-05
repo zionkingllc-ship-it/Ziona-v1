@@ -50,31 +50,3 @@ export async function compressVideo(
     return uri;
   }
 }
-
-export async function compressVideoAuto(
-  uri: string,
-  onProgress?: (progress: number) => void,
-): Promise<string> {
-  const beforeSize = await getFileSize(uri);
-
-  try {
-    const result = await VideoCompressor.Video.compress(
-      uri,
-      {
-        compressionMethod: "auto",
-        minimumFileSizeForCompress: 1,
-        progressDivider: 10,
-      },
-      onProgress,
-    );
-
-    const afterSize = await getFileSize(result);
-    console.log(
-      `[compressVideoAuto] ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
-    );
-
-    return result;
-  } catch {
-    return uri;
-  }
-}

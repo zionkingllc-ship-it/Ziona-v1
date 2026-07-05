@@ -1,3 +1,4 @@
+import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack, View } from "tamagui";
 import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
@@ -45,11 +46,9 @@ function NotificationAvatar({ avatarUrl, type, size = 40 }: { avatarUrl?: string
   }
 
   return (
-    <Image
+    <ExpoImage
       source={{ uri: avatarUrl }}
-      width={size}
-      height={size}
-      borderRadius={size / 2}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
       onError={() => setErred(true)}
     />
   );

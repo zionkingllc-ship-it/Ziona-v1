@@ -5,8 +5,8 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Text, XStack } from "tamagui";
 
 interface FollowUserRowProps {
@@ -19,6 +19,16 @@ interface FollowUserRowProps {
   isFollowedBy?: boolean;
   listType?: "followers" | "following";
   onPress?: () => void;
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
 }
 
 export default function FollowUserRow({
@@ -81,7 +91,7 @@ export default function FollowUserRow({
     });
   };
 
-  const initials = username?.slice(0, 2)?.toUpperCase() || "U";
+  const initials = username?.slice(0, 2)?.toUpperCase() || "Ur";
 
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.7}>
@@ -93,16 +103,11 @@ export default function FollowUserRow({
             onError={() => setAvatarSource(null)}
           />
         ) : (
-          <LinearGradient
-            colors={["#D396E8", "#9D4C76"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatarGradient}
-          >
+          <View style={[styles.avatarGradient, { backgroundColor: getColorFromName(username) }]}>
             <Text color="white" fontSize={"$3"} fontWeight="600">
               {initials}
             </Text>
-          </LinearGradient>
+          </View>
         )}
 
         <View style={styles.info}>

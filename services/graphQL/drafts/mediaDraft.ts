@@ -13,7 +13,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { QueryClient } from "@tanstack/react-query";
 
 import { getMimeType } from "@/services/utils/mime";
-import { compressImage } from "@/services/utils/imageConversion";
+import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import { compressVideo } from "@/services/utils/videoCompression";
 
 /* =========================
@@ -34,6 +34,7 @@ export async function preUploadMedia(
       let fileUri = item.uri;
 
       if (item.type === "IMAGE") {
+        fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
         fileUri = await compressImage(fileUri);
       } else if (item.type === "VIDEO") {
         fileUri = await compressVideo(fileUri, "medium");
@@ -132,6 +133,7 @@ export async function publishMediaPost(
         let fileUri = item.uri;
 
         if (item.type === "IMAGE") {
+          fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
           fileUri = await compressImage(fileUri);
         } else if (item.type === "VIDEO") {
           fileUri = await compressVideo(fileUri, "medium");

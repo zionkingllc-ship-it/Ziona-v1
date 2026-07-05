@@ -6,6 +6,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View, Avatar, Image } from "tamagui";
 import { useState } from "react";
 
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
 export default function AboutScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile } = useUserProfile(userId);
@@ -26,9 +45,9 @@ export default function AboutScreen() {
               {avatarUrl ? (
                 <Avatar.Image source={{ uri: avatarUrl }} onError={() => setImageError(true)} />
               ) : (
-                <Avatar.Fallback backgroundColor={colors.black} justifyContent="center" alignItems="center">
+                <Avatar.Fallback backgroundColor={getColorFromName(displayName)} justifyContent="center" alignItems="center">
                   <Text color="white" fontSize={20} fontWeight="600">
-                    {displayName.charAt(0).toUpperCase()}
+                    {getInitials(displayName)}
                   </Text>
                 </Avatar.Fallback>
               )}

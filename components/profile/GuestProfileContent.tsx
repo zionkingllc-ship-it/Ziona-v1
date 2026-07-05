@@ -11,9 +11,18 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { queryClient } from "@/lib/queryClient";
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 import {
   FlatList,
   RefreshControl,
@@ -120,7 +129,7 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
     ["userProfile", userId],
   ]);
 
-  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "U";
+  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Ur";
 
   const handleFollow = () => {
     if (!userId) return;
@@ -191,14 +200,12 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
                 onError={() => setProfileAvatarSource(null)}
               />
             ) : (
-              <LinearGradient
-                colors={["#D396E8", "#9D4C76"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 80,
                   height: 80,
                   borderRadius: 40,
+                  backgroundColor: getColorFromName(profile?.username),
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -206,7 +213,7 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
                 <Text color="white" fontSize={"$4"} fontWeight="600">
                   {initials}
                 </Text>
-              </LinearGradient>
+              </View>
             )}
 
             <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600" marginTop={10}>

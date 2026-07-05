@@ -3,7 +3,8 @@ import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 import { FeedPost } from "@/types/feedTypes";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface Props {
   post: FeedPost;
@@ -78,7 +79,7 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
         <Image
           source={{ uri: firstMedia.url }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          contentFit="cover"
         />
       );
     }
@@ -104,7 +105,7 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
         <Image
           source={{ uri: thumbnailUri }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          contentFit="cover"
         />
       );
     }

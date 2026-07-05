@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
 
@@ -48,6 +49,52 @@ type Props = {
   screenWidth: number;
   tabBarHeight: number;
 };
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function AuthorAvatar({ username, avatarUrl }: { username?: string; avatarUrl?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const hasValidUri = avatarUrl && avatarUrl.trim() && !failed;
+
+  if (!hasValidUri) {
+    const initials = getInitials(username);
+    const bgColor = getColorFromName(username);
+    return (
+      <XStack
+        width={30} height={30} borderRadius={15}
+        backgroundColor={bgColor}
+        alignItems="center" justifyContent="center"
+      >
+        <Text color="white" fontSize={11} fontWeight="600">{initials}</Text>
+      </XStack>
+    );
+  }
+
+  return (
+    <ExpoImage
+      source={{ uri: avatarUrl }}
+      style={{ width: 30, height: 30, borderRadius: 15 }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 function PostCardComponent({
   post,
@@ -89,22 +136,8 @@ function PostCardComponent({
   const commentCount = post.stats?.commentsCount ?? 0;
   const savedCount = post.stats?.savesCount ?? 0;
 
-  const [authorAvatarSource, setAuthorAvatarSource] = useState(
-    post.author?.avatarUrl && post.author.avatarUrl.trim()
-      ? { uri: post.author.avatarUrl }
-      : require("@/assets/images/profile.png"),
-  );
-
   const { folders, getSavedFolderIds } = useBookmarksStore();
   const savedFolderIds = getSavedFolderIds(post.id);
-
-  useEffect(() => {
-    setAuthorAvatarSource(
-      post.author?.avatarUrl && post.author.avatarUrl.trim()
-        ? { uri: post.author.avatarUrl }
-        : require("@/assets/images/profile.png"),
-    );
-  }, [post.author?.avatarUrl]);
 
   const isBookmarked = post.viewerState?.saved || savedFolderIds.length > 0;
   const {
@@ -234,17 +267,7 @@ function PostCardComponent({
                 }}
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >
-                <Image
-                  source={authorAvatarSource}
-                  width={30}
-                  height={30}
-                  borderRadius={15}
-                  onError={() => {
-                    setAuthorAvatarSource(
-                      require("@/assets/images/profile.png"),
-                    );
-                  }}
-                />
+                <AuthorAvatar username={post.author?.username} avatarUrl={post.author?.avatarUrl} />
 
                 <Text color={colors.white} fontSize={16} fontWeight="500">
                   {post.author?.username ?? "user"}

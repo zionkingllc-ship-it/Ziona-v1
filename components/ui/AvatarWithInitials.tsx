@@ -1,5 +1,5 @@
 import React from "react";
-import { Image } from "react-native";
+import { Image } from "expo-image";
 import { useState } from "react";
 import { Text, View } from "tamagui";
 
@@ -12,7 +12,7 @@ interface AvatarWithInitialsProps {
 }
 
 function getInitials(name?: string): string {
-  if (!name) return "?";
+  if (!name) return "Ur";
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -68,9 +68,7 @@ export function AvatarWithInitials({
   return (
     <Image
       source={{ uri }}
-      width={size}
-      height={size}
-      borderRadius={size / 2}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
       onError={() => {
         setImageError(true);
         if (uri) {

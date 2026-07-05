@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { memo, useState } from "react";
+import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
@@ -215,7 +216,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                 {imageUri && !videoThumbError ? (
                   <>
-                    <Image source={{ uri: imageUri }} width="100%" height={139} resizeMode="cover" onError={() => setVideoThumbError(true)} />
+                    <ExpoImage source={{ uri: imageUri }} style={{ width: "100%", height: 139 }} contentFit="cover" onError={() => setVideoThumbError(true)} />
                     <View style={{ position: "absolute", width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
                       <Ionicons name="play" size={24} color="#FFF" />
                     </View>
@@ -233,12 +234,10 @@ const CircleFeedItem = memo(function CircleFeedItem({
           {/* IMAGE */}
           {!isVideo && imageUri && !postImageError && (
             <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
-              <Image
+              <ExpoImage
                 source={{ uri: post.image || post.mediaUrl }}
-                width="100%"
-                height={139}
-                borderRadius={14}
-                resizeMode="cover"
+                style={{ width: "100%", height: 139, borderRadius: 14 }}
+                contentFit="cover"
                 onError={() => setPostImageError(true)}
               />
             </Pressable>
@@ -265,7 +264,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             ) : resolved.type === "image" && resolved.mediaUrl && !anchorImageError ? (
               <Pressable onPress={() => handleAnchorMediaTap()}>
                 <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                  <Image source={{ uri: resolved.mediaUrl }} width="100%" height={100} borderRadius={12} resizeMode="cover" onError={() => setAnchorImageError(true)} />
+                  <ExpoImage source={{ uri: resolved.mediaUrl }} style={{ width: "100%", height: 100, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
                 </View>
               </Pressable>
             ) : resolved.type === "image" && resolved.mediaUrl && anchorImageError ? (

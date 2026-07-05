@@ -2,7 +2,7 @@ import {
   requestMediaUpload,
   confirmMediaUpload,
 } from "@/services/graphQL/mutation/media/mediaUpload";
-import { compressImage } from "@/services/utils/imageConversion";
+import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import { compressVideo } from "@/services/utils/videoCompression";
 
 function bytesToMB(bytes: number): string {
@@ -41,6 +41,7 @@ export async function uploadCircleMedia(
   let uploadType = fileType;
 
   if (fileType.startsWith("image/")) {
+    uploadUri = await convertToSupportedFormat(uploadUri, fileType);
     const beforeSize = await getFileSize(uploadUri);
     uploadUri = await compressImage(uploadUri);
     uploadType = mimeFromExtension(uploadUri);

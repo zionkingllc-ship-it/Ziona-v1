@@ -1,6 +1,7 @@
 import MentionText from "@/components/comments/MentionText";
 import React, { useMemo, useState } from "react";
-import { TouchableOpacity, Alert, Image, Pressable } from "react-native";
+import { Image } from "expo-image";
+import { TouchableOpacity, Alert, Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -32,6 +33,25 @@ function formatDate(dateString?: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function getInitials(name?: string | null): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string | null): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
 function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string | null; size: number }) {
   const [failed, setFailed] = useState(false);
 
@@ -50,12 +70,12 @@ function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string 
       width={size}
       height={size}
       borderRadius={size / 2}
-      backgroundColor="#E0E0E0"
+      backgroundColor={getColorFromName(name)}
       alignItems="center"
       justifyContent="center"
     >
-      <Text fontSize={size * 0.4} fontWeight="600" color="#666">
-        {name?.charAt(0)?.toUpperCase() || "?"}
+      <Text fontSize={size * 0.4} fontWeight="600" color="white">
+        {getInitials(name)}
       </Text>
     </XStack>
   );

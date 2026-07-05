@@ -1,5 +1,6 @@
 import { View, Text, YStack, XStack } from "tamagui";
-import { Image, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
+import { StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import colors from "@/constants/colors";
 import React, { memo } from "react";
@@ -30,7 +31,7 @@ const CircleCard = memo(function CircleCard({
 
         {/* IMAGE */}
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: image }} style={styles.image} contentFit="cover" />
 
           {/* GRADIENT OVERLAY */}
           <LinearGradient
@@ -50,11 +51,18 @@ const CircleCard = memo(function CircleCard({
               {avatars.length > 0 && (
                 <View style={[styles.avatarStack, { width: avatars.length * 28 }]}>
                   {avatars.slice(0, 3).map((uri, index) => (
-                    <Image
-                      key={index}
-                      source={{ uri }}
-                      style={[styles.avatar, { left: index * 20 }]}
-                    />
+                    uri ? (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={[styles.avatar, { left: index * 20 }]}
+                      />
+                    ) : (
+                      <View
+                        key={index}
+                        style={[styles.avatar, { left: index * 20, backgroundColor: '#7A2E8A' }]}
+                      />
+                    )
                   ))}
                 </View>
               )}

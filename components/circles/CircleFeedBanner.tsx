@@ -1,7 +1,8 @@
 import colors from '@/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, TouchableOpacity, View, Text } from 'react-native';
+import { Image } from "expo-image";
+import { ActivityIndicator, Animated, TouchableOpacity, View, Text } from 'react-native';
 import BackButton from '../ui/BackButton';
 
 interface CircleFeedBannerProps {
@@ -62,7 +63,7 @@ export default function CircleFeedBanner({
           <Image
             source={{ uri: bannerImage }}
             style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
+            contentFit="cover"
           />
         ) : (
           <View style={{ width: '100%', height: '100%', backgroundColor: '#D3D3D3', justifyContent: 'center', alignItems: 'center' }}>

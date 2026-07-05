@@ -170,7 +170,7 @@ export default function TextPostCardInput({
 
                   onChangeText(text);
                 }}
-                placeholder="Whats on your mind?"
+                placeholder="Add your thoughts to Bible Passage"
                 placeholderTextColor={colors.placeHolderText}
                 multiline
                 style={{

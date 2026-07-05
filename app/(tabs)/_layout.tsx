@@ -6,8 +6,8 @@ import { fetchForYouFeed } from "@/services/feed/feedServices";
 import { getNotifications, getUnreadNotificationCount } from "@/services/graphQL/queries/actions/notifications";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Image, Platform, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
+import { Platform, View } from "react-native";
 import { Text } from "tamagui";
 import { useAuthStore } from "@/store/useAuthStore";
 import { queryClient } from "@/lib/queryClient";
@@ -15,9 +15,19 @@ import { queryClient } from "@/lib/queryClient";
 // Visual height of tab bar only (safe area handled separately by OS)
 const TAB_BAR_VISUAL_HEIGHT = Platform.OS === "ios" ? 49 : 56;
 
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
 function ProfileTabIcon({ avatarUrl, username }: { avatarUrl?: string | null; username?: string }) {
   const [imageError, setImageError] = useState(false);
-  const initials = username?.slice(0, 2)?.toUpperCase() || "U";
+  const initials = username?.slice(0, 2)?.toUpperCase() || "Ur";
 
   if (avatarUrl && !imageError) {
     return (
@@ -30,17 +40,10 @@ function ProfileTabIcon({ avatarUrl, username }: { avatarUrl?: string | null; us
   }
 
   return (
-    <View style={{ width: 23, height: 23, borderRadius: 11.5, overflow: "hidden" }}>
-      <LinearGradient
-        colors={["#D396E8", "#9D4C76"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-      >
-        <Text style={{ color: "white", fontSize: 9, fontWeight: "600" }}>
-          {initials}
-        </Text>
-      </LinearGradient>
+    <View style={{ width: 23, height: 23, borderRadius: 11.5, backgroundColor: getColorFromName(username), alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ color: "white", fontSize: 9, fontWeight: "600" }}>
+        {initials}
+      </Text>
     </View>
   );
 }

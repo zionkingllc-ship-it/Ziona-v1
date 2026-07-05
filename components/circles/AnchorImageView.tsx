@@ -1,5 +1,6 @@
 import React from "react";
-import { Dimensions, Image, StyleSheet, View } from "react-native";
+import { Image } from "expo-image";
+import { Dimensions, StyleSheet, View } from "react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -15,7 +16,7 @@ export default function AnchorImageView({ image }: AnchorImageViewProps) {
           <Image
             source={{ uri: image }}
             style={styles.image}
-            resizeMode="cover"
+            contentFit="cover"
           />
         )}
       </View>

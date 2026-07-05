@@ -15,6 +15,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image as ExpoImage } from "expo-image";
 import { Text, XStack, YStack, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { useCirclePostComments } from "@/hooks/useCirclePostComments";
@@ -257,7 +258,7 @@ export default function CirclePostDetailScreen() {
                 <View style={{ height: 200, borderRadius: 12, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                   {(postImage || postMediaUrl) && !videoThumbError ? (
                     <>
-                      <Image source={{ uri: postImage || postMediaUrl }} width="100%" height={200} resizeMode="cover" onError={() => setVideoThumbError(true)} />
+                      <ExpoImage source={{ uri: postImage || postMediaUrl }} style={{ width: "100%", height: 200 }} contentFit="cover" onError={() => setVideoThumbError(true)} />
                       <View style={{ position: "absolute", width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
                         <Ionicons name="play" size={26} color="#FFF" />
                       </View>
@@ -274,12 +275,10 @@ export default function CirclePostDetailScreen() {
 
             {!isVideo && (postImage || postMediaUrl) && !postImageError && (
               <Pressable onPress={() => router.push({ pathname: "/circleImageViewer", params: { image: postImage || postMediaUrl } })}>
-                <Image
+                <ExpoImage
                   source={{ uri: postImage || postMediaUrl }}
-                  width="100%"
-                  height={200}
-                  borderRadius={12}
-                  resizeMode="cover"
+                  style={{ width: "100%", height: 200, borderRadius: 12 }}
+                  contentFit="cover"
                   onError={() => setPostImageError(true)}
                 />
               </Pressable>
@@ -308,7 +307,7 @@ export default function CirclePostDetailScreen() {
               ) : anchorType === "image" && anchorMediaUrl && !anchorImageError ? (
                 <Pressable onPress={() => handleAnchorMediaTap()}>
                   <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                    <Image source={{ uri: anchorMediaUrl }} width="100%" height={120} borderRadius={12} resizeMode="cover" onError={() => setAnchorImageError(true)} />
+                    <ExpoImage source={{ uri: anchorMediaUrl }} style={{ width: "100%", height: 120, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
                   </View>
                 </Pressable>
               ) : anchorType === "image" && anchorMediaUrl && anchorImageError ? (

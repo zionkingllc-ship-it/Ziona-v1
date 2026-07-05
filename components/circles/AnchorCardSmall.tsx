@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { memo, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import colors from "@/constants/colors";
 import { useCountdown } from "@/hooks/useCountdown";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
@@ -67,13 +68,13 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
     switch (anchorType) {
       case "image":
         return mediaSource ? (
-          <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : null;
       case "video":
         return (
           <>
             {mediaSource ? (
-              <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={{ uri: mediaSource }} style={StyleSheet.absoluteFill} contentFit="cover" />
             ) : null}
             <View style={StyleSheet.absoluteFill}>
               <View style={styles.playOverlay}>
@@ -101,13 +102,13 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
       <Image
         source={FALLBACK_IMAGE}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
+        contentFit="cover"
       />
       {!imageError && anchor.backgroundImage && (
         <Image
           source={{ uri: anchor.backgroundImage }}
           style={StyleSheet.absoluteFill}
-          resizeMode="cover"
+          contentFit="cover"
           onError={() => setImageError(true)}
         />
       )}

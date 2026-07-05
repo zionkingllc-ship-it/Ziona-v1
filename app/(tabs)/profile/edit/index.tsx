@@ -12,7 +12,26 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Avatar, Text, XStack, YStack } from "tamagui";
+import { Avatar, Text, XStack, YStack, View } from "tamagui";
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 
 export default function EditProfileScreen() {
   const avatarMutation = useUpdateAvatar();
@@ -100,19 +119,22 @@ export default function EditProfileScreen() {
         <YStack alignItems="center" gap="$3" paddingVertical={19}>
           <Pressable onPress={handlePickImage}>
             <Avatar circular size="$8">
-              <Avatar.Image
-                source={
-                  localAvatar
-                    ? { uri: localAvatar }
-                    : user?.avatarUrl && !avatarLoadFailed
-                      ? { uri: user.avatarUrl }
-                      : require("@/assets/images/emptyDP.png")
-                }
-                onError={() => {
-                  setAvatarLoadFailed(true);
-                }}
-              />
-              <Avatar.Fallback backgroundColor={colors.black} />
+              {localAvatar || (user?.avatarUrl && !avatarLoadFailed) ? (
+                <Avatar.Image
+                  source={{ uri: localAvatar || user?.avatarUrl || "" }}
+                  onError={() => setAvatarLoadFailed(true)}
+                />
+              ) : (
+                <Avatar.Fallback
+                  backgroundColor={getColorFromName(user?.username)}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Text color="white" fontSize={20} fontWeight="600">
+                    {getInitials(user?.username)}
+                  </Text>
+                </Avatar.Fallback>
+              )}
             </Avatar>
 
             <Text

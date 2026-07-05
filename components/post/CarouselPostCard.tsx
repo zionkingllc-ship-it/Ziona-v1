@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS } from "react-native-reanimated";
-import { Image, View } from "tamagui";
+import { Image } from "expo-image";
+import { View } from "tamagui";
 
 interface Props {
   post: FeedMediaPost;
@@ -58,9 +59,8 @@ function CarouselPostCardComponent({
   const renderImage = ({ item }: { item: any }) => (
     <Image
       source={{ uri: item.url }}
-      width={screenWidth}
-      height={screenHeight}
-      resizeMode="contain"
+      style={{ width: screenWidth, height: screenHeight }}
+      contentFit="contain"
     />
   );
 

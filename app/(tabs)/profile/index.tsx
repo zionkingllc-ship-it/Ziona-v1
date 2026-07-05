@@ -15,9 +15,18 @@ import { useDeletePost } from "@/hooks/useDeletePost";
 import { queryClient } from "@/lib/queryClient";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 import {
   ActivityIndicator,
   FlatList,
@@ -27,7 +36,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { Image, Text, View, XStack, YStack } from "tamagui";
 import { useMutation } from "@tanstack/react-query";
 import { unlikePost } from "@/services/graphQL/mutation/actions";
 
@@ -154,7 +163,7 @@ export default function ProfileScreen() {
     }
     return posts;
   }, [activeTab, posts, likedPosts]);
-  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "U";
+  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Ur";
 
   /* ================= DELETE POST ================= */
 
@@ -257,14 +266,12 @@ export default function ProfileScreen() {
                 }}
               />
             ) : (
-              <LinearGradient
-                colors={["#D396E8", "#9D4C76"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 80,
                   height: 80,
                   borderRadius: 40,
+                  backgroundColor: getColorFromName(profile?.username),
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 10,
@@ -278,7 +285,7 @@ export default function ProfileScreen() {
                 >
                   {initials}
                 </Text>
-              </LinearGradient>
+              </View>
             )}
 
             <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600">

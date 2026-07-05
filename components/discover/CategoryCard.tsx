@@ -1,5 +1,6 @@
 import { DiscoverCategory } from "@/types/discover";
-import { Image, TouchableOpacity } from "react-native";
+import { Image } from "expo-image";
+import { TouchableOpacity } from "react-native";
 import { Text } from "tamagui";
 
 type Props = {
@@ -35,7 +36,7 @@ export default function CategoryCard({ category, onPress }: Props) {
             ? { uri: category.icon }
             : category.icon
         }
-        resizeMode="contain"
+        contentFit="contain"
         style={{ width: 50, height: 50, marginBottom: 8 }}
       />
     </TouchableOpacity>

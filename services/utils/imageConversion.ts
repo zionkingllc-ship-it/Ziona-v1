@@ -59,28 +59,3 @@ export async function compressImage(uri: string): Promise<string> {
     return uri;
   }
 }
-
-export async function compressImageManual(
-  uri: string,
-  quality?: number,
-  maxWidth?: number,
-): Promise<string> {
-  const beforeSize = await getFileSize(uri);
-
-  try {
-    const result = await ImageCompressor.Image.compress(uri, {
-      compressionMethod: "manual",
-      quality: quality ?? 0.7,
-      maxWidth: maxWidth ?? 1920,
-    });
-
-    const afterSize = await getFileSize(result);
-    console.log(
-      `[compressImageManual] ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
-    );
-
-    return result;
-  } catch {
-    return uri;
-  }
-}

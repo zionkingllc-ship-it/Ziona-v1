@@ -4,7 +4,8 @@ import { useBookmarkFolders, useDeleteBookmarkFolder, useBulkRemoveBookmarks } f
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useRouter, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Image, Pressable, BackHandler } from "react-native";
+import { Image } from "expo-image";
+import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Pressable, BackHandler } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 import colors from "@/constants/colors";
 import { FeedPost } from "@/types/feedTypes";
@@ -378,9 +379,9 @@ export default function BookmarksScreen() {
                           {item.savedCount > 0 && folderPosts[0] ? (
                             <PostThumbnail post={folderPosts[0]} size={folderCardWidth} onPress={() => {}} pressable={false} />
                           ) : item.cover ? (
-                            <Image source={{ uri: item.cover }} style={{ width: "100%", height: "100%", borderRadius: 3 }} resizeMode="cover" />
+                            <Image source={{ uri: item.cover }} style={{ width: "100%", height: "100%", borderRadius: 3 }} contentFit="cover" />
                           ) : (
-                            <Image source={require("@/assets/images/FolderBaner.png")} style={{ width: "100%", height: "100%", borderRadius: 3 }} resizeMode="cover" />
+                            <Image source={require("@/assets/images/FolderBaner.png")} style={{ width: "100%", height: "100%", borderRadius: 3 }} contentFit="cover" />
                           )}
                         </View>
                       )}

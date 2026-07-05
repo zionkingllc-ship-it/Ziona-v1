@@ -83,6 +83,50 @@ function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
   );
 }
 
+import { Image as ExpoImage } from "expo-image";
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function AuthorAvatar({ username, avatarUrl }: { username?: string; avatarUrl?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const hasValidUri = avatarUrl && avatarUrl.trim() && !failed;
+
+  if (!hasValidUri) {
+    const initials = getInitials(username);
+    const bgColor = getColorFromName(username);
+    return (
+      <View width={36} height={36} borderRadius={18} backgroundColor={bgColor} alignItems="center" justifyContent="center">
+        <Text color="white" fontSize={13} fontWeight="600">{initials}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ExpoImage
+      source={{ uri: avatarUrl }}
+      style={{ width: 36, height: 36, borderRadius: 18 }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function CreateMediaPreviewScreen() {
   const { wp, hp, fs } = useResponsive();
   const { draft } = useCreatePostStore();
@@ -352,16 +396,7 @@ export default function CreateMediaPreviewScreen() {
           )}
 
           <XStack gap={10} alignItems="center">
-            <Image
-              source={
-                currentUser?.avatarUrl
-                  ? { uri: currentUser.avatarUrl }
-                  : require("@/assets/images/profile.png")
-              }
-              width={36}
-              height={36}
-              borderRadius={18}
-            />
+            <AuthorAvatar username={currentUser?.username} avatarUrl={currentUser?.avatarUrl} />
             <YStack flex={1}>
               <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
                 {currentUser?.username || "User"}

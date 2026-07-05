@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 export default function AuthLayout() {
   return (
     <GradientBackground>
-      <StatusBar style="dark" translucent />
+      <StatusBar style="dark" />
       <AppScreen>
         <Stack
           screenOptions={{

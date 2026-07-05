@@ -23,7 +23,7 @@
     "production": {
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "internal"
+        "track": "production"
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",

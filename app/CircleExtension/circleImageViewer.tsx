@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Image, Pressable, StyleSheet, View, Text } from "react-native";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CircleImageViewer() {
@@ -22,7 +23,7 @@ export default function CircleImageViewer() {
           <Image
             source={{ uri: image }}
             style={styles.image}
-            resizeMode="contain"
+            contentFit="contain"
             onError={() => setImageError(true)}
           />
         )}

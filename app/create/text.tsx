@@ -114,7 +114,7 @@ export default function CreateTextScreen() {
 
   const hasText = textValue.trim().length > 0;
 
-  const canUpload = !!draft.category?.id && (hasText || !!verseText);
+  const canUpload = !!draft.category?.id && hasText;
 
   /* =========================
      POST HANDLER
