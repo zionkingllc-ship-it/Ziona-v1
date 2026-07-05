@@ -4,9 +4,10 @@ export async function invalidateFeed(queryClient: QueryClient) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["forYouFeed"] }),
     queryClient.invalidateQueries({ queryKey: ["followingFeed"] }),
+    queryClient.invalidateQueries({ queryKey: ["userPosts"] }),
   ]);
 
-  console.log("Feed invalidated (forYou + following)");
+  console.log("Feed invalidated (forYou + following + userPosts)");
 }
 
 export function movePostToFeedTop(

@@ -300,6 +300,8 @@ export default function CircleCommentComposer({
             <Pressable
               onPress={async () => {
                 if (picking) return;
+                setShowError(false);
+                setErrorMessage("");
                 setPicking(true);
                 try {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -328,6 +330,8 @@ export default function CircleCommentComposer({
                       setImage(convertedUri);
                       setVideo(null);
                       setVideoThumbnail(null);
+                      setShowError(false);
+                      setErrorMessage("");
                     } catch {
                       setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
                       setShowError(true);

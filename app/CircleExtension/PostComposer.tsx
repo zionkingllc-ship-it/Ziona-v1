@@ -282,6 +282,8 @@ console.log("circleId", circleId);
             <Pressable
               onPress={async () => {
                 if (picking || posting) return;
+                setShowError(false);
+                setErrorMessage("");
                 setPicking(true);
                 try {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -310,6 +312,8 @@ console.log("circleId", circleId);
                       setImage(convertedUri);
                       setVideo(null);
                       setVideoThumbnail(null);
+                      setShowError(false);
+                      setErrorMessage("");
                     } catch {
                       setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
                       setShowError(true);
