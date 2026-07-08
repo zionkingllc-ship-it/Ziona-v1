@@ -1,13 +1,7 @@
 import * as FileSystem from "expo-file-system/legacy";
 import VideoCompressor from "react-native-compressor";
 
-export type VideoQuality = "low" | "medium" | "high";
-
-const QUALITY_BITRATES: Record<VideoQuality, number | undefined> = {
-  low: 300000,
-  medium: 500000,
-  high: 1500000,
-};
+const MIN_SIZE_FOR_COMPRESS = 10 * 1024 * 1024;
 
 function bytesToMB(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(2);
@@ -23,18 +17,25 @@ async function getFileSize(uri: string): Promise<number> {
 
 export async function compressVideo(
   uri: string,
-  quality: VideoQuality = "medium",
+  quality: number = 0.5,
   onProgress?: (progress: number) => void,
 ): Promise<string> {
   const beforeSize = await getFileSize(uri);
+
+  if (beforeSize > 0 && beforeSize < MIN_SIZE_FOR_COMPRESS) {
+    console.log(
+      `[compressVideo] Skipped (${bytesToMB(beforeSize)}MB < 10MB)`,
+    );
+    return uri;
+  }
 
   try {
     const result = await VideoCompressor.Video.compress(
       uri,
       {
-        compressionMethod: "manual",
-        bitrate: QUALITY_BITRATES[quality],
-        minimumFileSizeForCompress: 1,
+        compressionMethod: "auto",
+        quality,
+        minimumFileSizeForCompress: MIN_SIZE_FOR_COMPRESS,
         progressDivider: 10,
       },
       onProgress,

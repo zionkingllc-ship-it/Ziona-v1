@@ -2,7 +2,7 @@ import { GradientBackground } from "@/components/layout/GradientBackground";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useCircleStore } from "@/store/circleStore";
 import { useEffect } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import Animated, {
@@ -12,6 +12,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from "react-native-reanimated";
+import { Image } from "expo-image";
 
 export default function CirclesIntro({
   onClose,
@@ -67,6 +68,10 @@ export default function CirclesIntro({
     y2.value = withRepeat(withTiming(8, { duration: 5000 }), -1, true);
     x3.value = withRepeat(withTiming(8, { duration: 4500 }), -1, true);
     y3.value = withRepeat(withTiming(-6, { duration: 4500 }), -1, true);
+
+    Image.prefetch("https://images.unsplash.com/photo-1504052434569-70ad5836ab65");
+    Image.prefetch("https://images.unsplash.com/photo-1529070538774-1843cb3265df");
+    Image.prefetch("https://images.unsplash.com/photo-1519491050282-cf00c82424b4");
   }, []);
 
   const style1 = useAnimatedStyle(() => ({

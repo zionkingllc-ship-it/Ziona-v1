@@ -51,7 +51,7 @@ export async function uploadCircleMedia(
     );
   } else if (fileType.startsWith("video/")) {
     const beforeSize = await getFileSize(uploadUri);
-    uploadUri = await compressVideo(uploadUri, "medium");
+    uploadUri = await compressVideo(uploadUri);
     uploadType = mimeFromExtension(uploadUri);
     const afterSize = await getFileSize(uploadUri);
     console.log(

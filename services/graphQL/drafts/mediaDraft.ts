@@ -37,7 +37,7 @@ export async function preUploadMedia(
         fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
         fileUri = await compressImage(fileUri);
       } else if (item.type === "VIDEO") {
-        fileUri = await compressVideo(fileUri, "medium");
+        fileUri = await compressVideo(fileUri);
       }
 
       const fileName =
@@ -136,7 +136,7 @@ export async function publishMediaPost(
           fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
           fileUri = await compressImage(fileUri);
         } else if (item.type === "VIDEO") {
-          fileUri = await compressVideo(fileUri, "medium");
+          fileUri = await compressVideo(fileUri);
         }
 
         const fileName =
