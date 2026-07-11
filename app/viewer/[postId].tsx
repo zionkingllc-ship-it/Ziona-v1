@@ -13,9 +13,10 @@ import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useIsFocused } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator, TouchableOpacity, StyleSheet } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, View, XStack } from "tamagui";
+import { ChevronLeft } from "@tamagui/lucide-icons";
 
 export default function PostViewerScreen() {
   const { source, index, postId, categoryId, filter, userId: userIdParam } = useLocalSearchParams<{
@@ -210,6 +211,17 @@ export default function PostViewerScreen() {
 
   const isReady = !isLoading && posts.length > 0 && targetIndex >= 0;
 
+  const styles = StyleSheet.create({
+    backBtn: {
+      position: "absolute",
+      left: 12,
+      zIndex: 9999,
+      padding: 6,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      borderRadius: 20,
+    },
+  });
+
   useEffect(() => {
     if (!isError) return;
 
@@ -277,6 +289,18 @@ export default function PostViewerScreen() {
 
   /* ================= MAIN ================= */
 
+  const insets = useSafeAreaInsets();
+
+  const handleBackPress = () => {
+    try {
+      router.back();
+    } catch (err) {
+      // fallback: if userId provided, navigate to guest profile
+      if (userIdParam) router.push({ pathname: "/guest", params: { userId: userIdParam } });
+      else router.back();
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View
@@ -297,6 +321,17 @@ export default function PostViewerScreen() {
             tabBarHeight={0}
             isScreenFocused={isFocused}
           />
+        )}
+
+        {/* Back button overlay for user/discover/feed viewers */}
+        {(isUserPosts || isDiscover || isLiked || isBookmarks || isSaved) && (
+          <TouchableOpacity
+            accessibilityLabel="Go back"
+            onPress={handleBackPress}
+            style={[styles.backBtn, { top: insets.top + 8 }]}
+          >
+            <ChevronLeft size={28} color={colors.white} />
+          </TouchableOpacity>
         )}
       </View>
 
