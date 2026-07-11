@@ -249,7 +249,7 @@ export default function ProfileScreen() {
       {/* PROFILE INFO */}
       <YStack width={"100%"} gap={"$2"} padding={20}>
         <XStack width={"100%"} justifyContent="space-between">
-          <YStack alignItems="flex-start" gap={"$2"} alignSelf="flex-start">
+          <YStack style={{ flex: 1, marginRight: 12 }} alignItems="flex-start" gap={"$2"} alignSelf="flex-start">
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}
@@ -288,7 +288,7 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600">
+            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600" numberOfLines={2} ellipsizeMode="tail" style={{ flexShrink: 1 }}>
               {profile?.fullName || profile?.username || ""}
             </Text>
           </YStack>
@@ -458,6 +458,7 @@ export default function ProfileScreen() {
                     params: {
                       postId: item.id,
                       source: activeTab === "liked" ? "liked" : "user",
+                      userId: activeTab === "liked" ? undefined : user?.id,
                       index: String(index),
                     },
                   })

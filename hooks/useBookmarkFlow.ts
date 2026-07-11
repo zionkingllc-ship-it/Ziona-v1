@@ -22,7 +22,10 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(true);
   };
 
-  const toggleFolder = (folderId?: string) => {
+  const toggleFolder = (
+    folderId?: string,
+    callbacks?: { onSuccess?: () => void; onError?: () => void },
+  ) => {
     if (!folderId) return;
 
     toggleLocalBookmark(postId, folderId);
@@ -33,8 +36,12 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
         folderId,
       },
       {
+        onSuccess: () => {
+          callbacks?.onSuccess?.();
+        },
         onError: () => {
           toggleLocalBookmark(postId, folderId);
+          callbacks?.onError?.();
         },
       },
     );
@@ -42,7 +49,11 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(false);
   };
 
-  const createFolder = (name: string, thumbnailUri?: string | null) => {
+  const createFolder = (
+    name: string,
+    thumbnailUri?: string | null,
+    callbacks?: { onSuccess?: () => void; onError?: () => void },
+  ) => {
     createFolderMutation.mutate(
       { name },
       {
@@ -69,14 +80,22 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
             folderId,
           },
           {
+            onSuccess: () => {
+              setCreateVisible(false);
+              callbacks?.onSuccess?.();
+            },
             onError: () => {
               toggleLocalBookmark(postId, folderId);
+              callbacks?.onError?.();
             },
           },
         );
-        setCreateVisible(false);
+        },
+        onError: () => {
+          callbacks?.onError?.();
+        },
       },
-    });
+    );
   };
 
   return {

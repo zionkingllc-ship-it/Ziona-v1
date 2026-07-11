@@ -5,10 +5,12 @@ type State = {
   savedPosts: Record<string, boolean>;
   followedUsers: Record<string, boolean>;
   pendingLikes: Record<string, boolean>;
+  pendingSaves: Record<string, boolean>;
 
   toggleLike: (postId: string, value: boolean) => void;
   toggleSave: (postId: string, value: boolean) => void;
   setLikePending: (postId: string, value: boolean) => void;
+  setSavePending: (postId: string, value: boolean) => void;
   toggleFollow: (userId: string, value: boolean) => void;
 };
 
@@ -17,6 +19,7 @@ export const usePostActionsStore = create<State>((set) => ({
   savedPosts: {},
   followedUsers: {},
   pendingLikes: {},
+  pendingSaves: {},
 
   toggleLike: (postId, value) =>
     set((state) => ({
@@ -38,6 +41,14 @@ export const usePostActionsStore = create<State>((set) => ({
     set((state) => ({
       pendingLikes: {
         ...state.pendingLikes,
+        [postId]: value,
+      },
+    })),
+
+  setSavePending: (postId, value) =>
+    set((state) => ({
+      pendingSaves: {
+        ...state.pendingSaves,
         [postId]: value,
       },
     })),

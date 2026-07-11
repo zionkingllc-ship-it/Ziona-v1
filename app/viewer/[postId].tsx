@@ -6,6 +6,7 @@ import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts"
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useDiscoverFeed } from "@/hooks/useDiscover";
 import { usePostById } from "@/hooks/usePostById";
+import { useUserPosts } from "@/hooks/useUserPost";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -17,18 +18,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack } from "tamagui";
 
 export default function PostViewerScreen() {
-  const { source, index, postId, categoryId, filter } = useLocalSearchParams<{
+  const { source, index, postId, categoryId, filter, userId: userIdParam } = useLocalSearchParams<{
     source?: string;
     index?: string;
     postId: string;
     categoryId?: string;
     filter?: string;
+    userId?: string;
   }>();
 
   const isLiked = source === "liked";
   const isBookmarks = source === "bookmarks";
   const isSaved = source === "saved";
   const isDiscover = !!categoryId;
+  const isUserPosts = source === "user";
 
   /* ================= DATA ================= */
 
@@ -39,6 +42,13 @@ export default function PostViewerScreen() {
     error: singleError,
     refetch: refetchSinglePost,
   } = usePostById(postId);
+
+  const {
+    posts: userPosts,
+    isLoading: isUserLoading,
+    isError: isUserError,
+    refetch: refetchUserPosts,
+  } = useUserPosts(userIdParam);
 
   const {
     posts: discoverPosts,
@@ -164,6 +174,11 @@ export default function PostViewerScreen() {
     isLoading = isSavedLoading;
     isError = isSavedError;
     refetch = refetchSavedPosts;
+  } else if (isUserPosts) {
+    posts = userPosts;
+    isLoading = isUserLoading;
+    isError = isUserError;
+    refetch = refetchUserPosts;
   } else if (isDiscover) {
     // Discover/category feed
     posts = filteredDiscoverPosts;

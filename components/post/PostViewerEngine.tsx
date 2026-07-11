@@ -62,7 +62,13 @@ function PostViewerEngineComponent({
       }),
     );
     // Triple the array for endless looping
-    return [...base, ...base, ...base];
+    const tripled = [...base, ...base, ...base];
+    // Safety: deduplicate when all items are the same post (e.g. single-post sources)
+    const uniqueIds = new Set(tripled.map((p) => p.id));
+    if (uniqueIds.size === 1 && tripled.length > 1) {
+      return base;
+    }
+    return tripled;
   }, [posts]);
 
   const extraData = useMemo(() => ({

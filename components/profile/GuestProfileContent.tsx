@@ -29,11 +29,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, View, XStack, YStack } from "tamagui";
-import { ChevronLeft } from "@tamagui/lucide-icons";
 
 type Props = {
   userId: string;
@@ -170,29 +168,11 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
       style={{ flex: 1, backgroundColor: colors.white }}
       edges={["top", "left", "right"]}
     >
-      <XStack>
-        <Header heading={`@${profile?.username || ""}`} onBackPress={handleBack} />
-      </XStack>
-      <View style={{ position: "absolute", top: 55, left: 16, zIndex: 10 }}>
-        <Pressable onPress={handleBack}>
-          <View
-            style={{
-              width: 25,
-              height: 25,
-              borderRadius: 99,
-              backgroundColor: "#0000006c",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <ChevronLeft color={colors.white} size={20} />
-          </View>
-        </Pressable>
-      </View>
+      <Header heading={`@${profile?.username || ""}`} onBackPress={handleBack} />
 
       <YStack width={"100%"} padding={20}>
         <XStack width={"100%"} justifyContent="space-between" alignItems="flex-start">
-          <YStack alignItems="center" alignSelf="flex-start">
+          <YStack style={{ flex: 1 }} alignItems="center" alignSelf="flex-start">
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}
@@ -216,7 +196,7 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
               </View>
             )}
 
-            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600" marginTop={10}>
+            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600" marginTop={10} numberOfLines={2} ellipsizeMode="tail" style={{ flexShrink: 1 }}>
               {profile?.fullName || profile?.username || ""}
             </Text>
           </YStack>
@@ -297,7 +277,7 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
                 onPress={() =>
                   router.push({
                     pathname: "/viewer/[postId]",
-                    params: { postId: item.id, source: "user", index: String(index) },
+                    params: { postId: item.id, source: "user", index: String(index), userId },
                   })
                 }
               />

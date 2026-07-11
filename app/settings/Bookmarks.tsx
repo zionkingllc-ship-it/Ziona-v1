@@ -5,7 +5,7 @@ import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useRouter, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { FlatList, Dimensions, RefreshControl, TouchableOpacity, Pressable, BackHandler } from "react-native";
+import { ActivityIndicator, FlatList, Dimensions, RefreshControl, TouchableOpacity, Pressable, BackHandler } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 import colors from "@/constants/colors";
 import { FeedPost } from "@/types/feedTypes";
@@ -33,7 +33,8 @@ export default function BookmarksScreen() {
   const [confirmDeletePostId, setConfirmDeletePostId] = useState<string | null>(null);
   const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
   const [deleteFolderName, setDeleteFolderName] = useState<string>("");
-  const [deleteSuccessVisible, setDeleteSuccessVisible] = useState(false);
+  const [postDeleteFeedback, setPostDeleteFeedback] = useState<{ visible: boolean; type: "success" | "failed"; title: string; message: string }>({ visible: false, type: "success", title: "", message: "" });
+  const [folderDeleteFeedback, setFolderDeleteFeedback] = useState<{ visible: boolean; type: "success" | "failed"; title: string; message: string }>({ visible: false, type: "success", title: "", message: "" });
   const postDeleteModalVisible = confirmDeletePostId !== null;
   const folderDeleteModalVisible = confirmDeleteFolderId !== null;
 
@@ -127,13 +128,19 @@ export default function BookmarksScreen() {
       onSuccess: () => {
         deleteFolder(confirmDeleteFolderId);
         setConfirmDeleteFolderId(null);
-        setDeleteSuccessVisible(true);
+        // Delay showing success modal slightly to avoid the backlog press event (from the Delete button)
+        setTimeout(() => {
+          setFolderDeleteFeedback({ visible: true, type: "success", title: "Deleted!", message: `"${deleteFolderName}" has been deleted.` });
+        }, 150);
       },
-      onError: (err) => {
-        console.error("🔍 [deleteFolder] error:", err);
+      onError: () => {
+        setConfirmDeleteFolderId(null);
+        setTimeout(() => {
+          setFolderDeleteFeedback({ visible: true, type: "failed", title: "Failed to Delete", message: "Please try again." });
+        }, 150);
       },
     });
-  }, [confirmDeleteFolderId, deleteFolderMutation, deleteFolder]);
+  }, [confirmDeleteFolderId, deleteFolderMutation, deleteFolder, deleteFolderName]);
 
   const handlePostLongPress = useCallback((postId: string) => {
     setConfirmDeletePostId(postId);
@@ -156,6 +163,16 @@ export default function BookmarksScreen() {
       onSuccess: () => {
         removeBookmarks([confirmDeletePostId], selectedFolderId || undefined);
         setConfirmDeletePostId(null);
+        // Delay showing success modal slightly to avoid the backdrop Pressable capturing the same tap
+        setTimeout(() => {
+          setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: "Post removed from bookmarks." });
+        }, 150);
+      },
+      onError: () => {
+        setConfirmDeletePostId(null);
+        setTimeout(() => {
+          setPostDeleteFeedback({ visible: true, type: "failed", title: "Failed to Remove", message: "Please try again." });
+        }, 150);
       },
     });
   }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId]);
@@ -224,10 +241,14 @@ export default function BookmarksScreen() {
           <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
             This will be removed from your saved items. You can bookmark it again anytime.
           </Text>
-          <Pressable onPress={handleConfirmDeletePost}>
-            <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
-              Remove
-            </Text>
+          <Pressable onPress={handleConfirmDeletePost} disabled={bulkRemoveMutation.isPending}>
+            {bulkRemoveMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.DEBIT_RED} />
+            ) : (
+              <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
+                Remove
+              </Text>
+            )}
           </Pressable>
           <Pressable onPress={() => setConfirmDeletePostId(null)}>
             <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
@@ -252,10 +273,14 @@ export default function BookmarksScreen() {
           <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
             "{deleteFolderName}" will be permanently deleted along with all saved posts in it.
           </Text>
-          <Pressable onPress={handleConfirmDeleteFolder}>
-            <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
-              Delete
-            </Text>
+          <Pressable onPress={handleConfirmDeleteFolder} disabled={deleteFolderMutation.isPending}>
+            {deleteFolderMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.DEBIT_RED} />
+            ) : (
+              <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
+                Delete
+              </Text>
+            )}
           </Pressable>
           <Pressable onPress={() => setConfirmDeleteFolderId(null)}>
             <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
@@ -265,15 +290,28 @@ export default function BookmarksScreen() {
         </YStack>
       </BaseModal>
 
-      <SuccessModal
-        visible={deleteSuccessVisible}
-        onClose={() => setDeleteSuccessVisible(false)}
-        title="Deleted!"
-        message={`"${deleteFolderName}" has been deleted.`}
-        type="success"
-        autoClose
-        duration={3000}
-      />
+      {postDeleteFeedback.visible && (
+        <SuccessModal
+          visible={postDeleteFeedback.visible}
+          onClose={() => setPostDeleteFeedback((prev) => ({ ...prev, visible: false }))}
+          title={postDeleteFeedback.title}
+          message={postDeleteFeedback.message}
+          type={postDeleteFeedback.type}
+          autoClose
+          duration={3000}
+        />
+      )}
+      {folderDeleteFeedback.visible && (
+        <SuccessModal
+          visible={folderDeleteFeedback.visible}
+          onClose={() => setFolderDeleteFeedback((prev) => ({ ...prev, visible: false }))}
+          title={folderDeleteFeedback.title}
+          message={folderDeleteFeedback.message}
+          type={folderDeleteFeedback.type}
+          autoClose
+          duration={3000}
+        />
+      )}
 
       {selectedFolderId ? (
         <>

@@ -7,10 +7,10 @@ import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Pressable, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Image as ExpoImage } from "expo-image";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { Image, Text, View, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
 
 import { CommentsSheet } from "../comments/commentsModal";
@@ -118,6 +118,7 @@ function PostCardComponent({
   const [successTitle, setSuccessTitle] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [successType, setSuccessType] = useState<"success" | "failed" | "warning" | "softwarning">("success");
+  const [bookmarkFeedback, setBookmarkFeedback] = useState<{ visible: boolean; type: "success" | "failed"; title: string; message: string }>({ visible: false, type: "success", title: "", message: "" });
   const [shareVisible, setShareVisible] = useState(false);
 
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -152,6 +153,9 @@ function PostCardComponent({
   } = useBookmarkFlow(post.id, post.viewerState?.saved || isBookmarked);
   const isLikePending = usePostActionsStore(
     (s) => s.pendingLikes[post.id] ?? false,
+  );
+  const isSavePending = usePostActionsStore(
+    (s) => s.pendingSaves[post.id] ?? false,
   );
 
   const toggleLikeMutation = useToggleLike();
@@ -198,6 +202,24 @@ function PostCardComponent({
   const handleShare = useCallback(() => {
     requireAuth(() => setShareVisible(true));
   }, [requireAuth, setShareVisible]);
+
+  const handleToggleFolder = useCallback((folderId?: string) => {
+    if (!folderId) return;
+    const isInFolder = savedFolderIds.includes(folderId);
+
+    toggleFolder(folderId, {
+      onSuccess: () => {
+        if (isInFolder) {
+          setBookmarkFeedback({ visible: true, type: "success", title: "Removed", message: "Post removed from folder." });
+        } else {
+          setBookmarkFeedback({ visible: true, type: "success", title: "Saved", message: "Post saved." });
+        }
+      },
+      onError: () => {
+        setBookmarkFeedback({ visible: true, type: "failed", title: "Failed to Save", message: "Please try again." });
+      },
+    });
+  }, [toggleFolder, savedFolderIds]);
 
   const handleOptions = useCallback(() => {
     requireAuth(() => setOptionsVisible(true));
@@ -358,11 +380,17 @@ function PostCardComponent({
             <YStack alignItems="center">
               <GestureDetector gesture={Gesture.Native()}>
                 <Pressable onPress={handleBookmark}>
-                  <Image
-                    source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
-                    width={30}
-                    height={30}
-                  />
+                  {isSavePending ? (
+                    <View width={30} height={30} justifyContent="center" alignItems="center">
+                      <ActivityIndicator size="small" color={colors.white} />
+                    </View>
+                  ) : (
+                    <Image
+                      source={isBookmarked ? bookmarkIconActive : bookmarkIcon}
+                      width={30}
+                      height={30}
+                    />
+                  )}
                 </Pressable>
               </GestureDetector>
               <Text color={colors.white} fontSize={12}>{savedCount}</Text>
@@ -490,7 +518,7 @@ function PostCardComponent({
           visible={foldersVisible}
           savedFolderIds={savedFolderIds}
           onClose={() => setFoldersVisible(false)}
-          onToggleFolder={toggleFolder}
+          onToggleFolder={handleToggleFolder}
           onCreateNew={() => {
             setFoldersVisible(false);
             setCreateVisible(true);
@@ -503,9 +531,24 @@ function PostCardComponent({
           post={post}
           onClose={() => setCreateVisible(false)}
           onSave={(name, thumbnailUri) => {
-            createFolder(name, thumbnailUri);
-            setCreateVisible(false);
+            createFolder(name, thumbnailUri, {
+              onSuccess: () => {
+                setBookmarkFeedback({ visible: true, type: "success", title: "Saved", message: "Post saved to new folder." });
+              },
+              onError: () => {
+                setBookmarkFeedback({ visible: true, type: "failed", title: "Failed to Save", message: "Please try again." });
+              },
+            });
           }}
+        />
+      )}
+      {bookmarkFeedback.visible && (
+        <SuccessModal
+          visible={bookmarkFeedback.visible}
+          onClose={() => setBookmarkFeedback((prev) => ({ ...prev, visible: false }))}
+          title={bookmarkFeedback.title}
+          message={bookmarkFeedback.message}
+          type={bookmarkFeedback.type}
         />
       )}
       {AuthModal}

@@ -6,6 +6,7 @@ export type UserProfile = {
   bioLink?: string
   avatarUrl?: string | null
   location?: string
+  createdAt?: string
   hideLikeCount?: boolean
 
   stats?: {

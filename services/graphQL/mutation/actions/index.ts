@@ -6,3 +6,4 @@ export * from "./save";
 export * from "./comments";
 export * from "./bookmarks";
 export { followUser, unfollowUser } from "./follow";
+export * from "./updateProfile";

@@ -13,6 +13,7 @@ query GetUserProfile($userId: String!) {
     bioLink
     avatarUrl
     location
+    createdAt
     hideLikeCount
     stats { followersCount followingCount postsCount }
     recentPosts {

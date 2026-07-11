@@ -48,6 +48,9 @@ export default function Header({
           fontSize={headingSize ? headingSize : "$4"}
           fontWeight={headingWeight}
           textAlign="center"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ flexShrink: 1 }}
         >
           {heading}
         </Text>
