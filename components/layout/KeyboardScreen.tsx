@@ -1,12 +1,12 @@
 import { ReactNode } from "react";
 import {
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { keyboardBehavior, keyboardOffset } from "@/constants/platform";
 
 type Props = {
   children: ReactNode;
@@ -20,8 +20,8 @@ export default function KeyboardScreen({ children, keyboardVerticalOffset }: Pro
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? iosOffset : 0}
+      behavior={keyboardBehavior()}
+      keyboardVerticalOffset={keyboardOffset(iosOffset)}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView

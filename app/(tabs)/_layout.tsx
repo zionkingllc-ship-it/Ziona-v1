@@ -7,13 +7,11 @@ import { getNotifications, getUnreadNotificationCount } from "@/services/graphQL
 import { Tabs, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Image } from "expo-image";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "tamagui";
 import { useAuthStore } from "@/store/useAuthStore";
 import { queryClient } from "@/lib/queryClient";
-
-// Visual height of tab bar only (safe area handled separately by OS)
-const TAB_BAR_VISUAL_HEIGHT = Platform.OS === "ios" ? 49 : 56;
+import { tabBarHeight as TAB_BAR_VISUAL_HEIGHT } from "@/constants/platform";
 
 function getColorFromName(name?: string): string {
   if (!name) return "#7A2E8A";

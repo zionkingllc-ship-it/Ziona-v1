@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { Dimensions, useWindowDimensions, Platform, StatusBar } from 'react-native';
+import { Dimensions, useWindowDimensions, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isIOS } from "@/constants/platform";
 
 interface ScreenDimensions {
   // Window dimensions (total screen size including status bar but not nav bar)
@@ -54,7 +55,7 @@ interface ScreenDimensions {
 const ScreenDimensionsContext = createContext<ScreenDimensions | undefined>(undefined);
 
 // Standard tab bar heights (visual height only, NOT including safe area)
-const BASE_TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
+const BASE_TAB_BAR_HEIGHT = isIOS ? 49 : 56;
 
 interface Props {
   children: ReactNode;
@@ -87,7 +88,7 @@ export function ScreenDimensionsProvider({ children }: Props) {
   
   // On Android, windowHeight excludes status bar but includes nav bar
   // On iOS, windowHeight includes everything
-  const effectiveTopInset = Platform.OS === 'ios' ? insets.top : Math.max(insets.top, statusBarHeight);
+  const effectiveTopInset = isIOS ? insets.top : Math.max(insets.top, statusBarHeight);
   
   // Feed width accounts for left/right safe areas
   const feedWidth = windowWidth - insets.left - insets.right;
@@ -114,8 +115,8 @@ export function ScreenDimensionsProvider({ children }: Props) {
   const isLargeScreen = windowWidth > 430;
   
   // Platform
-  const isIOS = Platform.OS === 'ios';
-  const isAndroid = Platform.OS === 'android';
+
+  const isAndroid = !isIOS;
   
   // Percentage helpers
   const wp = (percentage: number) => (windowWidth * percentage) / 100;

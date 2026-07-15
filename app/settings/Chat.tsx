@@ -3,7 +3,8 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
 import { useState } from "react";
-import { TextInput, Pressable, Platform, Keyboard, KeyboardAvoidingView, ActivityIndicator } from "react-native";
+import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator } from "react-native";
+import { isIOS, keyboardBehavior } from "@/constants/platform";
 import { Ionicons } from "@expo/vector-icons";
 import { submitHelpMessage, resolveHelpConversation } from "@/services/graphQL/mutation/help";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -74,8 +75,8 @@ export default function ChatScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        behavior={isIOS ? "padding" : undefined}
+        keyboardVerticalOffset={0}
       >
         <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
           {mode === "chat" ? (
@@ -150,7 +151,7 @@ export default function ChatScreen() {
                 backgroundColor={colors.lightGrayBg}
                 borderRadius={10}
                 paddingHorizontal={12}
-                paddingVertical={Platform.OS === "ios" ? 12 : 8}
+                paddingVertical={isIOS ? 12 : 8}
               >
                 <TextInput
                   value={input}

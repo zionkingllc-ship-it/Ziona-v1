@@ -9,8 +9,9 @@ import { useSignupStore } from "@/store/useSignupStore";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Platform, Pressable } from "react-native";
+import { Animated, Easing, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { isIOS } from "@/constants/platform";
 
 const cards = [
   {
@@ -176,7 +177,7 @@ export default function LoginIndex() {
             }}
           />
 
-          {Platform.OS === "ios" && (
+          {isIOS && (
             <PrimaryButton
               text="Continue with Apple"
               color={colors.white}

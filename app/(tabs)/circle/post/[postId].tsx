@@ -27,6 +27,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { keyboardBehavior } from "@/constants/platform";
 import { CircleCommentItem } from "@/components/circles/CircleCommentItem";
 import { MentionSuggestions } from "@/components/comments/MentionSuggestions";
 import type { MentionUser } from "@/components/comments/MentionSuggestions";
@@ -224,7 +225,7 @@ export default function CirclePostDetailScreen() {
       </XStack>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={keyboardBehavior()}
         style={{ flex: 1 }}
       >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}

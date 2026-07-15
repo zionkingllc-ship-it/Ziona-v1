@@ -24,6 +24,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { keyboardBehavior } from "@/constants/platform";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import SuccessModal from "@/components/ui/modals/successModal";
 
@@ -193,7 +194,7 @@ export default function CircleCommentComposer({
     <>
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: "#FFF" }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={keyboardBehavior()}
         keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
       >
         <View style={{ flex: 1, top: insets.top, paddingBottom: insets.bottom  }}>

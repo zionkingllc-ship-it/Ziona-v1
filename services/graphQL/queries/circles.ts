@@ -141,7 +141,6 @@ export const GET_CIRCLE_DETAIL = `
 `;
 
 export const GET_CIRCLE_FEED = `
-  # Backend TODO: add $sortBy: String, $authorId: String params and pass them to circleFeed
   query GetCircleFeed($circleId: String!, $page: Int, $pageSize: Int) {
     circleFeed(circleId: $circleId, page: $page, pageSize: $pageSize) {
       pageInfo {
@@ -610,9 +609,6 @@ export async function fetchCircleFeed(
     circleId,
     page,
     pageSize,
-    // Backend TODO: uncomment when API supports sortBy/authorId
-    // sortBy: sortBy || undefined,
-    // authorId: authorId || undefined,
   });
   return (
     res?.circleFeed ?? {

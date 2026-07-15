@@ -10,7 +10,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useSignupStore } from "@/store/useSignupStore";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Pressable } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
+import { isIOS } from "@/constants/platform";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -199,7 +200,7 @@ export default function AuthIndex() {
               startIcon={<Image source={mail} width={wp(6)} height={wp(6)} />}
             />
 
-            {Platform.OS === "ios" && (
+            {isIOS && (
             <PrimaryButton
               text="Continue with Apple"
               color={colors.white}
