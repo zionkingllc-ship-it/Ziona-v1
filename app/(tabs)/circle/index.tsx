@@ -6,6 +6,7 @@ import colors from "@/constants/colors";
 import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circles";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCircleStore } from "@/store/circleStore";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,13 +22,16 @@ const CIRCLES_CACHE_KEY = "allCircles";
 export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hasSeenIntro = useCircleStore((s) => s.hasSeenIntro);
+  const loadSeenIntro = useCircleStore((s) => s.loadSeenIntro);
+  const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
   const [allCircles, setAllCircles] = useState<any[]>([]);
   const [myCircles, setMyCircles] = useState<any[]>([]);
   const [activeAnchors, setActiveAnchors] = useState<any[]>([]);
   const [viewedAnchors, setViewedAnchors] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!hasSeenIntro);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -36,6 +40,7 @@ export default function CirclesSuggestion() {
   useFocusEffect(
     useCallback(() => {
       if (!isMounted.current) {
+        loadSeenIntro();
         loadCachedCircles();
         isMounted.current = true;
       }
@@ -141,7 +146,14 @@ export default function CirclesSuggestion() {
   }
 
   if (showIntro) {
-    return <CirclesIntro onClose={() => setShowIntro(false)} />;
+    return (
+      <CirclesIntro
+        onClose={() => {
+          setShowIntro(false);
+          setSeenIntro();
+        }}
+      />
+    );
   }
 
   const renderEmptyState = () => (

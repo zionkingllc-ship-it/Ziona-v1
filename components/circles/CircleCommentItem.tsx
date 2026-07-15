@@ -1,13 +1,14 @@
 import MentionText from "@/components/comments/MentionText";
 import React, { useMemo, useState } from "react";
 import { Image } from "expo-image";
-import { TouchableOpacity, Alert, Pressable } from "react-native";
+import { TouchableOpacity, Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { CircleComment } from "@/services/graphQL/mutation/actions/circleComments";
 import themeColors from "@/constants/colors";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
 
 type Props = {
   comment: CircleComment;
@@ -82,14 +83,10 @@ function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string 
 }
 
 function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfile }: ReplyRowProps) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   return (
     <TouchableOpacity
-      onLongPress={() => {
-        Alert.alert("Delete comment", "Are you sure?", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => onDelete(reply.id) },
-        ]);
-      }}
+      onLongPress={() => setShowDeleteModal(true)}
       activeOpacity={1}
     >
       <XStack gap="$2" paddingLeft="$4" paddingTop="$2" alignItems="flex-start">
@@ -127,11 +124,20 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfil
           </XStack>
         </YStack>
       </XStack>
+      <DeleteConfirmationModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => { setShowDeleteModal(false); onDelete(reply.id); }}
+        title="Delete comment"
+        message="Are you sure?"
+        confirmText="Delete"
+      />
     </TouchableOpacity>
   );
 }
 
 export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPending }: Props) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   const hasReplies = (comment.replies?.length || 0) > 0;
   const { requireAuth, AuthModal } = useRequireAuth();
@@ -150,12 +156,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
 
   return (
     <TouchableOpacity
-      onLongPress={() => {
-        Alert.alert("Delete comment", "Are you sure?", [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: () => onDelete(comment.id) },
-        ]);
-      }}
+      onLongPress={() => setShowDeleteModal(true)}
       activeOpacity={1}
     >
       <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
@@ -228,6 +229,14 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
           </TouchableOpacity>
         )}
       </YStack>
+      <DeleteConfirmationModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => { setShowDeleteModal(false); onDelete(comment.id); }}
+        title="Delete comment"
+        message="Are you sure?"
+        confirmText="Delete"
+      />
       {AuthModal}
     </TouchableOpacity>
   );

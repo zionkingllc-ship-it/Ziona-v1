@@ -14,7 +14,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -27,6 +26,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
+import SuccessModal from "@/components/ui/modals/successModal";
 
 type Props = {
   /** Optional circleId passed from a wrapper route to ensure the param is available */
@@ -44,6 +44,7 @@ export default function PostComposer({ initialCircleId }: Props) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorType, setErrorType] = useState<"warning" | "failed">("failed");
   const [picking, setPicking] = useState(false);
   const [posting, setPosting] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -87,7 +88,9 @@ console.log("circleId", circleId);
 
     if (video && (videoDuration ?? 0) >= 90000) {
       const secs = Math.round((videoDuration ?? 0) / 1000);
-      Alert.alert("Video Too Long", `Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      setErrorType("warning");
+      setErrorMessage(`Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      setShowError(true);
       return;
     }
 
@@ -143,14 +146,18 @@ console.log("circleId", circleId);
       }
 
       if (result?.error?.code === "NOT_MEMBER") {
-        Alert.alert("Join First", "You need to join this circle to post. Tap the Join button on the circle feed.");
+        setErrorType("warning");
+        setErrorMessage("You need to join this circle to post. Tap the Join button on the circle feed.");
+        setShowError(true);
         setPosting(false);
         return;
       }
 
       if (!result?.success) {
         console.error("[PostComposer] Post failed:", JSON.stringify(result?.error));
-        Alert.alert("Error", result?.error?.message || "Failed to create post");
+        setErrorType("failed");
+        setErrorMessage(result?.error?.message || "Failed to create post");
+        setShowError(true);
         setPosting(false);
         return;
       }
@@ -168,8 +175,9 @@ console.log("circleId", circleId);
     } catch (error: any) {
       if (cancelledRef.current) return;
       console.error("Failed to create post:", error);
-      const message = error?.message || "Something went wrong. Please try again.";
-      Alert.alert("Error", message);
+      setErrorType("failed");
+      setErrorMessage(error?.message || "Something went wrong. Please try again.");
+      setShowError(true);
     } finally {
       setPosting(false);
     }
@@ -288,7 +296,9 @@ console.log("circleId", circleId);
                 try {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== "granted") {
-                  Alert.alert("Permission required", "Please grant media library access in Settings to attach media.");
+                  setErrorType("warning");
+                  setErrorMessage("Please grant media library access in Settings to attach media.");
+                  setShowError(true);
                   return;
                 }
                 const result = await ImagePicker.launchImageLibraryAsync({
@@ -371,67 +381,25 @@ console.log("circleId", circleId);
         </View>
       </KeyboardAvoidingView>
 
-      <Modal visible={showSuccess} transparent animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#FFF",
-              padding: 24,
-              borderRadius: 16,
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <Ionicons name="checkmark-circle" size={48} color="#4CAF50" />
-            <Text fontSize={18} fontWeight="600">Post Created!</Text>
-          </View>
-        </View>
-      </Modal>
+      <SuccessModal
+        visible={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        title="Post Created!"
+        type="success"
+        autoClose={false}
+      />
 
-      <Modal visible={showError} transparent animationType="fade">
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-          onPress={() => setShowError(false)}
-        >
-          <View
-            style={{
-              backgroundColor: "#FFF",
-              padding: 24,
-              borderRadius: 16,
-              alignItems: "center",
-              gap: 12,
-              marginHorizontal: 32,
-            }}
-          >
-            <Ionicons name="alert-circle" size={48} color="#E53935" />
-            <Text fontSize={16} fontWeight="600" textAlign="center">{errorMessage}</Text>
-            <Pressable
-              onPress={() => setShowError(false)}
-              style={{
-                backgroundColor: "#E53935",
-                paddingHorizontal: 24,
-                paddingVertical: 8,
-                borderRadius: 20,
-                marginTop: 4,
-              }}
-            >
-              <Text color="#FFF" fontWeight="600">OK</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+      <SuccessModal
+        visible={showError}
+        onClose={() => setShowError(false)}
+        title={errorType === "warning" ? "Warning" : "Error"}
+        message={errorMessage}
+        type={errorType}
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setShowError(false)}
+      />
     </>
   );
 }

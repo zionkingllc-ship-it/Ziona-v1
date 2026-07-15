@@ -3,15 +3,17 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
 import { useState } from "react";
-import { TextInput, Pressable, Platform, Keyboard, KeyboardAvoidingView, ActivityIndicator, Alert } from "react-native";
+import { TextInput, Pressable, Platform, Keyboard, KeyboardAvoidingView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { submitContact } from "@/services/graphQL/mutation/contact";
+import { submitHelpMessage, resolveHelpConversation } from "@/services/graphQL/mutation/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import colors from "@/constants/colors";
 
 export default function ChatScreen() {
   const [showModal, setShowModal] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { mode, messages, ticketId, setConversation, addMessage, clear } = useChatStore();
@@ -25,16 +27,15 @@ export default function ChatScreen() {
       setSubmitting(true);
       const text = input.trim();
       try {
-        const result = await submitContact({
-          brand: "ZIONA",
-          email: userEmail || `${userName}@ziona.app`,
+        const result = await submitHelpMessage({
           message: text,
-          name: userName,
+          email: userEmail || undefined,
+          name: userName || undefined,
         });
         setConversation([
           { text, fromUser: true },
           { text: "You are important to us. Your message will be replied to as soon as possible.", fromUser: false },
-        ], result.ticketId || "");
+        ], result.contact?.id || "");
         setInput("");
       } catch (err: any) {
         Alert.alert("Error", err?.message || "Failed to send message. Please try again.");
@@ -45,19 +46,24 @@ export default function ChatScreen() {
       addMessage({ text, fromUser: true });
       setInput("");
       try {
-        await submitContact({
-          brand: "ZIONA",
-          email: userEmail || `${userName}@ziona.app`,
+        await submitHelpMessage({
           message: text,
-          name: userName,
+          email: userEmail || undefined,
+          name: userName || undefined,
         });
       } catch (err: any) {
-        Alert.alert("Error", err?.message || "Failed to send message.");
+        setErrorMsg(err?.message || "Failed to send message.");
+        setShowError(true);
       }
     }
   };
 
-  const handleResolved = () => {
+  const handleResolved = async () => {
+    try {
+      if (ticketId) {
+        await resolveHelpConversation(ticketId);
+      }
+    } catch {}
     clear();
     setShowModal(false);
   };
@@ -207,6 +213,18 @@ export default function ChatScreen() {
         withButton
         buttonText="Got it"
         onButtonPress={handleResolved}
+      />
+
+      <SuccessModal
+        visible={showError}
+        onClose={() => setShowError(false)}
+        title="Error"
+        message={errorMsg}
+        type="failed"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setShowError(false)}
       />
     </SafeAreaView>
   );

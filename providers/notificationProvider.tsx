@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Alert, AppState, AppStateStatus, Linking, Platform } from "react-native";
+import { AppState, AppStateStatus, Linking, NativeModules, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import {
@@ -7,6 +7,15 @@ import {
   registerDeviceToken,
 } from "@/services/graphQL/queries/actions/notifications";
 import { useAuthStore } from "@/store/useAuthStore";
+
+let messaging: any = null;
+try {
+  if (NativeModules.RNFBAppModule) {
+    messaging = require("@react-native-firebase/messaging").default;
+  }
+} catch {
+  console.log("FCM native module not available — using expo-notifications device token fallback");
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,10 +48,17 @@ async function requestPermissionsAndRegister() {
     }
   }
   try {
-    const devicePushToken = await Notifications.getDevicePushTokenAsync();
-    console.log("🔔 Got device push token:", devicePushToken.data);
-    const success = await registerDeviceToken(devicePushToken.data, Platform.OS);
-    console.log("🔔 Token registered:", success);
+    if (messaging) {
+      const fcmToken = await messaging().getToken();
+      console.log("🔔 Got FCM token:", fcmToken);
+      const success = await registerDeviceToken(fcmToken, Platform.OS);
+      console.log("🔔 Token registered:", success);
+    } else {
+      const devicePushToken = await Notifications.getDevicePushTokenAsync();
+      console.log("🔔 Got device push token (FCM unavailable):", devicePushToken.data);
+      const success = await registerDeviceToken(devicePushToken.data, Platform.OS);
+      console.log("🔔 Token registered:", success);
+    }
   } catch (err) {
     console.warn("🔔 Push token registration failed:", err);
   }
@@ -73,6 +89,21 @@ export default function NotificationProvider({ children }: { children: React.Rea
   useEffect(() => {
     setupAndroidChannel();
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !messaging) return;
+
+    const unsubscribe = messaging().onTokenRefresh(async (token: string) => {
+      console.log("🔔 FCM token refreshed:", token);
+      try {
+        await registerDeviceToken(token, Platform.OS);
+      } catch (err) {
+        console.warn("🔔 Token refresh registration failed:", err);
+      }
+    });
+
+    return unsubscribe;
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {

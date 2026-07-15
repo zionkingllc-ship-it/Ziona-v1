@@ -10,7 +10,7 @@ import { ChevronRight } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView } from "react-native";
+import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, Text, XStack, YStack, View } from "tamagui";
 
@@ -51,16 +51,14 @@ export default function EditProfileScreen() {
     setAvatarLoadFailed(false);
   }, [localAvatar, user?.avatarUrl]);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [permissionVisible, setPermissionVisible] = useState(false);
 
   const handlePickImage = async () => {
     if (avatarMutation.isPending) return;
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
-        "Permission required",
-        "Please grant media library access in Settings to change your profile picture.",
-      );
+      setPermissionVisible(true);
       return;
     }
 
@@ -222,6 +220,19 @@ export default function EditProfileScreen() {
         title="Failed"
         message="Could not update profile photo"
         type="failed"
+      />
+
+      {/* PERMISSION MODAL */}
+      <SuccessModal
+        visible={permissionVisible}
+        onClose={() => setPermissionVisible(false)}
+        title="Permission required"
+        message="Please grant media library access in Settings to change your profile picture."
+        type="warning"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setPermissionVisible(false)}
       />
     </SafeAreaView>
   );

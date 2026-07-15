@@ -1,18 +1,21 @@
 import Header from "@/components/layout/header";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TextInput, Pressable, Keyboard, Alert, ActivityIndicator } from "react-native";
+import { TextInput, Pressable, Keyboard, ActivityIndicator } from "react-native";
 import { View, XStack, Text } from "tamagui";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { submitContact } from "@/services/graphQL/mutation/contact";
+import { submitHelpMessage } from "@/services/graphQL/mutation/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import colors from "@/constants/colors";
+import SuccessModal from "@/components/ui/modals/successModal";
 
 export default function ChatInputScreen() {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const user = useAuthStore((s) => s.user);
   const userName = user?.username || "User";
   const userEmail = user?.email || "";
@@ -21,15 +24,14 @@ export default function ChatInputScreen() {
     if (!message.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const result = await submitContact({
-        brand: "ZIONA",
-        email: userEmail || `${userName}@ziona.app`,
+      const result = await submitHelpMessage({
         message: message.trim(),
-        name: userName,
+        email: userEmail || undefined,
+        name: userName || undefined,
       });
       router.push({
         pathname: "/settings/Chat",
-        params: { message: message.trim(), ticketId: result.ticketId || "" },
+        params: { message: message.trim(), ticketId: result.contact?.id || "" },
       });
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to send message. Please try again.");
@@ -85,6 +87,18 @@ export default function ChatInputScreen() {
           )}
         </Pressable>
       </View>
+
+      <SuccessModal
+        visible={showError}
+        onClose={() => setShowError(false)}
+        title="Error"
+        message={errorMsg}
+        type="failed"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setShowError(false)}
+      />
     </SafeAreaView>
   );
 }

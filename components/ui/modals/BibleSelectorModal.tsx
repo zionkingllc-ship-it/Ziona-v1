@@ -11,7 +11,6 @@ import { shortenBookName } from "@/utils/bibleNames";
 import { Search } from "@tamagui/lucide-icons";
 
 import {
-  Alert,
   Dimensions,
   FlatList,
   Platform,
@@ -22,6 +21,7 @@ import {
 
 import { Text, View, XStack } from "tamagui";
 import CloseButton from "../CloseButton";
+import SuccessModal from "./successModal";
 
 import colors from "@/constants/colors";
 
@@ -104,6 +104,7 @@ export default function BibleSelectorModal({
 
   const [search, setSearch] = useState("");
   const [testament, setTestament] = useState<"old" | "new">("old");
+  const [showSelectionTooLong, setShowSelectionTooLong] = useState(false);
 
   /* =========================
      INITIAL LOAD
@@ -472,7 +473,7 @@ export default function BibleSelectorModal({
           const text = selectedVerses.map((v: any) => `(${v.number}) ${v.text}`).join(" ");
 
           if (text.length > 500) {
-            Alert.alert("Selection too long", "You can select up to 500 characters. Please reduce your selection.");
+            setShowSelectionTooLong(true);
             return;
           }
 
@@ -488,6 +489,18 @@ export default function BibleSelectorModal({
           onClose();
           onDone(data);
         }}
+      />
+
+      <SuccessModal
+        visible={showSelectionTooLong}
+        onClose={() => setShowSelectionTooLong(false)}
+        title="Selection too long"
+        message="You can select up to 500 characters. Please reduce your selection."
+        type="warning"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setShowSelectionTooLong(false)}
       />
     </BaseModal>
   );

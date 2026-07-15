@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef } from "react";
 import {
-  Alert,
   View,
   ScrollView,
   StyleSheet,
@@ -27,6 +26,7 @@ import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import themeColors from "@/constants/colors";
+import SuccessModal from "@/components/ui/modals/successModal";
 import { CircleCommentItem } from "@/components/circles/CircleCommentItem";
 import { MentionSuggestions } from "@/components/comments/MentionSuggestions";
 import type { MentionUser } from "@/components/comments/MentionSuggestions";
@@ -84,6 +84,7 @@ export default function CirclePostDetailScreen() {
   const [postImageError, setPostImageError] = useState(false);
   const [videoThumbError, setVideoThumbError] = useState(false);
   const [anchorImageError, setAnchorImageError] = useState(false);
+  const [showPermissionAlert, setShowPermissionAlert] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const currentUser = useAuthStore((state) => state.user);
@@ -427,7 +428,7 @@ export default function CirclePostDetailScreen() {
               onPress={async () => {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== "granted") {
-                  Alert.alert("Permission required", "Please grant media library access in Settings to attach images.");
+                  setShowPermissionAlert(true);
                   return;
                 }
                 const result = await ImagePicker.launchImageLibraryAsync({
@@ -494,6 +495,18 @@ export default function CirclePostDetailScreen() {
           </XStack>
         </View>
       </KeyboardAvoidingView>
+
+      <SuccessModal
+        visible={showPermissionAlert}
+        onClose={() => setShowPermissionAlert(false)}
+        title="Permission required"
+        message="Please grant media library access in Settings to attach images."
+        type="warning"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setShowPermissionAlert(false)}
+      />
     </SafeAreaView>
   );
 }

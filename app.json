@@ -23,7 +23,8 @@
         "LSApplicationQueriesSchemes": [
           "whatsapp",
           "sms",
-          "mailto"
+          "mailto",
+          "ziona"
         ],
         "CFBundleURLTypes": [
           {
@@ -38,6 +39,7 @@
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.zionking.ziona",
       "intentFilters": [
@@ -53,6 +55,11 @@
               "scheme": "https",
               "host": "dev.ziona.app",
               "pathPrefix": "/post"
+            },
+            {
+              "scheme": "ziona",
+              "host": "*",
+              "pathPrefix": "/viewer"
             }
           ],
           "category": [
@@ -83,6 +90,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       "expo-router",
       [
         "expo-build-properties",
