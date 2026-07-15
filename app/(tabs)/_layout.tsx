@@ -11,7 +11,7 @@ import { View } from "react-native";
 import { Text } from "tamagui";
 import { useAuthStore } from "@/store/useAuthStore";
 import { queryClient } from "@/lib/queryClient";
-import { tabBarHeight as TAB_BAR_VISUAL_HEIGHT } from "@/constants/platform";
+import { isAndroid, tabBarHeight as TAB_BAR_VISUAL_HEIGHT } from "@/constants/platform";
 
 function getColorFromName(name?: string): string {
   if (!name) return "#7A2E8A";
@@ -103,7 +103,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 13,
           fontWeight: "400",
-          marginBottom: Platform.OS === "android" ? 4 : 0,
+          marginBottom: isAndroid ? 4 : 0,
         },
       }}
     >
