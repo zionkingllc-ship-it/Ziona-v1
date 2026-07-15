@@ -1,139 +1,83 @@
-# Apple Sign In Setup
+# Ziona Codebase Guide
 
-## Prerequisites
-- Apple Developer account ($99/yr)
-- Physical iOS device or simulator for testing
+## Auth & Apple Sign-In
 
-## Apple Developer Portal setup
+### Apple Sign-In Flow
+1. User taps Apple button → `AppleAuthentication.signInAsync()` in `services/auth/useAppleAuth.ts`
+2. Apple returns `identityToken` (JWT)
+3. Frontend sends `{ id_token }` to `POST /auth/apple` (via `authApi.appleLogin()`)
+4. Backend validates JWT (JWKS from `appleid.apple.com`, verify `iss`/`aud`/`exp`)
+5. `useAuthStore.setAuth(user, tokens)` → user authenticated
 
-### 1. Register App ID
-1. Go to [developer.apple.com](https://developer.apple.com) → Certificates, Identifiers & Profiles → Identifiers
-2. Select the App ID `com.zionking.ziona` (or create it)
-3. Check **"Sign In with Apple"** capability → Save
+### Config
+- `app.json`: `"expo-apple-authentication"` plugin, iOS entitlements `com.apple.developer.applesignin: ["Default"]`
+- Apple buttons: `app/(auth)/index.tsx` (signup) and `app/(auth)/login/index.tsx` (login), iOS only via `Platform.OS === "ios"`
 
-### 2. Create Service ID (for backend token verification)
-1. Same portal → Identifiers → "+" → Services IDs
-2. Create Service ID (e.g., `com.zionking.ziona.service`)
-3. Configure **"Sign In with Apple"** → primary domain: `ziona.app`
-4. Set return URLs (ask backend team for the callback URL they need)
-5. Copy the **Service ID** — the backend uses this as the `audience` claim when verifying the JWT
+### Backend `POST /auth/apple` Requirements
+- **Request**: `{ "id_token": "..." }`
+- **Response**: `{ user: { id, username, email?, avatarUrl?, role, createdAt }, tokens: { accessToken, refreshToken } }`
+- Lookup user by Apple `sub` → create if not found
 
-### 3. Create signing key (optional, for backend)
-If backend verifies tokens server-side with Apple's JWKS rather than a key, this may not be needed.
+## Deep Link & Share System
 
-## Frontend — already implemented
+### How it works
+- `buildPostUrl(postId)` → `https://ziona.app/post/{id}` (env: `EXPO_PUBLIC_SHARE_DOMAIN`)
+- `buildDeepLink(postId)` → `ziona://viewer/{id}` (env: `EXPO_PUBLIC_DEEP_LINK_SCHEME`)
+- iOS: Universal links via `applinks:ziona.app`
+- Android: Intent filters matching `https://ziona.app/post/*` and `ziona://viewer/*`
+- Handler: `app/_layout.tsx` → `Linking.addEventListener("url", handleDeepLink)`
+- Regex: `/\/post\/(.+)/` or `/\/viewer\/(.+)/` → navigates to `/viewer/{postId}`
+- Viewer default branch uses `usePostById(postId)` (works for any user's post)
 
-### Native build
-```
-npx expo run:ios
-```
-`expo-apple-authentication` is a native module — Expo Go won't work. Must use a development build.
+### Known gaps
+- Regex is greedy — doesn't strip query params (`/post/abc?ref=x` captures `abc?ref=x`)
+- No postId format validation
+- `Linking.getInitialURL()` error silently swallowed
 
-### Config files
-- **`app.json`**: `"expo-apple-authentication"` plugin added (line 89); iOS entitlements `com.apple.developer.applesignin: ["Default"]` set (line 16-18)
-- **`services/auth/useAppleAuth.ts`**: Complete hook that calls `AppleAuthentication.signInAsync()` then `authApi.appleLogin(idToken)`
-- **`services/api/authApi.ts`**: `appleLogin(idToken)` → `POST /auth/apple` with `{ id_token }`
-- **`app/(auth)/index.tsx`** (signup): "Continue with Apple" PrimaryButton (iOS only via `Platform.OS === "ios"`)
-- **`app/(auth)/login/index.tsx`** (login): Same Apple button
+## Location on About Page
 
-### Flow
-1. User taps Apple button → `AppleAuthentication.signInAsync()` presents native Apple sheet
-2. User authenticates → Apple returns `identityToken` (a signed JWT)
-3. Frontend sends `{ id_token: identityToken }` to `POST /auth/apple`
-4. Backend validates the JWT, creates/returns user
-5. `useAuthStore.setAuth(user, tokens)` called → user authenticated
+Already implemented in `app/settings/About.tsx`:
+- Auto-detects location via `useUpdateLocation()` on mount if none exists
+- Uses `expo-location` (geocoding: city, region, country)
+- Saves via `updateProfile(location: String)` GraphQL mutation
+- Displays with loading spinner while detecting
 
-## Backend — `POST /auth/apple`
+## Location on User Profile
 
-### Request
-```json
-{
-  "id_token": "eyJraWQiOiJ... (Apple JWT from client)"
-}
-```
+Backend supports `location: String!` on `UserProfileType` and `UserType`. No edit UI on the profile edit screen yet.
 
-### JWT verification steps
-1. Fetch Apple's public keys from `https://appleid.apple.com/auth/keys` (JWKS endpoint)
-2. Decode JWT header to get `kid` (key ID), match against JWKS keys
-3. Verify JWT signature using the matching public key (RS256)
-4. Verify claims:
-   - `iss` (issuer) === `"https://appleid.apple.com"`
-   - `aud` (audience) === your Service ID (e.g., `"com.zionking.ziona.service"`)
-   - `exp` (expiration) — must not be expired
-5. Extract `sub` — this is Apple's unique user ID
+---
 
-### Response (must match frontend expectation)
-```json
-{
-  "user": {
-    "id": "string",
-    "username": "string",
-    "email": "string?",
-    "avatarUrl": "string?",
-    "role": "user",
-    "createdAt": "string"
-  },
-  "tokens": {
-    "accessToken": "string",
-    "refreshToken": "string"
-  }
-}
-```
+# Audit Findings & Todo
 
-### User creation logic
-- Look up existing user by Apple `sub` (store it as `appleId` on the user record)
-- If exists → return that user + new tokens
-- If new → create user with `appleId`, auto-generate `username` (Apple doesn't provide one reliably after first sign-in), optionally use `email` from the token's `email` claim if scope was requested
-- Return user + tokens
+## 🔴 Critical (fix first)
 
-# Share URL & Deep Link System
+- [ ] **Empty catch blocks (46 occurrences)** — silently swallow errors. Every `catch {}` needs at minimum `console.warn`. Worst: `services/share/services.ts` (7), `components/circles/AnchorVideoPlayer.tsx` (7), `app/CircleExtension/postVideoViewer.tsx` (6)
+- [ ] **Deep link regex unsafe** — `app/_layout.tsx:82` uses `(.+)` which captures query params and trailing path segments. Fix: `/\/post\/([^/?\s]+)/`
+- [ ] **Circular dependency** — `store/useAuthStore.ts` ↔ `services/api/client.ts` ↔ `services/auth/refresh.ts` all import each other. Works at runtime but fragile.
 
-## How shared URLs work
+## 🟠 High
 
-When a user taps "Share" on a post, `buildPostUrl(postId)` generates:
-```
-https://ziona.app/post/{postId}
-```
+- [ ] **Console.log in production (~150+)** — especially `services/api/authApi.ts` (39 calls via custom `log()`), `services/graphQL/graphqlClient.ts` (8), auth flows (16 each). Set up proper logging or strip before release.
+- [ ] **Hardcoded legal URLs** — `services/graphQL/queries/actions/legalDocuments.ts` and `app/settings/terms/[type].tsx` hardcode `ziona.app` URLs for privacy/terms/guidelines. Should be env vars.
+- [ ] **`any` types (~200+ holes)** — concentrated in React Query cache callbacks (`(old: any)` in hooks), post normalization pipeline (`p: any`), and UI component props. Prefer generated GraphQL types.
+- [ ] **`getAppleNonce()` missing try/catch** — `services/api/authApi.ts:170`. Single unhandled async function.
 
-This URL is shared to WhatsApp, Messages, Mail, or copied to clipboard.
+## 🟡 Medium
 
-## How deep links open the app
+- [ ] **Dead code — remove unused files**:
+  - `store/useFeedStore.ts` (Zustand — never imported)
+  - `components/store/FeedStore.tsx` (React Context — never imported, entire `FeedProvider` dead)
+  - `services/graphQL/queries/categories/categoryQueries.ts` (duplicate of `discover/discover.ts`)
+- [ ] **Unused packages** — check if these can be removed: `expo-media-library`, `expo-symbols`, `react-native-worklets`, `zod`
+- [ ] **Inconsistent state management** — `store/circleStore.ts` uses raw `AsyncStorage` instead of Zustand `persist` middleware (unlike `useAuthStore` and `useChatStore`)
+- [ ] **GraphQL query comments** — `services/graphQL/queries/circles.ts:144,613` have `# Backend TODO` comments for unimplemented `sortBy`/`authorId` params
+- [ ] **Duplicate store names** — `usePostStore` and `usePostActionStore` have overlapping responsibilities (likes/saves/bookmarks in one, likes/saves/follows in other)
+- [ ] **`Platform.OS === "ios"` used 11+ times** for conditional rendering — consider a helper/isPlatform constant
 
-- **iOS**: Universal links via `applinks:ziona.app` — clicking `https://ziona.app/post/xxx` opens the app directly
-- **Android**: Intent filters matching `https://ziona.app/post/*` — same behavior
-- **Custom scheme**: `ziona://viewer/{postId}` also works for direct deep linking
+## 🟢 Low / Enhancement
 
-## How the app handles incoming links
-
-`app/_layout.tsx:75-93` — `Linking.addEventListener("url", handleDeepLink)`:
-1. Regex extracts postId from `/post/(.+)` or `/viewer/(.+)`
-2. Navigates to `app/viewer/[postId].tsx`
-3. Viewer screen loads posts from source (default: `useUserPosts`)
-4. Finds the post by matching `postId` against the loaded posts
-
-## Known issue: deep link viewer can't find the post
-
-The viewer screen (`app/viewer/[postId].tsx:190-194`) loads posts from a **source-based collection**:
-- No `source` param → `useUserPosts()` (the current user's own posts only)
-- `source=liked` → liked posts
-- `source=saved` → saved posts
-- `categoryId` → discover feed by category
-
-When a deep link arrives from an external share, there is no `source` param, so it defaults to the user's own posts. **If the shared post belongs to another user, it won't be found** → `targetIndex === -1` → infinite loading spinner.
-
-**Fix needed**: Add a `usePostById(postId)` query or a feed loader that can fetch an arbitrary post by ID when no source is provided.
-
-## Domain config
-
-`services/share/services.ts:6` — domain is hardcoded:
-```typescript
-const DOMAIN = "https://ziona.app";
-export function buildPostUrl(postId: string) {
-  return `${DOMAIN}/post/${postId}`;
-}
-export function buildDeepLink(postId: string) {
-  return `ziona://viewer/${postId}`;
-}
-```
-
-No env variable for domain — must change the constant to update.
+- [ ] **OG meta tags / web fallback** — `https://ziona.app/post/{id}` needs a web page with OG tags for rich link previews in WhatsApp/iMessage (backend/ops)
+- [ ] **Location edit on profile** — Backend supports `updateProfile(location: String)`, no UI on `app/(tabs)/profile/edit/index.tsx` yet
+- [ ] **`AccountDetails` GraphQL query** — Backend has `query { accountDetails }` returning `{ memberSince, memberSinceDate, location, accountStatus }`, but frontend has no client-side query for it (About page uses `useUserProfile` instead)
+- [ ] **Build prep script** — `scripts/prepare-build.js` hardcodes staging/prod URLs. Consider env-driven config
