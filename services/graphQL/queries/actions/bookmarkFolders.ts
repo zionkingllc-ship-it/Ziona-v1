@@ -6,6 +6,7 @@ export interface BookmarkFolder {
   createdAt?: string;
   savedCount: number;
   cover?: string;
+  thumbnailUrl?: string;
   posts?: BookmarkPost[];
 }
 
@@ -32,6 +33,7 @@ export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
         name
         savedCount
         createdAt
+        thumbnailUrl
       }
     }
   `;
@@ -64,6 +66,7 @@ export async function createBookmarkFolder(name: string) {
           name
           savedCount
           createdAt
+          thumbnailUrl
         }
         error {
           code

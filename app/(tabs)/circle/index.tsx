@@ -23,7 +23,6 @@ export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasSeenIntro = useCircleStore((s) => s.hasSeenIntro);
-  const loadSeenIntro = useCircleStore((s) => s.loadSeenIntro);
   const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
   const [allCircles, setAllCircles] = useState<any[]>([]);
@@ -40,7 +39,6 @@ export default function CirclesSuggestion() {
   useFocusEffect(
     useCallback(() => {
       if (!isMounted.current) {
-        loadSeenIntro();
         loadCachedCircles();
         isMounted.current = true;
       }

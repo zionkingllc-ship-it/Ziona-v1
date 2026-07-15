@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "787996855669",
+    "project_id": "ziona-app",
+    "storage_bucket": "ziona-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787996855669:android:6c5055b5c09d017313573c",
+        "android_client_info": {
+          "package_name": "com.zionking.ziona"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "787996855669-ijvsc9nvketldeidjgke1c61nnhb5vfd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDubeIGiaBdLKtvO3T4TqRFmfsPndpifYw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "787996855669-ijvsc9nvketldeidjgke1c61nnhb5vfd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

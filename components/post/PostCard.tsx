@@ -207,6 +207,26 @@ function PostCardComponent({
     if (!folderId) return;
     const isInFolder = savedFolderIds.includes(folderId);
 
+    let coverUri: string | undefined;
+    if (!isInFolder) {
+      if (post.type === "media") {
+        const first = post.media?.[0];
+        coverUri = first?.thumbnailUrl || first?.url || undefined;
+      } else if (post.type === "text" || post.type === "bible") {
+        const cardText = post.type === "text"
+          ? (post.textMessage?.trim() || post.scripture?.text?.trim() || "")
+          : (post.scripture?.text ?? post.textMessage ?? "");
+        if (cardText) {
+          coverUri = `__post__:${JSON.stringify({
+            postType: post.type,
+            textMessage: post.textMessage || undefined,
+            scriptureText: post.scripture?.text || undefined,
+            bgColor: post.category?.bgColor || "#181419",
+          })}`;
+        }
+      }
+    }
+
     toggleFolder(folderId, {
       onSuccess: () => {
         if (isInFolder) {
@@ -218,8 +238,8 @@ function PostCardComponent({
       onError: () => {
         setBookmarkFeedback({ visible: true, type: "failed", title: "Failed to Save", message: "Please try again." });
       },
-    });
-  }, [toggleFolder, savedFolderIds]);
+    }, coverUri);
+  }, [toggleFolder, savedFolderIds, post]);
 
   const handleOptions = useCallback(() => {
     requireAuth(() => setOptionsVisible(true));
@@ -381,8 +401,8 @@ function PostCardComponent({
               <GestureDetector gesture={Gesture.Native()}>
                 <Pressable onPress={handleBookmark}>
                   {isSavePending ? (
-                    <View width={30} height={30} justifyContent="center" alignItems="center">
-                      <ActivityIndicator size="small" color={colors.white} />
+                    <View width={36} height={36} justifyContent="center" alignItems="center">
+                      <ActivityIndicator size="large" color={colors.white} />
                     </View>
                   ) : (
                     <Image
@@ -549,6 +569,8 @@ function PostCardComponent({
           title={bookmarkFeedback.title}
           message={bookmarkFeedback.message}
           type={bookmarkFeedback.type}
+          autoClose
+          duration={3000}
         />
       )}
       {AuthModal}

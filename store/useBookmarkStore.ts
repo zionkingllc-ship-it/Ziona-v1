@@ -10,6 +10,7 @@ interface BookmarkState {
   getSavedFolderIds: (postId: string) => string[];
   deleteFolder: (folderId: string) => void;
   removeBookmarks: (postIds: string[], folderId?: string) => void;
+  updateFolderCover: (folderId: string, cover: string) => void;
   setFolders: (folders: Folder[]) => void;
   setBookmarks: (bookmarks: Bookmark[]) => void;
 }
@@ -84,6 +85,14 @@ export const useBookmarksStore = create<BookmarkState>((set, get) => ({
 
   setFolders: (folders) => {
     set({ folders });
+  },
+
+  updateFolderCover: (folderId, cover) => {
+    set((state) => ({
+      folders: state.folders.map((f) =>
+        f.id === folderId ? { ...f, cover } : f
+      ),
+    }));
   },
 
   setBookmarks: (bookmarks) => {

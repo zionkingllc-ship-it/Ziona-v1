@@ -13,6 +13,7 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
   const {
     toggleBookmark: toggleLocalBookmark,
     setFolders,
+    updateFolderCover,
     folders: localFolders,
   } = useBookmarksStore();
 
@@ -25,10 +26,16 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
   const toggleFolder = (
     folderId?: string,
     callbacks?: { onSuccess?: () => void; onError?: () => void },
+    coverUri?: string,
   ) => {
     if (!folderId) return;
 
     toggleLocalBookmark(postId, folderId);
+
+    if (coverUri) {
+      updateFolderCover(folderId, coverUri);
+    }
+
     toggleSaveMutation.mutate(
       {
         postId,
@@ -59,7 +66,10 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
       {
         onSuccess: (newFolder) => {
           const folderId = newFolder?.folder?.id;
-          if (!folderId) return;
+          if (!folderId) {
+            callbacks?.onError?.();
+            return;
+          }
           const nextFolders = [
             ...localFolders,
             {
@@ -71,12 +81,11 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
           ];
           setFolders(nextFolders);
 
-        // Save the post to the new folder
         toggleLocalBookmark(postId, folderId);
         toggleSaveMutation.mutate(
           {
             postId,
-            currentSaved: isSaved,
+            currentSaved: false,
             folderId,
           },
           {

@@ -1,0 +1,6 @@
+﻿fix(viewer): show back button on feed/discover viewers
+
+- Add back button overlay on post viewer for user/discover/liked/bookmarks/saved sources
+- Button respects safe area and falls back to guest profile when needed
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

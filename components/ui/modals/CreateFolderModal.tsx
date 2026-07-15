@@ -68,6 +68,23 @@ export default function CreateFolderModal({
         }
       }
 
+      if (post.type === "text" || post.type === "bible") {
+        const cardText = post.type === "text"
+          ? (post.textMessage?.trim() || post.scripture?.text?.trim() || "")
+          : (post.scripture?.text ?? post.textMessage ?? "");
+        const bgColor = post.category?.bgColor || "#181419";
+        if (cardText) {
+          const postData = JSON.stringify({
+            postType: post.type,
+            textMessage: post.textMessage || undefined,
+            scriptureText: post.scripture?.text || undefined,
+            bgColor,
+          });
+          setThumbnailUri(`__post__:${postData}`);
+          return;
+        }
+      }
+
       setThumbnailUri(null);
     };
 

@@ -20,6 +20,7 @@ import BaseModal from "@/components/ui/modals/BaseModal";
 import SuccessModal from "@/components/ui/modals/successModal";
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { parseCover } from "@/utils/bookmarkCover";
 import ErrorBox from "@/components/ui/ErrorBox";
 
 const { width } = Dimensions.get("window");
@@ -40,7 +41,7 @@ export default function BookmarksScreen() {
 
   const deleteFolderMutation = useDeleteBookmarkFolder();
   const bulkRemoveMutation = useBulkRemoveBookmarks();
-  const { deleteFolder, removeBookmarks } = useBookmarksStore();
+  const { deleteFolder, removeBookmarks, folders: localFolders } = useBookmarksStore();
 
   const {
     data: folders,
@@ -62,6 +63,14 @@ export default function BookmarksScreen() {
     }
   }, [folders, foldersLoading, isError, foldersError]);
 
+  const mergedFolders = useMemo(() =>
+    (folders || []).map((f) => ({
+      ...f,
+      cover: localFolders.find((lf) => lf.id === f.id)?.cover || f.thumbnailUrl || f.cover || "",
+    })),
+    [folders, localFolders],
+  );
+
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -77,9 +86,9 @@ export default function BookmarksScreen() {
   }, [foldersError]);
 
   const selectedFolder = useMemo(() => {
-    if (!selectedFolderId || !folders) return null;
-    return folders.find((f) => f.id === selectedFolderId);
-  }, [selectedFolderId, folders]);
+    if (!selectedFolderId || !mergedFolders) return null;
+    return mergedFolders.find((f) => f.id === selectedFolderId);
+  }, [selectedFolderId, mergedFolders]);
 
   const {
     data: folderPostsData,
@@ -374,10 +383,10 @@ export default function BookmarksScreen() {
               onActionPress={() => refetchFolders()}
               fontFamily="$body"
             />
-          ) : folders && folders.length > 0 ? (
+          ) : mergedFolders && mergedFolders.length > 0 ? (
             <YStack marginBottom={hp(2)}>
               <FlatList
-                data={folders}
+                data={mergedFolders}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
                 columnWrapperStyle={{ gap: wp(4), justifyContent: "center" }}
@@ -414,13 +423,55 @@ export default function BookmarksScreen() {
                         </View>
                       ) : (
                         <View style={{ width: folderCardWidth, height: folderCardWidth }}>
-                          {item.savedCount > 0 && folderPosts[0] ? (
-                            <PostThumbnail post={folderPosts[0]} size={folderCardWidth} onPress={() => {}} pressable={false} />
-                          ) : item.cover ? (
-                            <Image source={{ uri: item.cover }} style={{ width: "100%", height: "100%", borderRadius: 3 }} contentFit="cover" />
-                          ) : (
-                            <Image source={require("@/assets/images/FolderBaner.png")} style={{ width: "100%", height: "100%", borderRadius: 3 }} contentFit="cover" />
-                          )}
+                          {(() => {
+                            const parsed = parseCover(item.cover);
+                            if (parsed.type === "post") {
+                              const { bgColor } = parsed.data;
+                              const cardText = parsed.data.textMessage?.trim() || parsed.data.scriptureText?.trim() || "Text Post";
+                              return (
+                                <View
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    borderRadius: 3,
+                                    backgroundColor: bgColor || "#181419",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    padding: 10,
+                                  }}
+                                >
+                                  <Text
+                                    numberOfLines={3}
+                                    style={{
+                                      color: colors.black,
+                                      fontSize: 12,
+                                      fontWeight: "600",
+                                      textAlign: "center",
+                                      fontFamily: "$body",
+                                    }}
+                                  >
+                                    {cardText}
+                                  </Text>
+                                </View>
+                              );
+                            }
+                            if (parsed.uri) {
+                              return (
+                                <Image
+                                  source={{ uri: parsed.uri }}
+                                  style={{ width: "100%", height: "100%", borderRadius: 3 }}
+                                  contentFit="cover"
+                                />
+                              );
+                            }
+                            return (
+                              <Image
+                                source={require("@/assets/images/FolderBaner.png")}
+                                style={{ width: "100%", height: "100%", borderRadius: 3 }}
+                                contentFit="cover"
+                              />
+                            );
+                          })()}
                         </View>
                       )}
                       <YStack padding={wp(2)} gap={2}>

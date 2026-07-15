@@ -10,7 +10,6 @@ web-build/
 expo-env.d.ts
 
 serviceAccountZiona.json
-google-services.json
 # Native
 *.orig.*
 *.jks

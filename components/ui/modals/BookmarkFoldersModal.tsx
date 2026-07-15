@@ -1,5 +1,6 @@
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
+import { parseCover } from "@/utils/bookmarkCover";
 import React, { useMemo } from "react";
 import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Image, Text, XStack } from "tamagui";
@@ -26,7 +27,7 @@ export default function BookmarkFoldersModal({
   const folders = useMemo(() =>
     apiFolders.map((f) => ({
       ...f,
-      cover: localFolders.find((lf) => lf.id === f.id)?.cover || f.cover || "",
+      cover: localFolders.find((lf) => lf.id === f.id)?.cover || f.thumbnailUrl || f.cover || "",
     })),
     [apiFolders, localFolders],
   );
@@ -61,40 +62,49 @@ export default function BookmarkFoldersModal({
             data={folders}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => {
-              const isSaved = savedFolderIds.includes(item.id);
+              renderItem={({ item }) => {
+                  const isSaved = savedFolderIds.includes(item.id);
+                  const parsed = parseCover(item.cover);
 
-              return (
-                <TouchableOpacity
-                  style={styles.row}
-                  onPress={() => onToggleFolder(item.id)}
-                >
-                  <Image
-                    source={
-                      item.cover && typeof item.cover === "string"
-                        ? { uri: item.cover }
-                        : require("@/assets/images/FolderBaner.png")
-                    }
-                    style={styles.image}
-                  />
+                  return (
+                    <TouchableOpacity
+                      style={styles.row}
+                      onPress={() => onToggleFolder(item.id)}
+                    >
+                      {parsed.type === "post" ? (
+                        <View style={[styles.image, { backgroundColor: parsed.data.bgColor || "#181419", justifyContent: "center", alignItems: "center" }]}>
+                          <Text fontFamily="$body" fontSize={10} fontWeight="600" color="#333" textAlign="center" numberOfLines={2}>
+                            {parsed.data.textMessage?.trim() || parsed.data.scriptureText?.trim() || "Text Post"}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Image
+                          source={
+                            parsed.uri
+                              ? { uri: parsed.uri }
+                              : require("@/assets/images/FolderBaner.png")
+                          }
+                          style={styles.image}
+                        />
+                      )}
 
-                  <View style={styles.info}>
-                    <Text fontFamily={"$body"}>
-                      {item.name}
-                    </Text>
-                    <Text fontFamily={"$body"} fontSize={12} color="#999">
-                      {item.savedCount} saved
-                    </Text>
-                  </View>
+                      <View style={styles.info}>
+                        <Text fontFamily={"$body"}>
+                          {item.name}
+                        </Text>
+                        <Text fontFamily={"$body"} fontSize={12} color="#999">
+                          {item.savedCount} saved
+                        </Text>
+                      </View>
 
-                  {isSaved ? (
-                    <Image source={bookmarkActive} height={24} width={24} />
-                  ) : (
-                    <Image source={bookmarkInactive} height={24} width={24} />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
+                      {isSaved ? (
+                        <Image source={bookmarkActive} height={24} width={24} />
+                      ) : (
+                        <Image source={bookmarkInactive} height={24} width={24} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
           />
         )}
       </View>
