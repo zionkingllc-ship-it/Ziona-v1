@@ -15,10 +15,12 @@ const labels: Record<DocType, string> = {
   use: "Terms of Use",
 };
 
+const BASE = process.env.EXPO_PUBLIC_LEGAL_DOCS_BASE_URL ?? "https://ziona.app";
+
 const URLS: Record<DocType, string> = {
-  community: "https://ziona.app/community-guidelines",
-  privacy: "https://ziona.app/privacy",
-  use: "https://ziona.app/terms-of-service",
+  community: `${BASE}/community-guidelines`,
+  privacy: `${BASE}/privacy`,
+  use: `${BASE}/terms-of-service`,
 };
 
 export default function LegalDocumentScreen() {

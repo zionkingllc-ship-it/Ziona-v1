@@ -45,7 +45,7 @@ function MediaPreviewTile({
           borderRadius: 6,
           marginRight: 8,
         }}
-        contentFit="cover"
+        contentFit="contain"
         nativeControls={false}
       />
     );

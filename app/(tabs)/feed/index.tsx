@@ -73,17 +73,6 @@ export default function Feed() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!query.data && !query.isLoading) {
-        queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
-        queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
-      }
-
-      setActivePostId(null);
-    }, [queryClient, query.data, query.isLoading]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
       return () => {
         setActivePostId(null);
         setPausedPostId(null);

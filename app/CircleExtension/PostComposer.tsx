@@ -248,7 +248,7 @@ console.log("circleId", circleId);
                     <VideoView
                       player={player}
                       style={{ width: "100%", height: "100%" }}
-                      contentFit="cover"
+                      contentFit="contain"
                       nativeControls={false}
                     />
                   )}

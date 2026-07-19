@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/useAuthStore";
-import { restRefresh, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
+import { refreshWithRetry, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -50,19 +50,12 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const newAccessToken = await restRefresh(refreshToken);
+      // Use refreshWithRetry (has mutex) instead of raw restRefresh to prevent
+      // concurrent refresh calls from collapsing each other.
+      const newAccessToken = await refreshWithRetry(1);
 
       if (newAccessToken) {
-        const store = useAuthStore.getState();
-        const newRefreshToken = store.tokens?.refreshToken ?? refreshToken;
-
-        setAuthTokens({
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-        });
-
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
         return api(originalRequest);
       }
 

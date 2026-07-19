@@ -13,6 +13,7 @@ export async function invalidateFeed(queryClient: QueryClient) {
 export function movePostToFeedTop(
   queryClient: QueryClient,
   postId: string,
+  postData?: any,
 ) {
   const feedKeys = [["forYouFeed"], ["followingFeed"]];
   feedKeys.forEach((key) => {
@@ -23,7 +24,14 @@ export function movePostToFeedTop(
       const posts = [...(firstPage.posts ?? [])];
 
       const postIndex = posts.findIndex((p: any) => p?.id === postId);
-      if (postIndex <= 0) return oldData;
+
+      if (postIndex === -1) {
+        if (!postData) return oldData;
+        pages[0] = { ...firstPage, posts: [postData, ...posts] };
+        return { ...oldData, pages };
+      }
+
+      if (postIndex === 0) return oldData;
 
       const [post] = posts.splice(postIndex, 1);
       pages[0] = { ...firstPage, posts: [post, ...posts] };

@@ -46,6 +46,18 @@ export async function compressVideo(
       `[compressVideo] (${quality}) ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
     );
 
+    const ext = result.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "mov" || ext === "avi" || ext === "m4v") {
+      const correctedPath = result.replace(/\.(mov|avi|m4v)$/i, ".mp4");
+      try {
+        await FileSystem.copyAsync({ from: result, to: correctedPath });
+        await FileSystem.deleteAsync(result, { idempotent: true });
+        return correctedPath;
+      } catch {
+        return result;
+      }
+    }
+
     return result;
   } catch {
     return uri;

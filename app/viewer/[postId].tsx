@@ -195,6 +195,12 @@ export default function PostViewerScreen() {
     refetch = refetchSinglePost;
   }
 
+  // fallback to singlePost when the paginated source list doesn't contain the target post
+  if (!!source && singlePost && !posts.find((p) => p.id === postId)) {
+    posts = [singlePost, ...posts];
+    isLoading = isSingleLoading;
+  }
+
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);

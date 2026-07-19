@@ -125,7 +125,7 @@ export default function CreateBiblePostScreen() {
       await invalidateFeed(queryClient);
       if (result?.post?.id) {
         await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
-        movePostToFeedTop(queryClient, result.post.id);
+        movePostToFeedTop(queryClient, result.post.id, result.post);
       }
       await queryClient.refetchQueries({ queryKey: ["userPosts"] });
 

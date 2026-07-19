@@ -1,7 +1,5 @@
 import { PostCard } from "@/components/post/PostCard";
-import { usePostActionsStore } from "@/store/usePostActionStore";
 import { FeedPost } from "@/types/feedTypes";
-import { mergePostState } from "@/utils/post/postState/mergePostState";
 import React, {
   memo,
   useCallback,
@@ -45,31 +43,22 @@ function PostViewerEngineComponent({
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
 
-  const likedMap = usePostActionsStore((s) => s.likedPosts);
-  const savedMap = usePostActionsStore((s) => s.savedPosts);
-  const followedMap = usePostActionsStore((s) => s.followedUsers);
-
   const origLength = posts?.length || 0;
-  const startIndex = origLength + (initialIndex ?? 0);
 
   const mergedPosts = useMemo(() => {
     if (!posts?.length) return [];
-    const base = posts.map((p) =>
-      mergePostState(p, {
-        likedPosts: likedMap,
-        savedPosts: savedMap,
-        followedUsers: followedMap,
-      }),
-    );
     // Triple the array for endless looping
-    const tripled = [...base, ...base, ...base];
+    const tripled = [...posts, ...posts, ...posts];
     // Safety: deduplicate when all items are the same post (e.g. single-post sources)
     const uniqueIds = new Set(tripled.map((p) => p.id));
     if (uniqueIds.size === 1 && tripled.length > 1) {
-      return base;
+      return posts;
     }
     return tripled;
   }, [posts]);
+
+  // When mergedPosts is deduplicated to a single item, start at 0
+  const startIndex = mergedPosts.length <= 1 ? 0 : origLength + (initialIndex ?? 0);
 
   const extraData = useMemo(() => ({
     activePostId,
@@ -77,15 +66,22 @@ function PostViewerEngineComponent({
     isScreenFocused,
   }), [activePostId, pausedPostId, isScreenFocused]);
 
-  // Scroll to middle copy when FlatList mounts or posts length changes
+  // Scroll to correct position when FlatList first mounts (onLayout fires after layout).
+  const hasScrolled = useRef(false);
+  const safeIndex = Math.min(startIndex, mergedPosts.length - 1);
+  const handleInitialScroll = useCallback(() => {
+    if (hasScrolled.current) return;
+    hasScrolled.current = true;
+    flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
+  }, [safeIndex, mergedPosts]);
+
+  // Re-scroll when initialIndex changes (viewer navigating between posts).
   useEffect(() => {
-    if (!containerHeight || mergedPosts.length === 0) return;
-    const id = requestAnimationFrame(() => {
-      flatListRef.current?.scrollToIndex({ index: startIndex, animated: false });
-      setActivePostId(mergedPosts[startIndex]?.id ?? null);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [containerHeight, mergedPosts.length, startIndex]);
+    if (!containerHeight) return;
+    flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
+  }, [initialIndex, containerHeight]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -115,31 +111,32 @@ function PostViewerEngineComponent({
         return;
       }
       const current = viewableItems[0]?.item;
-      if (!current?.id) {
+      const currentIndex = viewableItems[0]?.index;
+      if (!current?.id || currentIndex == null) {
         setActivePostId(null);
         return;
       }
-      setActivePostId(current.id);
+      setActivePostId(`${current.id}-${currentIndex}`);
       setPausedPostId(null);
     },
     [],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: FeedPost }) => {
-      const itemId = item?.id ?? "";
-      const isActive = itemId === (activePostId ?? "");
-      const isPaused = itemId === (pausedPostId ?? "");
+    ({ item, index }: { item: FeedPost; index: number }) => {
+      const itemKey = `${item?.id ?? ""}-${index}`;
+      const isActive = itemKey === (activePostId ?? "");
+      const isPaused = itemKey === (pausedPostId ?? "");
       const shouldPlay = !!(isScreenFocused && isActive && !isPaused);
 
       return (
         <PostCard
-          key={itemId}
+          key={itemKey}
           post={item}
           isPlaying={shouldPlay}
           isActive={isActive ?? false}
           onTogglePlay={() => {
-            setPausedPostId((prev) => (prev === itemId ? null : itemId));
+            setPausedPostId((prev) => (prev === itemKey ? null : itemKey));
           }}
           screenHeight={containerHeight}
           screenWidth={containerWidth}
@@ -190,8 +187,8 @@ function PostViewerEngineComponent({
       <FlatList
         ref={flatListRef}
         data={mergedPosts}
-        initialScrollIndex={startIndex}
         extraData={extraData}
+        onLayout={handleInitialScroll}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         snapToInterval={containerHeight}
@@ -208,6 +205,12 @@ function PostViewerEngineComponent({
         showsVerticalScrollIndicator={false}
         scrollsToTop={false}
         scrollEventThrottle={16}
+        onScrollToIndexFailed={(info) => {
+          flatListRef.current?.scrollToOffset({
+            offset: containerHeight * info.index,
+            animated: false,
+          });
+        }}
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListFooterComponent={isFetchingNextPage ? (

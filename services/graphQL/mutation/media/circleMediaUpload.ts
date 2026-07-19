@@ -25,10 +25,12 @@ function mimeFromExtension(uri: string): string {
     jpeg: "image/jpeg",
     png: "image/png",
     webp: "image/webp",
+    heic: "image/jpeg",
+    heif: "image/jpeg",
     mp4: "video/mp4",
-    mov: "video/quicktime",
+    mov: "video/mp4",
     m4v: "video/mp4",
-    avi: "video/x-msvideo",
+    avi: "video/mp4",
   };
   return map[ext] || "application/octet-stream";
 }

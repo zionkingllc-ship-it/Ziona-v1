@@ -1,7 +1,9 @@
+const BASE = process.env.EXPO_PUBLIC_LEGAL_DOCS_BASE_URL ?? "https://ziona.app";
+
 const URLS = {
-  privacy: "https://ziona.app/privacy",
-  termsOfService: "https://ziona.app/terms-of-service",
-  communityGuidelines: "https://ziona.app/community-guidelines",
+  privacy: `${BASE}/privacy`,
+  termsOfService: `${BASE}/terms-of-service`,
+  communityGuidelines: `${BASE}/community-guidelines`,
 };
 
 export async function fetchPrivacyPolicy() {

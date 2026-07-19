@@ -46,6 +46,18 @@ Already implemented in `app/settings/About.tsx`:
 
 Backend supports `location: String!` on `UserProfileType` and `UserType`. No edit UI on the profile edit screen yet.
 
+## iOS Build Fix: RNFBApp Non-Modular Headers
+
+If EAS Build (or `pod install`) fails with:
+```
+include of non-modular header inside framework module 'RNFBApp.RCTConvert_FIRApp'
+```
+This is caused by React Native 0.84+'s pre-compiled RN core distribution conflicting with RNFB's static framework linking. The fix is in `app.json` under `expo-build-properties` → `ios`:
+
+- Add `"forceStaticLinking": ["RNFBApp", "RNFBMessaging"]` (list every RNFB pod in use)
+- This forces those pods to be built as static libraries instead of frameworks, avoiding the modular header error
+- Do NOT use `CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES` (unsafe) or `buildReactNativeFromSource: true` (slower builds) unless `forceStaticLinking` doesn't work
+
 ---
 
 # Audit Findings & Todo
@@ -59,7 +71,7 @@ Backend supports `location: String!` on `UserProfileType` and `UserType`. No edi
 ## 🟠 High
 
 - [ ] **Console.log in production (~150+)** — especially `services/api/authApi.ts` (39 calls via custom `log()`), `services/graphQL/graphqlClient.ts` (8), auth flows (16 each). Set up proper logging or strip before release.
-- [ ] **Hardcoded legal URLs** — `services/graphQL/queries/actions/legalDocuments.ts` and `app/settings/terms/[type].tsx` hardcode `ziona.app` URLs for privacy/terms/guidelines. Should be env vars.
+- [x] **Hardcoded legal URLs** — replaced with `EXPO_PUBLIC_LEGAL_DOCS_BASE_URL` env var (`.env`, `[type].tsx`, `legalDocuments.ts`)
 - [ ] **`any` types (~200+ holes)** — concentrated in React Query cache callbacks (`(old: any)` in hooks), post normalization pipeline (`p: any`), and UI component props. Prefer generated GraphQL types.
 - [ ] **`getAppleNonce()` missing try/catch** — `services/api/authApi.ts:170`. Single unhandled async function.
 

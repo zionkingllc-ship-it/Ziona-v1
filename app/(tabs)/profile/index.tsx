@@ -248,8 +248,8 @@ export default function ProfileScreen() {
 
       {/* PROFILE INFO */}
       <YStack width={"100%"} gap={"$2"} padding={20}>
-        <XStack width={"100%"} justifyContent="space-between">
-          <YStack style={{ flex: 1, marginRight: 12 }} alignItems="flex-start" gap={"$2"} alignSelf="flex-start">
+        <XStack width={"100%"} justifyContent="space-between" alignItems="flex-start">
+          <YStack flexShrink={1} marginRight={12} alignItems="flex-start" gap={"$2"}>
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}
@@ -274,7 +274,6 @@ export default function ProfileScreen() {
                   backgroundColor: getColorFromName(profile?.username),
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: 10,
                 }}
               >
                 <Text
@@ -452,17 +451,17 @@ export default function ProfileScreen() {
               <PostThumbnail
                 post={item}
                 size={itemSize}
-                onPress={() =>
-                  router.push({
-                    pathname: "/viewer/[postId]",
-                    params: {
-                      postId: item.id,
-                      source: activeTab === "liked" ? "liked" : "user",
-                      userId: activeTab === "liked" ? undefined : user?.id,
-                      index: String(index),
-                    },
-                  })
-                }
+                  onPress={() =>
+                    router.push({
+                      pathname: "/viewer/[postId]",
+                      params: {
+                        postId: item.id,
+                        source: activeTab === "liked" ? "liked" : "user",
+                        ...(activeTab !== "liked" && user?.id ? { userId: user.id } : {}),
+                        index: String(index),
+                      },
+                    })
+                  }
                 onLongPress={() => handlePostLongPress(item.id)}
               />
             )}

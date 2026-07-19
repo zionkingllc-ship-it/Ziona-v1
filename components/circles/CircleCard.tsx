@@ -45,7 +45,7 @@ const CircleCard = memo(function CircleCard({
 
         {!isJoined && (
           <>
-            <Text style={styles.description}>{description}</Text>
+            <Text style={styles.description} numberOfLines={2}>{description}</Text>
 
             <XStack alignItems="center" marginTop={6} justifyContent="flex-start">
               {avatars.length > 0 && (

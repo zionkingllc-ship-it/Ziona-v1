@@ -57,38 +57,8 @@ const getAnchorDaysAgo = (filter: string): number => {
   return match ? parseInt(match[1]) : 0;
 };
 
-const getAnchorDaysDiff = (createdAt: string): number => {
-  const created = new Date(createdAt);
-  const now = new Date();
-  const diff = Math.round((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
-  console.log("[anchor-debug] getAnchorDaysDiff:", { createdAt, parsed: created.toISOString(), now: now.toISOString(), diff });
-  return diff;
-};
-
-const getAvailableFilterOptions = (circle: CircleFeedData): string[] => {
-  const all: ActiveAnchor[] = [];
-  if (circle.activeAnchor) all.push(circle.activeAnchor);
-  if (circle.pastAnchors) all.push(...circle.pastAnchors);
-  console.log("[anchor-debug] getAvailableFilterOptions:", {
-    activeAnchor: circle.activeAnchor
-      ? { id: circle.activeAnchor.id, createdAt: circle.activeAnchor.createdAt, type: circle.activeAnchor.type }
-      : null,
-    pastAnchorsCount: circle.pastAnchors?.length ?? 0,
-    pastAnchors: circle.pastAnchors?.map((a) => ({ id: a.id, createdAt: a.createdAt, type: a.type })),
-    allCount: all.length,
-  });
-  if (all.length === 0) return [];
-
-  const availableDays = new Set(all.map((a) => getAnchorDaysDiff(a.createdAt)));
-  if (circle.activeAnchor) availableDays.add(0);
-
-  const result = anchorFilterOptions.filter((opt) => {
-    const daysAgo = getAnchorDaysAgo(opt);
-    return availableDays.has(daysAgo);
-  });
-  console.log("[anchor-debug] availableOptions result:", { availableDays: [...availableDays], result });
-  return result;
-};
+// Always show all filter options — anchor data is fetched on-demand via useAnchorByDate
+const availableOptions = anchorFilterOptions;
 
 type CirclePost = {
   id: string;
@@ -313,8 +283,7 @@ export default function CircleFeedScreen() {
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
 
-  const availableOptions = getAvailableFilterOptions(circle);
-  console.log("[anchor-debug] component render:", { anchorFilter, availableOptions, hasActive: !!circle.activeAnchor, pastCount: circle.pastAnchors?.length });
+
 
   const filterDate = useMemo(() => {
     if (anchorFilter === "Today") return null;
@@ -332,19 +301,13 @@ export default function CircleFeedScreen() {
     if (anchorFilter === "Today") {
       return activeAnchorData ?? circle?.activeAnchor ?? undefined;
     }
-    return anchorByDateData ?? circle?.activeAnchor ?? undefined;
+    return anchorByDateData ?? undefined;
   }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData]);
 
   const anchorExpired = useMemo(() => {
     if (!displayAnchor?.expiresAt) return false;
     return new Date(displayAnchor.expiresAt).getTime() <= Date.now();
   }, [displayAnchor]);
-
-  useEffect(() => {
-    if (availableOptions.length > 0 && !availableOptions.includes(anchorFilter)) {
-      setAnchorFilter(availableOptions[0]);
-    }
-  }, [availableOptions.join(","), anchorFilter]);
 
   const flatListRef = useRef<FlatList>(null);
 

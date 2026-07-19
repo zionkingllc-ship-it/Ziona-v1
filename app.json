@@ -93,12 +93,17 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withFirebaseNotificationColor",
       "expo-router",
       [
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBMessaging"
+            ]
           },
           "android": {
             "enableProguardInReleaseBuilds": true,

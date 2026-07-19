@@ -2,7 +2,7 @@ import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import ImageCompressor from "react-native-compressor";
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
 export function isImageTypeAllowed(mimeType?: string): boolean {
   if (!mimeType) return false;
@@ -25,7 +25,7 @@ export async function convertToSupportedFormat(
     return uri;
   }
 
-  if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+  if (["jpg", "jpeg", "png", "webp", "heic", "heif"].includes(ext)) {
     console.log(`[convertToSupportedFormat] extension "${ext}" is allowed, skipping conversion`);
     return uri;
   }
@@ -72,6 +72,18 @@ export async function compressImage(uri: string): Promise<string> {
     console.log(
       `[compressImage] ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
     );
+
+    const ext = result.split(".").pop()?.toLowerCase() ?? "";
+    if (ext === "heic" || ext === "heif") {
+      const correctedPath = result.replace(/\.(heic|heif)$/i, ".jpg");
+      try {
+        await FileSystem.copyAsync({ from: result, to: correctedPath });
+        await FileSystem.deleteAsync(result, { idempotent: true });
+        return correctedPath;
+      } catch {
+        return result;
+      }
+    }
 
     return result;
   } catch {

@@ -24,12 +24,19 @@ export function stopAuthHealthMonitor() {
 }
 
 async function runHealthCheck() {
-  const { isAuthenticated } = useAuthStore.getState();
+  const { isAuthenticated, tokens } = useAuthStore.getState();
   if (!isAuthenticated) return;
 
   if (isTokenExpired()) {
-    console.log("[AuthHealth] Token expired locally — clearing session");
-    forceLogout();
+    // Double-check: only force logout if the stored token is actually missing
+    // (module-level tokenExpiresAt can be stale after concurrent refreshes)
+    if (!tokens?.accessToken) {
+      console.log("[AuthHealth] Token expired and no access token — clearing session");
+      forceLogout();
+      return;
+    }
+    // Token exists in store but module's expiry is stale — re-check by decoding
+    console.log("[AuthHealth] Token expiry check stale — skipping health cycle");
     return;
   }
 

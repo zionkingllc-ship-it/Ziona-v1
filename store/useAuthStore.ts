@@ -258,11 +258,14 @@ export const useAuthStore = create<AuthStore>()(
         // Check if logout was triggered after this rehydration started
         const storedForceLogout = state._forceLogout;
         if (storedForceLogout && storedForceLogout > 0) {
-          // Clear everything - logout wins
-          state.user = null;
-          state.tokens = null;
-          state.isAuthenticated = false;
-          state.mode = "unauthenticated";
+          // Ignore stale forceLogout flags older than 30 seconds
+          // (app may have crashed mid-logout before AsyncStorage was cleaned up)
+          if (Date.now() - storedForceLogout < 30_000) {
+            state.user = null;
+            state.tokens = null;
+            state.isAuthenticated = false;
+            state.mode = "unauthenticated";
+          }
           state._forceLogout = undefined;
           clearAuthTokens();
           clearAuthQueries();
