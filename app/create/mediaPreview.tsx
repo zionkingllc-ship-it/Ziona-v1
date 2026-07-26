@@ -204,36 +204,13 @@ export default function CreateMediaPreviewScreen() {
       return;
     }
 
-    const unsupported = items.filter(
-      (m) => m.type === "IMAGE" && !isImageTypeAllowed(getMimeType(m.uri, "IMAGE")),
-    );
-    if (unsupported.length > 0) {
-      setModalType("failed");
-      setModalTitle("Unsupported Image");
-      setModalMessage("This image format is not supported. Please use JPEG or PNG.");
-      setModalVisible(true);
-      return;
-    }
-
-    const longVideo = items.find(
-      (m) => m.type === "VIDEO" && (m.duration ?? 0) >= 90000,
-    );
-    if (longVideo) {
-      const secs = Math.round((longVideo.duration ?? 0) / 1000);
-      setModalType("failed");
-      setModalTitle("Video Too Long");
-      setModalMessage(`Videos must be under 90 seconds. This video is ${secs} seconds long.`);
-      setModalVisible(true);
-      return;
-    }
-
     const oversizedVideo = items.find(
-      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > 90 * 1024 * 1024,
+      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > 120 * 1024 * 1024,
     );
     if (oversizedVideo) {
       setModalType("failed");
       setModalTitle("Video Too Large");
-      setModalMessage("Video should not be more than 90MB.");
+      setModalMessage("Video should not be more than 120MB.");
       setModalVisible(true);
       return;
     }

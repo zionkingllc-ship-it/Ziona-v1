@@ -2,6 +2,7 @@ import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack, View } from "tamagui";
 import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, useDeleteNotification, useUnreadCount } from "@/hooks/useNotifications";
@@ -55,6 +56,7 @@ function NotificationAvatar({ avatarUrl, type, size = 40 }: { avatarUrl?: string
 }
 
 export default function ActivityScreen() {
+  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useNotifications(50);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,6 +94,19 @@ export default function ActivityScreen() {
     return "Just now";
   };
 
+  const navigateNotification = useCallback((item: NotificationItem) => {
+    const { referenceType, referenceId } = item;
+    if (referenceType === "post" && referenceId) {
+      router.push(`/viewer/${referenceId}`);
+      return true;
+    }
+    if ((referenceType === "circle" || referenceType === "circle_post") && referenceId) {
+      router.push(`/(tabs)/circle/circleFeed?id=${referenceId}`);
+      return true;
+    }
+    return false;
+  }, [router]);
+
   const handleNotificationPress = useCallback(
     (item: NotificationItem) => {
       if (isSelecting) {
@@ -106,9 +121,11 @@ export default function ActivityScreen() {
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
-      setSelectedNotification(item);
+      if (!navigateNotification(item)) {
+        setSelectedNotification(item);
+      }
     },
-    [isSelecting, markAsRead],
+    [isSelecting, markAsRead, navigateNotification],
   );
 
   const handleLongPress = useCallback((item: NotificationItem) => {

@@ -288,7 +288,9 @@ export default function CircleFeedScreen() {
   const filterDate = useMemo(() => {
     if (anchorFilter === "Today") return null;
     const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
-    return new Date(Date.now() - daysAgo * 86400000).toISOString().split("T")[0];
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }, [anchorFilter]);
 
   const { data: activeAnchorData } = useActiveAnchor(anchorFilter === "Today" ? circleId : "");

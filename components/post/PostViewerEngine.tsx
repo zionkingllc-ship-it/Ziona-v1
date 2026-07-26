@@ -72,14 +72,18 @@ function PostViewerEngineComponent({
   const handleInitialScroll = useCallback(() => {
     if (hasScrolled.current) return;
     hasScrolled.current = true;
-    flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    if (safeIndex >= 0 && safeIndex < mergedPosts.length) {
+      flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    }
     setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
   }, [safeIndex, mergedPosts]);
 
   // Re-scroll when initialIndex changes (viewer navigating between posts).
   useEffect(() => {
     if (!containerHeight) return;
-    flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    if (safeIndex >= 0 && safeIndex < mergedPosts.length) {
+      flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    }
     setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
   }, [initialIndex, containerHeight]);
 
@@ -164,7 +168,9 @@ function PostViewerEngineComponent({
     if (currentIndex >= origLength * 2) {
       // Past the end of the middle copy → jump back to middle
       const target = currentIndex - origLength;
-      flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      if (target >= 0 && target < mergedPosts.length) {
+        flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      }
       // Fetch next page on loop
       if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
         fetchNextPage();
@@ -172,9 +178,11 @@ function PostViewerEngineComponent({
     } else if (currentIndex < origLength) {
       // Past the beginning of the middle copy → jump forward to middle
       const target = currentIndex + origLength;
-      flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      if (target >= 0 && target < mergedPosts.length) {
+        flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      }
     }
-  }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage, mergedPosts]);
 
   const keyExtractor = useCallback((item: FeedPost, index: number) => `${item.id}-${index}`, []);
 
