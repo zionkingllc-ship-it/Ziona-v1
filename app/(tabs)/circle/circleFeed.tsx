@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     top: 80,
     left: 0,
     right: 0,
-    zIndex: 40,
+    zIndex: 110,
     paddingTop: 10,
     backgroundColor: colors.white,
   },
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 10,
   },
 
   dropdownItem: {
