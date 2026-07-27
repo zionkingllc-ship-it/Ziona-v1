@@ -7,7 +7,13 @@
     "development": {
       "developmentClient": true,
       "autoIncrement": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": { "FIREBASE_ENV": "staging" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "env": { "FIREBASE_ENV": "staging" }
     },
     "production": {
       "ios": {
@@ -16,7 +22,8 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": { "FIREBASE_ENV": "prod" }
     }
   },
   "submit": {

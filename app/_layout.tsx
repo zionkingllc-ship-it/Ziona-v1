@@ -9,6 +9,9 @@ import { startAuthHealthMonitor, stopAuthHealthMonitor } from "@/services/auth/a
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
+import { initializeNotificationService, cleanupNotificationService } from "@/src/services/notifications/notificationService";
+import { initializeNotificationStore, cleanupNotificationStore } from "@/src/store/notificationStore";
+import { NotificationBanner } from "@/src/components/NotificationBanner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as NavigationBar from "expo-navigation-bar";
@@ -40,6 +43,12 @@ export default function RootLayout() {
   useEffect(() => {
     loadCategories();
     initializeAuth();
+    initializeNotificationService();
+    initializeNotificationStore();
+    return () => {
+      cleanupNotificationService();
+      cleanupNotificationStore();
+    };
   }, []);
 
   const [fontsLoaded] = useFonts({
@@ -121,6 +130,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <NotificationBanner />
       <ScreenDimensionsProvider>
         <TamaguiProvider config={config} defaultTheme="light" disableInjectCSS>
           <StatusBar style="dark" />

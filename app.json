@@ -136,7 +136,8 @@
           "color": "#742092"
         }
       ],
-      "react-native-compressor"
+      "react-native-compressor",
+      "./plugins/withFirebaseConfig"
     ],
     "extra": {
       "router": {},
