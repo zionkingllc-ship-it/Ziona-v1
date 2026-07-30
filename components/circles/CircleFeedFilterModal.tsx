@@ -1,8 +1,9 @@
 import React from "react";
-import { Modal, Pressable, Platform } from "react-native";
+import { Modal, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { YStack, XStack, Text } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
+import { isIOS } from "@/constants/platform";
 
 type SortOption = "Trending" | "New";
 type ViewOption = "All" | "My post";
@@ -39,7 +40,7 @@ export default function CircleFeedFilterModal({
       {/* SHEET */}
       <YStack
         position="absolute"
-        bottom={Platform.OS === "ios" ? Math.max(insets.bottom, 20) + 10 : 30}
+        bottom={isIOS ? Math.max(insets.bottom, 20) + 10 : 30}
         left={0}
         right={0}
         backgroundColor="#F2F2F2"

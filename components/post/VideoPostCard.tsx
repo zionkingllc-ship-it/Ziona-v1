@@ -67,7 +67,7 @@ function VideoPostCardComponent({
         const duration = player.duration;
         if (!duration || duration <= 0) return;
         player.currentTime = position * duration;
-      } catch {}
+      } catch { console.warn("[VideoPostCard] seekTo failed"); }
     },
     [player]
   );
@@ -75,15 +75,15 @@ function VideoPostCardComponent({
   useEffect(() => {
     if (!player) return;
     if (isPlaying) {
-      try { player.play(); } catch {}
+      try { player.play(); } catch { console.warn("[VideoPostCard] play failed"); }
     } else {
-      try { player.pause(); } catch {}
+      try { player.pause(); } catch { console.warn("[VideoPostCard] pause failed"); }
     }
   }, [isPlaying, player]);
 
   useEffect(() => {
     if (!player) return;
-    try { player.muted = !isPlaying; } catch {}
+    try { player.muted = !isPlaying; } catch { console.warn("[VideoPostCard] mute toggle failed"); }
   }, [player, isPlaying]);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ function VideoPostCardComponent({
         }
       });
       return () => sub.remove();
-    } catch {}
+    } catch { console.warn("[VideoPostCard] timeUpdate listener failed"); }
   }, [player, isPlaying]);
 
   const progressStyle = useAnimatedStyle(() => ({

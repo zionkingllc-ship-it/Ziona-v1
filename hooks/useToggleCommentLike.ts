@@ -95,7 +95,7 @@ export function useToggleCommentLike() {
               },
               stats: {
                 ...item.stats,
-                likesCount: response.stats.likesCount,
+                likesCount: response.commentStats?.likesCount ?? response.stats.likesCount,
               },
             };
           };

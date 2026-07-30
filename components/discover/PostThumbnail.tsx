@@ -5,6 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { Image } from "expo-image";
 import { Text, TouchableOpacity, View } from "react-native";
+import {
+  getCachedThumbnail,
+  cacheThumbnail,
+} from "@/utils/textThumbnailCache";
+import TextThumbnailCapture from "@/components/TextThumbnailCapture";
 
 interface Props {
   post: FeedPost;
@@ -16,6 +21,8 @@ interface Props {
 
 export default function PostThumbnail({ post, size, onPress, onLongPress, pressable = true }: Props) {
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+  const [cachedTextUri, setCachedTextUri] = useState<string | null>(null);
+  const [needsCapture, setNeedsCapture] = useState(false);
 
   const isMedia = post.type === "media";
   const firstMedia = isMedia ? post.media?.[0] : undefined;
@@ -69,6 +76,32 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
       isMounted = false;
     };
   }, [mediaUrl]);
+
+  /* ================= TEXT THUMBNAIL CACHE ================= */
+
+  useEffect(() => {
+    if (post.type !== "text" && post.type !== "bible") return;
+    let isMounted = true;
+
+    getCachedThumbnail(post.id).then((uri) => {
+      if (!isMounted) return;
+      if (uri) {
+        setCachedTextUri(uri);
+      } else {
+        setNeedsCapture(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [post.id, post.type]);
+
+  const handleTextCaptured = (uri: string) => {
+    setCachedTextUri(uri);
+    setNeedsCapture(false);
+    cacheThumbnail(post.id, uri);
+  };
 
   /* ================= RENDER MEDIA ================= */
 
@@ -139,12 +172,9 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
 
     /* TEXT / BIBLE */
     if (post.type === "text" || post.type === "bible") {
-      // For TEXT posts: show textMessage, or scripture.text if available
-      // For BIBLE posts: show scripture.text (already joined from verses in normalize)
       let cardText = "";
 
       if (post.type === "text") {
-        // TEXT + scripture posts
         if (post.textMessage?.trim()) {
           cardText = post.textMessage;
         } else if (post.scripture?.text?.trim()) {
@@ -153,32 +183,54 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
       }
 
       if (post.type === "bible") {
-        // BIBLE posts - scripture.text is set in normalizeBible
         cardText = post.scripture?.text ?? post.textMessage ?? "";
       }
 
+      const bgColor = post.category?.bgColor ?? "#181419";
+
+      if (cachedTextUri) {
+        return (
+          <Image
+            source={{ uri: cachedTextUri }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+          />
+        );
+      }
+
       return (
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: post.category?.bgColor ?? "#181419",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 10,
-          }}
-        >
-          <Text
-            numberOfLines={3}
+        <>
+          <View
             style={{
-              color: colors.black,
-              fontSize: 12,
-              fontWeight: "600",
-              textAlign: "center",
+              flex: 1,
+              backgroundColor: bgColor,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 10,
             }}
           >
-            {cardText || "Text Post"}
-          </Text>
-        </View>
+            <Text
+              numberOfLines={3}
+              style={{
+                color: colors.black,
+                fontSize: 12,
+                fontWeight: "600",
+                textAlign: "center",
+              }}
+            >
+              {cardText || "Text Post"}
+            </Text>
+          </View>
+          {needsCapture && (
+            <TextThumbnailCapture
+              bgColor={bgColor}
+              text={cardText}
+              postId={post.id}
+              onCaptured={handleTextCaptured}
+              size={size}
+            />
+          )}
+        </>
       );
     }
 

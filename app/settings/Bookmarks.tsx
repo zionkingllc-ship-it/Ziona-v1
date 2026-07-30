@@ -20,7 +20,7 @@ import BaseModal from "@/components/ui/modals/BaseModal";
 import SuccessModal from "@/components/ui/modals/successModal";
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { parseCover } from "@/utils/bookmarkCover";
+import { resolveCover } from "@/utils/bookmarkCover";
 import ErrorBox from "@/components/ui/ErrorBox";
 
 const { width } = Dimensions.get("window");
@@ -70,6 +70,26 @@ export default function BookmarksScreen() {
     })),
     [folders, localFolders],
   );
+
+  const [coverMap, setCoverMap] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all(
+      mergedFolders.map(async (f) => {
+        const parsed = await resolveCover(f.cover);
+        return { folderId: f.id, parsed };
+      }),
+    ).then((results) => {
+      if (!mounted) return;
+      const map: Record<string, any> = {};
+      results.forEach((r) => {
+        map[r.folderId] = r.parsed;
+      });
+      setCoverMap(map);
+    });
+    return () => { mounted = false; };
+  }, [mergedFolders]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -424,17 +444,17 @@ export default function BookmarksScreen() {
                       ) : (
                         <View style={{ width: folderCardWidth, height: folderCardWidth }}>
                           {(() => {
-                            const parsed = parseCover(item.cover);
+                            const parsed = coverMap[item.id] || { type: "image", uri: null };
                             if (parsed.type === "post") {
-                              const { bgColor } = parsed.data;
-                              const cardText = parsed.data.textMessage?.trim() || parsed.data.scriptureText?.trim() || "Text Post";
+                              const bgColor = parsed.data?.bgColor || "#181419";
+                              const cardText = parsed.data?.textMessage?.trim() || parsed.data?.scriptureText?.trim() || "Text Post";
                               return (
                                 <View
                                   style={{
                                     width: "100%",
                                     height: "100%",
                                     borderRadius: 3,
-                                    backgroundColor: bgColor || "#181419",
+                                    backgroundColor: bgColor,
                                     justifyContent: "center",
                                     alignItems: "center",
                                     padding: 10,

@@ -52,7 +52,7 @@ export default function AnchorVideoPlayer({
       const duration = player.duration;
       if (!duration || duration <= 0) return;
       player.currentTime = position * duration;
-    } catch {}
+    } catch { console.warn("[AnchorVideoPlayer] seekTo failed"); }
   }, [player]);
 
   const seekPan = Gesture.Pan()
@@ -73,7 +73,7 @@ export default function AnchorVideoPlayer({
         player.pause();
       }
       setIsPaused(!isPaused);
-    } catch {}
+    } catch { console.warn("[AnchorVideoPlayer] togglePlayPause failed"); }
   }, [player, isPaused]);
 
   const toggleControls = useCallback(() => {
@@ -91,7 +91,7 @@ export default function AnchorVideoPlayer({
         }
       });
       return () => sub.remove();
-    } catch {}
+    } catch { console.warn("[AnchorVideoPlayer] timeUpdate listener failed"); }
   }, [player]);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function AnchorVideoPlayer({
         player.pause();
         progress.value = 0;
         setIsPaused(true);
-      } catch {}
+      } catch { console.warn("[AnchorVideoPlayer] playToEnd handler failed"); }
     });
     return () => sub.remove();
   }, [player]);
@@ -117,7 +117,7 @@ export default function AnchorVideoPlayer({
         player.pause();
         setIsPaused(true);
       }
-    } catch {}
+    } catch { console.warn("[AnchorVideoPlayer] isActive toggle failed"); }
   }, [player, isActive]);
 
   useEffect(() => {
@@ -127,14 +127,14 @@ export default function AnchorVideoPlayer({
         try {
           player.pause();
           setIsPaused(true);
-        } catch {}
+        } catch { console.warn("[AnchorVideoPlayer] AppState pause failed"); }
       }
     });
     return () => {
       sub.remove();
       try {
         player.pause();
-      } catch {}
+      } catch { console.warn("[AnchorVideoPlayer] cleanup pause failed"); }
     };
   }, [player]);
 

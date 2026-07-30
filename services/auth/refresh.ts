@@ -1,4 +1,10 @@
-import { useAuthStore } from "@/store/useAuthStore";
+let _getAuthStore: (() => any) | null = null;
+function getAuthStore() {
+  if (!_getAuthStore) {
+    _getAuthStore = require("@/store/useAuthStore").useAuthStore;
+  }
+  return _getAuthStore;
+}
 
 const REST_BASE = `${process.env.EXPO_PUBLIC_API_BASE_URL || "https://ziona-api-staging.onrender.com"}/api`;
 
@@ -60,7 +66,7 @@ export async function restRefresh(refreshToken: string): Promise<string | null> 
 
   if (accessToken) {
     setTokenExpiry(accessToken);
-    useAuthStore.getState().setTokens?.({
+    getAuthStore().getState().setTokens?.({
       accessToken,
       refreshToken: newRefreshToken ?? "",
     });
@@ -77,7 +83,7 @@ export async function restRefresh(refreshToken: string): Promise<string | null> 
 ========================= */
 
 export async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
-  const store = useAuthStore.getState();
+  const store = getAuthStore().getState();
   const refreshToken = store.tokens?.refreshToken;
 
   if (!refreshToken) return null;
@@ -115,7 +121,7 @@ export async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
 ========================= */
 
 export async function refreshTokenProactively(): Promise<boolean> {
-  const store = useAuthStore.getState();
+  const store = getAuthStore().getState();
   const token = store.tokens?.accessToken;
   if (!token) return false;
 

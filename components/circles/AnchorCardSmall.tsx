@@ -25,6 +25,8 @@ type AnchorCardSmallProps = {
     bibleText?: string;
     bibleReference?: string;
     expiresAt?: string;
+    anchorLikedCount?: number;
+    viewerState?: { liked: boolean; prayed: boolean };
   };
   circleId: string;
   circleName?: string;
@@ -47,6 +49,8 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
     const anchorImage = !isVideo && url ? url : anchor.anchorImage || "";
     const qs = new URLSearchParams({
       id: anchor.id || "",
+      likedCount: anchor.anchorLikedCount?.toString() || "0",
+      viewerLiked: anchor.viewerState?.liked ? "1" : "0",
       source: "suggestion",
       ...(circleId ? { circleId } : {}),
       ...(text ? { text } : {}),

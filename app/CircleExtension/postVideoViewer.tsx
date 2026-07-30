@@ -37,7 +37,7 @@ export default function PostVideoViewer() {
         const duration = player.duration;
         if (!duration || duration <= 0) return;
         player.currentTime = position * duration;
-      } catch {}
+      } catch { console.warn("[postVideoViewer] seekTo failed"); }
     },
     [player],
   );
@@ -82,15 +82,15 @@ export default function PostVideoViewer() {
         }
       });
       return () => sub.remove();
-    } catch {}
+    } catch { console.warn("[postVideoViewer] timeUpdate listener failed"); }
   }, [player]);
 
   useEffect(() => {
     if (!player) return;
     if (playing) {
-      try { player.play(); } catch {}
+      try { player.play(); } catch { console.warn("[postVideoViewer] play failed"); }
     } else {
-      try { player.pause(); } catch {}
+      try { player.pause(); } catch { console.warn("[postVideoViewer] pause failed"); }
     }
   }, [playing, player]);
 
@@ -98,13 +98,13 @@ export default function PostVideoViewer() {
     if (!player) return;
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") {
-        try { player.pause(); } catch {}
+        try { player.pause(); } catch { console.warn("[postVideoViewer] AppState pause failed"); }
         setPlaying(false);
       }
     });
     return () => {
       sub.remove();
-      try { player.pause(); } catch {}
+      try { player.pause(); } catch { console.warn("[postVideoViewer] cleanup pause failed"); }
     };
   }, [player]);
 

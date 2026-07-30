@@ -1,6 +1,5 @@
 import colors from "@/constants/colors";
 import { useSuggestedCreators } from "@/hooks/useFollow";
-import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -66,24 +65,6 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
     return (
       <SafeAreaView style={styles.container} edges={["bottom"]}>
         <View style={styles.sheet}>
-          <View style={styles.welcomeSection}>
-            <Text fontFamily="$body" fontWeight="600" fontSize={18} textAlign="center" color={colors.text}>
-              Be the first to create a post
-            </Text>
-            <Text fontFamily="$body" fontSize={14} textAlign="center" color={colors.gray} marginTop={8}>
-              Share what's on your heart and inspire the Ziona community.
-            </Text>
-            <SimpleButtonWithStyle
-              text="Create Post"
-              style={{ marginTop: 16, alignSelf: "center", paddingHorizontal: 32 }}
-              color={colors.primary}
-              textColor={colors.white}
-              textWeight="500"
-              borderRadius={8}
-              onPress={() => router.push("/(tabs)/create/")}
-            />
-          </View>
-          <View style={styles.divider} />
           <View style={{ flex: 1, justifyContent: "center" }}>
             <CenteredMessage
               fontFamily={"$body"}
@@ -111,24 +92,6 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <View style={styles.sheet}>
-        <View style={styles.welcomeSection}>
-          <Text fontFamily="$body" fontWeight="600" fontSize={18} textAlign="center" color={colors.text}>
-            Be the first to create a post
-          </Text>
-          <Text fontFamily="$body" fontSize={14} textAlign="center" color={colors.gray} marginTop={8}>
-            Share what's on your heart and inspire the Ziona community.
-          </Text>
-          <SimpleButtonWithStyle
-            text="Create Post"
-            style={{ marginTop: 16, alignSelf: "center", paddingHorizontal: 32 }}
-            color={colors.primary}
-            textColor={colors.white}
-            textWeight="500"
-            borderRadius={8}
-            onPress={() => router.push("/(tabs)/create/")}
-          />
-        </View>
-        <View style={styles.divider} />
         <Text
           fontFamily={"$body"}
           fontWeight={"400"}
@@ -181,12 +144,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     overflow: "hidden",
-  },
-  welcomeSection: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 20,
-    alignItems: "center",
   },
   divider: {
     height: StyleSheet.hairlineWidth,

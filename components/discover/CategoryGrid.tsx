@@ -5,7 +5,7 @@ import React from "react";
 
 type Props = {
   categories: DiscoverCategory[];
-  onCategoryPress: (id: string) => void;
+  onCategoryPress: (id: string, label?: string) => void;
   refreshing?: boolean;
   onRefresh?: () => void;
 };
@@ -22,7 +22,7 @@ export default function CategoryGrid({ categories, onCategoryPress, refreshing, 
       renderItem={({ item }) => (
         <CategoryCard
           category={item}
-          onPress={() => onCategoryPress(item.id)}
+          onPress={() => onCategoryPress(item.id, item.label)}
         />
       )}
       showsVerticalScrollIndicator={false}

@@ -1,9 +1,21 @@
 import { create } from 'zustand'
-import { getNotifications, type MobileNotification } from '../services/api/endpoints/bff'
 import { onAppEvent } from '../data/eventBus'
+import { getNotifications, getUnreadNotificationCount } from '../../services/graphQL/queries/actions/notifications'
+
+interface Notification {
+  id: string
+  title: string
+  message: string
+  read: boolean
+  type: string
+  referenceId?: string
+  referenceType?: string
+  createdAt: string
+  user?: { id: string; username: string; avatarUrl: string } | null
+}
 
 interface NotificationState {
-  notifications: MobileNotification[]
+  notifications: Notification[]
   unreadCount: number
   loading: boolean
   error: string | null
@@ -21,12 +33,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   fetchNotifications: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await getNotifications()
-      if (response.ok && response.data) {
-        set({ notifications: response.data.items, unreadCount: response.data.unreadCount, loading: false })
-      } else {
-        set({ loading: false, error: 'Failed to fetch notifications' })
-      }
+      const [notifData, unreadCount] = await Promise.all([
+        getNotifications(50),
+        getUnreadNotificationCount(),
+      ])
+      const notifications = notifData.items.map((n) => ({ ...n, read: n.isRead })) as Notification[]
+      set({ notifications, unreadCount, loading: false })
     } catch (error) {
       set({ loading: false, error: error instanceof Error ? error.message : 'Unknown error' })
     }

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { getCategories } from "@/repository/categoryRepository";
@@ -16,77 +17,56 @@ interface CategoryState {
   loadCategories: () => Promise<void>;
 }
 
-const STORAGE_KEY = "app_categories";
-
-export const useCategoryStore = create<CategoryState>((set, get) => ({
-  categories: normalizeCategories(
-    DISCOVER_CATEGORIES as DiscoverCategory[]
-  ),
-  loading: false,
-
-  loadCategories: async () => {
-    if (get().loading) return;
-
-    set({ loading: true });
-
-    try {
-      /* =========================
-         1. LOAD FROM CACHE
-      ========================= */
-
-      const cached = await AsyncStorage.getItem(STORAGE_KEY);
-
-      if (cached) {
-        try {
-          const parsed: DiscoverCategory[] = JSON.parse(cached);
-
-          const normalizedCache = normalizeCategories(parsed);
-
-          set({ categories: normalizedCache });
-        } catch (error) {
-          console.warn("Invalid cached categories, clearing cache", error);
-          await AsyncStorage.removeItem(STORAGE_KEY);
-        }
-      }
-
-      /* =========================
-         2. FETCH FROM BACKEND
-      ========================= */
-
-      const backend = await getCategories();
-
-      const normalizedBackend = normalizeCategories(backend);
-
-      const normalizedLocal = normalizeCategories(
+export const useCategoryStore = create<CategoryState>()(
+  persist(
+    (set, get) => ({
+      categories: normalizeCategories(
         DISCOVER_CATEGORIES as DiscoverCategory[]
-      );
+      ),
+      loading: false,
 
-      const merged = mergeCategories(
-        normalizedLocal,
-        normalizedBackend
-      );
+      loadCategories: async () => {
+        if (get().loading) return;
 
-      /* =========================
-         3. UPDATE STATE
-      ========================= */
+        set({ loading: true });
 
-      set({ categories: merged });
+        try {
+          /* =========================
+             1. FETCH FROM BACKEND
+          ========================= */
 
-      /* =========================
-         4. SAVE CACHE
-      ========================= */
+          const backend = await getCategories();
 
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(merged)
-      );
-    } catch (err) {
-      console.error("Category load failed:", err);
-    } finally {
-      set({ loading: false });
-    }
-  },
-}));
+          const normalizedBackend = normalizeCategories(backend);
+
+          const normalizedLocal = normalizeCategories(
+            DISCOVER_CATEGORIES as DiscoverCategory[]
+          );
+
+          const merged = mergeCategories(
+            normalizedLocal,
+            normalizedBackend
+          );
+
+          /* =========================
+             2. UPDATE STATE
+          ========================= */
+
+          set({ categories: merged });
+        } catch (err) {
+          console.error("Category load failed:", err);
+        } finally {
+          set({ loading: false });
+        }
+      },
+    }),
+    {
+      name: "app_categories",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({ categories: state.categories }),
+    },
+  ),
+);
 
 /* =========================
    MERGE (BACKEND WINS)

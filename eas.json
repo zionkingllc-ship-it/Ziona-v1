@@ -30,12 +30,25 @@
     "production": {
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "track": "beta"
+      },
+      "ios": {
+        "appleId": "onyeama.a.k@gmail.com",
+        "ascAppId": "6768301878",
+        "appleTeamId": "RLL2NX9J5Z",
+        "destination": "testflight"
+      }
+    },
+    "preview": {
+      "android": {
+        "serviceAccountKeyPath": "./serviceAccountZiona.json",
         "track": "internal"
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
         "ascAppId": "6768301878",
-        "appleTeamId": "RLL2NX9J5Z"
+        "appleTeamId": "RLL2NX9J5Z",
+        "destination": "testflight"
       }
     }
   }

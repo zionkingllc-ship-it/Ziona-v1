@@ -64,7 +64,7 @@ export default function SettingsScreen() {
     setRefreshing(true);
     try {
       await refetchProfile();
-    } catch {} finally {
+    } catch { console.warn("[settings] refresh failed"); } finally {
       setRefreshing(false);
     }
   }, [refetchProfile]);

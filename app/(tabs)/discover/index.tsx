@@ -16,15 +16,15 @@ export default function DiscoverScreen() {
     setRefreshing(true);
     try {
       await refetch();
-    } catch {} finally {
+    } catch { console.warn("[discover] refresh failed"); } finally {
       setRefreshing(false);
     }
   }, [refetch]);
 
-  const handleCategoryPress = (categoryId: string) => {
+  const handleCategoryPress = (categoryId: string, categoryLabel?: string) => {
     router.push({
       pathname: "/[categoryId]",
-      params: { categoryId },
+      params: { categoryId, label: categoryLabel },
     });
   };
 
@@ -51,7 +51,7 @@ export default function DiscoverScreen() {
         ) : (
           <CategoryGrid
             categories={categories}
-            onCategoryPress={handleCategoryPress}
+            onCategoryPress={(id, label) => handleCategoryPress(id, label)}
             refreshing={refreshing}
             onRefresh={onRefresh}
           />

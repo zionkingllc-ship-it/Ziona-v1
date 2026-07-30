@@ -1,4 +1,5 @@
 export interface PostCoverData {
+  postId?: string;
   postType: string;
   textMessage?: string;
   scriptureText?: string;
@@ -21,4 +22,18 @@ export function parseCover(cover?: string): ParsedCover {
   }
 
   return { type: "image", uri: cover || null };
+}
+
+export async function resolveCover(cover?: string): Promise<ParsedCover> {
+  const parsed = parseCover(cover);
+  if (parsed.type === "post" && parsed.data.postId) {
+    try {
+      const { getCachedThumbnail } = await import("@/utils/textThumbnailCache");
+      const cached = await getCachedThumbnail(parsed.data.postId);
+      if (cached) {
+        return { type: "image", uri: cached };
+      }
+    } catch { /* fall through */ }
+  }
+  return parsed;
 }

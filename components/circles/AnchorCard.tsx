@@ -34,6 +34,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
     const qs = new URLSearchParams({
       id: anchor.id || "",
       likedCount: anchor.anchorLikedCount?.toString() || "0",
+      viewerLiked: anchor.viewerState?.liked ? "1" : "0",
       expired: expired ? "1" : "0",
       source: "feed",
       ...(circleId ? { circleId } : {}),

@@ -23,7 +23,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useFocusEffect } from "@react-navigation/native";
-import { Platform, StatusBar } from "react-native";
+import { StatusBar } from "react-native";
 
 import {
   ActivityIndicator,
@@ -37,6 +37,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { isIOS } from "@/constants/platform";
 
 import {
   Button,
@@ -152,6 +153,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
           prayedCount: a.prayedCount || undefined,
           createdAt: a.createdAt,
           expiresAt: a.expiresAt || undefined,
+          viewerState: a.viewerState || undefined,
         }))
       : undefined,
     posts: data.posts
@@ -194,11 +196,11 @@ function mapCircleFeedData(data: any): CircleFeedData {
 export default function CircleFeedScreen() {
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === "ios") {
+      if (isIOS) {
         StatusBar.setBarStyle("light-content", true);
       }
       return () => {
-        if (Platform.OS === "ios") {
+        if (isIOS) {
           StatusBar.setBarStyle("dark-content", true);
         }
       };
@@ -210,7 +212,7 @@ export default function CircleFeedScreen() {
   const router = useRouter();
   const circleId = id || "1";
 
-  const [filterSort, setFilterSort] = useState<"Trending" | "New">("Trending");
+  const [filterSort, setFilterSort] = useState<"Trending" | "New">("New");
   const [filterView, setFilterView] = useState<"All" | "My post">("All");
   const userId = useAuthStore((s) => s.user?.id);
 

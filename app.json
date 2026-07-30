@@ -73,17 +73,6 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.POST_NOTIFICATIONS"
-      ],
-      "queries": [
-        {
-          "scheme": "whatsapp"
-        },
-        {
-          "scheme": "sms"
-        },
-        {
-          "scheme": "mailto"
-        }
       ]
     },
     "web": {
@@ -91,8 +80,6 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/messaging",
       "./plugins/withFirebaseNotificationColor",
       "expo-router",
       [
@@ -136,8 +123,8 @@
           "color": "#742092"
         }
       ],
-      "react-native-compressor",
-      "./plugins/withFirebaseConfig"
+      "./plugins/withFirebaseConfig",
+      "./plugins/withAndroidQueries"
     ],
     "extra": {
       "router": {},

@@ -27,6 +27,18 @@ export async function createMediaPost(variables: {
           type
           caption
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           media {
             url
             type
@@ -97,6 +109,18 @@ export async function createTextPost(variables: {
           type
           textMessage
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           scripture {
             reference
             text
@@ -167,6 +191,18 @@ export async function createBiblePost(variables: {
           type
           textMessage
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           scripture {
             reference
             text

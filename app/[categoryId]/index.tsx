@@ -19,7 +19,7 @@ import CenteredMessage from "@/components/ui/CenteredMessage";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 export default function DiscoverCategoryScreen() {
-  const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
+  const { categoryId, label } = useLocalSearchParams<{ categoryId: string; label?: string }>();
   const { width } = useWindowDimensions();
 
   const { posts, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error, refetch } =
@@ -56,7 +56,7 @@ export default function DiscoverCategoryScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
         <View style={{ flex: 1 }}>
-          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} />
+          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} placeholder={label || "Search"} />
           <YStack flex={1} justifyContent="center" alignItems="center">
             <ActivityIndicator size="large" color={colors.primary} />
           </YStack>
@@ -70,7 +70,7 @@ export default function DiscoverCategoryScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
         <View style={{ flex: 1 }}>
-          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} />
+          <SearchHeader value={searchQuery} onChangeText={setSearchQuery} onBackPress={() => router.back()} placeholder={label || "Search"} />
           <CenteredMessage
             text={feedback.title}
             subtitle={feedback.message}
@@ -90,6 +90,7 @@ export default function DiscoverCategoryScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           onBackPress={() => router.back()}
+          placeholder={label || "Search"}
         />
 
         <XStack style={{ paddingHorizontal: 16, marginBottom: 12 }} gap="$2">

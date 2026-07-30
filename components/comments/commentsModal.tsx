@@ -4,7 +4,7 @@ import colors from "@/constants/colors";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
-import { useCommentReplies } from "@/hooks/useCommentReplies";
+import { useCommentReplies, useReplyLike } from "@/hooks/useCommentReplies";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import GuestProfileContent from "@/components/profile/GuestProfileContent";
 import MentionText from "./MentionText";
@@ -77,6 +77,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePostComments(postId, visible);
   const createCommentMutation = useCreateComment();
   const toggleLikeMutation = useToggleCommentLike();
+  const replyLikeMutation = useReplyLike();
 
   const comments = data?.pages?.flatMap((page) => page.comments) || [];
 
@@ -149,6 +150,11 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const toggleLike = (commentId: string) => {
     if (toggleLikeMutation.isPending) return;
     toggleLikeMutation.mutate({ commentId });
+  };
+
+  const toggleReplyLike = (commentId: string, replyId: string) => {
+    if (replyLikeMutation.isPending) return;
+    replyLikeMutation.mutate({ commentId, replyId });
   };
 
   const startReply = (commentId: string, username: string) => {
@@ -228,6 +234,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                 failedAvatarUrls={failedAvatarUrls}
                 setFailedAvatarUrls={setFailedAvatarUrls}
                 toggleLike={toggleLike}
+                toggleReplyLike={toggleReplyLike}
                 startReply={startReply}
                 toggleLikeMutation={toggleLikeMutation}
                 onViewProfile={goToProfile}
@@ -316,6 +323,7 @@ function CommentItem({
   failedAvatarUrls,
   setFailedAvatarUrls,
   toggleLike,
+  toggleReplyLike,
   startReply,
   toggleLikeMutation,
   onViewProfile,
@@ -329,6 +337,7 @@ function CommentItem({
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
   toggleLike: (id: string) => void;
+  toggleReplyLike: (commentId: string, replyId: string) => void;
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
   onViewProfile: (userId: string) => void;
@@ -396,7 +405,7 @@ function CommentItem({
                     mentionMap={mentionMap}
                     failedAvatarUrls={failedAvatarUrls}
                     setFailedAvatarUrls={setFailedAvatarUrls}
-                    toggleLike={toggleLike}
+                    toggleLike={() => toggleReplyLike(comment.id, reply.id)}
                     startReply={startReply}
                     onViewProfile={onViewProfile}
                   />
@@ -432,7 +441,7 @@ function ReplyItem({
   mentionMap: Record<string, string>;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string) => void;
+  toggleLike: () => void;
   startReply: (id: string, username: string) => void;
   onViewProfile: (userId: string) => void;
 }) {
@@ -456,7 +465,7 @@ function ReplyItem({
         </XStack>
         <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>
-      <Pressable onPress={() => toggleLike(reply.id)}>
+      <Pressable onPress={toggleLike}>
         {reply.viewerState?.liked ? (
           <Image source={likeIconActive} width={16} height={16} />
         ) : (

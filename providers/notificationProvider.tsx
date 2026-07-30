@@ -7,6 +7,7 @@ import {
   registerDeviceToken,
 } from "@/services/graphQL/queries/actions/notifications";
 import { useAuthStore } from "@/store/useAuthStore";
+import { isIOS } from "@/constants/platform";
 
 let messaging: any = null;
 try {
@@ -68,7 +69,7 @@ async function syncBadgeFromServer() {
   try {
     const count = await getUnreadNotificationCount();
     await Notifications.setBadgeCountAsync(count);
-  } catch {}
+  } catch { console.warn("[notificationProvider] syncBadgeFromServer failed"); }
 }
 
 let lastNavPath = "";
@@ -143,7 +144,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
     });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
-      if (Platform.OS === "ios") {
+      if (isIOS) {
         const badge = notification.request.content.badge;
         if (badge != null) {
           Notifications.setBadgeCountAsync(Number(badge)).catch(() => {});

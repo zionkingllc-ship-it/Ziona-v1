@@ -172,7 +172,7 @@ export default function GuestProfileContent({ userId, onBack }: Props) {
 
       <YStack width={"100%"} padding={20}>
         <XStack width={"100%"} justifyContent="space-between" alignItems="flex-start">
-          <YStack style={{ flex: 1 }} alignItems="center" alignSelf="flex-start">
+          <YStack style={{ flex: 1 }} alignItems="flex-start" alignSelf="flex-start">
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}

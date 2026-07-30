@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthStore>()(
 
         try {
           await AsyncStorage.removeItem("auth-storage");
-        } catch {}
+        } catch { console.warn("[useAuthStore] failed to clear auth storage on session clear"); }
         clearAuthQueries();
       },
 
@@ -114,7 +114,7 @@ export const useAuthStore = create<AuthStore>()(
         try {
           await authApi.signOut();
         } catch {
-          // Ignore signOut failures - we cleared the store anyway
+          console.warn("[useAuthStore] signOut failed (non-blocking)");
         }
 
         // Clear all cached data
@@ -123,7 +123,7 @@ export const useAuthStore = create<AuthStore>()(
         // Clean up persisted storage
         try {
           await AsyncStorage.removeItem("auth-storage");
-        } catch {}
+        } catch { console.warn("[useAuthStore] failed to clear auth storage on logout"); }
 
         // Navigate to login
         get().onLogoutNavigate?.();

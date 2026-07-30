@@ -247,6 +247,9 @@ export async function likeComment(commentId: string) {
         stats {
           likesCount
         }
+        commentStats {
+          likesCount
+        }
         error {
           code
           message

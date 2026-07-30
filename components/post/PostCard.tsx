@@ -218,6 +218,7 @@ function PostCardComponent({
           : (post.scripture?.text ?? post.textMessage ?? "");
         if (cardText) {
           coverUri = `__post__:${JSON.stringify({
+            postId: post.id,
             postType: post.type,
             textMessage: post.textMessage || undefined,
             scriptureText: post.scripture?.text || undefined,

@@ -55,7 +55,7 @@ async function getFileSize(uri: string): Promise<number> {
   try {
     const info = await FileSystem.getInfoAsync(uri);
     if (info.exists) return info.size;
-  } catch {}
+  } catch { console.warn("[imageConversion] exo info extraction failed"); }
   return 0;
 }
 

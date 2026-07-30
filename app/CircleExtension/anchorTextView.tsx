@@ -103,7 +103,7 @@ function createSlides(
 
 export default function AnchorTextView() {
   const router = useRouter();
-  const { text, colors, bibleReference, bibleText, expiresAt, circleId, id, anchorImage, expired } =
+  const { text, colors, bibleReference, bibleText, expiresAt, circleId, id, anchorImage, expired, likedCount, viewerLiked } =
     useLocalSearchParams<{
       text?: string;
       colors?: string;
@@ -114,7 +114,11 @@ export default function AnchorTextView() {
       id?: string;
       anchorImage?: string;
       expired?: string;
+      likedCount?: string;
+      viewerLiked?: string;
     }>();
+  const initialLiked = viewerLiked === "1";
+  const initialCount = parseInt(likedCount || "0", 10);
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -288,7 +292,7 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.footerContainer}>
-        <AnchorFooter bottomOffset={20} anchorId={id} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} anchorColors={colors} anchorImage={anchorImage} />
+        <AnchorFooter bottomOffset={20} anchorId={id} circleId={circleId} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} anchorColors={colors} anchorImage={anchorImage} initialLiked={initialLiked} initialCount={initialCount} />
       </View>
     </SafeAreaView>
   );

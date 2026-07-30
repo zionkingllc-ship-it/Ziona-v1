@@ -135,7 +135,7 @@ export default function CirclePostDetailScreen() {
     setRefreshing(true);
     try {
       await refetchComments();
-    } catch {} finally {
+    } catch { console.warn("[post] refresh comments failed"); } finally {
       setRefreshing(false);
     }
   }, [refetchComments]);

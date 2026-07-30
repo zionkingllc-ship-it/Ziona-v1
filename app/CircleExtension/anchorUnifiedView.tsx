@@ -127,6 +127,7 @@ export default function AnchorUnifiedView() {
     video?: string;
     expired?: string;
     likedCount?: string;
+    viewerLiked?: string;
     source?: string;
   }>();
 
@@ -141,6 +142,8 @@ export default function AnchorUnifiedView() {
   const id = params.id;
   const expired = params.expired;
   const source = params.source || "suggestion";
+  const initialLiked = params.viewerLiked === "1";
+  const initialCount = parseInt(params.likedCount || "0", 10);
 
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(
@@ -299,6 +302,8 @@ export default function AnchorUnifiedView() {
             anchorColors={colors}
             anchorImage={anchorImage}
             anchorVideo={video}
+            initialLiked={initialLiked}
+            initialCount={initialCount}
           />
         </View>
       )}

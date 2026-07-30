@@ -120,7 +120,7 @@ export default function BibleSelectorModal({
     try {
       const data = await bibleRepository.getTranslations();
       setTranslations(data);
-    } catch {}
+    } catch { console.warn("[BibleSelector] loadTranslations failed"); }
   }
 
   async function loadBooks() {
@@ -128,7 +128,7 @@ export default function BibleSelectorModal({
       const data = await bibleRepository.getBooks();
       setBooks(data);
       setSearch("");
-    } catch {}
+    } catch { console.warn("[BibleSelector] loadBooks failed"); }
   }
 
   /* =========================
@@ -145,7 +145,7 @@ export default function BibleSelectorModal({
       const data = await bibleRepository.getChapters(selectedBook);
       setChapters(data);
       setSearch("");
-    } catch {}
+    } catch { console.warn("[BibleSelector] loadChapters failed"); }
   }
 
   /* =========================

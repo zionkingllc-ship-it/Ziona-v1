@@ -18,7 +18,7 @@ const errorLog = (label: string, err: any) => {
   if (!err?.response && !err?.message) {
     try {
       console.log("raw error:", JSON.stringify(err));
-    } catch {}
+    } catch { console.warn("[authApi] error serializer failed"); }
   }
 };
 
@@ -167,19 +167,23 @@ export const authApi = {
     }
   },
 
-  getAppleNonce: async (): Promise<{ rawNonce: string; nonce: string; expiresIn: number }> => {
+  getAppleNonce: async (): Promise<{ rawNonce: string; nonce: string; expiresIn: number } | null> => {
     log("getAppleNonce called");
+    try {
+      const response = await api.post("/auth/apple/nonce");
 
-    const response = await api.post("/auth/apple/nonce");
+      log("getAppleNonce response:", response.data);
 
-    log("getAppleNonce response:", response.data);
-
-    const d = response.data?.data ?? response.data;
-    return {
-      rawNonce: d.rawNonce,
-      nonce: d.nonce,
-      expiresIn: d.expiresIn ?? 600,
-    };
+      const d = response.data?.data ?? response.data;
+      return {
+        rawNonce: d.rawNonce,
+        nonce: d.nonce,
+        expiresIn: d.expiresIn ?? 600,
+      };
+    } catch (err) {
+      errorLog("getAppleNonce failed", err);
+      return null;
+    }
   },
 
   googleLogin: async (idToken: string) => {

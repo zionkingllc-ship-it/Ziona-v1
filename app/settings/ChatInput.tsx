@@ -1,7 +1,7 @@
 import Header from "@/components/layout/header";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TextInput, Pressable, Keyboard, ActivityIndicator } from "react-native";
+import { TextInput, Pressable, Keyboard, ActivityIndicator, Alert } from "react-native";
 import { View, XStack, Text } from "tamagui";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";

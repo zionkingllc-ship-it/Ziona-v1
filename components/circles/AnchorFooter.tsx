@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
 import { likeAnchor } from "@/services/graphQL/mutation/circles";
 import { saveAnchorRef } from "@/utils/anchorRef";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AnchorFooterProps = {
   prayIcon?: any;
@@ -46,10 +47,14 @@ export default function AnchorFooter({
   anchorColors,
   anchorImage,
   anchorVideo,
+  initialLiked = false,
+  initialCount = 0,
 }: AnchorFooterProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [isLiked, setIsLiked] = useState(false);
+  const queryClient = useQueryClient();
+  const [isLiked, setIsLiked] = useState(initialLiked);
+  const [likedCount, setLikedCount] = useState(initialCount);
   const [toggling, setToggling] = useState(false);
 
   const bottomPadding =
@@ -66,13 +71,20 @@ export default function AnchorFooter({
       const result = await likeAnchor(anchorId);
       if (result?.success) {
         setIsLiked(result.liked ?? newLiked);
+        if (result.anchorLikedCount != null) {
+          setLikedCount(result.anchorLikedCount);
+        }
+      }
+      if (circleId) {
+        queryClient.invalidateQueries({ queryKey: ["activeAnchor", circleId] });
+        queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });
       }
     } catch {
       setIsLiked(!newLiked);
     } finally {
       setToggling(false);
     }
-  }, [anchorId, isLiked, toggling]);
+  }, [anchorId, circleId, isLiked, toggling, queryClient]);
 
   const handleReflection = async () => {
     const tempId = `tempAnchor_${Date.now()}`;
@@ -116,14 +128,21 @@ export default function AnchorFooter({
         disabled={toggling || expired}
         style={[styles.footerButton, expired && styles.disabledButton]}
       >
-        {isLiked ? (
-          <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
-        ) : (
-          <Image
-            source={prayIcon || require("@/assets/images/AnchorPrayingHandDark.png")}
-            style={{ width: 22, height: 22 }}
-          />
-        )}
+        <XStack gap={4} alignItems="center">
+          {isLiked ? (
+            <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
+          ) : (
+            <Image
+              source={prayIcon || require("@/assets/images/AnchorPrayingHandDark.png")}
+              style={{ width: 22, height: 22 }}
+            />
+          )}
+          {likedCount > 0 && (
+            <Text fontSize={13} fontWeight="600" color={isLiked ? colors.primary || "#E74C3C" : "#666"}>
+              {likedCount}
+            </Text>
+          )}
+        </XStack>
       </TouchableOpacity>
 
       {/*reflection comment*/}

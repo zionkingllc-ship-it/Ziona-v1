@@ -387,6 +387,10 @@ export const GET_ANCHOR_HISTORY = `
         mediaUrl
         title
       }
+      viewerState {
+        liked
+        prayed
+      }
       author {
         id
         username
@@ -525,15 +529,15 @@ export const GET_CIRCLE_POST = `
     circlePost(id: $id) {
       id
       text
-      media {
-        id
-        url
-        type
-        thumbnailUrl
-        width
-        height
-        duration
-      }
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
       mediaUrl
       mediaType
       createdAt

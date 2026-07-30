@@ -46,7 +46,7 @@ export default function NotificationScreen() {
     setRefreshing(true);
     try {
       await refetch();
-    } catch {} finally {
+    } catch { console.warn("[Notification] refresh failed"); } finally {
       setRefreshing(false);
     }
   }, [refetch]);

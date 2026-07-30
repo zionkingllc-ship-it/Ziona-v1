@@ -2,11 +2,12 @@ import Header from "@/components/layout/header";
 import SuccessModal from "@/components/ui/modals/successModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
-import { useState } from "react";
-import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator } from "react-native";
+import { useState, useEffect } from "react";
+import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator, Alert } from "react-native";
 import { isIOS, keyboardBehavior } from "@/constants/platform";
 import { Ionicons } from "@expo/vector-icons";
 import { submitHelpMessage, resolveHelpConversation } from "@/services/graphQL/mutation/help";
+import { getHelpConversation } from "@/services/graphQL/queries/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import colors from "@/constants/colors";
@@ -17,10 +18,32 @@ export default function ChatScreen() {
   const [errorMsg, setErrorMsg] = useState("");
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { mode, messages, ticketId, setConversation, addMessage, clear } = useChatStore();
+  const { mode, messages, ticketId, setConversation, addMessage, mergeServerMessages, clear } = useChatStore();
   const user = useAuthStore((s) => s.user);
   const userName = user?.username || "User";
   const userEmail = user?.email || "";
+
+  useEffect(() => {
+    if (!ticketId || mode !== "chat") return;
+    const poll = async () => {
+      try {
+        const conv = await getHelpConversation(ticketId);
+        if (conv?.messages) {
+          mergeServerMessages(
+            conv.messages.map((m) => ({
+              id: m.id,
+              text: m.message,
+              fromUser: m.senderType === "user",
+              sentAt: m.sentAt,
+            }))
+          );
+        }
+      } catch { console.warn("[Chat] poll failed"); }
+    };
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, [ticketId, mode]);
 
   const handleSend = async () => {
     if (!input.trim() || submitting) return;
@@ -64,7 +87,7 @@ export default function ChatScreen() {
       if (ticketId) {
         await resolveHelpConversation(ticketId);
       }
-    } catch {}
+    } catch { console.warn("[Chat] resolve conversation failed"); }
     clear();
     setShowModal(false);
   };

@@ -12,7 +12,7 @@ async function syncBadgeCount() {
   try {
     const count = await getUnreadNotificationCount();
     await setBadgeCountAsync(count);
-  } catch {}
+  } catch { console.warn("[useNotifications] syncBadgeCount failed"); }
 }
 
 export function useNotifications(limit: number = 20) {

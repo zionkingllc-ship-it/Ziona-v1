@@ -20,7 +20,7 @@ export async function shareToApp(url: string, scheme: string) {
   } catch {
     try {
       await Share.share({ message: url });
-    } catch {}
+    } catch { console.warn("[share] shareToApp fallback failed"); }
   }
 }
 
@@ -28,27 +28,27 @@ export async function shareToWhatsApp(url: string) {
   try {
     const text = encodeURIComponent(`Shared from Ziona\n${url}`);
     await shareToApp(url, `whatsapp://send?text=${text}`);
-  } catch {}
+  } catch { console.warn("[share] shareToWhatsApp failed"); }
 }
 
 export async function shareToMessages(url: string) {
   try {
     const text = encodeURIComponent(`Shared from Ziona\n${url}`);
     await shareToApp(url, `sms:&body=${text}`);
-  } catch {}
+  } catch { console.warn("[share] shareToMessages failed"); }
 }
 
 export async function shareToMail(url: string) {
   try {
     const text = encodeURIComponent(`Shared from Ziona\n${url}`);
     await shareToApp(url, `mailto:?subject=Shared from Ziona&body=${text}`);
-  } catch {}
+  } catch { console.warn("[share] shareToMail failed"); }
 }
 
 export function copyLink(url: string) {
   try {
     Clipboard.setString(url);
-  } catch {}
+  } catch { console.warn("[share] copyLink failed"); }
 }
 
 export async function openNativeShare(post: SharePayload) {
@@ -64,12 +64,12 @@ export async function openNativeShare(post: SharePayload) {
     await Share.share({
       message: parts.join("\n"),
     });
-  } catch {}
+  } catch { console.warn("[share] openNativeShare failed"); }
 }
 
 export async function withHaptic(action: () => Promise<void> | void) {
   try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  } catch {}
+  } catch { console.warn("[share] haptic feedback failed"); }
   await action();
 }

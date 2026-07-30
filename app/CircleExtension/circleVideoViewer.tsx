@@ -31,7 +31,7 @@ export default function CircleVideoViewer() {
       const duration = player.duration;
       if (!duration || duration <= 0) return;
       player.currentTime = position * duration;
-    } catch {}
+    } catch { console.warn("[circleVideoViewer] seekTo failed"); }
   };
 
   const progressPan = Gesture.Pan()
@@ -60,7 +60,7 @@ export default function CircleVideoViewer() {
         }
       });
       return () => sub.remove();
-    } catch {}
+    } catch { console.warn("[circleVideoViewer] timeUpdate listener failed"); }
   }, [player]);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function CircleVideoViewer() {
     useCallback(() => {
       return () => {
         if (player) {
-          try { player.pause(); } catch {}
+          try { player.pause(); } catch { console.warn("[circleVideoViewer] focus cleanup pause failed"); }
         }
       };
     }, [player])
@@ -88,13 +88,13 @@ export default function CircleVideoViewer() {
 
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") {
-        try { player.pause(); } catch {}
+        try { player.pause(); } catch { console.warn("[circleVideoViewer] AppState pause failed"); }
       }
     });
 
     return () => {
       sub.remove();
-      try { player.pause(); } catch {}
+      try { player.pause(); } catch { console.warn("[circleVideoViewer] cleanup pause failed"); }
     };
   }, [player]);
 

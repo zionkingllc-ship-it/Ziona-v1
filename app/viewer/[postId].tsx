@@ -18,6 +18,17 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Text, View, XStack } from "tamagui";
 import { ChevronLeft } from "@tamagui/lucide-icons";
 
+const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    left: 12,
+    zIndex: 9999,
+    padding: 6,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 20,
+  },
+});
+
 export default function PostViewerScreen() {
   const { source, index, postId, categoryId, filter, userId: userIdParam } = useLocalSearchParams<{
     source?: string;
@@ -216,17 +227,7 @@ export default function PostViewerScreen() {
   }, [postId, posts]);
 
   const isReady = !isLoading && posts.length > 0 && targetIndex >= 0;
-
-  const styles = StyleSheet.create({
-    backBtn: {
-      position: "absolute",
-      left: 12,
-      zIndex: 9999,
-      padding: 6,
-      backgroundColor: "rgba(0,0,0,0.35)",
-      borderRadius: 20,
-    },
-  });
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!isError) return;
@@ -295,8 +296,6 @@ export default function PostViewerScreen() {
 
   /* ================= MAIN ================= */
 
-  const insets = useSafeAreaInsets();
-
   const handleBackPress = () => {
     try {
       router.back();
@@ -329,8 +328,8 @@ export default function PostViewerScreen() {
           />
         )}
 
-        {/* Back button overlay for user/discover/feed viewers */}
-        {(isUserPosts || isDiscover || isLiked || isBookmarks || isSaved) && (
+        {/* Back button */}
+        {(!source || isUserPosts || isDiscover || isLiked || isBookmarks || isSaved) && (
           <TouchableOpacity
             accessibilityLabel="Go back"
             onPress={handleBackPress}

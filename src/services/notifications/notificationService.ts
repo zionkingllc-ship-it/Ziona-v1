@@ -1,8 +1,8 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
-import { post } from '../../network/api/client'
 import { emitAppEvent } from '../../data/eventBus'
+import { registerDeviceToken } from '../../../services/graphQL/queries/actions/notifications'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -34,7 +34,7 @@ export async function getPushToken(): Promise<string | null> {
 
 export async function registerPushToken(token: string): Promise<void> {
   try {
-    await post('/api/v1/devices', { token, platform: Platform.OS, deviceId: Constants.deviceId })
+    await registerDeviceToken(token, Platform.OS)
   } catch (error) {
     console.error('[NotificationService] Failed to register push token:', error)
   }

@@ -5,10 +5,10 @@ import {
   Modal,
   StyleSheet,
   View,
-  Platform,
   Pressable,
   useWindowDimensions,
 } from "react-native";
+import { isIOS } from "@/constants/platform";
 
 type Props = {
   visible: boolean;
@@ -64,8 +64,8 @@ export default function KeyboardBottomSheetModal({
               maxHeight: windowHeight * maxHeightPercent,
               minHeight: keyboardVisible ? 580 : 0,
               paddingBottom: keyboardVisible
-                ? keyboardHeight + (Platform.OS === "ios" ? 20 : 10)
-                : Platform.OS === "ios"
+                ? keyboardHeight + (isIOS ? 20 : 10)
+                : isIOS
                 ? 50
                 : 40,
             },
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 12,
-    paddingBottom: Platform.OS === "ios" ? 50 : 40,
+    paddingBottom: isIOS ? 50 : 40,
   },
   handle: {
     width: 40,

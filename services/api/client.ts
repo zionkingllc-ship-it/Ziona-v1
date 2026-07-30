@@ -1,6 +1,13 @@
 import axios from "axios";
-import { useAuthStore } from "@/store/useAuthStore";
 import { refreshWithRetry, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
+
+let _getAuthStore: (() => any) | null = null;
+function getAuthStore() {
+  if (!_getAuthStore) {
+    _getAuthStore = require("@/store/useAuthStore").useAuthStore;
+  }
+  return _getAuthStore;
+}
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -60,7 +67,7 @@ api.interceptors.response.use(
       }
 
       clearAuthTokens();
-      useAuthStore.getState().clearSession?.();
+      getAuthStore().getState().clearSession?.();
     }
 
     return Promise.reject(

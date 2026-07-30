@@ -14,7 +14,7 @@ async function getFileSize(uri: string): Promise<number> {
     const { getInfoAsync } = await import("expo-file-system/legacy");
     const info = await getInfoAsync(uri);
     if (info.exists) return info.size;
-  } catch {}
+  } catch { console.warn("[circleMediaUpload] mime type detection failed"); }
   return 0;
 }
 
