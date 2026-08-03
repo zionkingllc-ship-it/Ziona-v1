@@ -30,11 +30,12 @@ const styles = StyleSheet.create({
 });
 
 export default function PostViewerScreen() {
-  const { source, index, postId, categoryId, filter, userId: userIdParam } = useLocalSearchParams<{
+  const { source, index, postId, categoryId, slug, filter, userId: userIdParam } = useLocalSearchParams<{
     source?: string;
     index?: string;
     postId: string;
     categoryId?: string;
+    slug?: string;
     filter?: string;
     userId?: string;
   }>();
@@ -66,7 +67,7 @@ export default function PostViewerScreen() {
     posts: discoverPosts,
     isLoading: isDiscoverLoading,
     isError: isDiscoverError,
-  } = useDiscoverFeed(categoryId);
+  } = useDiscoverFeed(categoryId, slug);
 
   const {
     data: likedData,
@@ -222,7 +223,6 @@ export default function PostViewerScreen() {
 
   const targetIndex = useMemo(() => {
     const idx = posts.findIndex((p) => p.id === postId);
-    console.log("[Viewer] Finding post:", { postId, postsCount: posts.length, targetIndex: idx });
     return idx;
   }, [postId, posts]);
 

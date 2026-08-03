@@ -15,6 +15,11 @@
       "autoIncrement": true,
       "env": { "FIREBASE_ENV": "staging" }
     },
+    "staging": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "env": { "FIREBASE_ENV": "staging" }
+    },
     "production": {
       "ios": {
         "distribution": "store"
@@ -47,6 +52,18 @@
         "appleId": "onyeama.a.k@gmail.com",
         "ascAppId": "6768301878",
         "appleTeamId": "RLL2NX9J5Z"
+      }
+    },
+    "staging": {
+      "android": {
+        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "onyeama.a.k@gmail.com",
+        "ascAppId": "6768301878",
+        "appleTeamId": "RLL2NX9J5Z",
+        "destination": "testflight"
       }
     }
   }

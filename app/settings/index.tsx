@@ -74,7 +74,6 @@ export default function SettingsScreen() {
     try {
       await logout.mutateAsync();
     } catch (error) {
-      console.log("Logout failed:", error);
     }
   };
 
@@ -170,7 +169,6 @@ export default function SettingsScreen() {
             icon={<BookOpen size={18} color={colors.secondaryGray} />}
             label="Community guidelines"
             onPress={() => {
-              console.log("📄 [settings] Pressed: Community guidelines");
               router.push("/settings/terms/community");
             }}
           />
@@ -178,7 +176,6 @@ export default function SettingsScreen() {
             icon={<Lock size={18} color={colors.secondaryGray} />}
             label="Privacy policy"
             onPress={() => {
-              console.log("📄 [settings] Pressed: Privacy policy");
               router.push("/settings/terms/privacy");
             }}
           />
@@ -186,7 +183,6 @@ export default function SettingsScreen() {
             icon={<FileText size={18} color={colors.secondaryGray} />}
             label="Terms of use"
             onPress={() => {
-              console.log("📄 [settings] Pressed: Terms of use");
               router.push("/settings/terms/use");
             }}
           />

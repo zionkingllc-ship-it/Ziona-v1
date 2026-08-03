@@ -68,7 +68,6 @@ export function useLogout() {
       try {
         await authApi.signOut();
       } catch (err) {
-        console.log("signOut failed, continuing with local logout:", err);
       }
     },
     onSuccess: async () => {

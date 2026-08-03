@@ -1,5 +1,21 @@
 export type FeedPost = FeedTextPost | FeedMediaPost | FeedBiblePost;
 
+export type FeedCirclePromo = {
+  type: "circlePromo";
+  id: string;
+  circles: {
+    id: string;
+    name: string;
+    description: string;
+    coverImage: string;
+    memberCount: number;
+    isJoined: boolean;
+    avatars?: string[];
+  }[];
+};
+
+export type FeedItem = FeedPost | FeedCirclePromo;
+
 /* =========================
    SHARED
  ========================= */

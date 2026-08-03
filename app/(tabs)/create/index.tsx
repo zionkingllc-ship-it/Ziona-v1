@@ -1,5 +1,6 @@
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
+import { MAX_VIDEO_DURATION_LABEL, MAX_VIDEO_DURATION_MS } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { MediaItem } from "@/types/createPost";
@@ -113,6 +114,10 @@ export default function CreateScreen() {
       if (video) {
         if (assets.length > 1) {
           alert("Only one video allowed.");
+          return;
+        }
+        if ((video.duration ?? 0) > MAX_VIDEO_DURATION_MS) {
+          alert(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}.`);
           return;
         }
         startDraft("MEDIA", "VIDEO");

@@ -10,7 +10,6 @@ export function normalizeMedia(p: any, base: any) {
       .filter(Boolean);
 
     if (!media.length) {
-      console.log("[normalizeMedia] ❌ Image items empty, returning null");
       return null;
     }
 
@@ -28,7 +27,6 @@ export function normalizeMedia(p: any, base: any) {
     const rawThumbnail = fixMediaUrl(p.video.thumbnailUrl);
 
     if (!url) {
-      console.log("[normalizeMedia] ❌ Video URL invalid after fixMediaUrl, returning null");
       return null;
     }
 
@@ -36,12 +34,6 @@ export function normalizeMedia(p: any, base: any) {
       rawThumbnail &&
       !rawThumbnail.endsWith(".mp4") &&
       !rawThumbnail.includes(".mp4?");
-
-    console.log("[normalizeMedia] ✅ Video processed:", {
-      url,
-      thumbnail: isValidThumbnail ? rawThumbnail : "INVALID/NONE",
-      hasThumbnail: !!isValidThumbnail
-    });
 
     return {
       ...base,
@@ -62,7 +54,6 @@ export function normalizeMedia(p: any, base: any) {
     const media = p.media.map(buildMediaItem).filter(Boolean);
 
     if (!media.length) {
-      console.log("[normalizeMedia] ❌ Media array empty, returning null");
       return null;
     }
 
@@ -77,6 +68,5 @@ export function normalizeMedia(p: any, base: any) {
     };
   }
 
-  console.log("[normalizeMedia] ❌ No media found, returning null. Post ID:", p.id, "Type:", p.type);
   return null;
 }

@@ -1,4 +1,5 @@
 import { createComment, deleteComment as deleteCommentService, Comment } from "@/services/graphQL/mutation/actions/comments";
+import { patchCommentCountAcrossQueries } from "@/services/graphQL/queries/actions/commentCache";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -25,6 +26,8 @@ export function useCreateComment() {
       if (!user) return { previousComments };
 
       const tempId = `temp-${Date.now()}`;
+
+      patchCommentCountAcrossQueries(queryClient, { postId, delta: 1 });
 
       const optimisticComment = {
         id: tempId,
@@ -104,7 +107,6 @@ export function useCreateComment() {
           };
         });
       } else if (!hasId && hasTempId) {
-        console.warn("Response missing id — keeping temp comment in cache");
       } else if (hasId && !hasTempId) {
         queryClient.setQueryData(["postComments", postId], (old: any) => {
           if (!old) return old;
@@ -145,6 +147,7 @@ export function useCreateComment() {
       if (context?.previousComments) {
         queryClient.setQueryData(["postComments", postId], context.previousComments);
       }
+      patchCommentCountAcrossQueries(queryClient, { postId, delta: -1 });
       queryClient.invalidateQueries({ queryKey: ["postComments", postId] });
     },
   });

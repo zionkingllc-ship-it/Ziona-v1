@@ -80,6 +80,8 @@ export function getNetworkModalCopy(
     message.includes("video duration") ||
     message.includes("duration exceeds") ||
     message.includes("90-second") ||
+    message.includes("150-second") ||
+    message.includes("2 minutes") ||
     message.includes("exceeds the limit") ||
     message.includes("validation_error") ||
     message.includes("validation error") ||

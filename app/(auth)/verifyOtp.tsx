@@ -165,7 +165,21 @@ export default function VerifyOtp() {
             <Text
               fontFamily="$body"
               color={colors.primary}
-              onPress={() => router.back()}
+              onPress={() => {
+                if (flow === "signup") {
+                  // Email signup stack is: email → birthday → password → username → verifyOtp.
+                  // router.back() would land on username — jump straight back to the email entry screen.
+                  // Passing `edit=1` keeps signup data and lets the user skip ahead to OTP again.
+                  router.replace({
+                    pathname: "/(auth)/email",
+                    params: { edit: "1" },
+                  });
+                } else {
+                  // signin / reset-password: verifyOtp is pushed directly from the
+                  // email entry screen, so back returns there correctly.
+                  router.back();
+                }
+              }}
             >
               Edit
             </Text>

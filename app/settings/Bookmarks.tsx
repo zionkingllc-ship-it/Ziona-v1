@@ -52,15 +52,6 @@ export default function BookmarksScreen() {
   } = useBookmarkFolders();
 
   useEffect(() => {
-    console.log("🔍 [BookmarksScreen] folders data:", JSON.stringify(folders, null, 2));
-    console.log("🔍 [BookmarksScreen] foldersLoading:", foldersLoading);
-    console.log("🔍 [BookmarksScreen] isError:", isError);
-    console.log("🔍 [BookmarksScreen] foldersError:", foldersError);
-    console.log("🔍 [BookmarksScreen] folders type:", typeof folders, Array.isArray(folders));
-    if (Array.isArray(folders)) {
-      console.log("🔍 [BookmarksScreen] folders length:", folders.length);
-      folders.forEach((f, i) => console.log(`🔍 [BookmarksScreen] folder[${i}]:`, JSON.stringify(f)));
-    }
   }, [folders, foldersLoading, isError, foldersError]);
 
   const mergedFolders = useMemo(() =>
@@ -416,7 +407,6 @@ export default function BookmarksScreen() {
                 renderItem={({ item, index }) => {
                   const isAll = item.id === "all" || item.name?.toLowerCase() === "all" || index === 0;
                   const first4 = isAll ? folderPosts.slice(0, 4) : [];
-                  console.log(`[Folder] idx=${index} id=${item.id} name=${item.name} isAll=${isAll} folderPosts=${folderPosts.length}`);
                   return (
                     <TouchableOpacity
                       style={{

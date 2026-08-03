@@ -259,9 +259,6 @@ export default function ProfileScreen() {
                   borderRadius: 40,
                 }}
                 onError={() => {
-                  console.log(
-                    "[ProfilePage] Avatar load failed, using fallback",
-                  );
                   setProfileAvatarSource(null);
                 }}
               />

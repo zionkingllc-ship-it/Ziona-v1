@@ -85,3 +85,6 @@ yarn-error.*
 
 # @end expo-cli
 .opencode
+
+# well-known (deep link / universal link verification files)
+public/.well-known/

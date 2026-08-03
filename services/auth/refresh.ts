@@ -54,7 +54,6 @@ export async function restRefresh(refreshToken: string): Promise<string | null> 
   });
 
   if (!res.ok) {
-    console.warn(`REST refresh returned ${res.status}`);
     return null;
   }
 
@@ -70,11 +69,9 @@ export async function restRefresh(refreshToken: string): Promise<string | null> 
       accessToken,
       refreshToken: newRefreshToken ?? "",
     });
-    console.log("Token refreshed successfully via REST endpoint");
     return accessToken;
   }
 
-  console.warn("REST refresh succeeded but no access token in response");
   return null;
 }
 
@@ -105,7 +102,6 @@ export async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
         console.warn(`Refresh attempt ${attempt + 1}/${maxRetries} failed:`, err);
       }
     }
-    console.warn(`All ${maxRetries} refresh attempts failed`);
     return null;
   })();
 

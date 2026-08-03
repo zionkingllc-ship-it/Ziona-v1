@@ -1,12 +1,4 @@
 export function normalizeBible(p: any, base: any) {
-  console.log("🔍 normalizeBible INPUT:", JSON.stringify({
-    id: p.id,
-    type: p.type,
-    textMessage: p.textMessage,
-    bibleMessage: p.bibleMessage,
-    scripture: p.scripture,
-  }, null, 2));
-
   if (!p.scripture) return null;
 
   // Handle both single `text` and `verses[]` array from API
@@ -29,6 +21,5 @@ export function normalizeBible(p: any, base: any) {
     },
   };
 
-  console.log("🔍 normalizeBible OUTPUT:", JSON.stringify(result, null, 2));
   return result;
 }

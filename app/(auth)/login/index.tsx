@@ -45,62 +45,50 @@ export default function LoginIndex() {
   const handleAppleSignIn = async () => {
     try {
       setIsAppleLoading(true);
-      console.log("[Apple Sign-In] Starting login flow");
 
       const res = await signInWithApple();
-      console.log("[Apple Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsAppleLoading(false);
-        console.log("[Apple Sign-In] Failed:", res.error);
         return;
       }
 
       if (!res?.user?.username) {
         setIsAppleLoading(false);
-        console.log("[Apple Sign-In] No username — setting up username");
         setFlow("apple");
         setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
         return;
       }
 
-      console.log("[Apple Sign-In] Success — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsAppleLoading(false);
-      console.log("[Apple Sign-In] Exception:", err);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      console.log("[Google Sign-In] Starting login flow");
 
       const res = await signInWithGoogle();
-      console.log("[Google Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, error: res?.error }));
 
       if (res.error) {
         setIsGoogleLoading(false);
-        console.log("[Google Sign-In] Failed:", res.error);
         return;
       }
 
       if (!res?.user?.username) {
         setIsGoogleLoading(false);
-        console.log("[Google Sign-In] No username — setting up username");
         setFlow("google");
         setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
         return;
       }
 
-      console.log("[Google Sign-In] Success — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
-      console.log("[Google Sign-In] Exception:", err);
     }
   };
 
@@ -251,7 +239,6 @@ export default function LoginIndex() {
             </Text>
 
             <Pressable onPress={() => {
-              console.log("📄 [auth/login] Pressed: Terms of use");
               router.push("/settings/terms/use");
             }}>
               <InlineUnderlineText
@@ -277,7 +264,6 @@ export default function LoginIndex() {
               and confirm that you have read Ziona's{" "}
             </Text>
             <Pressable onPress={() => {
-              console.log("📄 [auth/login] Pressed: Privacy Policy");
               router.push("/settings/terms/privacy");
             }}>
               <InlineUnderlineText
@@ -295,7 +281,6 @@ export default function LoginIndex() {
             <Text>and</Text>
             <Text> </Text>
             <Pressable onPress={() => {
-              console.log("📄 [auth/login] Pressed: Community guidelines");
               router.push("/settings/terms/community");
             }}>
               <InlineUnderlineText

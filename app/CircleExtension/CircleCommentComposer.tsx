@@ -1,4 +1,5 @@
 import colors from "@/constants/colors";
+import { MAX_VIDEO_DURATION_MS, MAX_VIDEO_DURATION_LABEL } from "@/constants/videoLimits";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
@@ -84,10 +85,10 @@ export default function CircleCommentComposer({
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting) return;
 
-    if (video && (videoDuration ?? 0) >= 90000) {
+    if (video && (videoDuration ?? 0) > MAX_VIDEO_DURATION_MS) {
       const secs = Math.round((videoDuration ?? 0) / 1000);
       setErrorType("warning");
-      setErrorMessage(`Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      setErrorMessage(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}. This video is ${secs} seconds long.`);
       setShowError(true);
       return;
     }

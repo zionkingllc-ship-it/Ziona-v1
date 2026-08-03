@@ -29,8 +29,6 @@ export async function preUploadMedia(
 
   const uploads = items.map(async (item, index: number) => {
     try {
-      console.log(`[preUpload] Uploading item ${index}`, item);
-
       let fileUri = item.uri;
 
       if (item.type === "IMAGE") {
@@ -92,9 +90,6 @@ export async function publishMediaPost(
   onProgress?: (percent: number) => void,
   preUploaded?: { mediaIds: string[]; mediaUrls: string[] },
 ) {
-  console.log("━━━━━━━━ PUBLISH MEDIA START ━━━━━━━━");
-  console.log("Draft received:", draft);
-
   if (!draft) throw new Error("Draft is missing");
   if (!draft.category?.id) throw new Error("Category is required");
   if (!draft.media?.items?.length) throw new Error("Media is required");
@@ -108,8 +103,6 @@ export async function publishMediaPost(
   const derivedMediaType: "IMAGE" | "VIDEO" =
     firstItem.type === "VIDEO" ? "VIDEO" : "IMAGE";
 
-  console.log("Derived mediaType:", derivedMediaType);
-
   /* =========================
      MEDIA UPLOAD (skip if pre-uploaded)
   ========================= */
@@ -120,7 +113,6 @@ export async function publishMediaPost(
   if (preUploaded) {
     mediaIds = preUploaded.mediaIds;
     mediaUrls = preUploaded.mediaUrls;
-    console.log("Using pre-uploaded media:", { mediaIds, mediaUrls });
   } else {
     const items = draft.media.items;
     const itemWeight = 100 / items.length;
@@ -128,8 +120,6 @@ export async function publishMediaPost(
 
     const uploads = items.map(async (item, index: number) => {
       try {
-        console.log(`Uploading item ${index}`, item);
-
         let fileUri = item.uri;
 
         if (item.type === "IMAGE") {
@@ -149,8 +139,6 @@ export async function publishMediaPost(
         if (!fileInfo.exists) throw new Error("File does not exist");
         if (!fileInfo.size || fileInfo.size <= 0)
           throw new Error("Invalid file size");
-
-        console.log(`[mediaDraft.publishMediaPost] uploading: fileName=${fileName} fileType=${fileType} size=${fileInfo.size} uri=${fileUri}`);
 
         const upload = await requestMediaUpload(
           fileName,
@@ -182,8 +170,6 @@ export async function publishMediaPost(
     mediaIds = mediaResults.map((r) => r.mediaId);
     mediaUrls = mediaResults.map((r) => r.mediaUrl);
 
-    console.log("All media uploaded. URLs:", mediaUrls);
-
     await waitForMediaProcessing(mediaIds);
   }
 
@@ -203,8 +189,6 @@ export async function publishMediaPost(
     input.caption = draft.caption;
   }
 
-  console.log("FINAL INPUT TO createMediaPost:", input);
-
   /* =========================
      CREATE POST
   ========================= */
@@ -212,12 +196,7 @@ export async function publishMediaPost(
   try {
     const response = await createMediaPost(input);
 
-    console.log("Media post created successfully:", response);
-
     await invalidateFeed(queryClient);
-
-    console.log("Feed invalidated");
-    console.log("━━━━━━━━ PUBLISH MEDIA END ━━━━━━━━");
 
     return response;
   } catch (err) {

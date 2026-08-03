@@ -19,20 +19,18 @@ import CenteredMessage from "@/components/ui/CenteredMessage";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 
 export default function DiscoverCategoryScreen() {
-  const { categoryId, label } = useLocalSearchParams<{ categoryId: string; label?: string }>();
+  const { categoryId, label, slug } = useLocalSearchParams<{ categoryId: string; label?: string; slug?: string }>();
   const { width } = useWindowDimensions();
 
   const { posts, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error, refetch } =
-    useDiscoverFeed(categoryId);
+    useDiscoverFeed(categoryId, slug);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "images" | "video" | "text">(
     "all",
   );
 
-  const { refreshing, onRefresh } = usePullToRefresh([
-    ["discoverFeed", categoryId],
-  ]);
+  const { refreshing, onRefresh } = usePullToRefresh([["discoverFeed"]]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post: FeedPost) => {
@@ -134,6 +132,7 @@ export default function DiscoverCategoryScreen() {
                   pathname: `/viewer/${item.id}`,
                   params: {
                     categoryId,
+                    slug,
                     filter,
                     index: String(index),
                   },

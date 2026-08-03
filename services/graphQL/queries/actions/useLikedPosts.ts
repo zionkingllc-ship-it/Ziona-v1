@@ -35,11 +35,6 @@ export function useLikedPosts() {
         };
       }
 
-      console.log("[LIKED] 🚀 Fetch", {
-        userId,
-        cursor: pageParam,
-      });
-
       const data = await graphqlRequest(GET_LIKED_POSTS, {
         userId,
         limit: 20,
@@ -47,12 +42,6 @@ export function useLikedPosts() {
       });
 
       const res = data?.likedPosts ?? {};
-
-      console.log("[LIKED] ✅ Response", {
-        count: res.posts?.length,
-        hasMore: res.hasMore,
-        nextCursor: res.nextCursor,
-      });
 
       return {
         posts: res.posts ?? [],
@@ -65,12 +54,6 @@ export function useLikedPosts() {
       const next = lastPage?.hasMore
         ? lastPage.nextCursor
         : undefined;
-
-      console.log("[LIKED] 🔄 Pagination", {
-        hasMore: lastPage?.hasMore,
-        nextCursor: lastPage?.nextCursor,
-        resolvedNext: next,
-      });
 
       return next;
     },

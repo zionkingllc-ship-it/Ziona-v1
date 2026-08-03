@@ -56,11 +56,8 @@ export async function graphqlRequest(
     });
   };
 
-  const queryPreview = query.replace(/\s+/g, " ").substring(0, 120);
-  console.log("🔍 [graphql] Making request:", queryPreview);
   let res = await makeRequest(token);
   let json = await res.json();
-  console.log("🔍 [graphql] Response status:", res.status, "hasErrors:", !!json?.errors?.length);
 
   const isAuthError =
     res.status === 401 ||
@@ -71,13 +68,9 @@ export async function graphqlRequest(
     );
 
   if (isAuthError) {
-    console.warn("Token expired — attempting refresh with retry...");
-
     const newAccessToken = await refreshWithRetry(3);
 
     if (newAccessToken) {
-      console.log("Token refreshed — retrying request");
-
       res = await makeRequest(newAccessToken);
       json = await res.json();
 
@@ -89,12 +82,10 @@ export async function graphqlRequest(
         );
 
       if (stillHasAuthError) {
-        console.warn("Refresh still failing after retries — clearing session");
         await useAuthStore.getState().clearSession?.();
         throw new Error("Session expired");
       }
     } else {
-      console.warn("Refresh failed after 3 attempts — clearing session");
       await useAuthStore.getState().clearSession?.();
       return null;
     }
@@ -106,7 +97,5 @@ export async function graphqlRequest(
     throw new Error(errorMessage);
   }
 
-  const responseKeys = json?.data ? Object.keys(json.data) : [];
-  console.log("🔍 [graphql] Response data keys:", responseKeys);
   return json?.data;
 }

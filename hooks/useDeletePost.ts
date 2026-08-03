@@ -9,7 +9,6 @@ export function useDeletePost() {
   return useMutation({
     mutationFn: deletePostMutation,
     onSuccess: () => {
-      console.log("[useDeletePost] Success, invalidating queries");
       if (userId) {
         queryClient.invalidateQueries({ queryKey: ["userPosts", userId] });
         queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });

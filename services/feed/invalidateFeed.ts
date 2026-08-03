@@ -6,8 +6,6 @@ export async function invalidateFeed(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: ["followingFeed"] }),
     queryClient.invalidateQueries({ queryKey: ["userPosts"] }),
   ]);
-
-  console.log("Feed invalidated (forYou + following + userPosts)");
 }
 
 export function movePostToFeedTop(

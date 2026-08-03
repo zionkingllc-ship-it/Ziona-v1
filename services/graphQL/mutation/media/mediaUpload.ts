@@ -23,7 +23,6 @@ export async function requestMediaUpload(
   fileSize: number,
 ) {
   let data: any;
-  console.log("[requestMediaUpload] Requesting upload:", { fileName, fileType, fileSize });
   try {
     data = await graphqlRequest(REQUEST_UPLOAD_MUTATION, {
       fileName,
@@ -36,7 +35,6 @@ export async function requestMediaUpload(
   }
 
   const payload = data?.uploadMedia;
-  console.log("[requestMediaUpload] Server response:", JSON.stringify(payload));
 
   if (!payload?.success) {
     console.error("[requestMediaUpload] Server rejected:", JSON.stringify(payload));
@@ -121,7 +119,6 @@ export async function waitForMediaProcessing(
     );
 
     for (const { id, result } of results) {
-      console.log("[waitForMediaProcessing] mediaId:", id, "status:", result?.status, "success:", result?.success, "mediaUrl:", !!result?.mediaUrl);
       if (result?.status === "ready" || result?.status === "completed" || result?.status === "available") {
         statuses.set(id, true);
       } else if (result?.status === "failed") {

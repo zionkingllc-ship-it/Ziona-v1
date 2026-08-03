@@ -14,6 +14,8 @@ import { Text, XStack } from "tamagui";
 import { likeAnchor } from "@/services/graphQL/mutation/circles";
 import { saveAnchorRef } from "@/utils/anchorRef";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCircleMembership } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 type AnchorFooterProps = {
   prayIcon?: any;
@@ -53,6 +55,11 @@ export default function AnchorFooter({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { isJoined } = useCircleMembership(circleId || "");
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(
+    circleId || "",
+    isJoined,
+  );
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [likedCount, setLikedCount] = useState(initialCount);
   const [toggling, setToggling] = useState(false);
@@ -60,15 +67,13 @@ export default function AnchorFooter({
   const bottomPadding =
     Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
 
-  const handlePrayLike = useCallback(async () => {
-    if (!anchorId || toggling) return;
+  const doPrayLike = useCallback(async () => {
     setToggling(true);
-
     const newLiked = !isLiked;
     setIsLiked(newLiked);
 
     try {
-      const result = await likeAnchor(anchorId);
+      const result = await likeAnchor(anchorId as string);
       if (result?.success) {
         setIsLiked(result.liked ?? newLiked);
         if (result.anchorLikedCount != null) {
@@ -84,9 +89,16 @@ export default function AnchorFooter({
     } finally {
       setToggling(false);
     }
-  }, [anchorId, circleId, isLiked, toggling, queryClient]);
+  }, [anchorId, circleId, isLiked, queryClient]);
 
-  const handleReflection = async () => {
+  const handlePrayLike = useCallback(() => {
+    if (!anchorId || toggling) return;
+    requireMembership(() => {
+      void doPrayLike();
+    });
+  }, [anchorId, toggling, requireMembership, doPrayLike]);
+
+  const doReflection = async () => {
     const tempId = `tempAnchor_${Date.now()}`;
     await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
@@ -116,8 +128,13 @@ export default function AnchorFooter({
       prompt: "What's on your mind?",
     });
     const path = `/(tabs)/circle/CircleCommentComposer?${qs.toString()}`;
-    console.log("[AnchorFooter] navigating to CircleCommentComposer", { path });
     router.push(path as any);
+  };
+
+  const handleReflection = () => {
+    requireMembership(() => {
+      void doReflection();
+    });
   };
 
   return (
@@ -168,6 +185,7 @@ export default function AnchorFooter({
           <Text color="#FFF">Your reflection...</Text>
         </XStack>
       </TouchableOpacity>
+      {MembershipModal}
     </View>
   );
 }

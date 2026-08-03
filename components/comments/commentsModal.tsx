@@ -94,23 +94,17 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");
-    console.log("[detectMention] text:", JSON.stringify(text), "lastAtIndex:", lastAtIndex);
     if (lastAtIndex === -1) return null;
     const textAfterAt = text.slice(lastAtIndex + 1);
-    console.log("[detectMention] textAfterAt:", JSON.stringify(textAfterAt), "length:", textAfterAt.length);
     if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) {
-      console.log("[detectMention] returning null - space/newline after @");
       return null;
     }
-    console.log("[detectMention] returning searchText:", JSON.stringify(textAfterAt));
     return textAfterAt;
   }, []);
 
   const handleTextChange = useCallback((text: string) => {
-    console.log("[handleTextChange] input text:", JSON.stringify(text));
     setInputValue(text);
     const mention = detectMention(text);
-    console.log("[handleTextChange] detectMention returned:", JSON.stringify(mention), "type:", typeof mention);
     setMentionSearch(mention);
   }, [detectMention]);
 
@@ -154,7 +148,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
 
   const toggleReplyLike = (commentId: string, replyId: string) => {
     if (replyLikeMutation.isPending) return;
-    replyLikeMutation.mutate({ commentId, replyId });
+    replyLikeMutation.mutate({ postId, commentId, replyId });
   };
 
   const startReply = (commentId: string, username: string) => {

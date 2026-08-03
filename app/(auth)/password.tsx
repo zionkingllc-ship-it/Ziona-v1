@@ -37,11 +37,9 @@ export default function CreatePassword() {
     if (!passwordIsValid) return;
 
     setPasswordStore(password);
-    console.log("🟦 PASSWORD: store state after setPassword - email:", useSignupStore.getState().email, "birthday:", useSignupStore.getState().birthday, "password set:", !!password);
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        console.log("🟦 PASSWORD: navigating to username");
         router.push("/(auth)/username");
       }, 120);
     });

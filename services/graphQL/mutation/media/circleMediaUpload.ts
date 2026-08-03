@@ -48,17 +48,11 @@ export async function uploadCircleMedia(
     uploadUri = await compressImage(uploadUri);
     uploadType = mimeFromExtension(uploadUri);
     const afterSize = await getFileSize(uploadUri);
-    console.log(
-      `[uploadCircleMedia] image ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
-    );
   } else if (fileType.startsWith("video/")) {
     const beforeSize = await getFileSize(uploadUri);
     uploadUri = await compressVideo(uploadUri);
     uploadType = mimeFromExtension(uploadUri);
     const afterSize = await getFileSize(uploadUri);
-    console.log(
-      `[uploadCircleMedia] video ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
-    );
   }
 
   const fileName = uploadUri.split("/").pop() || `upload-${Date.now()}`;

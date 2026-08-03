@@ -12,11 +12,20 @@ import { isIOS } from "@/constants/platform";
 let messaging: any = null;
 try {
   if (NativeModules.RNFBAppModule) {
-    messaging = require("@react-native-firebase/messaging").default;
+    const { getApp } = require("@react-native-firebase/app");
+    const {
+      getMessaging,
+      getToken: rnfbGetToken,
+      onTokenRefresh: rnfbOnTokenRefresh,
+    } = require("@react-native-firebase/messaging");
+    const messagingApi = getMessaging(getApp());
+    messaging = {
+      getToken: () => rnfbGetToken(messagingApi),
+      onTokenRefresh: (handler: (token: string) => void) =>
+        rnfbOnTokenRefresh(messagingApi, handler),
+    };
   }
-} catch {
-  console.log("FCM native module not available — using expo-notifications device token fallback");
-}
+} catch {}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -37,32 +46,43 @@ async function setupAndroidChannel() {
   });
 }
 
+let registrationInFlight: Promise<void> | null = null;
+
+async function serializeRegistration(run: () => Promise<void>): Promise<void> {
+  if (registrationInFlight) return registrationInFlight;
+  registrationInFlight = (async () => {
+    try {
+      await run();
+    } finally {
+      registrationInFlight = null;
+    }
+  })();
+  return registrationInFlight;
+}
+
 async function requestPermissionsAndRegister() {
-  const { status } = await Notifications.getPermissionsAsync();
-  if (status !== "granted") {
-    const { status: newStatus } = await Notifications.requestPermissionsAsync({
-      ios: { allowAlert: true, allowSound: true, allowBadge: true },
-    });
-    if (newStatus !== "granted") {
-      console.log("🔔 Push permission denied");
-      return;
+  return serializeRegistration(async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync({
+          ios: { allowAlert: true, allowSound: true, allowBadge: true },
+        });
+        if (newStatus !== "granted") {
+          return;
+        }
+      }
+      if (messaging) {
+        const fcmToken = await messaging.getToken();
+        await registerDeviceToken(fcmToken, Platform.OS);
+      } else {
+        const devicePushToken = await Notifications.getDevicePushTokenAsync();
+        await registerDeviceToken(devicePushToken.data, Platform.OS);
+      }
+    } catch (err) {
+      console.warn("🔔 Push token registration failed:", err);
     }
-  }
-  try {
-    if (messaging) {
-      const fcmToken = await messaging().getToken();
-      console.log("🔔 Got FCM token:", fcmToken);
-      const success = await registerDeviceToken(fcmToken, Platform.OS);
-      console.log("🔔 Token registered:", success);
-    } else {
-      const devicePushToken = await Notifications.getDevicePushTokenAsync();
-      console.log("🔔 Got device push token (FCM unavailable):", devicePushToken.data);
-      const success = await registerDeviceToken(devicePushToken.data, Platform.OS);
-      console.log("🔔 Token registered:", success);
-    }
-  } catch (err) {
-    console.warn("🔔 Push token registration failed:", err);
-  }
+  });
 }
 
 async function syncBadgeFromServer() {
@@ -94,13 +114,14 @@ export default function NotificationProvider({ children }: { children: React.Rea
   useEffect(() => {
     if (!isAuthenticated || !messaging) return;
 
-    const unsubscribe = messaging().onTokenRefresh(async (token: string) => {
-      console.log("🔔 FCM token refreshed:", token);
-      try {
-        await registerDeviceToken(token, Platform.OS);
-      } catch (err) {
-        console.warn("🔔 Token refresh registration failed:", err);
-      }
+    const unsubscribe = messaging.onTokenRefresh(async (token: string) => {
+      await serializeRegistration(async () => {
+        try {
+          await registerDeviceToken(token, Platform.OS);
+        } catch (err) {
+          console.warn("🔔 Token refresh registration failed:", err);
+        }
+      });
     });
 
     return unsubscribe;

@@ -32,6 +32,7 @@ export function useCreateCircleComment() {
         author: {
           id: user.id,
           name: user.username,
+          username: user.username,
           avatarUrl: user.avatarUrl,
         },
         likesCount: 0,
@@ -45,6 +46,7 @@ export function useCreateCircleComment() {
         author: {
           id: user.id,
           name: user.username,
+          username: user.username,
           avatarUrl: user.avatarUrl,
         },
         likesCount: 0,
@@ -134,7 +136,6 @@ export function useCreateCircleComment() {
           });
         }
       } else if (!hasId && hasTempId) {
-        console.warn("Response missing comment — keeping temp comment");
       } else if (hasId && !hasTempId) {
         if (context.parentCommentId) {
           queryClient.setQueryData(["circlePostComments", postId], (old: any) => {

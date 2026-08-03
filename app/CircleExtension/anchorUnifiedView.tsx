@@ -13,6 +13,9 @@ import React, { useCallback, useRef, useState } from "react";
 import { Dimensions, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useCircleMembership } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
+
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width;
 
@@ -155,10 +158,21 @@ export default function AnchorUnifiedView() {
     colors,
     expiresAt,
   );
+  const { isJoined } = useCircleMembership(circleId || "");
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(
+    circleId || "",
+    isJoined,
+  );
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleActionSelected = async (action: string, anchorText?: string) => {
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    requireMembership(() => {
+      void doActionSelected(action, anchorText);
+    });
+  };
+
+  const doActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
     await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
@@ -187,7 +201,6 @@ export default function AnchorUnifiedView() {
       source: "suggestion",
     });
     const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
-    console.log("[AnchorUnifiedView] navigating to anchorResponse", { path });
     router.push(path as any);
   };
 
@@ -307,6 +320,7 @@ export default function AnchorUnifiedView() {
           />
         </View>
       )}
+      {MembershipModal}
     </SafeAreaView>
   );
 }

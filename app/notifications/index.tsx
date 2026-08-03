@@ -69,7 +69,6 @@ export default function ActivityScreen() {
   const isSelecting = selectedIds.size > 0;
 
   const notifications: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
-  console.log("📋 NOTIF SCREEN: isLoading:", isLoading, "pages:", data?.pages?.length, "notifCount:", notifications.length, "dataKeys:", data ? Object.keys(data) : "null");
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();

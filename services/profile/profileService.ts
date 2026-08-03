@@ -108,13 +108,9 @@ export async function updateUsername(
     }
   `;
 
-  console.log("Updating username:", username);
   const data = await graphqlRequest(mutation, { username });
-  console.log("Update username response:", data);
 
   const res = data?.updateUsername;
-
-  console.log("Result:", res);
 
   if (!res?.success) {
     throw new Error(res?.message || "Failed to update username");
@@ -142,10 +138,8 @@ export async function updateAvatar(file: { uri: string }) {
     fileType,
     fileInfo.size || 0,
   );
-  console.log("Upload URL from backend:", upload.uploadUrl);
   await uploadFileToStorage(upload.uploadUrl, compressedUri, fileType);
   const avatarUrl = cleanAvatarUrl(extractPublicUrl(upload.uploadUrl));
-  console.log("Public avatar URL:", avatarUrl);
 
   const query = `
 mutation UpdateProfile( 

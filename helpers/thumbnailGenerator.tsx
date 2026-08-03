@@ -43,13 +43,11 @@ export async function generateVideoThumbnail(
 
     /* ================= SAFETY ================= */
     if (!uri || typeof uri !== "string") {
-      console.warn("Invalid video URI for thumbnail:", uri);
       return null;
     }
 
     // extra guard: must look like a valid video URL
     if (!uri.startsWith("http") && !uri.startsWith("file")) {
-      console.warn("Unsupported URI format:", uri);
       return null;
     }
 
@@ -60,7 +58,6 @@ export async function generateVideoThumbnail(
       });
 
     if (!thumbnailUri) {
-      console.warn("Thumbnail generation returned empty URI");
       return null;
     }
 

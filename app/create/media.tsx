@@ -5,6 +5,7 @@ import CategoryModal from "@/components/ui/modals/CategoryModal";
 import ErrorModal from "@/components/ui/modals/ErrorModal";
 
 import colors from "@/constants/colors";
+import { MAX_VIDEO_DURATION_LABEL, MAX_VIDEO_DURATION_MS } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
 
 import { useCreatePostStore } from "@/store/createPostStore";
@@ -162,6 +163,12 @@ export default function CreateMediaScreen() {
         return;
       }
 
+      if ((video.duration ?? 0) > MAX_VIDEO_DURATION_MS) {
+        setError(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}.`);
+        setErrorVisible(true);
+        return;
+      }
+
       setMedia([normalizeMedia(video)]);
       return;
     }
@@ -185,10 +192,8 @@ export default function CreateMediaScreen() {
     const converted = await Promise.all(
       imageAssets.map(async (a) => {
         const ext = a.uri?.split(".").pop()?.toLowerCase() ?? "unknown";
-        console.log(`[media.tsx] picker asset: uri=${a.uri} mimeType=${a.mimeType} ext=${ext} type=${a.type}`);
         let uri = await convertToSupportedFormat(a.uri, a.mimeType);
         uri = await compressImage(uri);
-        console.log(`[media.tsx] after convert+compress: ${uri}`);
         return { ...a, uri };
       }),
     );

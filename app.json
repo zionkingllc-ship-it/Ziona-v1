@@ -15,7 +15,8 @@
         ]
       },
       "associatedDomains": [
-        "applinks:ziona.app"
+        "applinks:ziona.app",
+        "applinks:dev.ziona.app"
       ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

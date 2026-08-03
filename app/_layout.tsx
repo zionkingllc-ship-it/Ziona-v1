@@ -1,6 +1,5 @@
 import AuthGate from "@/components/auth/AuthGate";
 import { ScreenDimensionsProvider } from "@/context/ScreenDimensionsContext";
-import { debugAuthStorage } from "@/helpers/asyncDataLog";
 import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
@@ -79,7 +78,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
-      debugAuthStorage();
     }
   }, [fontsLoaded]);
 
@@ -88,7 +86,7 @@ export default function RootLayout() {
   useEffect(() => {
     function handleDeepLink(event: { url: string }) {
       const url = event.url;
-      const match = url.match(/\/post\/(.+)/) || url.match(/\/viewer\/(.+)/);
+      const match = url.match(/\/post\/([^/?\s]+)/) || url.match(/\/viewer\/([^/?\s]+)/);
       if (!match?.[1]) return;
       const path = `/viewer/${match[1]}`;
       const now = Date.now();
@@ -153,6 +151,8 @@ export default function RootLayout() {
                   <Stack.Screen name="postVideoViewer" />
                   <Stack.Screen name="circleVideoViewer" />
                   <Stack.Screen name="circleImageViewer" />
+                  <Stack.Screen name="posts" />
+                  <Stack.Screen name="circlePostComposer" />
                 </Stack>
                 </AuthGate>
                 </OfflineProvider>

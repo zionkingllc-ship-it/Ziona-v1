@@ -7,7 +7,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { authApi } from "@/services/api/authApi";
 import { useAsyncStore } from "@/store/useAsyncStore";
 import { useSignupStore } from "@/store/useSignupStore";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
 
@@ -15,8 +15,12 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Email() {
   const { wp, hp, fs } = useResponsive();
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
 
   const storedEmail = useSignupStore((s) => s.email);
+  const birthday = useSignupStore((s) => s.birthday);
+  const password = useSignupStore((s) => s.password);
+  const selectedUsername = useSignupStore((s) => s.selectedUsername);
   const setEmail = useSignupStore((s) => s.setEmail);
   const setFlow = useSignupStore((s) => s.setFlow);
 
@@ -48,22 +52,40 @@ export default function Email() {
 
       setServerError(null);
 
-      console.log("🟦 EMAIL: checking email:", email.trim().toLowerCase());
+      const trimmedEmail = email.trim().toLowerCase();
 
-      const result = await authApi.checkEmail(email.trim().toLowerCase());
+      const result = await authApi.checkEmail(trimmedEmail);
 
-      console.log("🟦 EMAIL: checkEmail result:", result);
-
-      if (result.exists) {
-        console.log("🟦 EMAIL: email already exists");
+      if (result.exists && edit !== "1") {
         setServerError(result.message || "Email already registered");
         stop("emailNext");
         return;
       }
 
-      setEmail(email.trim().toLowerCase());
+      setEmail(trimmedEmail);
       setFlow("email");
-      console.log("🟦 EMAIL: flow set to 'email', navigating to birthday");
+
+      // Editing from OTP: signup data already exists, re-submit signup and
+      // return straight to OTP without repeating birthday/password/username.
+      if (edit === "1" && birthday && password && selectedUsername) {
+        await authApi.signUp({
+          email: trimmedEmail,
+          birthday,
+          username: selectedUsername,
+          password,
+        });
+
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            router.replace({
+              pathname: "/(auth)/verifyOtp",
+              params: { email: trimmedEmail, flow: "signup" },
+            });
+            stop("emailNext");
+          }, 120);
+        });
+        return;
+      }
 
       requestAnimationFrame(() => {
         setTimeout(() => {

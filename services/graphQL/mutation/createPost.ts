@@ -141,8 +141,6 @@ export async function createTextPost(variables: {
     postType: "TEXT",
   });
 
-  console.log("📝 CREATE TEXT POST RESPONSE:", JSON.stringify(data, null, 2));
-
   const res = data?.createPost;
 
   if (!res?.success) {

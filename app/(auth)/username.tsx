@@ -45,23 +45,18 @@ export default function CreateUsername() {
 const flow = useSignupStore((s) => s.flow);
 
 const handleSubmit = async () => {
-  console.log("🟦 USERNAME: handleSubmit called, flow:", flow, "username:", username);
   if (!isValidUsername) {
-    console.log("🟦 USERNAME: invalid username, returning");
     return;
   }
 
   const cleanUsername = username.trim().toLowerCase();
-  console.log("🟦 USERNAME: clean username:", cleanUsername);
 
   setSelectedUsername(cleanUsername);
 
   try {
     start("signup");
-    console.log("🟦 USERNAME: loading started, flow:", flow);
 
     if (flow === "email") {
-      console.log("🟦 USERNAME: email flow, store - email:", !!email, "birthday:", !!birthday, "password:", !!password);
       if (!email || !birthday || !password) {
         console.error("🟥 USERNAME: missing store data - email:", email, "birthday:", birthday, "password:", password);
         setError("Something went wrong. Please go back and try again.");
@@ -70,16 +65,12 @@ const handleSubmit = async () => {
         return;
       }
 
-      console.log("🟦 USERNAME: calling signUp API");
       await authApi.signUp({
         email,
         birthday,
         username: cleanUsername,
         password,
       });
-      console.log("🟦 USERNAME: signUp API succeeded");
-
-      console.log("🟦 USERNAME: navigating to verifyOtp");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -94,11 +85,7 @@ const handleSubmit = async () => {
     }
 
     if (flow === "google" || flow === "apple") {
-      console.log(`🟦 USERNAME: ${flow} flow, calling finalize-username`);
       await authApi.finalizeUsername(cleanUsername);
-      console.log(`🟦 USERNAME: finalize-username succeeded`);
-
-      console.log("🟦 USERNAME: navigating to feed");
 
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -109,7 +96,6 @@ const handleSubmit = async () => {
       return;
     }
 
-    console.warn("🟨 USERNAME: no matching flow - flow is:", flow);
     setError("Signup failed. Please try again.");
     setShowErrorModal(true);
     stop("signup");

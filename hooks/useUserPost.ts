@@ -1,5 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
-import { POST_FEED_FIELDS } from "@/services/graphQL/queries/actions/postFields";
+import { GET_USER_POSTS } from "@/services/graphQL/queries/actions/userPosts";
 import { useAuthStore } from "@/store/useAuthStore";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
@@ -16,22 +16,6 @@ type UserPostsResponse = {
 };
 
 /* =========================
-   QUERY
-========================= */
-
-export const GET_USER_POSTS = `
-query GetUserPosts($userId: String!, $cursor: String, $limit: Int = 20) {
-  userPosts(userId: $userId, cursor: $cursor, limit: $limit) {
-    hasMore
-    nextCursor
-    posts {
-      ${POST_FEED_FIELDS}
-    }
-  }
-}
-`;
-
-/* =========================
    HOOK
 ========================= */
 
@@ -40,7 +24,6 @@ export function useUserPosts(overrideUserId?: string) {
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
 
   const userId = overrideUserId ?? authUser?.id;
-  console.log("USER ID USED:", userId);
   const query = useInfiniteQuery<
     UserPostsResponse,
     Error,
@@ -59,15 +42,11 @@ export function useUserPosts(overrideUserId?: string) {
           hasMore: false,
         };
       }
-      console.log("FETCHING USER POSTS...");
       const data = await graphqlRequest(GET_USER_POSTS, {
         userId,
         cursor: pageParam,
         limit: 20,
       });
-
-      console.log("USER POSTS RAW FULL:", data);
-      console.log("USER POSTS ARRAY:", data?.userPosts?.posts);
 
       const res = data?.userPosts;
 
@@ -86,11 +65,8 @@ export function useUserPosts(overrideUserId?: string) {
 
   const rawPosts = query.data?.pages?.flatMap((page) => page.posts ?? []) ?? [];
 
-  console.log("RAW POSTS BEFORE NORMALIZE:", rawPosts);
-
   const normalized = rawPosts.map((p) => normalizePost(p));
 
-  console.log("NORMALIZED BEFORE FILTER:", normalized);
   /* =========================
      NORMALIZE + SAFETY
   ========================== */
@@ -108,8 +84,6 @@ export function useUserPosts(overrideUserId?: string) {
 
         return true;
       }) ?? [];
-
-  console.log("NORMALIZED USER POSTS:", posts);
 
   return {
     ...query,

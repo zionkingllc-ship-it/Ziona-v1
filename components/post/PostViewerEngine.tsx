@@ -1,5 +1,6 @@
+import CirclePromoCard from "@/components/circles/CirclePromoCard";
 import { PostCard } from "@/components/post/PostCard";
-import { FeedPost } from "@/types/feedTypes";
+import { FeedItem } from "@/types/feedTypes";
 import React, {
   memo,
   useCallback,
@@ -12,7 +13,7 @@ import { ActivityIndicator, AppState, FlatList, View, ViewToken } from "react-na
 import colors from "@/constants/colors";
 
 type Props = {
-  posts: FeedPost[];
+  posts: FeedItem[];
   initialIndex?: number;
   containerHeight: number;
   containerWidth: number;
@@ -38,7 +39,7 @@ function PostViewerEngineComponent({
   refreshing,
   onRefresh,
 }: Props) {
-  const flatListRef = useRef<FlatList<FeedPost>>(null);
+  const flatListRef = useRef<FlatList<FeedItem>>(null);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
@@ -127,11 +128,23 @@ function PostViewerEngineComponent({
   );
 
   const renderItem = useCallback(
-    ({ item, index }: { item: FeedPost; index: number }) => {
+    ({ item, index }: { item: FeedItem; index: number }) => {
       const itemKey = `${item?.id ?? ""}-${index}`;
       const isActive = itemKey === (activePostId ?? "");
       const isPaused = itemKey === (pausedPostId ?? "");
       const shouldPlay = !!(isScreenFocused && isActive && !isPaused);
+
+      if (item.type === "circlePromo") {
+        return (
+          <CirclePromoCard
+            key={itemKey}
+            item={item}
+            screenHeight={containerHeight}
+            screenWidth={containerWidth}
+            tabBarHeight={tabBarHeight}
+          />
+        );
+      }
 
       return (
         <PostCard
@@ -184,7 +197,7 @@ function PostViewerEngineComponent({
     }
   }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage, mergedPosts]);
 
-  const keyExtractor = useCallback((item: FeedPost, index: number) => `${item.id}-${index}`, []);
+  const keyExtractor = useCallback((item: FeedItem, index: number) => `${item.id}-${index}`, []);
 
   if (!containerHeight || !mergedPosts.length) {
     return null;
@@ -213,6 +226,8 @@ function PostViewerEngineComponent({
         showsVerticalScrollIndicator={false}
         scrollsToTop={false}
         scrollEventThrottle={16}
+        removeClippedSubviews={false}
+        style={{ backgroundColor: "black" }}
         onScrollToIndexFailed={(info) => {
           flatListRef.current?.scrollToOffset({
             offset: containerHeight * info.index,

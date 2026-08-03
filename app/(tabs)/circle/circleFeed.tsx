@@ -158,7 +158,6 @@ function mapCircleFeedData(data: any): CircleFeedData {
       : undefined,
     posts: data.posts
       ? data.posts.map((p: any) => {
-          console.log("[mapCircleFeedData] raw post:", JSON.stringify({ id: p.id, text: p.text?.substring(0,30), media: p.media?.map((m:any) => ({ url: m.url?.substring(0,30), thumb: m.thumbnailUrl?.substring(0,30) })), mediaUrl: p.mediaUrl?.substring(0,30), mediaType: p.mediaType }));
           return {
           id: p.id,
           text: p.text || undefined,
@@ -177,6 +176,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
           user: {
             id: p.user.id || "",
             name: p.user.name || "",
+            username: p.user.username || "",
             avatar: p.user.avatar || "",
           },
         };
@@ -240,19 +240,6 @@ export default function CircleFeedScreen() {
       memberAvatars: feed.memberAvatars.length > 0 ? feed.memberAvatars : fallbackAvatars,
     };
   }, [data, _name, _desc, _image, _members, fallbackAvatars]);
-
-  console.log("📦 [circleFeed] circle data:", {
-    activeAnchor: circle.activeAnchor ? {
-      id: circle.activeAnchor.id,
-      type: circle.activeAnchor.type,
-      title: circle.activeAnchor.title,
-      backgroundColors: circle.activeAnchor.backgroundColors,
-      backgroundImage: circle.activeAnchor.backgroundImage ? "yes" : "no",
-    } : null,
-    pastAnchorsCount: circle.pastAnchors?.length ?? 0,
-    postsCount: circle.posts?.length ?? 0,
-    firstPostSample: circle.posts?.[0] ? { id: circle.posts[0].id, text: (circle.posts[0].text || "").substring(0, 30), image: circle.posts[0].image ? "yes" : "no", mediaUrl: circle.posts[0].mediaUrl ? "yes" : "no" } : null,
-  });
 
   const posts: CirclePost[] = circle.posts;
 
@@ -420,6 +407,7 @@ export default function CircleFeedScreen() {
       <CircleFeedItem
         post={item}
         circleId={circleId}
+        isJoined={circle.isJoined}
       />
       <YStack
         height={1}
@@ -480,7 +468,7 @@ export default function CircleFeedScreen() {
           isJoined={circle.isJoined}
           loading={joining}
           onToggleJoin={toggleJoin}
-          onBack={() => router.back()}
+          onBack={() => router.dismissTo("/(tabs)/circle")}
         />
       </View>
 
@@ -658,10 +646,7 @@ export default function CircleFeedScreen() {
               backgroundColor={colors.primary}
               onPress={() => {
                 // Use explicit query string to guarantee the circleId appears in the URL
-                // The route path should not include group folder names such as (tabs).
-                // Use explicit URL with querystring to ensure the circleId becomes a search param
-                const path = `/(tabs)/circle/PostComposerScreen?circleId=${encodeURIComponent(circleId)}`;
-                console.log("[FAB] navigating to PostComposerScreen", { path });
+                const path = `/circlePostComposer?circleId=${encodeURIComponent(circleId)}`;
                 router.push(path as any);
               }}
             elevation={4}

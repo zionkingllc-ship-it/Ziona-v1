@@ -5,7 +5,7 @@ import { TouchableOpacity, Pressable } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { CircleComment } from "@/services/graphQL/mutation/actions/circleComments";
+import { CircleComment, CircleCommentAuthor } from "@/services/graphQL/mutation/actions/circleComments";
 import themeColors from "@/constants/colors";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
@@ -26,6 +26,10 @@ type ReplyRowProps = {
   isPending: boolean;
   onViewProfile: (userId: string) => void;
 };
+
+function authorName(author?: CircleCommentAuthor | null): string {
+  return author?.username || author?.name || "User";
+}
 
 function formatDate(dateString?: string): string {
   if (!dateString) return "";
@@ -91,13 +95,13 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfil
     >
       <XStack gap="$2" paddingLeft="$4" paddingTop="$2" alignItems="flex-start">
         <Pressable onPress={() => reply.author?.id && onViewProfile(reply.author.id)}>
-          <AvatarCircle uri={reply.author?.avatarUrl} name={reply.author?.name} size={24} />
+          <AvatarCircle uri={reply.author?.avatarUrl} name={reply.author?.username || reply.author?.name} size={24} />
         </Pressable>
         <YStack flex={1} gap={1}>
           <XStack gap="$2" alignItems="center">
             <Pressable onPress={() => reply.author?.id && onViewProfile(reply.author.id)}>
               <Text fontSize={12} fontWeight="600">
-                {reply.author?.name || "User"}
+                {authorName(reply.author)}
               </Text>
             </Pressable>
             <Text fontSize={10} color="#999">
@@ -147,9 +151,9 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
 
   const mentionMap = useMemo(() => {
     const map: Record<string, string> = {};
-    if (comment.author?.name && comment.author?.id) map[comment.author.name] = comment.author.id;
+    if (comment.author?.id) map[comment.author.username || comment.author.name || ""] = comment.author.id;
     for (const r of comment.replies || []) {
-      if (r.author?.name && r.author?.id) map[r.author.name] = r.author.id;
+      if (r.author?.id) map[r.author.username || r.author.name || ""] = r.author.id;
     }
     return map;
   }, [comment]);
@@ -162,12 +166,12 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
       <YStack gap="$2" paddingBottom="$2" borderBottomWidth={1} borderBottomColor="#F0F0F0">
         <XStack alignItems="center" gap="$2">
           <Pressable onPress={() => comment.author?.id && goToProfile(comment.author.id)}>
-            <AvatarCircle uri={comment.author?.avatarUrl} name={comment.author?.name} size={32} />
+            <AvatarCircle uri={comment.author?.avatarUrl} name={comment.author?.username || comment.author?.name} size={32} />
           </Pressable>
           <YStack gap={2} flex={1}>
             <Pressable onPress={() => comment.author?.id && goToProfile(comment.author.id)}>
               <Text fontSize={12} fontWeight="600">
-                {comment.author?.name || "User"}
+                {authorName(comment.author)}
               </Text>
             </Pressable>
             <Text fontSize={11} color="#999">
@@ -195,7 +199,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
             </XStack>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => onReply(comment.id, comment.author?.name || "User")}>
+          <TouchableOpacity onPress={() => onReply(comment.id, authorName(comment.author))}>
             <XStack alignItems="center" gap="$1">
               <Ionicons name="chatbubble-ellipses-outline" size={14} color="#999" />
               <Text fontSize={11} color="#999">

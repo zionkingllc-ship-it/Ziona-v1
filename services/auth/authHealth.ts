@@ -31,12 +31,10 @@ async function runHealthCheck() {
     // Double-check: only force logout if the stored token is actually missing
     // (module-level tokenExpiresAt can be stale after concurrent refreshes)
     if (!tokens?.accessToken) {
-      console.log("[AuthHealth] Token expired and no access token — clearing session");
       forceLogout();
       return;
     }
     // Token exists in store but module's expiry is stale — re-check by decoding
-    console.log("[AuthHealth] Token expiry check stale — skipping health cycle");
     return;
   }
 
@@ -45,7 +43,6 @@ async function runHealthCheck() {
   } catch (err: any) {
     const status = err?._status ?? err?.response?.status;
     if (status === 401) {
-      console.log("[AuthHealth] /auth/me returned 401 — session invalid");
       navigator?.replace("/(auth)");
     }
   }

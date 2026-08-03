@@ -60,14 +60,10 @@ export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: 
 
   const displayUsers = useMemo(() => {
     const sliced = users.slice(0, 8);
-    console.log("[MentionSuggestions] displayUsers memo: total users", users.length, "displaying", sliced.length);
     return sliced;
   }, [users]);
 
-  console.log("[MentionSuggestions] render: isLoading=", isLoading, "displayUsers.length=", displayUsers.length, "searchText=", searchText);
-
   if (isLoading) {
-    console.log("[MentionSuggestions] rendering loading state");
     return (
       <View style={styles.container}>
         <Text fontFamily="$body" fontSize={12} color={colors.gray}>
@@ -78,7 +74,6 @@ export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: 
   }
 
   if (displayUsers.length === 0) {
-    console.log("[MentionSuggestions] rendering EMPTY state (no users found)");
     return (
       <View style={styles.container}>
         <Text fontFamily="$body" fontSize={12} color={colors.gray}>

@@ -4,10 +4,12 @@ import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import FollowSuggestions from "@/components/following/FollowingSuggestions";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
+import { PROMOTED_CIRCLE_BATCH_SIZE, PROMOTED_CIRCLE_INTERVAL } from "@/constants/promotedContent";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
+import { useAllCircles } from "@/hooks/useCircles";
 import { useUnreadCount } from "@/hooks/useNotifications";
-import { FeedPost } from "@/types/feedTypes";
+import { FeedItem, FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -57,11 +59,12 @@ export default function Feed() {
   const isFocused = useIsFocused();
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const { data: unreadCount } = useUnreadCount();
-  console.log("🟦 NOTIFICATION: unreadCount from hook:", unreadCount);
 
   const onRefreshFeed = useCallback(async () => {
     setRefreshingFeed(true);
     try {
+      setPromotedCirclesInitialized(false);
+      setPromotedCirclesPool([]);
       const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
       await queryClient.refetchQueries({ queryKey: [key] });
     } catch (err) {
@@ -104,8 +107,11 @@ export default function Feed() {
     setModalVisible(true);
   }, [query.isError, query.error]);
 
-  const pages =
-    (query.data as InfiniteData<{ posts: any[] } | undefined> | undefined)?.pages ?? [];
+  const pages = useMemo(
+    () =>
+      (query.data as InfiniteData<{ posts: any[] } | undefined> | undefined)?.pages ?? [],
+    [query.data],
+  );
   const data: FeedPost[] = useMemo(() => {
     if (!pages.length) return [];
 
@@ -134,6 +140,54 @@ export default function Feed() {
 
     return uniquePosts;
   }, [pages]);
+
+  const { data: allCircles } = useAllCircles();
+
+  const [promotedCirclesPool, setPromotedCirclesPool] = useState<any[]>([]);
+  const [promotedCirclesInitialized, setPromotedCirclesInitialized] = useState(false);
+
+  const promotedCircles = useMemo(() => {
+    if (!Array.isArray(allCircles)) return [];
+    return (allCircles as any[]).filter((c) => !c?.isJoined && !c?.isSubscribed);
+  }, [allCircles]);
+
+  useEffect(() => {
+    if (promotedCirclesInitialized) return;
+    if (!promotedCircles.length) return;
+    setPromotedCirclesPool(promotedCircles);
+    setPromotedCirclesInitialized(true);
+  }, [promotedCircles, promotedCirclesInitialized]);
+
+  const feedItems: FeedItem[] = useMemo(() => {
+    if (!data.length || !promotedCirclesPool.length) return data;
+
+    const pool = promotedCirclesPool;
+    const items: FeedItem[] = [];
+    let batchStart = 0;
+    data.forEach((post, i) => {
+      items.push(post);
+      if ((i + 1) % PROMOTED_CIRCLE_INTERVAL === 0) {
+        if (batchStart >= pool.length) return;
+        const batch = pool.slice(batchStart, batchStart + PROMOTED_CIRCLE_BATCH_SIZE);
+        batchStart += batch.length;
+        if (!batch.length) return;
+        items.push({
+          type: "circlePromo",
+          id: `circle-promo-batch-${batchStart}-${i}`,
+          circles: batch.map((circle) => ({
+            id: circle.id,
+            name: circle.name ?? "",
+            description: circle.description ?? "",
+            coverImage: circle.coverImage ?? "",
+            memberCount: circle.memberCount ?? 0,
+            isJoined: !!circle.isJoined || !!circle.isSubscribed,
+            avatars: Array.isArray(circle.avatars) ? circle.avatars : [],
+          })),
+        });
+      }
+    });
+    return items;
+  }, [data, promotedCirclesPool]);
 
   const suggestions = useMemo(() => {
     const firstPage = (query.data as InfiniteData<{ emptyState?: { suggestions?: any[] } } | undefined> | undefined)?.pages?.[0];
@@ -184,7 +238,6 @@ export default function Feed() {
   );
 
   const handleBellPress = () => {
-    console.log("🟦 NOTIFICATION: bell pressed, unreadCount:", unreadCount);
     const isAuth = useAuthStore.getState().isAuthenticated;
     if (!isAuth) {
       router.push("/(auth)/login/");
@@ -194,8 +247,8 @@ export default function Feed() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View flex={1}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "black" }} edges={["top"]}>
+      <View flex={1} backgroundColor="black">
         {data.length === 0 && (
           <View style={StyleSheet.absoluteFill} backgroundColor="rgba(0,0,0,0.2)" pointerEvents="none" />
         )}
@@ -210,7 +263,7 @@ export default function Feed() {
         </View>
 
         <View
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: "black" }}
           onLayout={(e) => {
             const { height, width } = e.nativeEvent.layout;
             if (height !== containerHeight) setContainerHeight(height);
@@ -237,7 +290,7 @@ export default function Feed() {
           ) : (
           <PostViewerEngine
             key={feedType}
-            posts={data}
+            posts={feedItems}
             containerHeight={containerHeight}
             containerWidth={containerWidth}
             tabBarHeight={tabBarHeight}

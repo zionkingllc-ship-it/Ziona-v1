@@ -145,8 +145,6 @@ export async function getSuggestedCreators(limit: number = 10): Promise<Suggeste
 }
 
 export async function searchUsers(query: string): Promise<SearchUsersResponse> {
-  console.log("[searchUsers] >>> called with query:", JSON.stringify(query), "type:", typeof query, "length:", query?.length);
-
   const gql = `
     query SearchUsers($search: String!) {
       friendsList(search: $search) {
@@ -157,7 +155,6 @@ export async function searchUsers(query: string): Promise<SearchUsersResponse> {
     }
   `;
 
-  console.log("[searchUsers] sending GraphQL request with variables:", JSON.stringify({ search: query }));
   let data: any;
   try {
     data = await graphqlRequest(gql, { search: query });
@@ -166,17 +163,7 @@ export async function searchUsers(query: string): Promise<SearchUsersResponse> {
     throw err;
   }
 
-  console.log("[searchUsers] raw response from server:", JSON.stringify(data));
-  console.log("[searchUsers] data keys:", data ? Object.keys(data) : "null/undefined");
-  console.log("[searchUsers] data.friendsList type:", typeof data?.friendsList, Array.isArray(data?.friendsList));
-
   const results = data?.friendsList ?? [];
-  console.log("[searchUsers] final parsed results array length:", results.length);
-  if (results.length > 0) {
-    console.log("[searchUsers] first result sample:", JSON.stringify(results[0]));
-  } else {
-    console.log("[searchUsers] WARNING: empty results - friendsList returned []");
-  }
 
   return results;
 }

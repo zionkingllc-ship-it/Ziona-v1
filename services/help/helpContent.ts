@@ -64,7 +64,7 @@ export const HELP_SECTIONS: HelpSection[] = [
       {
         title: "What can I post on Ziona?",
         content:
-          "You can share:\n  Videos (60\u2013180 seconds)\n  Images or graphics\n  Carousel posts (up to 5 images)\n  Text posts\n  Bible posts\n\nAll content must follow community guidelines",
+          "You can share:\n  Videos (up to 2 minutes 30 seconds)\n  Images or graphics\n  Carousel posts (up to 5 images)\n  Text posts\n  Bible posts\n\nAll content must follow community guidelines",
       },
       {
         title: "How to create a Bible post",

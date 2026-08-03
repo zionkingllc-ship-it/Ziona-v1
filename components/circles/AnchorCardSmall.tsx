@@ -62,7 +62,6 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
       ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
     });
     const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
-    console.log("[AnchorCardSmall] navigating to anchorUnifiedView", { path });
     router.push(path as any);
   };
 

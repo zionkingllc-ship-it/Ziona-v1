@@ -5,6 +5,7 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { useMutation } from "@tanstack/react-query";
 import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
@@ -59,6 +60,7 @@ type CirclePost = {
   user: {
     id: string;
     name: string;
+    username?: string;
     avatar: string;
   };
 };
@@ -66,14 +68,20 @@ type CirclePost = {
 type Props = {
   post: CirclePost;
   circleId?: string;
+  isJoined?: boolean;
 };
 
 const CircleFeedItem = memo(function CircleFeedItem({
   post,
   circleId,
+  isJoined,
 }: Props) {
   const router = useRouter();
   const { requireAuth, AuthModal } = useRequireAuth();
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(
+    circleId || "",
+    isJoined ?? false,
+  );
   const goToProfile = (userId: string, e?: any) => {
     e?.stopPropagation?.();
     requireAuth(() => router.push(`/guest?userId=${userId}`));
@@ -109,24 +117,24 @@ const CircleFeedItem = memo(function CircleFeedItem({
   );
 
   useEffect(() => {
-    console.log("[CircleFeedItem] post data:", { id: post.id, text: post.text?.substring(0, 30), image: post.image?.substring(0, 30), mediaUrl: post.mediaUrl?.substring(0, 30) });
     getAnchorRef(post.id).then(setAnchorRef).catch(() => {});
   }, [post.id]);
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
-    handleToggleLike();
+    requireMembership(() => handleToggleLike());
   };
 
   const resolved = anchorRef;
 
   const handlePostPress = () => {
     router.push({
-      pathname: "/(tabs)/circle/post/[postId]",
+      pathname: "/posts/[id]",
       params: {
+        id: post.id,
         postId: post.id,
         circleId: circleId || "",
-        userName: post.user.name,
+        userName: post.user.username || post.user.name,
         userAvatar: post.user.avatar,
         postText: post.text || "",
         postImage: post.image || "",
@@ -167,7 +175,6 @@ const CircleFeedItem = memo(function CircleFeedItem({
       ...(resolved.expiresAt ? { expiresAt: resolved.expiresAt } : {}),
     });
     const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
-    console.log("[CircleFeedItem] navigating to anchorUnifiedView", { path });
     router.push(path as any);
   };
 
@@ -180,7 +187,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             <Pressable onPress={(e) => goToProfile(post.user.id, e)}>
               <AvatarWithInitials
                 uri={post.user.avatar}
-                name={post.user.name}
+                name={post.user.username || post.user.name}
                 size={36}
                 failedUris={failedAvatarUrls}
                 setFailedUris={setFailedAvatarUrls}
@@ -189,7 +196,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             <XStack gap={6} alignItems="flex-start">
               <Pressable onPress={(e) => goToProfile(post.user.id, e)}>
                 <Text fontFamily="$body" fontSize={13} fontWeight="600">
-                  {post.user.name}
+                  {post.user.username || post.user.name}
                 </Text>
               </Pressable>
               <Text fontFamily="$body" fontSize={12} color="#888">
@@ -212,7 +219,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* VIDEO */}
           {isVideo && post.mediaUrl && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to postVideoViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
                 {imageUri && !videoThumbError ? (
                   <>
@@ -233,7 +240,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
           {/* IMAGE */}
           {!isVideo && imageUri && !postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; router.push(path as any); }}>
               <ExpoImage
                 source={{ uri: post.image || post.mediaUrl }}
                 style={{ width: "100%", height: 139, borderRadius: 14 }}
@@ -243,7 +250,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </Pressable>
           )}
           {!isVideo && imageUri && postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; console.log("[CircleFeedItem] navigating to circleImageViewer", { path }); router.push(path as any); }}>
+            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; router.push(path as any); }}>
               <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
                 <Ionicons name="image-outline" size={32} color="#999" />
                 <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
@@ -329,12 +336,10 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onClose={() => setReasonsVisible(false)}
           onSelectReason={(reason) => {
             setReasonsVisible(false);
-            console.log("[CircleFeedItem] submitting reason report:", { reason, postId: post.id });
             reportMutation.mutate(
               { reason },
               {
                 onSuccess: () => {
-                  console.log("[CircleFeedItem] reason report succeeded:", { reason, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("success");
                   setSuccessTitle("Report Submitted");
@@ -360,12 +365,10 @@ const CircleFeedItem = memo(function CircleFeedItem({
           onClose={() => setOtherVisible(false)}
           onSubmit={(description) => {
             setOtherVisible(false);
-            console.log("[CircleFeedItem] submitting other report:", { description, postId: post.id });
             reportMutation.mutate(
               { reason: "OTHER", description },
               {
                 onSuccess: () => {
-                  console.log("[CircleFeedItem] other report succeeded:", { description, postId: post.id });
                   setSuccessVisible(true);
                   setSuccessType("success");
                   setSuccessTitle("Report Submitted");
@@ -397,6 +400,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
           message="This anchor has expired."
         />
         {AuthModal}
+        {MembershipModal}
       </YStack>
     </Pressable>
   );

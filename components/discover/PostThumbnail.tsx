@@ -40,8 +40,6 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
     async function loadThumbnail() {
       if (!isMedia || firstMedia?.type !== "video") return;
 
-      console.log("[THUMB] 🎬 Processing", mediaUrl);
-
       const backendThumb = firstMedia.thumbnailUrl;
 
       const isValidBackend =
@@ -50,20 +48,16 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
         !backendThumb.includes(".mp4?");
 
       if (isValidBackend) {
-        console.log("[THUMB] ✅ Using backend thumbnail", backendThumb);
         setThumbnailUri(backendThumb);
         return;
       }
 
       try {
-        console.log("[THUMB] ⚙️ Generating thumbnail...");
         const generated = await generateVideoThumbnail(mediaUrl ?? "");
 
         if (generated && isMounted) {
-          console.log("[THUMB] ✅ Generated thumbnail", generated);
           setThumbnailUri(generated);
         } else {
-          console.warn("[THUMB] ❌ Generation returned null");
         }
       } catch (e) {
         console.error("[THUMB] ❌ Generation failed", e);

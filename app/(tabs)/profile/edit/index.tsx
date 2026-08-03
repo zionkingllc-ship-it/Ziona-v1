@@ -85,8 +85,6 @@ export default function EditProfileScreen() {
       setLocalAvatar(null);
       setSuccessVisible(true);
     } catch (e) {
-      console.log("Avatar update failed", e);
-
       setLocalAvatar(null);
       setErrorVisible(true);
     }

@@ -47,7 +47,6 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
       ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
     });
     const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
-    console.log("[AnchorCard] navigating to anchorUnifiedView", { path });
     router.push(path as any);
     
     setTimeout(() => setLoading(false), 500);

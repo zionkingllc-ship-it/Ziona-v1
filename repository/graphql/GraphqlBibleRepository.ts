@@ -54,7 +54,6 @@ query GetFullChapter($book: String!, $chapter: Int!, $translation: String!) {
     const data = await graphqlRequest(QUERY, variables);
 
     if (!data?.scripture) {
-      console.warn("No scripture returned from backend");
       return null;
     }
 

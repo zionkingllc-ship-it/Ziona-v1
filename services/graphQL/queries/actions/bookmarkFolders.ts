@@ -38,19 +38,15 @@ export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
     }
   `;
 
-  console.log("🔍 [bookmarkFolders] Fetching bookmark folders...");
   const data = await graphqlRequest(query, {});
-  console.log("🔍 [bookmarkFolders] Raw API response:", JSON.stringify(data, null, 2));
 
   const folders = data?.bookmarkFolders;
-  console.log("🔍 [bookmarkFolders] Extracted folders:", JSON.stringify(folders, null, 2));
 
   if (!folders) {
     console.error("🔍 [bookmarkFolders] No folders in response, throwing error");
     throw new Error("Failed to fetch bookmark folders");
   }
 
-  console.log(`🔍 [bookmarkFolders] Found ${folders.length} folders`);
   return folders;
 }
 

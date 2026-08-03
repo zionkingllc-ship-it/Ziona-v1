@@ -44,13 +44,6 @@ export default function CircleFeedBanner({
   }, [isCompact]);
 
   const hasBanner = !!bannerImage;
-  console.log("🖼️ [CircleFeedBanner] received:", JSON.stringify({
-    bannerImage: bannerImage ? bannerImage.substring(0, 80) + "..." : "(empty)",
-    hasBanner,
-    circleName,
-    isCompact,
-    isJoined,
-  }));
 
   return (
     <View style={{ position: 'relative' }}>

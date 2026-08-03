@@ -68,7 +68,6 @@ export default function CircleVideoViewer() {
       try {
         player.play();
       } catch (e) {
-        console.log("Play error:", e);
       }
     }
   }, [player]);

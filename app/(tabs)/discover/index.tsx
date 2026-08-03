@@ -21,10 +21,10 @@ export default function DiscoverScreen() {
     }
   }, [refetch]);
 
-  const handleCategoryPress = (categoryId: string, categoryLabel?: string) => {
+  const handleCategoryPress = (categoryId: string, categoryLabel?: string, categorySlug?: string) => {
     router.push({
       pathname: "/[categoryId]",
-      params: { categoryId, label: categoryLabel },
+      params: { categoryId, label: categoryLabel, slug: categorySlug },
     });
   };
 
@@ -51,7 +51,7 @@ export default function DiscoverScreen() {
         ) : (
           <CategoryGrid
             categories={categories}
-            onCategoryPress={(id, label) => handleCategoryPress(id, label)}
+            onCategoryPress={(id, label, slug) => handleCategoryPress(id, label, slug)}
             refreshing={refreshing}
             onRefresh={onRefresh}
           />

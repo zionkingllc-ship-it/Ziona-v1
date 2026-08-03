@@ -10,9 +10,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "codegen": "node scripts/fetchSchema.js && graphql-codegen --config codegen.ts",
-    "build:staging": "node scripts/prepare-build.js staging && eas build --profile production --platform all --auto-submit",
-    "build:staging:ios": "node scripts/prepare-build.js staging && eas build --profile production --platform ios --auto-submit",
-    "build:staging:android": "node scripts/prepare-build.js staging && eas build --profile production --platform android --auto-submit",
+    "build:staging": "node scripts/prepare-build.js staging && eas build --profile staging --platform all --auto-submit",
+    "build:staging:ios": "node scripts/prepare-build.js staging && eas build --profile staging --platform ios --auto-submit",
+    "build:staging:android": "node scripts/prepare-build.js staging && eas build --profile staging --platform android --auto-submit",
     "build:production": "node scripts/prepare-build.js production && eas build --profile production --platform all --auto-submit",
     "build:production:ios": "node scripts/prepare-build.js production && eas build --profile production --platform ios --auto-submit",
     "build:production:android": "node scripts/prepare-build.js production && eas build --profile production --platform android --auto-submit"

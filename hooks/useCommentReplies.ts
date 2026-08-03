@@ -2,7 +2,6 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import {
   getCommentReplies,
   likeComment,
-  CommentReply,
 } from "@/services/graphQL/mutation/actions/comments";
 
 export function useCommentReplies(commentId: string) {
@@ -20,61 +19,159 @@ export function useReplyLike() {
 
   return useMutation({
     mutationFn: async ({
+      postId,
       commentId,
       replyId,
     }: {
+      postId: string;
       commentId: string;
       replyId: string;
     }) => {
       return likeComment(replyId);
     },
-    onMutate: async ({ commentId, replyId }) => {
-      await queryClient.cancelQueries({
-        queryKey: ["commentReplies", commentId],
-      });
+    onMutate: async ({ postId, commentId, replyId }) => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ["postComments", postId] }),
+        queryClient.cancelQueries({ queryKey: ["commentReplies", commentId] }),
+      ]);
 
+      const previousPostComments = queryClient.getQueryData([
+        "postComments",
+        postId,
+      ]);
       const previousReplies = queryClient.getQueryData([
         "commentReplies",
         commentId,
       ]);
 
+      const toggleReply = (reply: any) => {
+        if (reply.id !== replyId) return reply;
+        const wasLiked = reply.viewerState?.liked ?? false;
+        return {
+          ...reply,
+          viewerState: {
+            ...(reply.viewerState ?? {}),
+            liked: !wasLiked,
+          },
+          stats: {
+            ...(reply.stats ?? {}),
+            likesCount: wasLiked
+              ? Math.max(0, (reply.stats?.likesCount ?? 0) - 1)
+              : (reply.stats?.likesCount ?? 0) + 1,
+          },
+        };
+      };
+
+      let foundInPostComments = false;
+
       queryClient.setQueryData(
-        ["commentReplies", commentId],
+        ["postComments", postId],
         (old: any) => {
-          if (!old) return old;
+          if (!old || !Array.isArray(old.pages)) return old;
           return {
             ...old,
             pages: old.pages.map((page: any) => ({
               ...page,
-              comments: page.comments.map((reply: CommentReply) =>
-                reply.id === replyId
+              comments: (page.comments ?? []).map((comment: any) => {
+                if (comment.id !== commentId) return comment;
+                foundInPostComments = true;
+                return {
+                  ...comment,
+                  replies: (comment.replies ?? []).map(toggleReply),
+                };
+              }),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueryData(
+        ["commentReplies", commentId],
+        (old: any) => {
+          if (!old || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              comments: (page.comments ?? []).map(toggleReply),
+            })),
+          };
+        },
+      );
+
+      return {
+        previousPostComments,
+        previousReplies,
+        foundInPostComments,
+      };
+    },
+    onSuccess: (response, { postId, commentId, replyId }) => {
+      if (!response) return;
+
+      const syncReply = (reply: any) => {
+        if (reply.id !== replyId) return reply;
+        return {
+          ...reply,
+          viewerState: {
+            ...(reply.viewerState ?? {}),
+            liked: response.liked,
+          },
+          stats: {
+            ...(reply.stats ?? {}),
+            likesCount:
+              response.commentStats?.likesCount ??
+              response.stats?.likesCount ??
+              reply.stats?.likesCount,
+          },
+        };
+      };
+
+      queryClient.setQueryData(
+        ["postComments", postId],
+        (old: any) => {
+          if (!old || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              comments: (page.comments ?? []).map((comment: any) =>
+                comment.id === commentId
                   ? {
-                      ...reply,
-                      viewerState: {
-                        ...reply.viewerState,
-                        liked: !reply.viewerState?.liked,
-                      },
-                      stats: {
-                        ...reply.stats,
-                        likesCount: reply.viewerState?.liked
-                          ? reply.stats.likesCount - 1
-                          : reply.stats.likesCount + 1,
-                      },
+                      ...comment,
+                      replies: (comment.replies ?? []).map(syncReply),
                     }
-                  : reply
+                  : comment,
               ),
             })),
           };
-        }
+        },
       );
 
-      return { previousReplies };
+      queryClient.setQueryData(
+        ["commentReplies", commentId],
+        (old: any) => {
+          if (!old || !Array.isArray(old.pages)) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page: any) => ({
+              ...page,
+              comments: (page.comments ?? []).map(syncReply),
+            })),
+          };
+        },
+      );
     },
-    onError: (_err, { commentId }, context) => {
+    onError: (_err, { postId, commentId }, context) => {
+      if (context?.previousPostComments) {
+        queryClient.setQueryData(
+          ["postComments", postId],
+          context.previousPostComments,
+        );
+      }
       if (context?.previousReplies) {
         queryClient.setQueryData(
           ["commentReplies", commentId],
-          context.previousReplies
+          context.previousReplies,
         );
       }
     },

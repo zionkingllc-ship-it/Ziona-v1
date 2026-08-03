@@ -8,6 +8,7 @@ import { Text, XStack, YStack, View } from "tamagui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
+import { ActivityIndicator } from "react-native";
 
 export default function LikeCountScreen() {
   const userId = useAuthStore((s) => s.user?.id);
@@ -20,9 +21,9 @@ export default function LikeCountScreen() {
       setIsPending(true);
       await updateProfile({ hideLikeCount: hide });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
       setIsPending(false);
-      queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
     },
     onError: () => setIsPending(false),
   });
@@ -41,13 +42,19 @@ export default function LikeCountScreen() {
             <Text fontFamily="$body" fontSize={14} fontWeight="500">
               Hide like count
             </Text>
-            <Switch
-              value={profile?.hideLikeCount ?? false}
-              onValueChange={(v: boolean) => toggleLikeCount.mutate(v)}
-              trackColor={{ false: colors.inactiveButton, true: colors.primary }}
-              thumbColor={colors.white}
-              disabled={isPending}
-            />
+            {isPending ? (
+              <View width={51} height={31} justifyContent="center" alignItems="center">
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : (
+              <Switch
+                value={profile?.hideLikeCount ?? false}
+                onValueChange={(v: boolean) => toggleLikeCount.mutate(v)}
+                trackColor={{ false: colors.inactiveButton, true: colors.primary }}
+                thumbColor={colors.white}
+                disabled={isPending}
+              />
+            )}
           </XStack>
           <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={8}>
             When enabled, like counts won't be shown on your posts

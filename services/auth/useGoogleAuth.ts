@@ -44,10 +44,6 @@ export const useGoogleAuth = () => {
 
       const idToken = userInfo.data?.idToken || (userInfo as any).idToken;
 
-      console.log("====== GOOGLE TOKEN ======");
-      console.log("ID Token:", idToken);
-      console.log("User:", userInfo.data?.user || userInfo.user);
-
       if (!idToken) {
         throw new Error("Google Sign-In failed: No idToken returned");
       }
@@ -60,9 +56,6 @@ export const useGoogleAuth = () => {
       }
 
       setAuth(data.user, data.tokens);
-      console.log("====== GOOGLE DATA  ======");
-      console.log("Google ID Token:", idToken);
-      console.log("Google User:", userInfo.data?.user || userInfo.user);
       return {
         user: data.user,
         tokens: data.tokens,

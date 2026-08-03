@@ -39,7 +39,7 @@ persistQueryClient({
   queryClient,
   persister: asyncStoragePersister,
   maxAge: 1000 * 60 * 60 * 24,
-  buster: "v2",
+  buster: "v3",
 });
 
 // Force-clear any malformed notification data that may have survived

@@ -66,12 +66,7 @@ export const useAppleAuth = () => {
         return { error: "Apple Sign-In is only available on iOS" };
       }
 
-      console.log("====== APPLE NONCE: requesting from backend ======");
-
       const { rawNonce, nonce } = await authApi.getAppleNonce();
-
-      console.log("rawNonce:", rawNonce);
-      console.log("nonce:", nonce);
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -82,11 +77,6 @@ export const useAppleAuth = () => {
       });
 
       const identityToken = credential?.identityToken;
-
-      console.log("====== APPLE CREDENTIAL ======");
-      console.log("identityToken length:", identityToken?.length);
-      console.log("user:", credential?.user);
-      console.log("email:", credential?.email);
 
       if (!identityToken) {
         console.error("Apple identityToken is null/undefined. Full credential:", JSON.stringify(credential));
@@ -115,12 +105,6 @@ export const useAppleAuth = () => {
       });
 
       const data = res?.data ?? res ?? {};
-
-      console.log("====== APPLE LOGIN RESPONSE ======");
-      console.log("success:", data.success);
-      console.log("errorCode:", data.errorCode);
-      console.log("hasUser:", !!data.user);
-      console.log("needsUsernameSelection:", data.needsUsernameSelection);
 
       if (data.success === false || !data.user) {
         if (data.errorCode) {

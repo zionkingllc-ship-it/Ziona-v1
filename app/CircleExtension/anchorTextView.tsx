@@ -16,6 +16,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, YStack } from "tamagui";
 import { saveAnchorRef } from "@/utils/anchorRef";
+import { useCircleMembership } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
@@ -124,8 +126,19 @@ export default function AnchorTextView() {
 
   const gradientColors = getGradientColors(colors);
   const slides = createSlides(text, bibleReference, bibleText, colors, expiresAt, anchorImage);
+  const { isJoined } = useCircleMembership(circleId || "");
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(
+    circleId || "",
+    isJoined,
+  );
 
-  const handleActionSelected = async (action: string, anchorText?: string) => {
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    requireMembership(() => {
+      void doActionSelected(action, anchorText);
+    });
+  };
+
+  const doActionSelected = async (action: string, anchorText?: string) => {
     const prompt =
       action === "pray"
         ? "How can we pray for you?"
@@ -160,7 +173,6 @@ export default function AnchorTextView() {
       source: "suggestion",
     });
     const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
-    console.log("[AnchorTextView] navigating to anchorResponse", { path });
     router.push(path as any);
   };
 
@@ -294,6 +306,7 @@ export default function AnchorTextView() {
       <View style={styles.footerContainer}>
         <AnchorFooter bottomOffset={20} anchorId={id} circleId={circleId} expired={expired === "1"} source="suggestion" anchorText={text} bibleReference={bibleReference} bibleText={bibleText} expiresAt={expiresAt} anchorColors={colors} anchorImage={anchorImage} initialLiked={initialLiked} initialCount={initialCount} />
       </View>
+      {MembershipModal}
     </SafeAreaView>
   );
 }

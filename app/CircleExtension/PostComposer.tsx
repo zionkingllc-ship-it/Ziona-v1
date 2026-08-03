@@ -1,4 +1,5 @@
 import colors from "@/constants/colors";
+import { MAX_VIDEO_DURATION_MS, MAX_VIDEO_DURATION_LABEL } from "@/constants/videoLimits";
 import { useAuthStore } from "@/store/useAuthStore";
 import { createCirclePost } from "@/services/graphQL/mutation/circles";
 import { uploadCircleMedia } from "@/services/graphQL/mutation/media/circleMediaUpload";
@@ -76,9 +77,7 @@ export default function PostComposer({ initialCircleId }: Props) {
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  console.log("[PostComposer] circleId (initial/local):", { initialCircleId, local: localParams.circleId, resolved: circleId });
   const queryClient = useQueryClient();
-console.log("circleId", circleId);
   const handleCancelPosting = () => {
     cancelledRef.current = true;
     setPosting(false);
@@ -87,10 +86,10 @@ console.log("circleId", circleId);
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting) return;
 
-    if (video && (videoDuration ?? 0) >= 90000) {
+    if (video && (videoDuration ?? 0) > MAX_VIDEO_DURATION_MS) {
       const secs = Math.round((videoDuration ?? 0) / 1000);
       setErrorType("warning");
-      setErrorMessage(`Videos must be under 90 seconds. This video is ${secs} seconds long.`);
+      setErrorMessage(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}. This video is ${secs} seconds long.`);
       setShowError(true);
       return;
     }
@@ -129,17 +128,13 @@ console.log("circleId", circleId);
       }
       if (cancelledRef.current) return;
 
-      console.log("[PostComposer] Sending post:", { circleId: circleId || "", mediaIds, mediaType });
-
       let result: any;
       for (let attempt = 0; attempt < 3; attempt++) {
         result = await createCirclePost(circleId || "", text, mediaIds, mediaType);
-        console.log("[PostComposer] createCirclePost result:", JSON.stringify(result));
         if (cancelledRef.current) return;
 
         if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
           const delay = Math.min(2000 * Math.pow(2, attempt), 8000);
-          console.log(`[PostComposer] Still processing, retrying in ${delay}ms (attempt ${attempt + 1})`);
           await new Promise((r) => setTimeout(r, delay));
           continue;
         }
@@ -163,7 +158,6 @@ console.log("circleId", circleId);
         return;
       }
 
-      console.log("[PostComposer] Post created successfully:", JSON.stringify(result?.post));
       setShowSuccess(true);
       if (circleId) {
         queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });

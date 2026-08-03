@@ -1,9 +1,9 @@
-import { GET_USER_POSTS } from "@/hooks/useUserPost";
 import { queryClient } from "@/lib/queryClient";
 import { authApi } from "@/services/api/authApi";
 import { clearAuthTokens, setAuthTokens } from "@/services/api/client";
 import { refreshWithRetry } from "@/services/auth/refresh";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { GET_USER_POSTS } from "@/services/graphQL/queries/actions/userPosts";
 import { AuthState, AuthTokens, User } from "@/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
@@ -225,7 +225,6 @@ export const useAuthStore = create<AuthStore>()(
             }
           }
 
-          console.log("Silent getMe refresh exhausted, clearing session");
           get().clearSession();
         };
 

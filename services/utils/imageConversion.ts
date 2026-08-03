@@ -21,23 +21,18 @@ export async function convertToSupportedFormat(
   const ext = getExtension(uri);
 
   if (isImageTypeAllowed(mimeType)) {
-    console.log(`[convertToSupportedFormat] mimeType "${mimeType}" is allowed, skipping conversion (ext: ${ext})`);
     return uri;
   }
 
   if (["jpg", "jpeg", "png", "webp", "heic", "heif"].includes(ext)) {
-    console.log(`[convertToSupportedFormat] extension "${ext}" is allowed, skipping conversion`);
     return uri;
   }
-
-  console.log(`[convertToSupportedFormat] converting uri=${uri} mimeType=${mimeType} ext=${ext}`);
 
   try {
     const result = await manipulateAsync(uri, [], {
       format: SaveFormat.JPEG,
       compress: 0.92,
     });
-    console.log(`[convertToSupportedFormat] success: ${uri} → ${result.uri}`);
     return result.uri;
   } catch (err) {
     console.error(`[convertToSupportedFormat] failed: uri=${uri} mimeType=${mimeType} ext=${ext} error=`, err);
@@ -47,31 +42,12 @@ export async function convertToSupportedFormat(
   }
 }
 
-function bytesToMB(bytes: number): string {
-  return (bytes / (1024 * 1024)).toFixed(2);
-}
-
-async function getFileSize(uri: string): Promise<number> {
-  try {
-    const info = await FileSystem.getInfoAsync(uri);
-    if (info.exists) return info.size;
-  } catch { console.warn("[imageConversion] exo info extraction failed"); }
-  return 0;
-}
-
 export async function compressImage(uri: string): Promise<string> {
-  const beforeSize = await getFileSize(uri);
-
   try {
     const result = await ImageCompressor.Image.compress(uri, {
       compressionMethod: "auto",
       maxWidth: 1920,
     });
-
-    const afterSize = await getFileSize(result);
-    console.log(
-      `[compressImage] ${beforeSize > 0 ? `${bytesToMB(beforeSize)}MB →` : ""} ${afterSize > 0 ? `${bytesToMB(afterSize)}MB` : "unknown"}${beforeSize > 0 && afterSize > 0 ? ` (${Math.round((1 - afterSize / beforeSize) * 100)}% reduction)` : ""}`,
-    );
 
     const ext = result.split(".").pop()?.toLowerCase() ?? "";
     if (ext === "heic" || ext === "heif") {

@@ -23,7 +23,6 @@ export function useFollowers(userId: string) {
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
     queryFn: async () => {
       const result = await getFollowers(userId);
-      console.log("FOLLOWERS RESULT:", result);
       return result;
     },
     enabled: !!userId,
@@ -35,7 +34,6 @@ export function useFollowing(userId: string) {
     queryKey: [FOLLOWING_QUERY_KEY, userId],
     queryFn: async () => {
       const result = await getFollowing(userId);
-      console.log("FOLLOWING RESULT:", result);
       return result;
     },
     enabled: !!userId,
@@ -54,7 +52,6 @@ export function useSuggestedCreators() {
     queryKey: [SUGGESTED_QUERY_KEY],
     queryFn: async () => {
       const result = await getSuggestedCreators();
-      console.log("SUGGESTED CREATORS RESULT:", result);
       return result;
     },
   });

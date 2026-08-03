@@ -4,6 +4,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCircleMembership } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 const DEFAULT_GRADIENT = "#C7EBCB,#FFFFFF";
 
@@ -20,8 +22,19 @@ export default function AnchorActionView() {
     source?: string;
   }>();
   const insets = useSafeAreaInsets();
+  const { isJoined } = useCircleMembership(circleId || "");
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(
+    circleId || "",
+    isJoined,
+  );
 
-  const handleActionSelected = async (action: string, anchorText?: string) => {
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    requireMembership(() => {
+      void doActionSelected(action, anchorText);
+    });
+  };
+
+  const doActionSelected = async (action: string, anchorText?: string) => {
     const prompt =
       action === "pray"
         ? "How can we pray for you?"
@@ -51,7 +64,6 @@ export default function AnchorActionView() {
       ...(source ? { source } : { source: "suggestion" }),
     });
     const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
-    console.log("[AnchorActionView] navigating to anchorResponse", { path });
     router.push(path as any);
   };
 
@@ -68,6 +80,7 @@ export default function AnchorActionView() {
         anchorId={id}
         circleId={circleId}
       />
+      {MembershipModal}
     </View>
   );
 }

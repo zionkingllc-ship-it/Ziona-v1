@@ -176,6 +176,7 @@ export const GET_CIRCLE_FEED = `
         user {
           id
           name
+          username
           avatar
           avatarUrl
         }
@@ -280,6 +281,7 @@ export const GET_CIRCLE_FEED_DATA = `
         user {
           id
           name
+          username
           avatar
           avatarUrl
         }
@@ -553,6 +555,7 @@ export const GET_CIRCLE_POST = `
       user {
         id
         name
+        username
         avatar
         avatarUrl
       }
@@ -571,25 +574,12 @@ export const GET_CIRCLE_POST = `
 export async function fetchAllCircles() {
   const res = await graphqlRequest(GET_ALL_CIRCLES, {});
   const circles = res?.allCircles ?? [];
-  if (circles.length > 0) {
-    console.log("🔍 [API] fetchAllCircles sample circle:", JSON.stringify({
-      id: circles[0].id,
-      name: circles[0].name,
-      coverImage: circles[0].coverImage ? "has value" : "empty",
-      bannerImage: circles[0].bannerImage ? "has value" : "empty",
-      profileImage: circles[0].profileImage ? "has value" : "empty",
-      memberCount: circles[0].memberCount,
-    }));
-  } else {
-    console.log("🔍 [API] fetchAllCircles: empty array returned");
-  }
   return circles;
 }
 
 export async function fetchMyCircles() {
   const res = await graphqlRequest(GET_MY_CIRCLES, {});
   const circles = res?.myCircles ?? [];
-  console.log("🔍 [API] fetchMyCircles count:", circles.length);
   return circles;
 }
 
@@ -599,17 +589,7 @@ export async function fetchSuggestedCircles() {
 }
 
 export async function fetchCircleDetail(id: string) {
-  console.log("🔍 [API] fetchCircleDetail for id:", id);
   const res = await graphqlRequest(GET_CIRCLE_DETAIL, { id });
-  console.log("🔍 [API] fetchCircleDetail response:", JSON.stringify({
-    hasData: !!res?.circle,
-    bannerImage: res?.circle?.bannerImage ? res.circle.bannerImage.substring(0, 80) + "..." : "null/empty",
-    coverImage: res?.circle?.coverImage ? res.circle.coverImage.substring(0, 80) + "..." : "null/empty",
-    profileImage: res?.circle?.profileImage ? "has value" : "null/empty",
-    name: res?.circle?.name,
-    memberCount: res?.circle?.memberCount,
-    hasActiveAnchor: !!res?.circle?.activeAnchor,
-  }));
   return res?.circle ?? null;
 }
 
@@ -641,7 +621,6 @@ export async function fetchCircleFeedData(
   sortBy?: string,
   authorId?: string,
 ) {
-  console.log("🔍 [API] fetchCircleFeedData called:", JSON.stringify({ circleId, historyLimit, page, pageSize, sortBy, authorId }));
   const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
     circleId,
     historyLimit: historyLimit ?? 10,
@@ -650,17 +629,6 @@ export async function fetchCircleFeedData(
     sortBy,
     authorId,
   });
-  console.log("🔍 [API] fetchCircleFeedData response:", JSON.stringify({
-    hasData: !!res?.circleFeedData,
-    bannerImage: res?.circleFeedData?.bannerImage ? res.circleFeedData.bannerImage.substring(0, 80) + "..." : "null/empty",
-    profileImage: res?.circleFeedData?.profileImage ? "has value" : "null/empty",
-    coverImage: res?.circleFeedData?.coverImage ? "has value" : "null/missing",
-    name: res?.circleFeedData?.name,
-    memberCount: res?.circleFeedData?.memberCount,
-    isJoined: res?.circleFeedData?.isJoined,
-    postsCount: res?.circleFeedData?.posts?.length,
-    pastAnchorsCount: res?.circleFeedData?.pastAnchors?.length,
-  }));
   return res?.circleFeedData ?? null;
 }
 
@@ -673,9 +641,7 @@ function mapActiveAnchor(raw: any): any {
 }
 
 export async function fetchActiveAnchor(circleId: string) {
-  console.log("🔍 [queries] fetchActiveAnchor called for circleId:", circleId);
   const res = await graphqlRequest(GET_ACTIVE_ANCHOR, { circleId });
-  console.log("🔍 [queries] fetchActiveAnchor result:", res?.activeAnchor);
   return mapActiveAnchor(res?.activeAnchor ?? null);
 }
 

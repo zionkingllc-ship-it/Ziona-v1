@@ -60,7 +60,6 @@ export async function getBibleBooks(): Promise<BibleBook[]> {
 
     return [...oldBooks, ...newBooks];
   } catch (err) {
-    console.log("Failed to load books", err);
     return [];
   }
 }

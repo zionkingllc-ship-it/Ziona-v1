@@ -57,30 +57,14 @@ export async function fetchForYouFeed({
   hasMore: boolean;
 }> {
   try {
-    console.log("[FEED][FOR_YOU] 🚀 Request start", {
-      cursor: pageParam,
-    });
-
     const data = await graphqlRequest(GET_FOR_YOU_FEED, {
       cursor: pageParam,
       limit: 20,
     });
 
-    console.log("[FEED][FOR_YOU] ✅ Raw response", data);
-
     const feed = data?.forYouFeed;
 
-    if (!feed) {
-      console.warn("[FEED][FOR_YOU] ⚠️ Missing forYouFeed in response");
-    }
-
     const rawPosts = feed?.posts ?? [];
-
-    console.log("[FEED][FOR_YOU] 📦 Posts received", {
-      count: rawPosts?.length,
-      hasMore: feed?.hasMore,
-      nextCursor: feed?.nextCursor,
-    });
 
     return {
       posts: Array.isArray(rawPosts) ? rawPosts : [],
@@ -113,30 +97,14 @@ export async function fetchFollowingFeed({
   };
 }> {
   try {
-    console.log("[FEED][FOLLOWING] 🚀 Request start", {
-      cursor: pageParam,
-    });
-
     const data = await graphqlRequest(GET_FOLLOWING_FEED, {
       cursor: pageParam,
       limit: 20,
     });
 
-    console.log("[FEED][FOLLOWING] ✅ Raw response", data);
-
     const feed = data?.followingFeed;
 
-    if (!feed) {
-      console.warn("[FEED][FOLLOWING] ⚠️ Missing followingFeed in response");
-    }
-
     const rawPosts = feed?.posts ?? [];
-
-    console.log("[FEED][FOLLOWING] 📦 Posts received", {
-      count: rawPosts?.length,
-      hasMore: feed?.hasMore,
-      nextCursor: feed?.nextCursor,
-    });
 
     return {
       posts: Array.isArray(rawPosts) ? rawPosts : [],

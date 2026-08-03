@@ -151,9 +151,6 @@ export default function CreateMediaPreviewScreen() {
     if (!items?.length) return;
     preUploadMedia(items).then((result) => {
       preUploadedRef.current = result;
-      console.log("[preUpload] complete:", result);
-    }).catch((err) => {
-      console.log("[preUpload] failed, will upload on publish:", err?.message);
     });
   }, []);
 
@@ -221,7 +218,6 @@ export default function CreateMediaPreviewScreen() {
     setShowProgress(true);
 
     const onProgress = (pct: number) => {
-      console.log("📊 PROGRESS CALLBACK:", pct);
       progressRef.current = pct;
     };
 

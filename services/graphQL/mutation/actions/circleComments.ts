@@ -3,6 +3,7 @@ import { graphqlRequest } from "../../graphqlClient";
 export type CircleCommentAuthor = {
   id: string;
   name?: string | null;
+  username?: string | null;
   avatarUrl?: string | null;
 };
 
@@ -35,6 +36,7 @@ const COMMENT_FIELDS = `
   author {
     id
     name
+    username
     avatarUrl
   }
   likesCount

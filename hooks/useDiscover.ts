@@ -47,7 +47,7 @@ export function useDiscoverCategories() {
    FEED
 ========================= */
 
-export function useDiscoverFeed(categoryId?: string) {
+export function useDiscoverFeed(categoryId?: string, categorySlug?: string) {
   const query = useInfiniteQuery<
     DiscoverResponse,
     Error,
@@ -55,11 +55,16 @@ export function useDiscoverFeed(categoryId?: string) {
     [string, string | undefined],
     string | undefined
   >({
-    // ✅ FIXED: consistent key
-    queryKey: ["discoverFeed", categoryId],
+    // Key includes the slug so stale cache from older builds (without slug)
+    // can never serve data; pull-to-refresh matches by ["discoverFeed"] prefix.
+    queryKey: ["discoverFeed", categorySlug ?? categoryId],
 
     queryFn: async ({ pageParam }) => {
+      const isAllCategory =
+        categoryId === "all" || categoryId === "1";
+
       const res = await fetchDiscoverFeed({
+        category: isAllCategory ? undefined : categorySlug,
         cursor: pageParam,
       });
 
@@ -96,7 +101,11 @@ export function useDiscoverFeed(categoryId?: string) {
           categoryId === "all" || categoryId === "1";
 
         if (!isAllCategory && categoryId) {
-          if (p.category?.id !== categoryId) return false;
+          if (categorySlug) {
+            if (p.category?.slug !== categorySlug) return false;
+          } else if (p.category?.id !== categoryId) {
+            return false;
+          }
         }
 
         if (p.type === "media") {

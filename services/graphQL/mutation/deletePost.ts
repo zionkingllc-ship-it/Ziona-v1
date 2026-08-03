@@ -14,12 +14,9 @@ const DELETE_POST_MUTATION = `
 `;
 
 export async function deletePost(postId: string): Promise<boolean> {
-  console.log("[deletePost] Calling mutation with postId:", postId);
   const data = await graphqlRequest(DELETE_POST_MUTATION, { postId });
-  console.log("[deletePost] Raw response:", JSON.stringify(data));
 
   const result = data?.deletePost;
-  console.log("[deletePost] Result:", JSON.stringify(result));
 
   if (!result?.success) {
     const errMsg = result?.error?.message || result?.message || "Unknown error";
@@ -27,6 +24,5 @@ export async function deletePost(postId: string): Promise<boolean> {
     throw new Error(errMsg);
   }
 
-  console.log("[deletePost] Success");
   return true;
 }

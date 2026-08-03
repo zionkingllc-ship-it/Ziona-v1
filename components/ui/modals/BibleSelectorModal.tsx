@@ -194,7 +194,6 @@ export default function BibleSelectorModal({
         setVerses(data?.verses ?? []);
       })
       .catch(() => {
-        console.log("Failed to load verses");
       })
       .finally(() => {
         setLoadingVerses(false);

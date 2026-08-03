@@ -33,12 +33,18 @@ export function useCircleFeedData(
   });
 }
 
-export function useCircleDetail(circleId: string) {
+export function useCircleDetail(circleId: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["circleDetail", circleId],
     queryFn: () => fetchCircleDetail(circleId),
     staleTime: 1000 * 60,
+    ...options,
   });
+}
+
+export function useCircleMembership(circleId: string) {
+  const { data } = useCircleDetail(circleId, { enabled: !!circleId });
+  return { isJoined: !!data?.isJoined };
 }
 
 export function useActiveAnchor(circleId: string) {

@@ -33,6 +33,7 @@ export default function CirclesSuggestion() {
   const [showIntro, setShowIntro] = useState(!hasSeenIntro);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchText, setSearchText] = useState("");
 
   const isMounted = useRef(false);
 
@@ -120,6 +121,18 @@ export default function CirclesSuggestion() {
     [allCircles, joinedIds]
   );
 
+  const searchResults = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return [];
+    const pool = new Map<string, any>();
+    [...myCircles, ...suggestedCircles].forEach((c) => pool.set(c.id, c));
+    return Array.from(pool.values()).filter(
+      (c) =>
+        (c.title || "").toLowerCase().includes(query) ||
+        (c.description || "").toLowerCase().includes(query)
+    );
+  }, [myCircles, suggestedCircles, searchText]);
+
   function handleCirclePress(circle: any) {
     router.push({
       pathname: "/(tabs)/circle/circleFeed",
@@ -203,6 +216,31 @@ export default function CirclesSuggestion() {
         <Text fontFamily="$body" fontWeight="600" fontSize={18}>
           Circles
         </Text>
+        <XStack
+          alignItems="center"
+          marginTop={hp(1.5)}
+          borderWidth={1}
+          borderColor={colors.border}
+          backgroundColor="#F4F3F4"
+          borderRadius={12}
+          paddingLeft={12}
+        >
+          <Ionicons name="search" size={16} color={colors.gray} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search circles by name or keyword"
+            placeholderTextColor={colors.placeholderText}
+            value={searchText}
+            onChangeText={setSearchText}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText("")} hitSlop={8} style={{ paddingRight: 12 }}>
+              <Ionicons name="close-circle" size={16} color={colors.gray} />
+            </TouchableOpacity>
+          )}
+        </XStack>
       </YStack>
 
       <ScrollView
@@ -210,66 +248,86 @@ export default function CirclesSuggestion() {
         contentContainerStyle={{ paddingBottom: hp(10) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
       >
-        <YStack paddingHorizontal={wp(5)}>
-          {/* ANCHOR OF THE DAY */}
-          {activeAnchors.length > 0 && (
-            <YStack marginTop={hp(2)}>
-              <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
-                Anchor of the Day
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {activeAnchors.map((anchor: any) => (
-                  <AnchorCardSmall
-                    key={anchor.id}
-                    anchor={anchor}
-                    circleId={anchor.circleId}
-                    circleName={anchor.circleName}
-                    viewed={viewedAnchors[anchor.id]}
-                  />
-                ))}
-              </ScrollView>
-            </YStack>
-          )}
+        {searchText.trim() ? (
+          <YStack paddingHorizontal={wp(5)}>
+            <Text fontFamily="$body" fontWeight="600" fontSize={14} marginTop={hp(2)} marginBottom={hp(1)}>
+              {searchResults.length > 0 ? "Search Results" : "No results"}
+            </Text>
+            {searchResults.length === 0 ? (
+              <YStack flex={1} justifyContent="center" alignItems="center" paddingVertical={hp(10)}>
+                <Ionicons name="search-outline" size={40} color={colors.gray} />
+                <Text fontFamily="$body" fontWeight="400" fontSize={16} color={colors.gray} marginTop={hp(1)} textAlign="center" paddingHorizontal={wp(10)}>
+                  No circles found for &ldquo;{searchText.trim()}&rdquo;
+                </Text>
+              </YStack>
+            ) : (
+              searchResults.map((item: any) => (
+                <CircleCard key={item.id} {...item} onPress={() => handleCirclePress(item)} />
+              ))
+            )}
+          </YStack>
+        ) : (
+          <YStack paddingHorizontal={wp(5)}>
+            {/* ANCHOR OF THE DAY */}
+            {activeAnchors.length > 0 && (
+              <YStack marginTop={hp(2)}>
+                <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
+                  Anchor of the Day
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {activeAnchors.map((anchor: any) => (
+                    <AnchorCardSmall
+                      key={anchor.id}
+                      anchor={anchor}
+                      circleId={anchor.circleId}
+                      circleName={anchor.circleName}
+                      viewed={viewedAnchors[anchor.id]}
+                    />
+                  ))}
+                </ScrollView>
+              </YStack>
+            )}
 
-          {/* MY CIRCLES */}
-          {myCircles.length > 0 && (
-            <YStack marginTop={hp(2)}>
-              <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
-                My Circles
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {myCircles.map((circle: any) => (
-                  <View key={circle.id} style={styles.compactCardWrapper}>
-                    <CircleCard {...circle} onPress={() => handleCirclePress(circle)} />
-                  </View>
-                ))}
-              </ScrollView>
-            </YStack>
-          )}
+            {/* MY CIRCLES */}
+            {myCircles.length > 0 && (
+              <YStack marginTop={hp(2)}>
+                <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
+                  My Circles
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {myCircles.map((circle: any) => (
+                    <View key={circle.id} style={styles.compactCardWrapper}>
+                      <CircleCard {...circle} onPress={() => handleCirclePress(circle)} />
+                    </View>
+                  ))}
+                </ScrollView>
+              </YStack>
+            )}
 
-          {/* SUGGESTED CIRCLES */}
-          <Text fontFamily="$body" fontWeight="600" fontSize={14} marginTop={hp(2)} marginBottom={hp(1)}>
-            Suggested Circles
-          </Text>
+            {/* SUGGESTED CIRCLES */}
+            <Text fontFamily="$body" fontWeight="600" fontSize={14} marginTop={hp(2)} marginBottom={hp(1)}>
+              Suggested Circles
+            </Text>
 
-          {suggestedCircles.length === 0 ? (
-            renderEmptyState()
-          ) : (
-            suggestedCircles.map((item: any) => (
-              <CircleCard key={item.id} {...item} onPress={() => handleCirclePress(item)} />
-            ))
-          )}
-        </YStack>
+            {suggestedCircles.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              suggestedCircles.map((item: any) => (
+                <CircleCard key={item.id} {...item} onPress={() => handleCirclePress(item)} />
+              ))
+            )}
+          </YStack>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  search: {
-    backgroundColor: "#F4F3F4",
-    padding: 12,
-    borderRadius: 12,
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     fontSize: 14,
   },
   compactCardWrapper: {

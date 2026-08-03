@@ -56,14 +56,11 @@ export default function AuthIndex() {
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      console.log("[Google Sign-In] Starting signup flow");
 
       const res = await signInWithGoogle();
-      console.log("[Google Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsGoogleLoading(false);
-        console.log("[Google Sign-In] Failed:", res.error);
         setModalVisible(true);
         setMessageType("failed");
         setMessageTitle("Authentication Failed");
@@ -76,7 +73,6 @@ export default function AuthIndex() {
       // check if username exists
       if (!res?.user?.username) {
         setIsGoogleLoading(false);
-        console.log("[Google Sign-In] No username — navigating to username setup");
         setFlow("google");
         setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
@@ -84,21 +80,17 @@ export default function AuthIndex() {
       }
 
       // already complete → go to app
-      console.log("[Google Sign-In] User complete — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
-      console.log("[Google Sign-In] Exception:", err);
     }
   };
 
   const handleAppleSignIn = async () => {
     try {
       setIsAppleLoading(true);
-      console.log("[Apple Sign-In] Starting signup flow");
 
       const res = await signInWithApple();
-      console.log("[Apple Sign-In] Response:", JSON.stringify({ hasUser: !!res?.user, hasTokens: !!res?.tokens, hasUsername: !!res?.user?.username, error: res?.error }));
 
       if (res.error) {
         setIsAppleLoading(false);
@@ -111,18 +103,15 @@ export default function AuthIndex() {
 
       if (!res?.user?.username) {
         setIsAppleLoading(false);
-        console.log("[Apple Sign-In] No username — navigating to username setup");
         setFlow("apple");
         setSuggestions(res.suggestedUsernames ?? []);
         router.replace("/(auth)/username");
         return;
       }
 
-      console.log("[Apple Sign-In] User complete — navigating to feed");
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsAppleLoading(false);
-      console.log("[Apple Sign-In] Exception:", err);
     }
   };
 
@@ -266,7 +255,6 @@ export default function AuthIndex() {
               </Text>
 
               <Pressable onPress={() => {
-                console.log("📄 [auth/signup] Pressed: Terms of use");
                 router.push("/settings/terms/use");
               }}>
                 <InlineUnderlineText
@@ -293,7 +281,6 @@ export default function AuthIndex() {
               </Text>
               <Pressable
                 onPress={() => {
-                  console.log("📄 [auth/signup] Pressed: Privacy Policy");
                   router.push("/settings/terms/privacy");
                 }}
               >
@@ -312,7 +299,6 @@ export default function AuthIndex() {
             <Text>and</Text>
             <Text>{" "} </Text>
             <Pressable onPress={() => {
-              console.log("📄 [auth/signup] Pressed: Community guidelines");
               router.push("/settings/terms/community");
             }}>
               <InlineUnderlineText

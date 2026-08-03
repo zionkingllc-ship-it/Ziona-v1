@@ -3,21 +3,13 @@ import { api } from "./client";
 
 /* ---------------- DEBUG HELPERS ---------------- */
 
-const log = (...args: any[]) => {
-  console.log("🟦 AUTH API:", ...args);
-};
+const log = (...args: any[]) => {};
 
 const errorLog = (label: string, err: any) => {
   console.error("🟥 AUTH API ERROR:", label);
 
-  console.log("message:", err?.message);
-  console.log("code:", err?.code);
-  console.log("status:", err?.response?.status);
-  console.log("response:", err?.response?.data);
-
   if (!err?.response && !err?.message) {
     try {
-      console.log("raw error:", JSON.stringify(err));
     } catch { console.warn("[authApi] error serializer failed"); }
   }
 };
