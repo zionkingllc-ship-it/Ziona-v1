@@ -24,6 +24,7 @@ type CarouselItemProps = {
   cardWidth: number;
   cardHeight: number;
   imageSize: number;
+  scale: number;
 };
 
 const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
@@ -31,13 +32,14 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
   cardWidth,
   cardHeight,
   imageSize,
+  scale,
 }: CarouselItemProps) {
   const joinCircle = useJoinCircle();
   const [joining, setJoining] = useState(false);
   const [joinedLocally, setJoinedLocally] = useState(false);
 
   const isJoined = circle.isJoined || joinedLocally;
-  const avatarSize = 30;
+  const avatarSize = 30 * scale;
 
   const handleJoin = useCallback(async () => {
     const isAuth = useAuthStore.getState().isAuthenticated;
@@ -59,7 +61,7 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
 
   const handleOpenCircle = useCallback(() => {
     router.push({
-      pathname: "/(tabs)/circle/circleFeed",
+      pathname: "/circleFeed",
       params: {
         id: circle.id,
         source: "suggestion",
@@ -75,9 +77,12 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
   return (
     <Pressable
       onPress={handleOpenCircle}
-      style={[styles.card, { width: cardWidth, height: cardHeight }]}
+      style={[
+        styles.card,
+        { width: cardWidth, height: cardHeight, paddingTop: 16 * scale, paddingBottom: 16 * scale },
+      ]}
     >
-      <YStack flex={1} alignItems="center" justifyContent="center" paddingVertical={16}>
+      <YStack flex={1} alignItems="center" justifyContent="center">
         <View style={[styles.imageWrapper, { width: imageSize, height: imageSize }]}>
           <Image
             source={{ uri: circle.coverImage }}
@@ -87,13 +92,21 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
           />
         </View>
 
-        <Text style={[styles.title, { marginTop: 18 }]}>{circle.name}</Text>
+        <Text numberOfLines={1} style={[styles.title, { marginTop: 18 * scale, fontSize: 24 * scale }]}>
+          {circle.name}
+        </Text>
 
-        <Text style={styles.description} numberOfLines={3}>
+        <Text
+          numberOfLines={3}
+          style={[
+            styles.description,
+            { marginTop: 12 * scale, height: 72 * scale, fontSize: 15 * scale, lineHeight: 24 * scale },
+          ]}
+        >
           {circle.description}
         </Text>
 
-        <XStack alignItems="center" justifyContent="center" marginTop={14}>
+        <XStack alignItems="center" justifyContent="center" marginTop={14 * scale}>
           {(circle.avatars ?? []).slice(0, 3).map((avatar, index) =>
             avatar ? (
               <Image
@@ -122,32 +135,34 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
             ),
           )}
 
-          <Text style={styles.memberText}>+{circle.memberCount} members</Text>
+          <Text style={[styles.memberText, { fontSize: 15 * scale, marginLeft: 12 * scale }]}>
+            +{circle.memberCount} members
+          </Text>
         </XStack>
 
-        <View style={{ height: 14 }} />
+        <View style={{ height: 14 * scale }} />
 
         {isJoined ? (
-          <Text style={styles.joinedText}>You&apos;re a member</Text>
+          <Text style={[styles.joinedText, { fontSize: 15 * scale }]}>You&apos;re a member</Text>
         ) : (
           <SimpleButton
             text={joining ? "Joining..." : "Join"}
             onPress={handleJoin}
             loading={joining}
-            textSize={15}
+            textSize={15 * scale}
             fontFamily="$body"
             fontWeight="600"
             color={colors.primary}
             textColor={colors.white}
             borderRadius={99}
-            paddingVertical={8}
-            paddingHorizontal={32}
+            paddingVertical={8 * scale}
+            paddingHorizontal={32 * scale}
           />
         )}
 
-        <View style={{ height: 4 }} />
+        <View style={{ height: 4 * scale }} />
 
-        <Text style={styles.tapHint}>Tap to view circle</Text>
+        <Text style={[styles.tapHint, { fontSize: 12 * scale }]}>Tap to view circle</Text>
       </YStack>
     </Pressable>
   );
@@ -162,16 +177,14 @@ const CirclePromoCard = memo(function CirclePromoCard({
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const scale = Math.max(0.85, Math.min(screenHeight / 700, 1.2));
   const cardWidth = screenWidth * 0.86;
   const gap = screenWidth * 0.04;
   const sidePadding = (screenWidth - cardWidth) / 2;
-  const imageSize = Math.min(screenWidth * 0.4, screenHeight * 0.15);
-  const cardHeight = 274 + imageSize;
-  const paddingBottom = tabBarHeight + insets.bottom + 16;
-  const contentTop = Math.max(
-    insets.top + 16,
-    screenHeight - (70 + 16 + cardHeight + 18 + 8 + paddingBottom),
-  );
+  const imageSize = Math.min(screenWidth * 0.4, screenHeight * 0.16);
+  const cardHeight = Math.min(screenHeight * 0.58, imageSize + 320 * scale);
+  const paddingBottom = tabBarHeight + insets.bottom + 12;
+  const paddingTop = insets.top + 12;
 
   const circles = item.circles ?? [];
 
@@ -182,9 +195,10 @@ const CirclePromoCard = memo(function CirclePromoCard({
         cardWidth={cardWidth}
         cardHeight={cardHeight}
         imageSize={imageSize}
+        scale={scale}
       />
     ),
-    [cardWidth, cardHeight, imageSize],
+    [cardWidth, cardHeight, imageSize, scale],
   );
 
   const onMomentumEnd = useCallback((e: any) => {
@@ -194,50 +208,65 @@ const CirclePromoCard = memo(function CirclePromoCard({
   }, [cardWidth, gap]);
 
   return (
-    <YStack
-      height={screenHeight}
-      width="100%"
-      backgroundColor="#FBE0A9"
-      paddingTop={contentTop}
-      paddingBottom={paddingBottom}
-    >
-      <YStack alignItems="center">
-        <Text style={styles.heading}>JOIN A CIRCLE</Text>
-        <Text style={styles.subHeading}>Find your tribe; Be part of a community</Text>
-      </YStack>
-
-      <View style={{ height: 16 }} />
-
-      <FlatList
-        horizontal
-        pagingEnabled
-        decelerationRate="fast"
-        snapToInterval={cardWidth + gap}
-        showsHorizontalScrollIndicator={false}
-        data={circles}
-        keyExtractor={(circle) => circle.id}
-        renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: sidePadding }}
-        style={{ height: cardHeight }}
-        onMomentumScrollEnd={onMomentumEnd}
-        bounces={false}
+    <YStack height={screenHeight} width="100%" overflow="hidden">
+      <View
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        backgroundColor="#FBE0A9"
       />
 
-      <View style={{ height: 18 }} />
+      <YStack flex={1} paddingTop={paddingTop} paddingBottom={paddingBottom} justifyContent="center">
+        <YStack marginTop={120}>
+          <YStack alignItems="center">
+            <Text style={[styles.heading, { fontSize: 30 * scale }]}>JOIN A CIRCLE</Text>
+            <Text style={[styles.subHeading, { fontSize: 18 * scale }]}>
+              Find your tribe; Be part of a community
+            </Text>
+          </YStack>
 
-      {circles.length > 1 && (
-        <XStack justifyContent="center" alignItems="center">
-          {circles.map((circle, index) => (
-            <View
-              key={circle.id}
-              style={[
-                styles.dot,
-                { backgroundColor: index === activeIndex ? "#7C5004" : "#DDB56E" },
-              ]}
-            />
-          ))}
-        </XStack>
-      )}
+          <View style={{ height: 16 * scale }} />
+
+          <FlatList
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            snapToInterval={cardWidth + gap}
+            showsHorizontalScrollIndicator={false}
+            data={circles}
+            keyExtractor={(circle) => circle.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingHorizontal: sidePadding }}
+            style={{ height: cardHeight }}
+            onMomentumScrollEnd={onMomentumEnd}
+            bounces={false}
+          />
+
+          <View style={{ height: 18 * scale }} />
+
+          {circles.length > 1 && (
+            <XStack justifyContent="center" alignItems="center">
+              {circles.map((circle, index) => (
+                <View
+                  key={circle.id}
+                  style={[
+                    styles.dot,
+                    {
+                      width: 8 * scale,
+                      height: 8 * scale,
+                      borderRadius: 4 * scale,
+                      marginHorizontal: 4 * scale,
+                      backgroundColor: index === activeIndex ? "#7C5004" : "#DDB56E",
+                    },
+                  ]}
+                />
+              ))}
+            </XStack>
+          )}
+        </YStack>
+      </YStack>
     </YStack>
   );
 });

@@ -14,6 +14,8 @@ import colors from "@/constants/colors";
 import { ActiveAnchor, CircleFeedData } from "@/constants/circleTypes";
 
 import { useCircleFeedData, useJoinCircle, useLeaveCircle, useActiveAnchor, useAnchorByDate } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronDown } from "@tamagui/lucide-icons";
@@ -246,6 +248,18 @@ export default function CircleFeedScreen() {
   const joinMutation = useJoinCircle();
   const leaveMutation = useLeaveCircle();
 
+  const { requireMembership, MembershipModal } = useRequireCircleMembership(circleId, circle.isJoined);
+  const { requireAuth, AuthModal } = useRequireAuth();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const runGuarded = (action: () => void) => {
+    if (!isAuthenticated) {
+      requireAuth(action);
+      return;
+    }
+    requireMembership(action);
+  };
+
   const displayedPosts = useMemo(() => {
     if (filterSort === "New") {
       return [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -467,7 +481,7 @@ export default function CircleFeedScreen() {
           circleName={circle.name}
           isJoined={circle.isJoined}
           loading={joining}
-          onToggleJoin={toggleJoin}
+          onToggleJoin={() => runGuarded(() => toggleJoin())}
           onBack={() => router.dismissTo("/(tabs)/circle")}
         />
       </View>
@@ -553,7 +567,7 @@ export default function CircleFeedScreen() {
             <YStack bottom={20}>
               <CircleFeedProfileSection
                 circle={circle}
-                onToggleJoin={toggleJoin}
+                onToggleJoin={() => runGuarded(() => toggleJoin())}
                 joining={joining}
               />
               <CircleFeedNameRow
@@ -638,16 +652,17 @@ export default function CircleFeedScreen() {
         }}
       />
 
-      {circle?.isJoined && (
+      {circle && (
         <View style={styles.fabContainer}>
             <Button
               circular
               size="$6"
               backgroundColor={colors.primary}
               onPress={() => {
-                // Use explicit query string to guarantee the circleId appears in the URL
-                const path = `/circlePostComposer?circleId=${encodeURIComponent(circleId)}`;
-                router.push(path as any);
+                runGuarded(() => {
+                  const path = `/circlePostComposer?circleId=${encodeURIComponent(circleId)}`;
+                  router.push(path as any);
+                });
               }}
             elevation={4}
             shadowColor="#000"
@@ -679,6 +694,8 @@ export default function CircleFeedScreen() {
         buttonText="OK"
         onButtonPress={() => setJoinErrorVisible(false)}
       />
+      {MembershipModal}
+      {AuthModal}
 
       <Modal
         visible={leaveConfirmVisible}
@@ -750,7 +767,7 @@ const styles = StyleSheet.create({
 
   fabContainer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 80,
     right: 20,
     zIndex: 100,
   },

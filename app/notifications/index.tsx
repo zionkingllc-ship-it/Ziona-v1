@@ -100,7 +100,7 @@ export default function ActivityScreen() {
       return true;
     }
     if ((referenceType === "circle" || referenceType === "circle_post") && referenceId) {
-      router.push(`/(tabs)/circle/circleFeed?id=${referenceId}`);
+      router.push(`/circleFeed?id=${referenceId}`);
       return true;
     }
     return false;

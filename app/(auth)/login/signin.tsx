@@ -37,6 +37,7 @@ export default function SignIn() {
   const [show, setShow] = useState(false);
 
   const [authError, setAuthError] = useState<string | null>(null);
+  const [emailClientError, setEmailClientError] = useState<string | null>(null);
   const [passwordClientError, setPasswordClientError] = useState<string | null>(null);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [suspendMessage, setSuspendMessage] = useState("");
@@ -48,13 +49,24 @@ export default function SignIn() {
   const Xspecial = require("@/assets/images/closeSquare.png");
 
   const visualValidEmail: boolean | undefined =
-    !isFocusEmail ? undefined : isValidEmail ? true : false;
+    !emailClientError ? undefined : isValidEmail ? true : false;
 
   const visualValidPassword: boolean | undefined =
-    !isFocusPassword ? undefined : passwordIsValid ? true : false;
+    !passwordClientError ? undefined : passwordIsValid ? true : false;
 
   const handleNext = async () => {
-    if (!isValidEmail || !passwordIsValid || isLoading) return;
+    if (isLoading) return;
+
+    if (!isValidEmail || !passwordIsValid) {
+      setEmailClientError(!isValidEmail ? "Enter a valid email address" : null);
+      setPasswordClientError(
+        !passwordIsValid ? "Enter a valid password" : null,
+      );
+      return;
+    }
+
+    setEmailClientError(null);
+    setPasswordClientError(null);
 
     try {
       start("signin");
@@ -93,16 +105,6 @@ export default function SignIn() {
         setAuthError("Network error. Please check your connection.");
       }
       stop("signin");
-    }
-  };
-
-  const handlePasswordBlur = () => {
-    setIsFocusPassword(false);
-
-    if (password.length > 0 && !passwordIsValid) {
-      setPasswordClientError("Enter a valid password");
-    } else {
-      setPasswordClientError(null);
     }
   };
 
@@ -148,6 +150,7 @@ export default function SignIn() {
             onChangeText={(text) => {
               setEmail(text);
               setAuthError(null);
+              setEmailClientError(null);
             }}
             endIconVisible={isFocusEmail}
             isValid={visualValidEmail}
@@ -155,8 +158,19 @@ export default function SignIn() {
             onEndIconPress={() => {
               setEmail("");
               setAuthError(null);
+              setEmailClientError(null);
             }}
           />
+          {emailClientError && (
+            <Text
+              fontSize={fs(13)}
+              color={colors.errorText}
+              alignSelf="flex-start"
+              marginTop={hp(0.5)}
+            >
+              {emailClientError}
+            </Text>
+          )}
         </YStack>
 
         {/* PASSWORD */}
@@ -170,7 +184,7 @@ export default function SignIn() {
             isFocused={isFocusPassword}
             isValid={visualValidPassword}
             onFocus={() => setIsFocusPassword(true)}
-            onBlur={handlePasswordBlur}
+            onBlur={() => setIsFocusPassword(false)}
             onChangeText={(text) => {
               setPassword(text);
               setPasswordClientError(null);
@@ -227,7 +241,7 @@ export default function SignIn() {
           text="Next"
           textColor={colors.buttonText}
           color={colors.primaryButton}
-          disabled={!isValidEmail || !passwordIsValid || isLoading}
+          disabled={isLoading}
           loading={isLoading}
           onPress={handleNext}
           style={{

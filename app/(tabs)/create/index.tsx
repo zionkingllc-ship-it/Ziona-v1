@@ -1,16 +1,14 @@
-import AuthPrompt from "@/components/ui/AuthPrompt";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import colors from "@/constants/colors";
 import { MAX_VIDEO_DURATION_LABEL, MAX_VIDEO_DURATION_MS } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { MediaItem } from "@/types/createPost";
 
-import { useAuthStore } from "@/store/useAuthStore";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { ActivityIndicator, FlatList, Image, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
 import { Text, YStack, View } from "tamagui";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 
 const POST_TYPES = [
@@ -44,7 +42,9 @@ export default function CreateScreen() {
   const { startDraft, setMedia } = useCreatePostStore();
   const { wp, hp, fs } = useResponsive();
   const { width } = useWindowDimensions();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { requireAuth, AuthModal } = useRequireAuth(
+    "Please login to create a post",
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const numColumns = 2;
@@ -52,24 +52,14 @@ export default function CreateScreen() {
   const cardHeight = hp(15);
 
   const handleItemPress = (item: typeof POST_TYPES[0]) => {
-    if (item.id === "media") {
-      pickInitialMedia();
-    } else {
-      item.onPress(startDraft, router);
-    }
+    requireAuth(() => {
+      if (item.id === "media") {
+        pickInitialMedia();
+      } else {
+        item.onPress(startDraft, router);
+      }
+    });
   };
-
-  if (!isAuthenticated) {
-    return (
-       <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-         <AuthPrompt
-           message="Login to access this feature"
-           buttonText="Login"
-           buttonColor={colors.primary}
-         />
-       </SafeAreaView>
-     );
-   }
 
   async function ensurePermission() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -196,6 +186,8 @@ export default function CreateScreen() {
           </Text>
         </View>
       )}
+
+      {AuthModal}
     </YStack>
   );
 }

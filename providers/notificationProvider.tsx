@@ -158,7 +158,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
       } else if (referenceType === "comment" && referenceId) {
         pushOnce(`/notifications`);
       } else if ((referenceType === "circle" || referenceType === "circle_post") && referenceId) {
-        pushOnce(`/(tabs)/circle/circleFeed?id=${referenceId}`);
+        pushOnce(`/circleFeed?id=${referenceId}`);
       } else {
         pushOnce("/notifications");
       }

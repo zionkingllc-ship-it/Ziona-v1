@@ -1,11 +1,9 @@
 import CircleCard from "@/components/circles/CircleCard";
 import CirclesIntro from "@/components/circles/CirclesIntro";
 import AnchorCardSmall from "@/components/circles/AnchorCardSmall";
-import AuthPrompt from "@/components/ui/AuthPrompt";
 import colors from "@/constants/colors";
 import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circles";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useCircleStore } from "@/store/circleStore";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,7 +19,6 @@ const CIRCLES_CACHE_KEY = "allCircles";
 
 export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasSeenIntro = useCircleStore((s) => s.hasSeenIntro);
   const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
@@ -77,20 +74,22 @@ export default function CirclesSuggestion() {
     try {
       setLoading(true);
 
-      const [myData, allData] = await Promise.all([
+      const [myResult, allResult] = await Promise.allSettled([
         fetchMyCircles(),
         fetchAllCircles(),
       ]);
 
-      const mappedMine = myData.map(mapCircle);
-      const mappedAll = allData.map(mapCircle);
+      const mappedMine = (myResult.status === "fulfilled" ? myResult.value : [])
+        .map(mapCircle);
+      const mappedAll = (allResult.status === "fulfilled" ? allResult.value : [])
+        .map(mapCircle);
 
       setMyCircles(mappedMine);
       setAllCircles(mappedAll);
       storage.set(CIRCLES_CACHE_KEY, mappedAll);
 
       // Extract active anchors from myCircles response
-      const anchors = myData
+      const anchors = (myResult.status === "fulfilled" ? myResult.value : [])
         .map((circle: any) => {
           if (!circle?.activeAnchor) return null;
           const createdAt = circle.activeAnchor.createdAt;
@@ -135,7 +134,7 @@ export default function CirclesSuggestion() {
 
   function handleCirclePress(circle: any) {
     router.push({
-      pathname: "/(tabs)/circle/circleFeed",
+      pathname: "/circleFeed",
       params: {
         id: circle.id,
         source: "suggestion",
@@ -146,14 +145,6 @@ export default function CirclesSuggestion() {
         _avatars: JSON.stringify(circle.avatars),
       },
     });
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-        <AuthPrompt message="Login to access this feature" buttonText="Login" buttonColor={colors.primary} />
-      </SafeAreaView>
-    );
   }
 
   if (showIntro) {

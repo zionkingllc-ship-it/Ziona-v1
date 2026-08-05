@@ -31,21 +31,27 @@ export default function Email() {
   const [email, setLocalEmail] = useState(storedEmail ?? "");
   const [isFocus, setIsFocus] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const isValidEmail = emailRegex.test(email);
 
   const Xspecial = require("@/assets/images/closeSquare.png");
   const mailIcon = require("@/assets/images/mailWithBoder.png");
 
-  const showInvalidFormat = isFocus && email.length > 0 && !isValidEmail;
-
-  const showError = showInvalidFormat || serverError;
+  const showError = (submitted && !isValidEmail) || serverError;
 
   const visualValidity: boolean | undefined =
-    !isFocus && !serverError ? undefined : showError ? false : true;
+    submitted && !serverError ? (!isValidEmail ? false : true) : undefined;
 
   const handleNext = async () => {
-    if (!isValidEmail || isLoading) return;
+    if (isLoading) return;
+
+    if (!isValidEmail) {
+      setSubmitted(true);
+      return;
+    }
+
+    setSubmitted(false);
 
     try {
       start("emailNext");
@@ -143,6 +149,7 @@ export default function Email() {
             onChangeText={(text) => {
               setLocalEmail(text);
               setServerError(null);
+              setSubmitted(false);
             }}
             endIconVisible={isFocus}
             isValid={visualValidity}
@@ -150,6 +157,7 @@ export default function Email() {
             onEndIconPress={() => {
               setLocalEmail("");
               setServerError(null);
+              setSubmitted(false);
             }}
           />
 
@@ -169,7 +177,7 @@ export default function Email() {
           text="Next"
           textColor={colors.buttonText}
           color={colors.primaryButton}
-          disabled={!isValidEmail || isLoading}
+          disabled={isLoading}
           loading={isLoading}
           onPress={handleNext}
           style={{

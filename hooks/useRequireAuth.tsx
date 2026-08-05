@@ -4,7 +4,9 @@ import { router } from "expo-router";
 import { useAuthStore } from "@/store/useAuthStore";
 import SuccessModal from "@/components/ui/modals/successModal";
 
-export function useRequireAuth() {
+export function useRequireAuth(
+  message: string = "Please login to interact with posts.",
+) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -26,7 +28,7 @@ export function useRequireAuth() {
       visible={showAuthModal}
       onClose={() => setShowAuthModal(false)}
       title="Login Required"
-      message="Please login to interact with posts."
+      message={message}
       type="softwarning"
       withButton
       buttonText="Login"

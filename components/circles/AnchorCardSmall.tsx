@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import colors from "@/constants/colors";
 import { useCountdown } from "@/hooks/useCountdown";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 
 const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
@@ -35,34 +36,39 @@ type AnchorCardSmallProps = {
 
 const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circleName, viewed }: AnchorCardSmallProps) {
   const router = useRouter();
+  const { requireAuth, AuthModal } = useRequireAuth(
+    "Please login to view this anchor",
+  );
   const [imageError, setImageError] = useState(false);
   const anchorType = anchor.anchorType || anchor.type || "text";
   const hasExpiry = !!anchor.expiresAt;
   const { formatted, isExpired } = useCountdown(anchor.expiresAt || "");
 
   const handlePress = () => {
-    markAnchorViewed(anchor.id);
-    const text = anchor.anchorText || anchor.content || "";
-    const url = anchor.mediaUrl || "";
-    const isVideo = (anchor.anchorType || anchor.type || "") === "video";
-    const anchorVideo = anchor.anchorVideo || (isVideo && url ? url : "");
-    const anchorImage = !isVideo && url ? url : anchor.anchorImage || "";
-    const qs = new URLSearchParams({
-      id: anchor.id || "",
-      likedCount: anchor.anchorLikedCount?.toString() || "0",
-      viewerLiked: anchor.viewerState?.liked ? "1" : "0",
-      source: "suggestion",
-      ...(circleId ? { circleId } : {}),
-      ...(text ? { text } : {}),
-      ...(anchorImage ? { anchorImage } : {}),
-      ...(anchorVideo ? { video: anchorVideo } : {}),
-      ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
-      ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
-      ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
-      ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
+    requireAuth(() => {
+      markAnchorViewed(anchor.id);
+      const text = anchor.anchorText || anchor.content || "";
+      const url = anchor.mediaUrl || "";
+      const isVideo = (anchor.anchorType || anchor.type || "") === "video";
+      const anchorVideo = anchor.anchorVideo || (isVideo && url ? url : "");
+      const anchorImage = !isVideo && url ? url : anchor.anchorImage || "";
+      const qs = new URLSearchParams({
+        id: anchor.id || "",
+        likedCount: anchor.anchorLikedCount?.toString() || "0",
+        viewerLiked: anchor.viewerState?.liked ? "1" : "0",
+        source: "suggestion",
+        ...(circleId ? { circleId } : {}),
+        ...(text ? { text } : {}),
+        ...(anchorImage ? { anchorImage } : {}),
+        ...(anchorVideo ? { video: anchorVideo } : {}),
+        ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+        ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
+        ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
+        ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
+      });
+      const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
+      router.push(path as any);
     });
-    const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
-    router.push(path as any);
   };
 
   const mediaSource = anchor.mediaUrl || anchor.anchorThumbnail || anchor.anchorImage;
@@ -123,7 +129,8 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
           <Text style={styles.countdownText}>{isExpired ? "Expired" : formatted}</Text>
         </View>
       )}
- 
+
+      {AuthModal}
     </Pressable>
   );
 });

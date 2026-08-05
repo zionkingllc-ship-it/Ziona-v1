@@ -77,11 +77,18 @@ const CircleFeedItem = memo(function CircleFeedItem({
   isJoined,
 }: Props) {
   const router = useRouter();
-  const { requireAuth, AuthModal } = useRequireAuth();
+  const { requireAuth, AuthModal, isAuthenticated } = useRequireAuth();
   const { requireMembership, MembershipModal } = useRequireCircleMembership(
     circleId || "",
     isJoined ?? false,
   );
+  const runAction = (action: () => void) => {
+    if (!isAuthenticated) {
+      requireAuth(action);
+      return;
+    }
+    requireMembership(action);
+  };
   const goToProfile = (userId: string, e?: any) => {
     e?.stopPropagation?.();
     requireAuth(() => router.push(`/guest?userId=${userId}`));
@@ -122,7 +129,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
-    requireMembership(() => handleToggleLike());
+    runAction(() => handleToggleLike());
   };
 
   const resolved = anchorRef;
@@ -205,7 +212,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </XStack>
           </XStack>
 
-          <Pressable onPress={() => setOptionsVisible(true)} style={{ padding: 8, margin: -8 }}>
+          <Pressable onPress={(e) => { e.stopPropagation?.(); runAction(() => setOptionsVisible(true)); }} style={{ padding: 8, margin: -8 }}>
             <Ionicons name="ellipsis-horizontal" size={22} color="#777" />
           </Pressable>
         </XStack>

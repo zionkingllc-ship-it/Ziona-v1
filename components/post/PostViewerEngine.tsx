@@ -210,6 +210,7 @@ function PostViewerEngineComponent({
         data={mergedPosts}
         extraData={extraData}
         onLayout={handleInitialScroll}
+        initialScrollIndex={safeIndex}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         snapToInterval={containerHeight}

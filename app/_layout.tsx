@@ -148,6 +148,7 @@ export default function RootLayout() {
                   <Stack.Screen name="followers/index" />
                   <Stack.Screen name="following/index" />
                   <Stack.Screen name="circleRules" />
+                  <Stack.Screen name="circleFeed" />
                   <Stack.Screen name="postVideoViewer" />
                   <Stack.Screen name="circleVideoViewer" />
                   <Stack.Screen name="circleImageViewer" />
