@@ -70,6 +70,12 @@ function PostViewerEngineComponent({
   // Scroll to correct position when FlatList first mounts (onLayout fires after layout).
   const hasScrolled = useRef(false);
   const safeIndex = Math.min(startIndex, mergedPosts.length - 1);
+  const [initialApplied, setInitialApplied] = useState(false);
+  // Only hide the list during the initial jump when the target is NOT the first
+  // post (e.g. opening a discover post mid-feed). When starting at index 0 the
+  // list already renders the correct content, so hiding would cause an avoidable
+  // black flash (and is what broke the iOS feed with initialScrollIndex).
+  const needsInitialHide = (initialIndex ?? 0) > 0 && origLength > 1;
   const handleInitialScroll = useCallback(() => {
     if (hasScrolled.current) return;
     hasScrolled.current = true;
@@ -77,6 +83,7 @@ function PostViewerEngineComponent({
       flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
     }
     setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
+    setInitialApplied(true);
   }, [safeIndex, mergedPosts]);
 
   // Re-scroll when initialIndex changes (viewer navigating between posts).
@@ -210,7 +217,6 @@ function PostViewerEngineComponent({
         data={mergedPosts}
         extraData={extraData}
         onLayout={handleInitialScroll}
-        initialScrollIndex={safeIndex}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         snapToInterval={containerHeight}
@@ -243,6 +249,20 @@ function PostViewerEngineComponent({
           </View>
         ) : null}
       />
+
+      {needsInitialHide && !initialApplied && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "black",
+            zIndex: 10,
+          }}
+        />
+      )}
     </>
   );
 }
