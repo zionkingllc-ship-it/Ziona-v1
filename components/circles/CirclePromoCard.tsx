@@ -4,6 +4,7 @@ import { FlatList, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack } from "tamagui";
 import { SimpleButton } from "@/components/ui/centerTextButton";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import colors from "@/constants/colors";
 import { useJoinCircle } from "@/hooks/useCircles";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -40,6 +41,7 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
   );
   const [joining, setJoining] = useState(false);
   const [joinedLocally, setJoinedLocally] = useState(false);
+  const [failedUris, setFailedUris] = useState<string[]>([]);
 
   const isJoined = circle.isJoined || joinedLocally;
   const avatarSize = 30 * scale;
@@ -71,7 +73,11 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
         _desc: circle.description,
         _image: circle.coverImage,
         _members: String(circle.memberCount),
-        _avatars: JSON.stringify(circle.avatars ?? []),
+        _avatars: JSON.stringify(
+          (circle.members?.length ? circle.members : (circle.avatars ?? []).map((av) => ({ avatarUrl: av }))).map(
+            (m) => m.avatarUrl ?? "",
+          ),
+        ),
       },
     });
   }, [circle]);
@@ -111,33 +117,22 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
           </Text>
 
           <XStack alignItems="center" justifyContent="center" marginTop={14 * scale}>
-            {(circle.avatars ?? []).slice(0, 3).map((avatar, index) =>
-              avatar ? (
-                <Image
-                  key={index}
-                  source={{ uri: avatar }}
+            {(circle.members?.length ? circle.members : (circle.avatars ?? []).map((av) => ({ id: "", name: "", avatarUrl: av })) )
+              .slice(0, 4)
+              .map((member, index) => (
+                <AvatarWithInitials
+                  key={`${member.id || member.avatarUrl}-${index}`}
+                  uri={member.avatarUrl}
+                  name={member.name}
+                  size={avatarSize}
+                  failedUris={failedUris}
+                  setFailedUris={setFailedUris}
                   style={[
                     styles.avatar,
-                    { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
                     { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
                   ]}
                 />
-              ) : (
-                <View
-                  key={index}
-                  style={[
-                    styles.avatar,
-                    {
-                      width: avatarSize,
-                      height: avatarSize,
-                      borderRadius: avatarSize / 2,
-                      backgroundColor: "#7A2E8A",
-                    },
-                    { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
-                  ]}
-                />
-              ),
-            )}
+              ))}
 
             <Text style={[styles.memberText, { fontSize: 15 * scale, marginLeft: 12 * scale }]}>
               +{circle.memberCount} members

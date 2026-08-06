@@ -11,6 +11,7 @@ export type FeedCirclePromo = {
     memberCount: number;
     isJoined: boolean;
     avatars?: string[];
+    members?: { id: string; name: string; avatarUrl?: string }[];
   }[];
 };
 

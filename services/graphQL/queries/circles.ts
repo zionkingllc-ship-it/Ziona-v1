@@ -15,6 +15,11 @@ export const GET_ALL_CIRCLES = `
       isJoined
       isSubscribed
       avatars
+      memberPreviews {
+        id
+        fullName
+        avatarUrl
+      }
     }
   }
 `;

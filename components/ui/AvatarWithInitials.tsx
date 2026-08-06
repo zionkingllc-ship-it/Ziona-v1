@@ -9,6 +9,7 @@ interface AvatarWithInitialsProps {
   size?: number;
   failedUris: string[];
   setFailedUris: React.Dispatch<React.SetStateAction<string[]>>;
+  style?: any;
 }
 
 function getInitials(name?: string): string {
@@ -36,6 +37,7 @@ export function AvatarWithInitials({
   size = 40,
   failedUris,
   setFailedUris,
+  style,
 }: AvatarWithInitialsProps) {
   const [imageError, setImageError] = useState(false);
 
@@ -53,6 +55,7 @@ export function AvatarWithInitials({
         backgroundColor={bgColor}
         justifyContent="center"
         alignItems="center"
+        style={style}
       >
         <Text
           color="white"
@@ -68,7 +71,7 @@ export function AvatarWithInitials({
   return (
     <Image
       source={{ uri }}
-      style={{ width: size, height: size, borderRadius: size / 2 }}
+      style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
       onError={() => {
         setImageError(true);
         if (uri) {

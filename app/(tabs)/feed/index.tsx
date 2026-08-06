@@ -179,7 +179,7 @@ export default function Feed() {
     data.forEach((post, i) => {
       items.push(post);
       if ((i + 1) % PROMOTED_CIRCLE_INTERVAL === 0) {
-        if (batchStart >= pool.length) return;
+        if (batchStart >= pool.length) batchStart = 0;
         const batch = pool.slice(batchStart, batchStart + PROMOTED_CIRCLE_BATCH_SIZE);
         batchStart += batch.length;
         if (!batch.length) return;
@@ -194,6 +194,17 @@ export default function Feed() {
             memberCount: circle.memberCount ?? 0,
             isJoined: !!circle.isJoined || !!circle.isSubscribed,
             avatars: Array.isArray(circle.avatars) ? circle.avatars : [],
+            members: Array.isArray(circle.memberPreviews)
+              ? circle.memberPreviews.map((member: any) => ({
+                  id: member?.id ?? "",
+                  name: member?.fullName ?? member?.username ?? "",
+                  avatarUrl: member?.avatarUrl ?? "",
+                }))
+              : (Array.isArray(circle.avatars) ? circle.avatars : []).map((avatar: any) => ({
+                  id: "",
+                  name: "",
+                  avatarUrl: avatar ?? "",
+                })),
           })),
         });
       }
