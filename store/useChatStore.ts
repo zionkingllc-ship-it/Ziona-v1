@@ -31,10 +31,47 @@ export const useChatStore = create<ChatStore>()(
         set((s) => ({ messages: [...s.messages, msg] })),
       mergeServerMessages: (msgs) =>
         set((s) => {
-          const existingIds = new Set(s.messages.filter((m) => m.id).map((m) => m.id));
-          const newMsgs = msgs.filter((m) => m.id && !existingIds.has(m.id));
-          if (newMsgs.length === 0) return s;
-          return { messages: [...s.messages, ...newMsgs] };
+          const incomingById = new Map<string, ChatMessage>();
+          msgs.forEach((m) => m.id && incomingById.set(m.id, m));
+
+          const next: ChatMessage[] = [];
+          const seen = new Set<string>();
+
+          const handleOptimistic = (m: ChatMessage) => {
+            const matched = msgs.find(
+              (im) => im.id && im.fromUser === m.fromUser && im.text === m.text
+            );
+            if (matched?.id) {
+              if (!seen.has(matched.id)) {
+                seen.add(matched.id);
+                next.push(matched);
+              }
+            } else {
+              next.push(m);
+            }
+          };
+
+          for (const m of s.messages) {
+            if (m.id) {
+              if (incomingById.has(m.id) && !seen.has(m.id)) {
+                seen.add(m.id);
+                next.push(incomingById.get(m.id)!);
+              } else if (!seen.has(m.id)) {
+                next.push(m);
+              }
+            } else {
+              handleOptimistic(m);
+            }
+          }
+
+          for (const m of msgs) {
+            if (m.id && !seen.has(m.id)) {
+              seen.add(m.id);
+              next.push(m);
+            }
+          }
+
+          return { messages: next };
         }),
       clear: () =>
         set({ mode: "input", messages: [], ticketId: "" }),

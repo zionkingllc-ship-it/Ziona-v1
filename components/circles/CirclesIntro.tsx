@@ -6,6 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
 import { Pressable } from "react-native";
 import Animated, {
+  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -40,10 +41,19 @@ export default function CirclesIntro({
   const borderRadius = 5;
 
   const opacity = useSharedValue(1);
+  const hintOpacity = useSharedValue(0.4);
 
   function finishIntro() {
     onClose();
   }
+
+  useEffect(() => {
+    hintOpacity.value = withRepeat(
+      withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+  }, []);
 
   const handleClose = () => {
     opacity.value = withTiming(0, { duration: 300 }, () => {
@@ -52,6 +62,9 @@ export default function CirclesIntro({
   };
   const containerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
+  }));
+  const hintStyle = useAnimatedStyle(() => ({
+    opacity: hintOpacity.value,
   }));
 
   const x1 = useSharedValue(0);
@@ -205,6 +218,23 @@ export default function CirclesIntro({
           </YStack>
         </GradientBackground>
       </Animated.View>
+
+      <Animated.View style={[styles.hint, hintStyle]}>
+        <Text
+          style={{
+            fontFamily: "$body",
+            fontSize: fs(15),
+            fontWeight: "600",
+            color: "#ffffff",
+            textAlign: "center",
+            textShadowColor: "rgba(0,0,0,0.25)",
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 4,
+          }}
+        >
+          Tap anywhere to continue
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -219,5 +249,13 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "75%",
     opacity: 0.4,
+  },
+  hint: {
+    position: "absolute",
+    top: "55%",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    transform: [{ translateY: -20 }],
   },
 });

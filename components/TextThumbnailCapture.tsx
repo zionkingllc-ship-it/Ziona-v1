@@ -44,16 +44,18 @@ export default function TextThumbnailCapture({
   return (
     <View
       ref={viewRef}
+      collapsable={false}
       style={{
         position: "absolute",
-        left: -9999,
-        top: -9999,
+        left: 0,
+        top: 0,
         width: size,
         height: size,
         backgroundColor: bgColor || "#181419",
         justifyContent: "center",
         alignItems: "center",
         padding: 10,
+        zIndex: -1,
       }}
     >
       <Text

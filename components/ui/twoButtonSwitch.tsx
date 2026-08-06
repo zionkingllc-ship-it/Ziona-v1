@@ -44,7 +44,7 @@ export default function TwoButtonSwitch({
         borderRadius={99}
         backgroundColor={isForYou ? activeBg : "transparent"}
         borderColor={isForYou ? "#E4C0F1" : "transparent"}
-        color={isForYou ? activeText : inactiveText}
+        color={isForYou ? activeText : colorsDefault.white}
         fontSize={13}
         fontFamily={fontFamily}
         fontWeight={"500"}

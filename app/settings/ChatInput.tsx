@@ -1,8 +1,9 @@
 import Header from "@/components/layout/header";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TextInput, Pressable, Keyboard, ActivityIndicator, Alert } from "react-native";
+import { TextInput, Pressable, Keyboard, ActivityIndicator, Alert, KeyboardAvoidingView } from "react-native";
 import { View, XStack, Text } from "tamagui";
+import { isIOS, keyboardBehavior } from "@/constants/platform";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { submitHelpMessage } from "@/services/graphQL/mutation/help";
@@ -45,22 +46,24 @@ export default function ChatInputScreen() {
       <Header heading="Chat with us" />
 
       <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
-        <View padding={16} flex={1}>
-          <View
-            backgroundColor={colors.lightGrayBg}
-            borderRadius={10}
-            padding={10}
-          >
-            <TextInput
-              placeholder="Describe your issue"
-              placeholderTextColor={colors.placeholderText}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              style={{ fontSize: 14, color: colors.black, minHeight: 80, textAlignVertical: "top" }}
-            />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={keyboardBehavior()} keyboardVerticalOffset={0}>
+          <View padding={16} flex={1}>
+            <View
+              backgroundColor={colors.lightGrayBg}
+              borderRadius={10}
+              padding={10}
+            >
+              <TextInput
+                placeholder="Describe your issue"
+                placeholderTextColor={colors.placeholderText}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                style={{ fontSize: 14, color: colors.black, minHeight: 80, textAlignVertical: "top" }}
+              />
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Pressable>
 
       <View padding={16}>

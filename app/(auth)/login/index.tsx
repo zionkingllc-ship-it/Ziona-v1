@@ -1,6 +1,7 @@
 import { InlineUnderlineText } from "@/components/ui/InlineUnderlineText";
 import { MarqueeCarousel } from "@/components/ui/marquee";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
@@ -41,6 +42,9 @@ export default function LoginIndex() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleAppleSignIn = async () => {
     try {
@@ -75,6 +79,11 @@ export default function LoginIndex() {
 
       if (res.error) {
         setIsGoogleLoading(false);
+        setModalVisible(true);
+        setMessageTitle("Authentication Failed");
+        setMessage(
+          res.error || "Google login failed, please try again or sign in with email instead",
+        );
         return;
       }
 
@@ -310,6 +319,15 @@ export default function LoginIndex() {
           </XStack>
         </YStack>
       </YStack>
+      <SuccessModal
+        visible={modalVisible}
+        autoClose
+        title={messageTitle}
+        duration={4000}
+        message={message}
+        type="failed"
+        onClose={() => setModalVisible(false)}
+      />
     </YStack>
   );
 }

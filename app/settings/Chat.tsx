@@ -1,12 +1,11 @@
 import Header from "@/components/layout/header";
 import SuccessModal from "@/components/ui/modals/successModal";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, XStack, YStack, View } from "tamagui";
-import { useState, useEffect } from "react";
-import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator, Alert } from "react-native";
-import { isIOS, keyboardBehavior } from "@/constants/platform";
-import { Ionicons } from "@expo/vector-icons";
-import { submitHelpMessage, resolveHelpConversation } from "@/services/graphQL/mutation/help";
+import { Text, XStack, View } from "tamagui";
+import { useState, useEffect, useRef } from "react";
+import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator, Alert, FlatList } from "react-native";
+import { isIOS, keyboardBehavior } from "@/constants/platform";import { Ionicons } from "@expo/vector-icons";
+import { submitHelpMessage, sendHelpMessage, createClientMessageId, resolveHelpConversation } from "@/services/graphQL/mutation/help";
 import { getHelpConversation } from "@/services/graphQL/queries/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
@@ -18,7 +17,12 @@ export default function ChatScreen() {
   const [errorMsg, setErrorMsg] = useState("");
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const listRef = useRef<FlatList<any>>(null);
   const { mode, messages, ticketId, setConversation, addMessage, mergeServerMessages, clear } = useChatStore();
+
+  useEffect(() => {
+    listRef.current?.scrollToEnd({ animated: true });
+  }, [messages]);
   const user = useAuthStore((s) => s.user);
   const userName = user?.username || "User";
   const userEmail = user?.email || "";
@@ -33,7 +37,7 @@ export default function ChatScreen() {
             conv.messages.map((m) => ({
               id: m.id,
               text: m.message,
-              fromUser: m.senderType === "user",
+              fromUser: m.senderType?.toUpperCase() === "USER",
               sentAt: m.sentAt,
             }))
           );
@@ -66,18 +70,19 @@ export default function ChatScreen() {
       }
       setSubmitting(false);
     } else {
+      if (!ticketId) return;
+      setSubmitting(true);
       const text = input.trim();
+      const clientMessageId = createClientMessageId();
       addMessage({ text, fromUser: true });
       setInput("");
       try {
-        await submitHelpMessage({
-          message: text,
-          email: userEmail || undefined,
-          name: userName || undefined,
-        });
+        await sendHelpMessage({ contactId: ticketId, message: text, clientMessageId });
       } catch (err: any) {
         setErrorMsg(err?.message || "Failed to send message.");
         setShowError(true);
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -98,36 +103,55 @@ export default function ChatScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={isIOS ? "padding" : undefined}
+        behavior={keyboardBehavior()}
         keyboardVerticalOffset={0}
       >
         <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
           {mode === "chat" ? (
-            <YStack padding={16} gap="$3">
+            <View flex={1}>
               {ticketId && (
-                <XStack justifyContent="center">
+                <XStack justifyContent="center" paddingTop={8}>
                   <Text fontFamily="$body" fontSize={11} color={colors.gray}>
                     Ticket #{ticketId.substring(0, 8)}
                   </Text>
                 </XStack>
               )}
 
-              {messages.map((msg, i) => (
-                <XStack key={i} justifyContent={msg.fromUser ? "flex-end" : "flex-start"}>
-                  <View
-                    backgroundColor={msg.fromUser ? colors.primary : colors.lightGrayBg}
-                    padding={10}
-                    borderRadius={14}
-                    maxWidth={msg.fromUser ? "70%" : "80%"}
+              <FlatList
+                ref={listRef}
+                data={messages}
+                keyExtractor={(msg, i) => msg.id ?? `opt-${i}`}
+                renderItem={({ item }) => (
+                  <XStack
+                    justifyContent={item.fromUser ? "flex-end" : "flex-start"}
+                    marginBottom={8}
                   >
-                    <Text fontFamily="$body" color={msg.fromUser ? colors.white : colors.black} fontSize={13} lineHeight={18}>
-                      {msg.text}
-                    </Text>
-                  </View>
-                </XStack>
-              ))}
+                    <View
+                      backgroundColor={item.fromUser ? colors.primary : colors.lightGrayBg}
+                      padding={10}
+                      borderRadius={14}
+                      maxWidth={item.fromUser ? "70%" : "80%"}
+                    >
+                      <Text
+                        fontFamily="$body"
+                        color={item.fromUser ? colors.white : colors.black}
+                        fontSize={13}
+                        lineHeight={18}
+                      >
+                        {item.text}
+                      </Text>
+                    </View>
+                  </XStack>
+                )}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+                showsVerticalScrollIndicator={false}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+              />
 
-              <XStack justifyContent="center" marginTop={8}>
+              <XStack justifyContent="center" paddingVertical={8}>
                 <Pressable
                   onPress={() => setShowModal(true)}
                   style={{
@@ -145,7 +169,7 @@ export default function ChatScreen() {
                   </XStack>
                 </Pressable>
               </XStack>
-            </YStack>
+            </View>
           ) : (
             <View padding={16} flex={1}>
               <View
@@ -186,8 +210,9 @@ export default function ChatScreen() {
               </View>
               <Pressable
                 onPress={handleSend}
+                disabled={!input.trim() || submitting}
                 style={{
-                  backgroundColor: input.trim() ? colors.primary : colors.inactiveButton,
+                  backgroundColor: input.trim() && !submitting ? colors.primary : colors.inactiveButton,
                   borderRadius: 10,
                   width: 40,
                   height: 40,

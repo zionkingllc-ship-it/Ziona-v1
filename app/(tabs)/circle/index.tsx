@@ -27,12 +27,24 @@ export default function CirclesSuggestion() {
   const [activeAnchors, setActiveAnchors] = useState<any[]>([]);
   const [viewedAnchors, setViewedAnchors] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
-  const [showIntro, setShowIntro] = useState(!hasSeenIntro);
+  const [hasHydrated, setHasHydrated] = useState(useCircleStore.persist.hasHydrated());
+  const showIntro = hasHydrated && !hasSeenIntro;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   const isMounted = useRef(false);
+
+  useEffect(() => {
+    if (hasHydrated) return;
+    const unsub = useCircleStore.persist.onFinishHydration(() => {
+      setHasHydrated(true);
+    });
+    if (useCircleStore.persist.hasHydrated()) {
+      setHasHydrated(true);
+    }
+    return unsub;
+  }, [hasHydrated]);
 
   useFocusEffect(
     useCallback(() => {
@@ -151,7 +163,6 @@ export default function CirclesSuggestion() {
     return (
       <CirclesIntro
         onClose={() => {
-          setShowIntro(false);
           setSeenIntro();
         }}
       />

@@ -6,7 +6,7 @@ import { Text, View, XStack, YStack } from "tamagui";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import colors from "@/constants/colors";
 import { useJoinCircle } from "@/hooks/useCircles";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { FeedCirclePromo } from "@/types/feedTypes";
 import { router } from "expo-router";
 
@@ -35,18 +35,16 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
   scale,
 }: CarouselItemProps) {
   const joinCircle = useJoinCircle();
+  const { requireAuth, AuthModal } = useRequireAuth(
+    "Please login to join this circle.",
+  );
   const [joining, setJoining] = useState(false);
   const [joinedLocally, setJoinedLocally] = useState(false);
 
   const isJoined = circle.isJoined || joinedLocally;
   const avatarSize = 30 * scale;
 
-  const handleJoin = useCallback(async () => {
-    const isAuth = useAuthStore.getState().isAuthenticated;
-    if (!isAuth) {
-      router.push("/(auth)/login/");
-      return;
-    }
+  const doJoin = useCallback(async () => {
     if (isJoined || joining) return;
     setJoining(true);
     try {
@@ -58,6 +56,10 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
       setJoining(false);
     }
   }, [circle.id, isJoined, joining, joinCircle]);
+
+  const handleJoin = useCallback(() => {
+    requireAuth(doJoin);
+  }, [requireAuth, doJoin]);
 
   const handleOpenCircle = useCallback(() => {
     router.push({
@@ -75,96 +77,99 @@ const CirclePromoCarouselItem = memo(function CirclePromoCarouselItem({
   }, [circle]);
 
   return (
-    <Pressable
-      onPress={handleOpenCircle}
-      style={[
-        styles.card,
-        { width: cardWidth, height: cardHeight, paddingTop: 16 * scale, paddingBottom: 16 * scale },
-      ]}
-    >
-      <YStack flex={1} alignItems="center" justifyContent="center">
-        <View style={[styles.imageWrapper, { width: imageSize, height: imageSize }]}>
-          <Image
-            source={{ uri: circle.coverImage }}
-            style={styles.circleImage}
-            contentFit="cover"
-            transition={200}
-          />
-        </View>
+    <>
+      {AuthModal}
+      <Pressable
+        onPress={handleOpenCircle}
+        style={[
+          styles.card,
+          { width: cardWidth, height: cardHeight, paddingTop: 16 * scale, paddingBottom: 16 * scale },
+        ]}
+      >
+        <YStack flex={1} alignItems="center" justifyContent="center">
+          <View style={[styles.imageWrapper, { width: imageSize, height: imageSize }]}>
+            <Image
+              source={{ uri: circle.coverImage }}
+              style={styles.circleImage}
+              contentFit="cover"
+              transition={200}
+            />
+          </View>
 
-        <Text numberOfLines={1} style={[styles.title, { marginTop: 18 * scale, fontSize: 24 * scale }]}>
-          {circle.name}
-        </Text>
+          <Text numberOfLines={1} style={[styles.title, { marginTop: 18 * scale, fontSize: 24 * scale }]}>
+            {circle.name}
+          </Text>
 
-        <Text
-          numberOfLines={3}
-          style={[
-            styles.description,
-            { marginTop: 12 * scale, height: 72 * scale, fontSize: 15 * scale, lineHeight: 24 * scale },
-          ]}
-        >
-          {circle.description}
-        </Text>
+          <Text
+            numberOfLines={3}
+            style={[
+              styles.description,
+              { marginTop: 12 * scale, height: 72 * scale, fontSize: 15 * scale, lineHeight: 24 * scale },
+            ]}
+          >
+            {circle.description}
+          </Text>
 
-        <XStack alignItems="center" justifyContent="center" marginTop={14 * scale}>
-          {(circle.avatars ?? []).slice(0, 3).map((avatar, index) =>
-            avatar ? (
-              <Image
-                key={index}
-                source={{ uri: avatar }}
-                style={[
-                  styles.avatar,
-                  { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
-                  { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
-                ]}
-              />
-            ) : (
-              <View
-                key={index}
-                style={[
-                  styles.avatar,
-                  {
-                    width: avatarSize,
-                    height: avatarSize,
-                    borderRadius: avatarSize / 2,
-                    backgroundColor: "#7A2E8A",
-                  },
-                  { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
-                ]}
-              />
-            ),
+          <XStack alignItems="center" justifyContent="center" marginTop={14 * scale}>
+            {(circle.avatars ?? []).slice(0, 3).map((avatar, index) =>
+              avatar ? (
+                <Image
+                  key={index}
+                  source={{ uri: avatar }}
+                  style={[
+                    styles.avatar,
+                    { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+                    { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
+                  ]}
+                />
+              ) : (
+                <View
+                  key={index}
+                  style={[
+                    styles.avatar,
+                    {
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: avatarSize / 2,
+                      backgroundColor: "#7A2E8A",
+                    },
+                    { marginLeft: index === 0 ? 0 : -avatarSize * 0.24 },
+                  ]}
+                />
+              ),
+            )}
+
+            <Text style={[styles.memberText, { fontSize: 15 * scale, marginLeft: 12 * scale }]}>
+              +{circle.memberCount} members
+            </Text>
+          </XStack>
+
+          <View style={{ height: 14 * scale }} />
+
+          {isJoined ? (
+            <Text style={[styles.joinedText, { fontSize: 15 * scale }]}>You&apos;re a member</Text>
+          ) : (
+            <SimpleButton
+              text={joining ? "Joining..." : "Join"}
+              onPress={handleJoin}
+              loading={joining}
+              textSize={15 * scale}
+              fontFamily="$body"
+              fontWeight="600"
+              color={colors.primary}
+              textColor={colors.white}
+              borderRadius={99}
+              paddingVertical={8 * scale}
+              paddingHorizontal={32 * scale}
+            />
           )}
 
-          <Text style={[styles.memberText, { fontSize: 15 * scale, marginLeft: 12 * scale }]}>
-            +{circle.memberCount} members
-          </Text>
-        </XStack>
+          <View style={{ height: 4 * scale }} />
 
-        <View style={{ height: 14 * scale }} />
-
-        {isJoined ? (
-          <Text style={[styles.joinedText, { fontSize: 15 * scale }]}>You&apos;re a member</Text>
-        ) : (
-          <SimpleButton
-            text={joining ? "Joining..." : "Join"}
-            onPress={handleJoin}
-            loading={joining}
-            textSize={15 * scale}
-            fontFamily="$body"
-            fontWeight="600"
-            color={colors.primary}
-            textColor={colors.white}
-            borderRadius={99}
-            paddingVertical={8 * scale}
-            paddingHorizontal={32 * scale}
-          />
-        )}
-
-        <View style={{ height: 4 * scale }} />
-
-        <Text style={[styles.tapHint, { fontSize: 12 * scale }]}>Tap to view circle</Text>
-      </YStack>
-    </Pressable>
+          <Text style={[styles.tapHint, { fontSize: 12 * scale }]}>Tap to view circle</Text>
+        </YStack>
+      </Pressable>
+    </>
   );
 });
 

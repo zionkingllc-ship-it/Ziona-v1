@@ -5,6 +5,7 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
+import { MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_SIZE_LABEL } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
 import { publishMediaPost, preUploadMedia } from "@/services/graphQL/drafts/mediaDraft";
 import { movePostToFeedTop } from "@/services/feed/invalidateFeed";
@@ -202,12 +203,12 @@ export default function CreateMediaPreviewScreen() {
     }
 
     const oversizedVideo = items.find(
-      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > 120 * 1024 * 1024,
+      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > MAX_VIDEO_SIZE_BYTES,
     );
     if (oversizedVideo) {
       setModalType("failed");
       setModalTitle("Video Too Large");
-      setModalMessage("Video should not be more than 120MB.");
+      setModalMessage(`Video should not be more than ${MAX_VIDEO_SIZE_LABEL}.`);
       setModalVisible(true);
       return;
     }

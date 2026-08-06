@@ -58,8 +58,17 @@ function PostViewerEngineComponent({
     return tripled;
   }, [posts]);
 
-  // When mergedPosts is deduplicated to a single item, start at 0
-  const startIndex = mergedPosts.length <= 1 ? 0 : origLength + (initialIndex ?? 0);
+  // Start at the actual first copy when opening from the top (initialIndex 0),
+  // so no mid-array scroll/jump is needed → avoids the black flicker on feed
+  // load/switch. Only jump into the middle copy when targeting a specific post
+  // (viewer opening a post mid-feed); onMomentumScrollEnd normalizes position
+  // into the middle copy after the first scroll.
+  const startIndex =
+    mergedPosts.length <= 1
+      ? 0
+      : (initialIndex ?? 0) > 0
+        ? origLength + (initialIndex ?? 0)
+        : 0;
 
   const extraData = useMemo(() => ({
     activePostId,

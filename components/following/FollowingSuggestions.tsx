@@ -7,8 +7,6 @@ import { YStack, Text } from "tamagui";
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import FollowUserRow from "@/components/follow/UserRow";
 import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
-import AuthPrompt from "@/components/ui/AuthPrompt";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useIsMutating } from "@tanstack/react-query";
 import type { UserSuggestion } from "@/hooks/useFeed";
 
@@ -18,7 +16,6 @@ interface FollowSuggestionsProps {
 }
 
 export default function FollowSuggestions({ onDone, suggestions: preloaded }: FollowSuggestionsProps) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: creators, isLoading } = useSuggestedCreators();
   const suggestions = preloaded ?? creators;
   const pendingFollows = useIsMutating({ mutationKey: ["followUser"] });
@@ -40,18 +37,6 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
   }, [isProcessing, pendingFollows, onDone]);
 
   const isButtonLoading = isProcessing || pendingFollows > 0;
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-        <AuthPrompt
-          message="Login to access this feature"
-          buttonText="Login"
-          buttonColor={colors.primary}
-        />
-      </SafeAreaView>
-    );
-  }
 
   if (isLoading) {
     return (

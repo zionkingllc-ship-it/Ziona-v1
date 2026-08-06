@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ziona",
     "slug": "ziona",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "icon": "./assets/images/icon.png",
     "scheme": "ziona",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
       },
       "associatedDomains": [
         "applinks:ziona.app",
-        "applinks:dev.ziona.app"
+        "applinks:api.ziona.app"
       ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -47,6 +47,7 @@
       "intentFilters": [
         {
           "action": "VIEW",
+          "autoVerify": true,
           "data": [
             {
               "scheme": "https",
@@ -55,7 +56,7 @@
             },
             {
               "scheme": "https",
-              "host": "dev.ziona.app",
+              "host": "api.ziona.app",
               "pathPrefix": "/post"
             },
             {
@@ -83,6 +84,12 @@
     "plugins": [
       "./plugins/withFirebaseNotificationColor",
       "expo-router",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv"
+        }
+      ],
       [
         "expo-build-properties",
         {

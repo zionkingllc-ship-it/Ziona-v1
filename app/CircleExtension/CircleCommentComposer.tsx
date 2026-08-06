@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import {
   ActivityIndicator,
@@ -28,6 +28,8 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { keyboardBehavior } from "@/constants/platform";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { useCircleDetail, useCircleMembership } from "@/hooks/useCircles";
+import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 type Props = {
   mode?: "action" | "comment";
@@ -82,8 +84,28 @@ export default function CircleCommentComposer({
   }
   const queryClient = useQueryClient();
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isJoined } = useCircleMembership(circleId || "");
+  const { isLoading: circleDetailLoading } = useCircleDetail(circleId || "", { enabled: !!circleId });
+  const { requireMembership, AuthModal, MembershipModal } = useRequireCircleMembership(circleId || "", isJoined);
+
+  // Users who are not signed in (or not members of the circle) cannot type at all.
+  // The hook prompts login first, then join — auth is checked before membership.
+  const membershipKnown = !circleId || !circleDetailLoading;
+  const blocked = !isAuthenticated || (!!circleId && !isJoined && membershipKnown);
+  const prevBlocked = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (blocked && prevBlocked.current !== true) {
+      prevBlocked.current = true;
+      requireMembership(() => {});
+    } else if (!blocked) {
+      prevBlocked.current = false;
+    }
+  }, [blocked, isAuthenticated, circleId, isJoined, membershipKnown, requireMembership]);
+
   const handleSend = async () => {
-    if ((!text.trim() && !image && !video) || posting) return;
+    if ((!text.trim() && !image && !video) || posting || blocked) return;
 
     if (video && (videoDuration ?? 0) > MAX_VIDEO_DURATION_MS) {
       const secs = Math.round((videoDuration ?? 0) / 1000);
@@ -309,7 +331,7 @@ export default function CircleCommentComposer({
           >
             <Pressable
               onPress={async () => {
-                if (picking) return;
+                if (picking || blocked) return;
                 setShowError(false);
                 setErrorMessage("");
                 setPicking(true);
@@ -365,13 +387,18 @@ export default function CircleCommentComposer({
 
             <TextInput
               placeholder={
-                mode === "action"
-                  ? "Share your reflection..."
-                  : "Write a comment..."
+                blocked
+                  ? isAuthenticated
+                    ? "Join this circle to comment"
+                    : "Login to comment"
+                  : mode === "action"
+                    ? "Share your reflection..."
+                    : "Write a comment..."
               }
               placeholderTextColor={colors.placeHolderText}
               value={text}
               onChangeText={setText}
+              editable={!blocked}
               style={{
                 flex: 1,
                 paddingVertical: 8,
@@ -380,13 +407,13 @@ export default function CircleCommentComposer({
                 color: colors.black,
               }}
               multiline
-              autoFocus
+              autoFocus={!blocked}
             />
 
-            <Pressable onPress={handleSend} disabled={posting} style={{ paddingVertical: 8 }}>
+            <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
               <View
                 style={{
-                  backgroundColor: (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
+                  backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
                   paddingHorizontal: 14,
                   paddingVertical: 6,
                   borderRadius: 20,
@@ -422,6 +449,9 @@ export default function CircleCommentComposer({
         buttonText="OK"
         onButtonPress={() => setShowError(false)}
       />
+
+      {AuthModal}
+      {MembershipModal}
     </>
   );
 }

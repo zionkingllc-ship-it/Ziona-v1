@@ -158,6 +158,18 @@ export default function Feed() {
     setPromotedCirclesInitialized(true);
   }, [promotedCircles, promotedCirclesInitialized]);
 
+  useEffect(() => {
+    if (!promotedCirclesInitialized) return;
+    if (!promotedCircles.length) {
+      setPromotedCirclesPool([]);
+      return;
+    }
+    setPromotedCirclesPool(
+      (prev) =>
+        prev.filter((p) => promotedCircles.some((c) => c?.id === p?.id)) ?? [],
+    );
+  }, [promotedCircles, promotedCirclesInitialized]);
+
   const feedItems: FeedItem[] = useMemo(() => {
     if (!data.length || !promotedCirclesPool.length) return data;
 
