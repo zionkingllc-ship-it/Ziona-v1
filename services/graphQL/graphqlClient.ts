@@ -1,7 +1,14 @@
-import { useAuthStore } from "@/store/useAuthStore";
 import { refreshTokenProactively, refreshWithRetry } from "@/services/auth/refresh";
 
 const GRAPHQL_URL = process.env.EXPO_PUBLIC_GRAPHQL_URL || "https://ziona-api-staging.onrender.com/graphql/";
+
+let _getAuthStore: any = null;
+function getAuthStore(): any {
+  if (!_getAuthStore) {
+    _getAuthStore = require("@/store/useAuthStore").useAuthStore;
+  }
+  return _getAuthStore;
+}
 
 const AUTH_ERROR_MESSAGES = [
   "unauthorized",
@@ -25,7 +32,7 @@ export async function graphqlRequest(
   variables?: any,
   retries = 1
 ) {
-  const store = useAuthStore.getState();
+  const store = getAuthStore().getState();
 
   // Proactive refresh before making the request
   let token = store.tokens?.accessToken;
@@ -34,7 +41,7 @@ export async function graphqlRequest(
     if (!ok) {
       token = undefined;
     } else {
-      const updated = useAuthStore.getState();
+      const updated = getAuthStore().getState();
       token = updated.tokens?.accessToken;
     }
   }
@@ -82,11 +89,11 @@ export async function graphqlRequest(
         );
 
       if (stillHasAuthError) {
-        await useAuthStore.getState().clearSession?.();
+        await getAuthStore().getState().clearSession?.();
         throw new Error("Session expired");
       }
     } else {
-      await useAuthStore.getState().clearSession?.();
+      await getAuthStore().getState().clearSession?.();
       return null;
     }
   }
