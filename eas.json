@@ -13,10 +13,12 @@
     "preview": {
       "distribution": "internal",
       "autoIncrement": true,
-      "env": { "FIREBASE_ENV": "staging" }
+      "env": { "FIREBASE_ENV": "staging" },
+      "android": { "buildType": "app-bundle" }
     },
     "staging": {
-      "distribution": "internal",
+      "ios": { "distribution": "store" },
+      "android": { "buildType": "app-bundle" },
       "autoIncrement": true,
       "env": { "FIREBASE_ENV": "staging" }
     },
