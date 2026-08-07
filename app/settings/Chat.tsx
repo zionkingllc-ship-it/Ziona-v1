@@ -2,14 +2,38 @@ import Header from "@/components/layout/header";
 import SuccessModal from "@/components/ui/modals/successModal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, View } from "tamagui";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { TextInput, Pressable, Keyboard, KeyboardAvoidingView, ActivityIndicator, Alert, FlatList } from "react-native";
 import { isIOS, keyboardBehavior } from "@/constants/platform";import { Ionicons } from "@expo/vector-icons";
 import { submitHelpMessage, sendHelpMessage, createClientMessageId, resolveHelpConversation } from "@/services/graphQL/mutation/help";
-import { getHelpConversation } from "@/services/graphQL/queries/help";
+import { getHelpConversation, fetchMyHelpConversations, HelpConversation } from "@/services/graphQL/queries/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import colors from "@/constants/colors";
+import { useFocusEffect } from "@react-navigation/native";
+
+const RESOLVED_STATUSES = new Set([
+  "RESOLVED",
+  "CLOSED",
+  "COMPLETED",
+  "DONE",
+  "ARCHIVED",
+]);
+
+function pickUnresolvedConversation(conversations: HelpConversation[]): HelpConversation | null {
+  if (!conversations?.length) return null;
+  const open = conversations.filter(
+    (c) => !RESOLVED_STATUSES.has((c.status || "").trim().toUpperCase())
+  );
+  const pool = open.length > 0 ? open : conversations;
+  return (
+    [...pool].sort((a, b) => {
+      const ta = new Date(a.updatedAt || a.lastMessageAt || 0).getTime();
+      const tb = new Date(b.updatedAt || b.lastMessageAt || 0).getTime();
+      return tb - ta;
+    })[0] || null
+  );
+}
 
 export default function ChatScreen() {
   const [showModal, setShowModal] = useState(false);
@@ -48,6 +72,37 @@ export default function ChatScreen() {
     const interval = setInterval(poll, 15000);
     return () => clearInterval(interval);
   }, [ticketId, mode]);
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const restoringRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (restoringRef.current || ticketId || !isAuthenticated) return;
+      restoringRef.current = true;
+      (async () => {
+        try {
+          const conversations = await fetchMyHelpConversations();
+          const conversation = pickUnresolvedConversation(conversations);
+          if (conversation?.messages) {
+            setConversation(
+              conversation.messages.map((m) => ({
+                id: m.id,
+                text: m.message,
+                fromUser: (m.senderType || "").toUpperCase() === "USER",
+                sentAt: m.sentAt,
+              })),
+              conversation.id
+            );
+          }
+        } catch (e) {
+          console.warn("[Chat] restore failed", e);
+        } finally {
+          restoringRef.current = false;
+        }
+      })();
+    }, [ticketId, isAuthenticated, setConversation])
+  );
 
   const handleSend = async () => {
     if (!input.trim() || submitting) return;

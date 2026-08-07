@@ -1,4 +1,5 @@
 import { AppState, AppStateStatus } from "react-native";
+import type { Router } from "expo-router";
 import { isTokenExpired } from "./refresh";
 import { clearAuthTokens } from "@/services/api/client";
 import { authApi } from "@/services/api/authApi";
@@ -6,9 +7,9 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 let healthInterval: ReturnType<typeof setInterval> | null = null;
 let appStateSubscription: any = null;
-let navigator: { replace: (path: string) => void } | null = null;
+let navigator: Router | null = null;
 
-export function startAuthHealthMonitor(router: { replace: (path: string) => void }) {
+export function startAuthHealthMonitor(router: Router) {
   navigator = router;
   runHealthCheck();
   healthInterval = setInterval(runHealthCheck, 60_000);

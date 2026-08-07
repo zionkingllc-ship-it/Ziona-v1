@@ -10,6 +10,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
 import { initializeNotificationService, cleanupNotificationService } from "@/src/services/notifications/notificationService";
 import { initializeNotificationStore, cleanupNotificationStore } from "@/src/store/notificationStore";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { NotificationBanner } from "@/src/components/NotificationBanner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
@@ -83,7 +84,11 @@ export default function RootLayout() {
 
   /* -------- DEEP LINK HANDLER -------- */
 
+  const navReady = useRootNavigationReady();
+
   useEffect(() => {
+    if (!navReady) return;
+
     function handleDeepLink(event: { url: string }) {
       const url = event.url;
       const match = url.match(/\/post\/([^/?\s]+)/) || url.match(/\/viewer\/([^/?\s]+)/);
@@ -93,7 +98,7 @@ export default function RootLayout() {
       if (path === lastDeepLinkPath && now - lastDeepLinkTime < 2000) return;
       lastDeepLinkPath = path;
       lastDeepLinkTime = now;
-      router.push(path);
+      router.push(path as any);
     }
 
     const subscription = Linking.addEventListener("url", handleDeepLink);
@@ -105,26 +110,18 @@ export default function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [navReady]);
 
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
 
   /* -------- AUTH HEALTH MONITOR -------- */
 
   useEffect(() => {
-    if (!isBootstrapping && fontsLoaded) {
+    if (!isBootstrapping && fontsLoaded && navReady) {
       startAuthHealthMonitor(router);
       return () => stopAuthHealthMonitor();
     }
-  }, [isBootstrapping, fontsLoaded]);
-
-  if (isBootstrapping) {
-    return null;
-  }
-
-  if (!fontsLoaded) {
-    return null;
-  }
+  }, [isBootstrapping, fontsLoaded, navReady]);
 
   return (
     <SafeAreaProvider>
@@ -140,6 +137,7 @@ export default function RootLayout() {
                 <OfflineProvider>
                 <AuthGate>
                   <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="(auth)" />
                   <Stack.Screen name="viewer" />

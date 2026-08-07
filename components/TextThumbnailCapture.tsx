@@ -1,6 +1,7 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import { captureRef } from "react-native-view-shot";
+import * as FileSystem from "expo-file-system/legacy";
 
 interface Props {
   bgColor: string;
@@ -10,6 +11,10 @@ interface Props {
   size?: number;
 }
 
+const MAX_ATTEMPTS = 4;
+const RETRY_DELAY = 150;
+const MIN_PNG_BYTES = 3000;
+
 export default function TextThumbnailCapture({
   bgColor,
   text,
@@ -18,26 +23,72 @@ export default function TextThumbnailCapture({
   size = 300,
 }: Props) {
   const viewRef = useRef<View>(null);
+  const doneRef = useRef(false);
+  const [ready, setReady] = useState(false);
+
+  async function isBlank(uri: string): Promise<boolean> {
+    try {
+      const info = await FileSystem.getInfoAsync(uri);
+      if (!info.exists) return true;
+      return (info.size ?? 0) < MIN_PNG_BYTES;
+    } catch {
+      return false;
+    }
+  }
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    if (!ready || doneRef.current) return;
+
+    let cancelled = false;
+    let attempt = 0;
+
+    async function tryCapture() {
+      if (cancelled || !viewRef.current || doneRef.current) return;
+
+      attempt += 1;
       try {
-        if (viewRef.current) {
-          const uri = await captureRef(viewRef.current, {
-            format: "png",
-            quality: 0.8,
-            width: size,
-            height: size,
-          });
+        const uri = await captureRef(viewRef.current, {
+          format: "png",
+          quality: 0.9,
+          width: size,
+          height: size,
+        });
+
+        const blank = await isBlank(uri);
+
+        if (!blank) {
+          doneRef.current = true;
           onCaptured(uri);
+          return;
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          setTimeout(tryCapture, RETRY_DELAY);
+        } else {
+          console.warn(
+            "[TextThumbnailCapture] blank capture after retries, keeping live preview",
+            { attempt }
+          );
         }
       } catch (e) {
-        console.warn("[TextThumbnailCapture] capture failed:", e);
+        if (!cancelled && attempt < MAX_ATTEMPTS) {
+          setTimeout(tryCapture, RETRY_DELAY);
+        } else {
+          console.warn("[TextThumbnailCapture] capture failed:", e);
+        }
       }
-    }, 200);
+    }
 
-    return () => clearTimeout(timer);
-  }, []);
+    const t = setTimeout(
+      () => requestAnimationFrame(() => setTimeout(tryCapture, 60)),
+      0
+    );
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [ready, onCaptured, size]);
 
   const displayText = text || "Text Post";
 
@@ -45,6 +96,7 @@ export default function TextThumbnailCapture({
     <View
       ref={viewRef}
       collapsable={false}
+      onLayout={() => setReady(true)}
       style={{
         position: "absolute",
         left: 0,

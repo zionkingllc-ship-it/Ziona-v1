@@ -8,6 +8,7 @@ import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSignupStore } from "@/store/useSignupStore";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
@@ -120,16 +121,17 @@ export default function AuthIndex() {
   const mail = require("@/assets/images/maiIcon.png");
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const navReady = useRootNavigationReady();
 
   useEffect(() => {
     useSignupStore.getState().reset();
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (navReady && isAuthenticated) {
       router.replace("/(tabs)/feed");
     }
-  }, [isAuthenticated]);
+  }, [navReady, isAuthenticated]);
 
   return (
     <View flex={1}>

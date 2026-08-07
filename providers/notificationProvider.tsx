@@ -7,6 +7,7 @@ import {
   registerDeviceToken,
 } from "@/services/graphQL/queries/actions/notifications";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { isIOS } from "@/constants/platform";
 
 let messaging: any = null;
@@ -100,11 +101,12 @@ function pushOnce(path: string) {
   if (path === lastNavPath && now - lastNavTime < 2000) return;
   lastNavPath = path;
   lastNavTime = now;
-  router.push(path);
+  router.push(path as any);
 }
 
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -151,6 +153,8 @@ export default function NotificationProvider({ children }: { children: React.Rea
       const data = response.notification.request.content.data as Record<string, string> | undefined;
       if (!data) return;
 
+      if (!navReady) return;
+
       const { referenceType, referenceId } = data;
 
       if (referenceType === "post" && referenceId) {
@@ -177,7 +181,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
       responseSubscription.remove();
       receivedSubscription.remove();
     };
-  }, []);
+  }, [navReady]);
 
   return <>{children}</>;
 }

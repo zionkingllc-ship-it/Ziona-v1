@@ -92,10 +92,8 @@ export default function CirclePostDetailScreen() {
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const currentUser = useAuthStore((state) => state.user);
   const { isJoined } = useCircleMembership(circleId || "");
-  const { requireMembership, MembershipModal } = useRequireCircleMembership(
-    circleId || "",
-    isJoined,
-  );
+  const { requireMembership, MembershipModal, isAuthenticated } =
+    useRequireCircleMembership(circleId || "", isJoined);
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");
@@ -437,21 +435,23 @@ export default function CirclePostDetailScreen() {
             borderTopColor="#EEE"
           >
             <Pressable
-              onPress={async () => {
-                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                if (status !== "granted") {
-                  setShowPermissionAlert(true);
-                  return;
-                }
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: ["images"],
-                  allowsEditing: true,
-                  quality: 0.8,
-                });
-                if (!result.canceled && result.assets?.[0]?.uri) {
-                  setCommentImage(result.assets[0].uri);
-                }
-              }}
+              onPress={() =>
+                requireMembership(async () => {
+                  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                  if (status !== "granted") {
+                    setShowPermissionAlert(true);
+                    return;
+                  }
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ["images"],
+                    allowsEditing: true,
+                    quality: 0.8,
+                  });
+                  if (!result.canceled && result.assets?.[0]?.uri) {
+                    setCommentImage(result.assets[0].uri);
+                  }
+                })
+              }
               style={{ paddingVertical: 8 }}
             >
               {currentUser?.avatarUrl ? (
@@ -474,22 +474,32 @@ export default function CirclePostDetailScreen() {
             </Pressable>
 
             <TextInput
-              placeholder="Add a comment..."
+              placeholder={
+                isAuthenticated
+                  ? replyingTo
+                    ? `Reply to ${replyingTo.username}...`
+                    : "Add a comment..."
+                  : "Login to comment..."
+              }
               placeholderTextColor="#999"
               value={commentText}
               onChangeText={handleTextChange}
               style={styles.textInput}
               multiline
+              editable={isAuthenticated}
             />
 
             <TouchableOpacity
               onPress={handleCreateComment}
-              disabled={!commentText.trim() || posting}
+              disabled={!isAuthenticated || !commentText.trim() || posting}
               style={{ paddingVertical: 8 }}
             >
               <View
                 style={{
-                  backgroundColor: commentText.trim() && !posting ? themeColors.primary : "#CCC",
+                  backgroundColor:
+                    isAuthenticated && commentText.trim() && !posting
+                      ? themeColors.primary
+                      : "#CCC",
                   paddingHorizontal: 14,
                   paddingVertical: 6,
                   borderRadius: 20,

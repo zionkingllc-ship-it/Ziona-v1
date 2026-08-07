@@ -19,7 +19,6 @@ const CIRCLES_CACHE_KEY = "allCircles";
 
 export default function CirclesSuggestion() {
   const { hp, wp } = useResponsive();
-  const hasSeenIntro = useCircleStore((s) => s.hasSeenIntro);
   const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
   const [allCircles, setAllCircles] = useState<any[]>([]);
@@ -28,12 +27,16 @@ export default function CirclesSuggestion() {
   const [viewedAnchors, setViewedAnchors] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [hasHydrated, setHasHydrated] = useState(useCircleStore.persist.hasHydrated());
-  const showIntro = hasHydrated && !hasSeenIntro;
+  const [introSeen, setIntroSeen] = useState(false);
+  const [introClosed, setIntroClosed] = useState(false);
+  const showIntro = hasHydrated && !introSeen && !introClosed;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   const isMounted = useRef(false);
+  const lastFetchAt = useRef(0);
+  const dataLoadedRef = useRef(false);
 
   useEffect(() => {
     if (hasHydrated) return;
@@ -45,6 +48,18 @@ export default function CirclesSuggestion() {
     }
     return unsub;
   }, [hasHydrated]);
+
+  useEffect(() => {
+    if (hasHydrated) {
+      setIntroSeen(useCircleStore.getState().hasSeenIntro);
+    }
+  }, [hasHydrated]);
+
+  useEffect(() => {
+    if (showIntro) {
+      setSeenIntro();
+    }
+  }, [showIntro, setSeenIntro]);
 
   useFocusEffect(
     useCallback(() => {
@@ -58,15 +73,18 @@ export default function CirclesSuggestion() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadAllData();
+    await loadAllData(true);
     setRefreshing(false);
   }, []);
 
   async function loadCachedCircles() {
-    const cached = await storage.get<any[]>(CIRCLES_CACHE_KEY);
-    if (cached && cached.length > 0) {
-      setAllCircles(cached);
-      setLoading(false);
+    try {
+      const cached = await storage.get<any[]>(CIRCLES_CACHE_KEY);
+      if (cached && cached.length > 0) {
+        setAllCircles(cached);
+      }
+    } catch {
+      // ignore cache read errors
     }
   }
 
@@ -82,9 +100,11 @@ export default function CirclesSuggestion() {
     };
   }, []);
 
-  async function loadAllData() {
+  async function loadAllData(force = false) {
+    if (!force && Date.now() - lastFetchAt.current < 30000) return;
     try {
-      setLoading(true);
+      lastFetchAt.current = Date.now();
+      setLoading(!dataLoadedRef.current);
 
       const [myResult, allResult] = await Promise.allSettled([
         fetchMyCircles(),
@@ -96,6 +116,7 @@ export default function CirclesSuggestion() {
       const mappedAll = (allResult.status === "fulfilled" ? allResult.value : [])
         .map(mapCircle);
 
+      dataLoadedRef.current = true;
       setMyCircles(mappedMine);
       setAllCircles(mappedAll);
       storage.set(CIRCLES_CACHE_KEY, mappedAll);
@@ -163,7 +184,7 @@ export default function CirclesSuggestion() {
     return (
       <CirclesIntro
         onClose={() => {
-          setSeenIntro();
+          setIntroClosed(true);
         }}
       />
     );
@@ -177,7 +198,7 @@ export default function CirclesSuggestion() {
           <Text fontFamily="$body" fontWeight="400" fontSize={16} color={colors.gray} marginTop={hp(1)} marginBottom={hp(1)} textAlign="center" paddingHorizontal={wp(10)}>
             {error}
           </Text>
-          <TouchableOpacity onPress={loadAllData} style={{ marginTop: hp(2) }}>
+          <TouchableOpacity onPress={() => loadAllData(true)} style={{ marginTop: hp(2) }}>
             <XStack gap={6} alignItems="center">
               <Ionicons name="refresh" size={16} color={colors.primary} />
               <Text fontFamily="$body" fontWeight="500" fontSize={14} color={colors.primary}>
@@ -199,7 +220,7 @@ export default function CirclesSuggestion() {
     </YStack>
   );
 
-  if (loading) {
+  if (loading && allCircles.length === 0 && myCircles.length === 0) {
     return (
       <YStack flex={1} paddingTop={hp(6)} backgroundColor={colors.white}>
         <YStack flex={1} justifyContent="center" alignItems="center">

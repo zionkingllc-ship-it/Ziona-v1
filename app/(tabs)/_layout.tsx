@@ -5,6 +5,7 @@ import { fetchAllCircles, fetchMyCircles } from "@/services/graphQL/queries/circ
 import { fetchForYouFeed } from "@/services/feed/feedServices";
 import { getNotifications, getUnreadNotificationCount } from "@/services/graphQL/queries/actions/notifications";
 import { Tabs, useRouter } from "expo-router";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { useEffect, useRef, useState } from "react";
 import { Image } from "expo-image";
 import { View } from "react-native";
@@ -80,16 +81,18 @@ export default function TabsLayout() {
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const tabRouter = useRouter();
+  const navReady = useRootNavigationReady();
   const prevAuth = useRef(isAuthenticated);
   useEffect(() => {
-    if (prevAuth.current && !isAuthenticated) {
+    if (navReady && prevAuth.current && !isAuthenticated) {
       tabRouter.replace("/(auth)");
     }
     prevAuth.current = isAuthenticated;
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navReady]);
 
   return (
     <Tabs
+      initialRouteName="feed"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

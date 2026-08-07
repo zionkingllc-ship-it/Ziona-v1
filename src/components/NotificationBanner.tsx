@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { router } from 'expo-router'
 import { onAppEvent } from '../data/eventBus'
+import { useRootNavigationReady } from '@/hooks/useRootNavigationReady'
 
 interface NotificationBannerData {
   id: string; title: string; body: string; data?: Record<string, unknown>
@@ -12,6 +13,16 @@ export function NotificationBanner() {
   const translateY = useRef(new Animated.Value(-100)).current
   const opacity = useRef(new Animated.Value(0)).current
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingScreenRef = useRef<string | null>(null)
+  const navReady = useRootNavigationReady()
+
+  useEffect(() => {
+    if (navReady && pendingScreenRef.current) {
+      const screen = pendingScreenRef.current
+      pendingScreenRef.current = null
+      router.push(screen as any)
+    }
+  }, [navReady])
 
   useEffect(() => {
     const unsub = onAppEvent('notification_received', (event) => {
@@ -40,9 +51,14 @@ export function NotificationBanner() {
   }
 
   const handlePress = () => {
-    if (!notification?.data?.screen) { hideBanner(); return }
+    const screen = notification?.data?.screen
     hideBanner()
-    setTimeout(() => router.push(notification!.data!.screen as any), 200)
+    if (!screen) return
+    pendingScreenRef.current = screen as string
+    if (navReady) {
+      router.push(screen as any)
+      pendingScreenRef.current = null
+    }
   }
 
   if (!notification) return null

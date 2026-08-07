@@ -13,6 +13,8 @@ export type HelpConversation = {
   status: string;
   messages: HelpMessage[];
   repliedAt: string | null;
+  updatedAt?: string | null;
+  lastMessageAt?: string | null;
 };
 
 export async function getHelpConversation(
@@ -37,4 +39,30 @@ export async function getHelpConversation(
 
   const data = await graphqlRequest(query, { contactId });
   return data?.helpConversation ?? null;
+}
+
+export async function fetchMyHelpConversations(
+  status = ""
+): Promise<HelpConversation[]> {
+  const query = `
+    query MyHelpConversations($status: String!) {
+      myHelpConversations(status: $status) {
+        id
+        status
+        repliedAt
+        updatedAt
+        lastMessageAt
+        messages {
+          id
+          message
+          senderName
+          senderType
+          sentAt
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(query, { status });
+  return data?.myHelpConversations ?? [];
 }

@@ -1,6 +1,5 @@
 import { GradientBackground } from "@/components/layout/GradientBackground";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useCircleStore } from "@/store/circleStore";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
@@ -15,13 +14,20 @@ import Animated, {
 } from "react-native-reanimated";
 import { Image } from "expo-image";
 
+const IMAGES = {
+  main: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&w=480&q=60",
+  topRight:
+    "https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=480&q=60",
+  bottom:
+    "https://images.unsplash.com/photo-1519491050282-cf00c82424b4?auto=format&fit=crop&w=480&q=60",
+};
+
 export default function CirclesIntro({
   onClose,
 }: {
   onClose: () => void;
 }) {
   const { hp, wp, fs, width, isSmallDevice } = useResponsive();
-  const setSeenIntro = useCircleStore((s) => s.setSeenIntro);
 
   const imageWidth = isSmallDevice ? wp(38) : 169;
   const imageHeight = isSmallDevice ? wp(32) : 138;
@@ -82,9 +88,9 @@ export default function CirclesIntro({
     x3.value = withRepeat(withTiming(8, { duration: 4500 }), -1, true);
     y3.value = withRepeat(withTiming(-6, { duration: 4500 }), -1, true);
 
-    Image.prefetch("https://images.unsplash.com/photo-1504052434569-70ad5836ab65");
-    Image.prefetch("https://images.unsplash.com/photo-1529070538774-1843cb3265df");
-    Image.prefetch("https://images.unsplash.com/photo-1519491050282-cf00c82424b4");
+    Image.prefetch(IMAGES.main);
+    Image.prefetch(IMAGES.topRight);
+    Image.prefetch(IMAGES.bottom);
   }, []);
 
   const style1 = useAnimatedStyle(() => ({
@@ -136,10 +142,10 @@ export default function CirclesIntro({
             <View style={{ flex: 1 }}>
               <View style={[styles.backgroundImage, { top: hp(5), backgroundColor: "#E8D5F0" }]}>
                 <Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-                  }}
+                  source={{ uri: IMAGES.main }}
                   style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                  transition={150}
                 />
               </View>
 
@@ -160,10 +166,11 @@ export default function CirclesIntro({
                 >
                   <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#E8D5F0" }}>
                     <Image
-                      source={{
-                        uri: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65",
-                      }}
+                      source={{ uri: IMAGES.main }}
                       style={{ width: "100%", height: "100%", borderRadius }}
+                      contentFit="cover"
+                      placeholder={"#E8D5F0"}
+                      transition={150}
                     />
                   </View>
                 </Animated.View>
@@ -183,10 +190,11 @@ export default function CirclesIntro({
                 >
                   <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#D5E8F0" }}>
                     <Image
-                      source={{
-                        uri: "https://images.unsplash.com/photo-1529070538774-1843cb3265df",
-                      }}
+                      source={{ uri: IMAGES.topRight }}
                       style={{ width: "100%", height: "100%", borderRadius }}
+                      contentFit="cover"
+                      placeholder={"#D5E8F0"}
+                      transition={150}
                     />
                   </View>
                 </Animated.View>
@@ -206,10 +214,11 @@ export default function CirclesIntro({
                 >
                   <View style={{ width: "100%", height: "100%", borderRadius, backgroundColor: "#F0E8D5" }}>
                     <Image
-                      source={{
-                        uri: "https://images.unsplash.com/photo-1519491050282-cf00c82424b4",
-                      }}
+                      source={{ uri: IMAGES.bottom }}
                       style={{ width: "100%", height: "100%", borderRadius }}
+                      contentFit="cover"
+                      placeholder={"#F0E8D5"}
+                      transition={150}
                     />
                   </View>
                 </Animated.View>
