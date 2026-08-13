@@ -13,7 +13,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, TextInput, T
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
 import { storage } from "@/utils/storage";
-import { getViewedStatus } from "@/utils/viewedAnchors";
+import { getViewedStatus, onAnchorViewed } from "@/utils/viewedAnchors";
 
 const CIRCLES_CACHE_KEY = "allCircles";
 
@@ -60,6 +60,13 @@ export default function CirclesSuggestion() {
       setSeenIntro();
     }
   }, [showIntro, setSeenIntro]);
+
+  useEffect(() => {
+    const unsub = onAnchorViewed((id: string) => {
+      setViewedAnchors((prev) => ({ ...prev, [id]: true }));
+    });
+    return unsub;
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
