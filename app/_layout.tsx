@@ -8,7 +8,6 @@ import { startAuthHealthMonitor, stopAuthHealthMonitor } from "@/services/auth/a
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
-import { initializeNotificationService, cleanupNotificationService } from "@/src/services/notifications/notificationService";
 import { initializeNotificationStore, cleanupNotificationStore } from "@/src/store/notificationStore";
 import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { NotificationBanner } from "@/src/components/NotificationBanner";
@@ -43,10 +42,8 @@ export default function RootLayout() {
   useEffect(() => {
     loadCategories();
     initializeAuth();
-    initializeNotificationService();
     initializeNotificationStore();
     return () => {
-      cleanupNotificationService();
       cleanupNotificationStore();
     };
   }, []);
@@ -122,6 +119,10 @@ export default function RootLayout() {
       return () => stopAuthHealthMonitor();
     }
   }, [isBootstrapping, fontsLoaded, navReady]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

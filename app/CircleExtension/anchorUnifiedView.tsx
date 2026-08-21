@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import AnchorImageView from "@/components/circles/AnchorImageView";
@@ -7,10 +6,11 @@ import AnchorVideoPlayer from "@/components/circles/AnchorVideoPlayer";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import { getGradientColors } from "@/lib/anchorUtils";
 import { saveAnchorRef } from "@/utils/anchorRef";
+import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useCircleMembership } from "@/hooks/useCircles";
@@ -166,11 +166,23 @@ export default function AnchorUnifiedView() {
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  useEffect(() => {
+    if (id) markAnchorViewed(id);
+  }, [id]);
+
   const handleActionSelected = (action: string, anchorText?: string) => {
     requireMembership(() => {
       void doActionSelected(action, anchorText);
     });
   };
+
+  const handleClose = useCallback(() => {
+    if (source === "feed" && circleId) {
+      router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
+    } else {
+      router.dismissTo("/(tabs)/circle");
+    }
+  }, [source, circleId, router]);
 
   const doActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
@@ -225,8 +237,8 @@ export default function AnchorUnifiedView() {
       </View>
 
       <View style={styles.closeContainer}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#FFF" />
+        <Pressable onPress={handleClose} style={styles.closeButton}>
+          <Text style={styles.closeText}>Cancel</Text>
         </Pressable>
       </View>
 
@@ -349,12 +361,17 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   closeButton: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 18,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  closeText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   timerContainer: {
     position: "absolute",

@@ -37,11 +37,16 @@ export default function Header({
 }: prop) {
   return (
     <XStack width={"100%"} alignItems="center" paddingLeft={20} minHeight={48}>
-      <ChevronLeft
-        size={24} 
-        color={iconBeforeColor ? iconBeforeColor : colors.black}
+      <Pressable
+        hitSlop={12}
+        accessibilityLabel="Go back"
         onPress={onBackPress || (() => router.back())}
-      />
+      >
+        <ChevronLeft
+          size={24}
+          color={iconBeforeColor ? iconBeforeColor : colors.black}
+        />
+      </Pressable>
       <XStack flex={1} justifyContent="center" alignItems="center" marginRight={44}>
         <Text
           fontFamily={headerFontFamily}

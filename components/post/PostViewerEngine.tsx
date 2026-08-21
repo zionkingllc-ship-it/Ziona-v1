@@ -24,6 +24,9 @@ type Props = {
   isFetchingNextPage?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  autoOpenComments?: boolean;
+  scrollToTopSignal?: number;
+  scrollToPostId?: string;
 };
 
 function PostViewerEngineComponent({
@@ -38,6 +41,9 @@ function PostViewerEngineComponent({
   isFetchingNextPage,
   refreshing,
   onRefresh,
+  autoOpenComments = false,
+  scrollToTopSignal,
+  scrollToPostId,
 }: Props) {
   const flatListRef = useRef<FlatList<FeedItem>>(null);
 
@@ -103,6 +109,26 @@ function PostViewerEngineComponent({
     }
     setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
   }, [initialIndex, containerHeight]);
+
+  // External signal (e.g. "feed_scroll_to_top" after upload) → jump to the top.
+  const lastScrollSignal = useRef<number>(0);
+  useEffect(() => {
+    if (!scrollToTopSignal || scrollToTopSignal === lastScrollSignal.current) return;
+    lastScrollSignal.current = scrollToTopSignal;
+    if (!containerHeight || !mergedPosts.length) return;
+
+    let targetIndex = 0;
+    if (scrollToPostId) {
+      const index = posts.findIndex((p) => p.id === scrollToPostId);
+      if (index >= 0) targetIndex = index;
+    }
+
+    flatListRef.current?.scrollToIndex({ index: targetIndex, animated: false });
+    setActivePostId(
+      mergedPosts[targetIndex] ? `${mergedPosts[targetIndex].id}-${targetIndex}` : null,
+    );
+    setPausedPostId(null);
+  }, [scrollToTopSignal, containerHeight, mergedPosts, posts, scrollToPostId]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -174,10 +200,11 @@ function PostViewerEngineComponent({
           screenHeight={containerHeight}
           screenWidth={containerWidth}
           tabBarHeight={tabBarHeight}
+          autoOpenComments={autoOpenComments && isActive}
         />
       );
     },
-    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight, isScreenFocused],
+    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight, isScreenFocused, autoOpenComments],
   );
 
   const getItemLayout = useCallback(

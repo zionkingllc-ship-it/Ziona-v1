@@ -57,4 +57,5 @@ This is caused by React Native 0.84+'s pre-compiled RN core distribution conflic
 - [ ] **OG meta tags / web fallback** — `https://ziona.app/post/{id}` needs a web page with OG tags for rich link previews in WhatsApp/iMessage (backend/ops)
 - [ ] **Location edit on profile** — Backend supports `updateProfile(location: String)`, no UI on `app/(tabs)/profile/edit/index.tsx` yet
 - [ ] **`AccountDetails` GraphQL query** — Backend has `query { accountDetails }` returning `{ memberSince, memberSinceDate, location, accountStatus }`, but frontend has no client-side query for it (About page uses `useUserProfile` instead)
+- [ ] **Member avatar stacks lack initials** — `CircleCard`, `CircleFeedNameRow`, and `CirclePromoCard` receive only avatar URL strings (`avatars`/`memberAvatars: [String]`), so they fall back to a colored circle instead of initials. Fix requires backend to return member usernames alongside avatar URLs.
 

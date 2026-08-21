@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
@@ -105,7 +104,7 @@ function createSlides(
 
 export default function AnchorTextView() {
   const router = useRouter();
-  const { text, colors, bibleReference, bibleText, expiresAt, circleId, id, anchorImage, expired, likedCount, viewerLiked } =
+  const { text, colors, bibleReference, bibleText, expiresAt, circleId, id, anchorImage, expired, likedCount, viewerLiked, source } =
     useLocalSearchParams<{
       text?: string;
       colors?: string;
@@ -118,6 +117,7 @@ export default function AnchorTextView() {
       expired?: string;
       likedCount?: string;
       viewerLiked?: string;
+      source?: string;
     }>();
   const initialLiked = viewerLiked === "1";
   const initialCount = parseInt(likedCount || "0", 10);
@@ -138,14 +138,15 @@ export default function AnchorTextView() {
     });
   };
 
-  const doActionSelected = async (action: string, anchorText?: string) => {
-    const prompt =
-      action === "pray"
-        ? "How can we pray for you?"
-        : action === "encouraged"
-          ? "What encouraged you?"
-          : "What's on your mind?";
+  const handleClose = useCallback(() => {
+    if (source === "feed" && circleId) {
+      router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
+    } else {
+      router.dismissTo("/(tabs)/circle");
+    }
+  }, [source, circleId, router]);
 
+  const doActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
     await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
@@ -197,8 +198,8 @@ export default function AnchorTextView() {
       </View>
 
       <View style={styles.closeContainer}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#FFF" />
+        <Pressable onPress={handleClose} style={styles.closeButton}>
+          <Text style={styles.closeText}>Cancel</Text>
         </Pressable>
       </View>
 
@@ -320,12 +321,17 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   closeButton: {
-    width: 36,
-    height: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 18,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  closeText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   timerContainer: {
     position: "absolute",
@@ -350,7 +356,7 @@ const styles = StyleSheet.create({
   },
   labelBadge: {
     borderWidth: 1,
-    borderColor: "#CCC",
+    borderColor: "#69586E",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,

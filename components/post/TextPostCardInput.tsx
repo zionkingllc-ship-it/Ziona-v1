@@ -155,7 +155,7 @@ export default function TextPostCardInput({
           )}
 
           <View flex={1} justifyContent="space-between">
-            {showInput && (
+            {showInput ? (
               <TextInput
                 value={value}
                 onChangeText={(text) => {
@@ -170,8 +170,6 @@ export default function TextPostCardInput({
 
                   onChangeText(text);
                 }}
-                placeholder="Add your thoughts to Bible Passage"
-                placeholderTextColor={colors.placeHolderText}
                 multiline
                 style={{
                   flex: 1,
@@ -181,7 +179,17 @@ export default function TextPostCardInput({
                   textAlignVertical: "top",
                 }}
               />
-            )}
+            ) : value ? (
+              <Text
+                flex={1}
+                fontSize={fs(17)}
+                color={colors.black}
+                lineHeight={fs(25)}
+                fontFamily="$body"
+              >
+                {value}
+              </Text>
+            ) : null}
 
             <Text
               alignSelf="flex-end"

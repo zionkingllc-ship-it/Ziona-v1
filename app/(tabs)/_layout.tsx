@@ -50,9 +50,9 @@ function ProfileTabIcon({ avatarUrl, username }: { avatarUrl?: string | null; us
 export default function TabsLayout() {
   const homeActive = require("@/assets/images/homeTabB.png");
   const homeInActive = require("@/assets/images/HomeTabA.png");
-  const discoverActive = require("@/assets/images/discoverTabB.png");
+  const discoverActive = require("@/assets/images/discover-active.png");
   const discoverInActive = require("@/assets/images/discoverTabA.png");
-  const createActive = require("@/assets/images/createTabsB.png");
+  const createActive = require("@/assets/images/create-active.jpg");
   const createInActive = require("@/assets/images/createTabsA.png");
   const circleInActive = require("@/assets/images/circleTabA.png");
   const circleActive = require("@/assets/images/circleTabB.png");

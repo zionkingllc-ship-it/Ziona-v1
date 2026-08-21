@@ -8,6 +8,8 @@ type StartDraftType = "TEXT" | "MEDIA" | "BIBLE";
 interface CreatePostState {
   draft: CreatePostDraft | null;
 
+  mediaError: string;
+
   startDraft: (type: StartDraftType, mediaType?: "IMAGE" | "VIDEO") => void;
 
   setText: (text: string) => void;
@@ -20,6 +22,8 @@ interface CreatePostState {
 
   setCaption: (caption: string) => void;
 
+  setMediaError: (message: string) => void;
+
   resetDraft: () => void;
 }
 
@@ -27,6 +31,8 @@ const MAX_LENGTH = 500;
 
 export const useCreatePostStore = create<CreatePostState>((set) => ({
   draft: null,
+
+  mediaError: "",
 
   /* =========================
      START DRAFT
@@ -182,8 +188,14 @@ export const useCreatePostStore = create<CreatePostState>((set) => ({
     }),
 
   /* =========================
+     MEDIA ERROR
+  ========================= */
+
+  setMediaError: (message) => set({ mediaError: message }),
+
+  /* =========================
      RESET
   ========================= */
 
-  resetDraft: () => set({ draft: null }),
+  resetDraft: () => set({ draft: null, mediaError: "" }),
 }));

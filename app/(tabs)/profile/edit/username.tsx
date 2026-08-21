@@ -7,6 +7,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { updateUsername, UpdateUsernameResponse } from "@/services/profile/profileService";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -14,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Input, Text, XStack, YStack } from "tamagui";
 
 export default function EditUsernameScreen() {
+  const USERNAME_CHANGE_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
   const router = useRouter();
   const { hp } = useResponsive();
   const queryClient = useQueryClient();
@@ -28,7 +30,60 @@ export default function EditUsernameScreen() {
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorTitle, setErrorTitle] = useState("");
-  const [rateLimitDate, setRateLimitDate] = useState<string | null>(null);
+  const [nextChangeDate, setNextChangeDate] = useState<string | null>(null);
+  const [nextChangeTimestamp, setNextChangeTimestamp] = useState<number | null>(null);
+
+  const dateKey = userId ? `username-change-next-date:${userId}` : null;
+
+  const formatDate = (timestamp: number) =>
+    new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+      .format(new Date(timestamp))
+      .replace(",", "");
+
+  useEffect(() => {
+    if (!dateKey) return;
+
+    storage.get<{ timestamp: number }>(dateKey).then((saved) => {
+      if (!saved?.timestamp) {
+        const initialTimestamp = Date.now() + USERNAME_CHANGE_INTERVAL_MS;
+        setNextChangeTimestamp(initialTimestamp);
+        setNextChangeDate(formatDate(initialTimestamp));
+        storage.set(dateKey, { timestamp: initialTimestamp });
+        return;
+      }
+
+      if (saved.timestamp > Date.now()) {
+        setNextChangeTimestamp(saved.timestamp);
+        setNextChangeDate(formatDate(saved.timestamp));
+      } else {
+        storage.remove(dateKey);
+      }
+    });
+  }, [dateKey]);
+
+  useEffect(() => {
+    if (!nextChangeTimestamp) return;
+
+    const remaining = nextChangeTimestamp - Date.now();
+    if (remaining <= 0) {
+      setNextChangeTimestamp(null);
+      setNextChangeDate(null);
+      if (dateKey) storage.remove(dateKey);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setNextChangeTimestamp(null);
+      setNextChangeDate(null);
+      if (dateKey) storage.remove(dateKey);
+    }, remaining);
+
+    return () => clearTimeout(timer);
+  }, [dateKey, nextChangeTimestamp]);
 
   const mutation = useMutation({
     mutationFn: updateUsername,
@@ -36,18 +91,23 @@ export default function EditUsernameScreen() {
       if (res.success && userId) {
         queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
         setSuccessVisible(true);
-        setRateLimitDate(null);
-      } else if (res.errorCode === "RATE_LIMIT_EXCEEDED") {
-        const dateMatch = res.message?.match(/Next change on ([\w\s\d,]+)\./);
-        if (dateMatch) {
-          setRateLimitDate(dateMatch[1]);
+        const nextChangeTimestamp = Date.now() + USERNAME_CHANGE_INTERVAL_MS;
+        setNextChangeTimestamp(nextChangeTimestamp);
+        setNextChangeDate(formatDate(nextChangeTimestamp));
+        if (dateKey) {
+          storage.set(dateKey, { timestamp: nextChangeTimestamp });
         }
-        setErrorTitle("Cannot Update Username");
-        setErrorMessage(res.message || "You're not allowed to change your username yet.");
-        setErrorVisible(true);
       }
     },
     onError: (e: any) => {
+      if (e?.rateLimitDate) {
+        setNextChangeDate(e.rateLimitDate.replace(/,/g, ""));
+        const parsedDate = Date.parse(e.rateLimitDate);
+        if (dateKey && !Number.isNaN(parsedDate)) {
+          setNextChangeTimestamp(parsedDate);
+          storage.set(dateKey, { timestamp: parsedDate });
+        }
+      }
       const feedback = getNetworkModalCopy(e, e?.message || "Failed to update username");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
@@ -77,22 +137,22 @@ export default function EditUsernameScreen() {
 
       <YStack flex={1} padding="$4" gap="$4">
         <Text fontSize={16} fontFamily={"$body"}>
-          Your username is unique and used to identify you.
+          Your username is used to identify you. You’re allowed one username change every 30 days.
         </Text>
 
         <YStack
           borderWidth={0.5}
-          borderColor={colors.border}
-          background={colors.borderBackground}
-          paddingVertical={4}
+          borderColor="#EEEBEF"
+          backgroundColor="#FAF9FA"
+          paddingVertical={6}
           borderRadius={8}
           height={hp(10)}
         >
           <Text
-            color={colors.text}
+            color={colors.placeHolderText}
             fontSize={13}
             fontFamily={"$body"}
-            left={10}
+            left={17}
           >
             Username
           </Text>
@@ -106,35 +166,36 @@ export default function EditUsernameScreen() {
             fontFamily={"$body"}
             marginTop={-4}
             autoCapitalize="none"
-            disabled={!!rateLimitDate}
+            disabled={!!nextChangeDate}
             maxLength={24}
           />
         </YStack>
 
         <XStack justifyContent="flex-end" marginTop={-8}>
-          <Text fontFamily="$body" fontSize={13} color={colors.termsText}>
+          <Text fontFamily="$body" fontSize={13} color={colors.placeHolderText}>
             {username.length}/24
           </Text>
         </XStack>
 
-        <Text
-          alignSelf="center"
-          fontFamily={"$body"}
-          fontWeight={"400"}
-          fontSize={13}
-          color={rateLimitDate ? colors.warningText : colors.tertiary}
-        >
-          {rateLimitDate
-            ? `You can change your username again on ${rateLimitDate}`
-            : "Username changes are limited to once every 30 days"}
-        </Text>
+        {nextChangeDate && (
+          <Text
+            alignSelf="center"
+            fontFamily={"$body"}
+            fontWeight={"400"}
+            fontSize={13}
+            color={colors.placeHolderText}
+          >
+            Next change on <Text color={colors.black}>{nextChangeDate}</Text>
+          </Text>
+        )}
 
         <SimpleButton
           onPress={handleSave}
           text="Save"
           textColor="white"
           color={colors.primary}
-          disabled={mutation.isPending || !!rateLimitDate}
+          marginTop={20}
+          disabled={mutation.isPending || !!nextChangeDate}
         />
       </YStack>
 

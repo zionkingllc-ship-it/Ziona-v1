@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
 });
 
 export default function PostViewerScreen() {
-  const { source, index, postId, categoryId, slug, filter, userId: userIdParam } = useLocalSearchParams<{
+  const { source, index, postId, categoryId, slug, filter, userId: userIdParam, openComments } = useLocalSearchParams<{
     source?: string;
     index?: string;
     postId: string;
@@ -38,6 +38,7 @@ export default function PostViewerScreen() {
     slug?: string;
     filter?: string;
     userId?: string;
+    openComments?: string;
   }>();
 
   const isLiked = source === "liked";
@@ -325,6 +326,7 @@ export default function PostViewerScreen() {
             containerWidth={containerWidth}
             tabBarHeight={0}
             isScreenFocused={isFocused}
+            autoOpenComments={openComments === "1"}
           />
         )}
 
@@ -333,6 +335,7 @@ export default function PostViewerScreen() {
           <TouchableOpacity
             accessibilityLabel="Go back"
             onPress={handleBackPress}
+            hitSlop={8}
             style={[styles.backBtn, { top: insets.top + 8 }]}
           >
             <ChevronLeft size={28} color={colors.white} />

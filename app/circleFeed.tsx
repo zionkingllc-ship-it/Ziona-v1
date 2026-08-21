@@ -67,6 +67,14 @@ type CirclePost = {
   id: string;
   text?: string;
   image?: string;
+  media?: {
+    id?: string;
+    url?: string;
+    type?: string;
+    thumbnailUrl?: string;
+  }[];
+  mediaUrl?: string;
+  mediaType?: string;
   createdAt: string;
   likes: number;
   comments: number;
@@ -160,10 +168,17 @@ function mapCircleFeedData(data: any): CircleFeedData {
       : undefined,
     posts: data.posts
       ? data.posts.map((p: any) => {
+          const media = (p.media || []).map((m: any) => ({
+            id: m.id,
+            url: m.url,
+            type: m.type,
+            thumbnailUrl: m.thumbnailUrl,
+          }));
           return {
           id: p.id,
           text: p.text || undefined,
-          image: (p.mediaType === "VIDEO" ? p.media?.[0]?.thumbnailUrl : p.media?.[0]?.thumbnailUrl || p.media?.[0]?.url || p.mediaUrl) || undefined,
+          media,
+          image: (media[0]?.thumbnailUrl || media[0]?.url || p.mediaUrl) || undefined,
           mediaUrl: p.mediaUrl || undefined,
           mediaType: p.mediaType || undefined,
           createdAt: p.createdAt,
@@ -285,6 +300,10 @@ export default function CircleFeedScreen() {
   const [anchorFilter, setAnchorFilter] = useState("Today");
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
+  const lastAnchorRef = useRef<{
+    circleId: string;
+    anchor: ActiveAnchor;
+  } | null>(null);
 
 
 
@@ -304,10 +323,16 @@ export default function CircleFeedScreen() {
 
   const displayAnchor = useMemo(() => {
     if (anchorFilter === "Today") {
-      return activeAnchorData ?? circle?.activeAnchor ?? undefined;
+      const liveAnchor = activeAnchorData ?? circle?.activeAnchor ?? undefined;
+      if (liveAnchor) {
+        lastAnchorRef.current = { circleId, anchor: liveAnchor };
+      }
+      return lastAnchorRef.current?.circleId === circleId
+        ? liveAnchor ?? lastAnchorRef.current.anchor
+        : liveAnchor;
     }
     return anchorByDateData ?? undefined;
-  }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData]);
+  }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData, circleId]);
 
   const anchorExpired = useMemo(() => {
     if (!displayAnchor?.expiresAt) return false;

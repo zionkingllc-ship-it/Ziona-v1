@@ -230,11 +230,13 @@ export default function LoginIndex() {
           <XStack
             alignItems="center"
             justifyContent="center"
-            left={0}
-            right={0}
             padding={0}
-            width={"100%"}
+            width="auto"
+            maxWidth={Math.min(wp(92), 420)}
+            alignSelf="center"
             flexWrap="wrap"
+            columnGap={4}
+            rowGap={2}
           >
             <Text
               fontSize={fs(13)}
@@ -270,7 +272,7 @@ export default function LoginIndex() {
               lineHeight={fs(18)}
             >
               {" "}
-              and confirm that you have read Ziona's{" "}
+              and confirm that you have read Ziona&apos;s{" "}
             </Text>
             <Pressable onPress={() => {
               router.push("/settings/terms/privacy");
@@ -286,9 +288,7 @@ export default function LoginIndex() {
                 Privacy Policy
               </InlineUnderlineText>
             </Pressable>
-            <Text> </Text>
             <Text>and</Text>
-            <Text> </Text>
             <Pressable onPress={() => {
               router.push("/settings/terms/community");
             }}>
@@ -306,7 +306,7 @@ export default function LoginIndex() {
           </XStack>
 
           <XStack alignItems="center" justifyContent="center">
-            <Text fontSize={fs(14)}>Don't have an account? </Text>
+            <Text fontSize={fs(14)}>Don&apos;t have an account? </Text>
             <Pressable onPress={() => router.replace("/(auth)")}>
               <Text
                 color={colors.primary}

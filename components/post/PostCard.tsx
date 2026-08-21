@@ -6,9 +6,10 @@ import { FeedPost } from "@/types/feedTypes";
 import { MoreHorizontal } from "@tamagui/lucide-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Svg, { Path } from "react-native-svg";
 import { Image as ExpoImage } from "expo-image";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
@@ -33,7 +34,6 @@ import { useReportContent } from "@/hooks/useReportContent";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 
 /* ICONS */
-const likeIcon = require("@/assets/images/likeIcon.png");
 const likeIconActive = require("@/assets/images/likeIcon2.png");
 const commentIcon = require("@/assets/images/commentIcon.png");
 const bookmarkIcon = require("@/assets/images/bookmarkIcon.png");
@@ -48,6 +48,7 @@ type Props = {
   onTogglePlay?: () => void;
   screenWidth: number;
   tabBarHeight: number;
+  autoOpenComments?: boolean;
 };
 
 function getInitials(name?: string): string {
@@ -104,6 +105,7 @@ function PostCardComponent({
   onTogglePlay,
   screenWidth,
   tabBarHeight,
+  autoOpenComments = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState(false);
@@ -135,7 +137,16 @@ function PostCardComponent({
     ? effectiveBaseCount + (likedState ? 1 : -1)
     : effectiveBaseCount;
   const commentCount = post.stats?.commentsCount ?? 0;
-  const savedCount = post.stats?.savesCount ?? 0;
+
+  const savedState = usePostActionsStore(
+    (s) => s.savedPosts[post.id] ?? post.viewerState?.saved ?? false,
+  );
+  const baseSaved = post.viewerState?.saved ?? false;
+  const baseSavesCount = Number(post.stats?.savesCount) || 0;
+  const effectiveBaseSavesCount = (baseSaved && baseSavesCount === 0) ? 1 : baseSavesCount;
+  const savedCount = savedState !== baseSaved
+    ? effectiveBaseSavesCount + (savedState ? 1 : -1)
+    : effectiveBaseSavesCount;
 
   const { folders, getSavedFolderIds } = useBookmarksStore();
   const savedFolderIds = getSavedFolderIds(post.id);
@@ -194,6 +205,14 @@ function PostCardComponent({
   const handleComment = useCallback(() => {
     requireAuth(() => setCommentsVisible(true));
   }, [requireAuth, setCommentsVisible]);
+
+  const autoOpenedCommentsRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenComments && !autoOpenedCommentsRef.current) {
+      autoOpenedCommentsRef.current = true;
+      requireAuth(() => setCommentsVisible(true));
+    }
+  }, [autoOpenComments, requireAuth]);
 
   const handleBookmark = useCallback(() => {
     requireAuth(openFolders);
@@ -374,12 +393,21 @@ function PostCardComponent({
           <YStack gap="$4">
             <YStack alignItems="center">
               <GestureDetector gesture={Gesture.Native()}>
-                <Pressable onPress={handleLike}>
-                  <Image
-                    source={likedState ? likeIconActive : likeIcon}
-                    width={30}
-                    height={30}
-                  />
+                <Pressable onPress={handleLike} style={{ transform: [{ translateX: 4 }] }}>
+                  {likedState ? (
+                    <Image
+                      source={likeIconActive}
+                      width={38}
+                      height={38}
+                    />
+                  ) : (
+                    <Svg width={38} height={38} viewBox="64 128 384 384">
+                      <Path
+                        d="M256 448a32 32 0 01-18-5.57c-78.59-53.35-112.62-89.93-131.39-121.88C88.69 289.2 80 252.62 80 224c0-44.18 34.82-80 78-80 26.63 0 52.23 13.81 66.79 36.22 11.62-18.72 31-36.22 63.21-36.22 43.18 0 78 35.82 78 80 0 28.62-8.69 65.2-26.61 96.59-18.77 31.95-52.8 68.53-131.39 121.88A32 32 0 01256 448z"
+                        fill="#F6EAFA"
+                      />
+                    </Svg>
+                  )}
                 </Pressable>
               </GestureDetector>
               {!hideLikeCount && (
@@ -586,6 +614,7 @@ export const PostCard = React.memo(
     prev.post.id === next.post.id &&
     prev.isPlaying === next.isPlaying &&
     prev.isActive === next.isActive &&
+    prev.autoOpenComments === next.autoOpenComments &&
     prev.post.viewerState?.liked === next.post.viewerState?.liked &&
     prev.screenHeight === next.screenHeight &&
     prev.screenWidth === next.screenWidth &&

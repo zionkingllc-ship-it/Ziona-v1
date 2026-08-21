@@ -32,6 +32,7 @@ export default function CreateUsername() {
   const [username, setUsername] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
@@ -40,12 +41,13 @@ export default function CreateUsername() {
   const isValidUsername = username.trim().length > 0;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : isValidUsername ? true : false;
+    attempted ? (isValidUsername ? true : false) : undefined;
 
 const flow = useSignupStore((s) => s.flow);
 
 const handleSubmit = async () => {
   if (!isValidUsername) {
+    setAttempted(true);
     return;
   }
 
@@ -154,9 +156,16 @@ const handleSubmit = async () => {
               setUsername(value);
               setSelectedSuggestion(null);
               setError(null);
+              setAttempted(false);
             }}
           />
         </YStack>
+
+        {attempted && !isValidUsername && (
+          <Text fontSize={fs(13)} color={colors.errorText} alignSelf="flex-start">
+            Enter a username
+          </Text>
+        )}
 
         {/* USERNAME SUGGESTIONS */}
 
@@ -199,7 +208,7 @@ const handleSubmit = async () => {
           text="Sign up"
           textColor={colors.white}
           color={colors.primary}
-          disabled={!isValidUsername || isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{
             width: "100%",

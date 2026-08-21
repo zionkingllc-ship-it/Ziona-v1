@@ -48,7 +48,7 @@ export default function CircleFeedBanner({
   return (
     <View style={{ position: 'relative' }}>
       <View style={{ position: 'absolute', top: 38, left: 20, zIndex: 10 }}>
-        <BackButton/>
+        <BackButton onBack={onBack}/>
       </View>
 
       <Animated.View style={{ height: bannerHeight, overflow: 'hidden' }}>
@@ -65,6 +65,7 @@ export default function CircleFeedBanner({
         )}
 
         <Animated.View
+          pointerEvents="none"
           style={{
             position: 'absolute',
             top: 0,
@@ -77,6 +78,7 @@ export default function CircleFeedBanner({
         />
 
         <Animated.View
+          pointerEvents="none"
           style={{
             position: 'absolute',
             top: 0,

@@ -3,6 +3,7 @@ import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWra
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
+import OtpContainer from "@/components/auth/OtpContainer";
 import colors from "@/constants/colors";
 import { useChangePassword } from "@/hooks/useAccountSettings";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
@@ -29,12 +30,22 @@ export default function ChangePasswordScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
 
+  /* OTP Verification state */
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(6).fill(""));
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
   const isValid =
     newPassword.length >= 8 &&
     newPassword === confirmPassword &&
     currentPassword.length > 0;
 
   const handleSubmit = async () => {
+    if (!otpVerified) {
+      setError("Please complete OTP verification first");
+      setErrorModalVisible(true);
+      return;
+    }
     if (!isValid || changePassword.isPending) return;
 
     try {

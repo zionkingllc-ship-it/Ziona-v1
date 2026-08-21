@@ -17,6 +17,7 @@ interface Props {
   withButton?: boolean;
   buttonText?: string;
   buttonDisabled?: boolean;
+  buttonLoading?: boolean;
   buttonColor?: any;
   buttonTextColor?: string;
   buttonTextSize?: any;
@@ -34,6 +35,7 @@ export default function SuccessModal({
   type = "success",
   withButton = false,
   buttonDisabled = false,
+  buttonLoading = false,
   buttonColor = colors.primary,
   buttonText = "submit",
   buttonTextColor = colors.white,
@@ -87,6 +89,7 @@ export default function SuccessModal({
             onPress={onButtonPress}
             color={buttonColor}
             disabled={buttonDisabled}
+            loading={buttonLoading}
             style={buttonStyle}
           />
         )}

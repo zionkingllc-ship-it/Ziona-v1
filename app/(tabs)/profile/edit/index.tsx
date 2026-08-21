@@ -113,8 +113,11 @@ export default function EditProfileScreen() {
 
         {/* Avatar */}
         <YStack alignItems="center" gap="$3" paddingVertical={19}>
-          <Pressable onPress={handlePickImage}>
-            <Avatar circular size="$8">
+          <Pressable
+            onPress={handlePickImage}
+            style={{ alignItems: "center", justifyContent: "center" }}
+          >
+            <Avatar circular width={70} height={70}>
               {localAvatar || (user?.avatarUrl && !avatarLoadFailed) ? (
                 <Avatar.Image
                   source={{ uri: localAvatar || user?.avatarUrl || "" }}
@@ -136,6 +139,7 @@ export default function EditProfileScreen() {
             <Text
               fontFamily="$body"
               fontWeight="400"
+              fontSize={13}
               color={colors.primary}
               marginTop={6}
             >
@@ -145,18 +149,25 @@ export default function EditProfileScreen() {
         </YStack>
 
         {/* Info Section */}
-        <YStack flex={1} gap="$1" padding={20}>
-          <EditableFieldRow
-            label="Name"
-            value={isLoading ? "fetching..." : user?.fullName || ""}
-            onPress={() => router.push("/profile/edit/name")}
-          />
+        <YStack flex={1} gap={0} padding={20}>
+          <YStack
+            backgroundColor="#FAF9FA"
+            borderRadius={16}
+            overflow="hidden"
+          >
+            <EditableFieldRow
+              label="Name"
+              value={isLoading ? "fetching..." : user?.fullName || ""}
+              onPress={() => router.push("/profile/edit/name")}
+            />
 
-          <EditableFieldRow
-            label="Username"
-            value={isLoading ? "fetching..." : user?.username || ""}
-            onPress={() => router.push("/profile/edit/username")}
-          />
+            <EditableFieldRow
+              label="Username"
+              value={isLoading ? "fetching..." : user?.username || ""}
+              onPress={() => router.push("/profile/edit/username")}
+              marginTop={8}
+            />
+          </YStack>
 
           <Text
             fontFamily="$body"
@@ -170,6 +181,7 @@ export default function EditProfileScreen() {
           <YStack 
             backgroundColor={"#FAF9FA"}
             justifyContent="flex-start"
+            marginTop={12}
             paddingVertical={12}
             paddingHorizontal={16}
             borderRadius={16}
@@ -177,7 +189,10 @@ export default function EditProfileScreen() {
             <Text fontFamily="$body" fontSize={16} fontWeight="400" width="30%">
               Bio
             </Text>
-            <Pressable onPress={() => router.push("/profile/edit/bio")}>
+            <Pressable
+              onPress={() => router.push("/profile/edit/bio")}
+              style={{ marginTop: 8 }}
+            >
               <XStack
                 alignItems="center"
                 paddingVertical={12}

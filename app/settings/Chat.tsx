@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import colors from "@/constants/colors";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 
 const RESOLVED_STATUSES = new Set([
   "RESOLVED",
@@ -25,9 +26,9 @@ function pickUnresolvedConversation(conversations: HelpConversation[]): HelpConv
   const open = conversations.filter(
     (c) => !RESOLVED_STATUSES.has((c.status || "").trim().toUpperCase())
   );
-  const pool = open.length > 0 ? open : conversations;
+  if (!open.length) return null;
   return (
-    [...pool].sort((a, b) => {
+    [...open].sort((a, b) => {
       const ta = new Date(a.updatedAt || a.lastMessageAt || 0).getTime();
       const tb = new Date(b.updatedAt || b.lastMessageAt || 0).getTime();
       return tb - ta;
@@ -37,10 +38,12 @@ function pickUnresolvedConversation(conversations: HelpConversation[]): HelpConv
 
 export default function ChatScreen() {
   const [showModal, setShowModal] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const listRef = useRef<FlatList<any>>(null);
   const { mode, messages, ticketId, setConversation, addMessage, mergeServerMessages, clear } = useChatStore();
 
@@ -143,13 +146,25 @@ export default function ChatScreen() {
   };
 
   const handleResolved = async () => {
+    if (!ticketId || resolving) return;
+    setResolving(true);
     try {
-      if (ticketId) {
-        await resolveHelpConversation(ticketId);
-      }
-    } catch { console.warn("[Chat] resolve conversation failed"); }
-    clear();
+      await resolveHelpConversation(ticketId);
+      clear();
+      setShowConfirm(false);
+      setShowModal(true);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to resolve conversation. Please try again.");
+      setShowConfirm(false);
+      setShowError(true);
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleSuccessClose = () => {
     setShowModal(false);
+    router.back();
   };
 
   return (
@@ -208,12 +223,14 @@ export default function ChatScreen() {
 
               <XStack justifyContent="center" paddingVertical={8}>
                 <Pressable
-                  onPress={() => setShowModal(true)}
+                  onPress={() => setShowConfirm(true)}
+                  disabled={resolving}
                   style={{
                     backgroundColor: colors.primary,
                     borderRadius: 20,
                     paddingVertical: 10,
                     paddingHorizontal: 20,
+                    opacity: resolving ? 0.6 : 1,
                   }}
                 >
                   <XStack gap={6} alignItems="center">
@@ -308,15 +325,31 @@ export default function ChatScreen() {
       </KeyboardAvoidingView>
 
       <SuccessModal
+        visible={showConfirm}
+        onClose={() => {
+          if (!resolving) setShowConfirm(false);
+        }}
+        title="Are you sure you want to resolve this conversation?"
+        message="Resolving this will close this conversation."
+        type="warning"
+        autoClose={false}
+        withButton
+        buttonText="Resolve"
+        buttonDisabled={resolving}
+        buttonLoading={resolving}
+        onButtonPress={handleResolved}
+      />
+
+      <SuccessModal
         visible={showModal}
-        onClose={handleResolved}
-        title="Support ticket closed"
-        message="Your conversation has been marked as resolved. We'll be in touch if we need more information."
+        onClose={handleSuccessClose}
+        title="Conversation Resolved"
+        message="This conversation has been closed, but you can start a new one anytime if you need more help"
         type="success"
         autoClose={false}
         withButton
         buttonText="Got it"
-        onButtonPress={handleResolved}
+        onButtonPress={handleSuccessClose}
       />
 
       <SuccessModal

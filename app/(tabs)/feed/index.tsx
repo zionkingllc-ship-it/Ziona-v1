@@ -35,6 +35,7 @@ import { View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePostActionsStore } from "@/store/usePostActionStore";
+import { onAppEvent } from "@/src/data/eventBus";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -59,6 +60,27 @@ export default function Feed() {
   const isFocused = useIsFocused();
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const { data: unreadCount } = useUnreadCount();
+  const [scrollToTopSignal, setScrollToTopSignal] = useState(0);
+  const [pendingScrollPostId, setPendingScrollPostId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let clearTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = onAppEvent("feed_scroll_to_top", (event) => {
+      setScrollToTopSignal((prev) => prev + 1);
+      const postId = event.data?.postId;
+      if (typeof postId === "string" && postId) {
+        setPendingScrollPostId(postId);
+        if (clearTimer) clearTimeout(clearTimer);
+        clearTimer = setTimeout(() => setPendingScrollPostId(null), 4000);
+      }
+    });
+    return () => {
+      if (clearTimer) clearTimeout(clearTimer);
+      unsubscribe();
+    };
+  }, []);
 
   const onRefreshFeed = useCallback(async () => {
     setRefreshingFeed(true);
@@ -138,8 +160,16 @@ export default function Feed() {
         }
       });
 
+    if (pendingScrollPostId) {
+      const index = uniquePosts.findIndex((p) => p.id === pendingScrollPostId);
+      if (index > 0) {
+        const [pending] = uniquePosts.splice(index, 1);
+        uniquePosts.unshift(pending);
+      }
+    }
+
     return uniquePosts;
-  }, [pages]);
+  }, [pages, pendingScrollPostId]);
 
   const { data: allCircles } = useAllCircles();
 
@@ -323,6 +353,8 @@ export default function Feed() {
             isFetchingNextPage={query.isFetchingNextPage}
             refreshing={refreshingFeed}
             onRefresh={onRefreshFeed}
+            scrollToTopSignal={scrollToTopSignal}
+            scrollToPostId={pendingScrollPostId}
           />
         )}
       </View>

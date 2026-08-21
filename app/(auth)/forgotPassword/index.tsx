@@ -16,6 +16,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("");
@@ -24,13 +25,20 @@ export default function ForgotPassword() {
 
   const isValidEmail = emailRegex.test(email);
 
-  const showInvalid = isFocus && email.length > 0 && !isValidEmail;
+  const showInvalid = attempted && !isValidEmail;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : showInvalid ? false : true;
+    attempted ? (isValidEmail ? true : false) : undefined;
 
   const handleSendCode = async () => {
-    if (!isValidEmail || loading) return;
+    if (loading) return;
+
+    if (!isValidEmail) {
+      setAttempted(true);
+      return;
+    }
+
+    setAttempted(false);
 
     try {
       setLoading(true);
@@ -109,6 +117,7 @@ export default function ForgotPassword() {
             onChangeText={(text) => {
               setEmail(text);
               setErrorVisible(false);
+              setAttempted(false);
             }}
           />
 
@@ -123,7 +132,7 @@ export default function ForgotPassword() {
           text="Send code"
           color={colors.primary}
           textColor={colors.white}
-          disabled={!isValidEmail || loading}
+          disabled={loading}
           onPress={handleSendCode}
           style={{ width: "100%", marginTop: 20 }}
         />

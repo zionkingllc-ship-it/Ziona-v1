@@ -4,18 +4,11 @@ import TextPostCardInput from "@/components/post/TextPostCardInput";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
-import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
-import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
-import { queryClient } from "@/lib/queryClient";
-import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
-import { invalidateFeed, movePostToFeedTop } from "@/services/feed/invalidateFeed";
 import { useCreatePostStore } from "@/store/createPostStore";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { shortenBookName } from "@/utils/bibleNames";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Image, Text, View, XStack, YStack } from "tamagui";
@@ -52,15 +45,9 @@ export default function CreateBiblePostScreen() {
   const draft = useCreatePostStore((s) => s.draft);
   const setCategory = useCreatePostStore((s) => s.setCategory);
   const setBibleVerse = useCreatePostStore((s) => s.setBibleVerse);
-  const resetDraft = useCreatePostStore((s) => s.resetDraft);
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open
-  const [uploading, setUploading] = useState(false);
-  const [createProgress, setCreateProgress] = useState(0);
-  const [showProgress, setShowProgress] = useState(false);
-  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const feedback = usePostFeedback("/(tabs)/create");
 
   /* =========================
      TYPE SAFETY
@@ -109,45 +96,10 @@ export default function CreateBiblePostScreen() {
      SUBMIT
   ========================= */
 
-  async function handleUpload() {
+  function handleUpload() {
     if (!canUpload) return;
 
-    try {
-      setUploading(true);
-      setShowProgress(true);
-      setCreateProgress(0);
-
-      progressTimerRef.current = setInterval(() => {
-        setCreateProgress((prev) => Math.min(prev + 5, 90));
-      }, 300);
-
-      const result = await publishDraftPost(bibleDraft, queryClient);
-      await invalidateFeed(queryClient);
-      if (result?.post?.id) {
-        await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
-        movePostToFeedTop(queryClient, result.post.id, result.post);
-      }
-      await queryClient.refetchQueries({ queryKey: ["userPosts"] });
-
-      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
-      setCreateProgress(100);
-
-      setTimeout(() => {
-        setUploading(false);
-        setShowProgress(false);
-        resetDraft();
-        router.replace("/(tabs)/feed");
-      }, 800);
-    } catch (error: any) {
-      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
-      setUploading(false);
-      setShowProgress(false);
-      const networkFeedback = getNetworkModalCopy(
-        error,
-        error?.message || "We couldn't create your post.",
-      );
-      feedback.showError(networkFeedback.message, networkFeedback.type, networkFeedback.title);
-    }
+    router.push("/create/uploadProgress");
   }
 
   return (
@@ -210,10 +162,10 @@ export default function CreateBiblePostScreen() {
           {/* POST */}
 
           <SimpleButton
-            text={uploading ? "Posting..." : "Post"}
+            text="Next"
             textColor={colors.buttonText}
             color={colors.primary}
-            disabled={uploading || !canUpload}
+            disabled={!canUpload}
             onPress={handleUpload}
           />
 
@@ -241,22 +193,6 @@ export default function CreateBiblePostScreen() {
           )}
         </YStack>
       </ScrollView>
-
-      <PostProgressModal
-        visible={showProgress}
-        progress={createProgress}
-      />
-
-      <SuccessModal
-        visible={feedback.visible}
-        onClose={() => {
-          feedback.handleClose();
-        }}
-        title={feedback.title}
-        message={feedback.message}
-        type={feedback.type}
-        autoClose
-      />
     </YStack>
   );
 }

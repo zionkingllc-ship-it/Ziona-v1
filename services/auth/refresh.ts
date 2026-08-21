@@ -60,15 +60,18 @@ export async function restRefresh(refreshToken: string): Promise<string | null> 
   const data = await res.json();
 
   const inner = data?.data ?? data;
-  const accessToken = inner.accessToken ?? inner.access_token ?? null;
-  const newRefreshToken = inner.refreshToken ?? inner.refresh_token ?? null;
+  const accessToken =
+    inner.accessToken ?? inner.access_token ?? inner.tokens?.accessToken ?? inner.tokens?.access_token ?? null;
+  const newRefreshToken =
+    inner.refreshToken ?? inner.refresh_token ?? inner.tokens?.refreshToken ?? inner.tokens?.refresh_token ?? null;
 
   if (accessToken) {
     setTokenExpiry(accessToken);
-    getAuthStore().getState().setTokens?.({
-      accessToken,
-      refreshToken: newRefreshToken ?? "",
-    });
+    const nextTokens: { accessToken: string; refreshToken?: string } = { accessToken };
+    if (newRefreshToken) {
+      nextTokens.refreshToken = newRefreshToken;
+    }
+    getAuthStore().getState().setTokens?.(nextTokens);
     return accessToken;
   }
 
@@ -141,7 +144,9 @@ export function extractTokens(data: any): {
 } {
   const inner = data?.data ?? data;
   return {
-    accessToken: inner.accessToken ?? inner.access_token ?? null,
-    refreshToken: inner.refreshToken ?? inner.refresh_token ?? null,
+    accessToken:
+      inner.accessToken ?? inner.access_token ?? inner.tokens?.accessToken ?? inner.tokens?.access_token ?? null,
+    refreshToken:
+      inner.refreshToken ?? inner.refresh_token ?? inner.tokens?.refreshToken ?? inner.tokens?.refresh_token ?? null,
   };
 }

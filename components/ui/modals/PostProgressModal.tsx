@@ -7,9 +7,15 @@ interface Props {
   visible: boolean;
   progress: number;
   onCancel?: () => void;
+  onExitToFeed?: () => void;
 }
 
-export default function PostProgressModal({ visible, progress, onCancel }: Props) {
+export default function PostProgressModal({
+  visible,
+  progress,
+  onCancel,
+  onExitToFeed,
+}: Props) {
   return (
     <Modal
       visible={visible}
@@ -43,6 +49,12 @@ export default function PostProgressModal({ visible, progress, onCancel }: Props
             </View>
             <Text style={styles.percentText}>{Math.min(progress, 100)}%</Text>
           </View>
+
+          {onExitToFeed && (
+            <Pressable onPress={onExitToFeed} style={styles.exitButton}>
+              <Text style={styles.exitText}>Exit to Feed</Text>
+            </Pressable>
+          )}
 
           {onCancel && (
             <Pressable onPress={onCancel} style={styles.cancelButton}>
@@ -102,7 +114,7 @@ const styles = StyleSheet.create({
     fontFamily: "$body",
   },
   cancelButton: {
-    marginTop: 20,
+    marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 8,
@@ -113,6 +125,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#FF3B30",
+    fontFamily: "$body",
+  },
+  exitButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+  },
+  exitText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
     fontFamily: "$body",
   },
 });

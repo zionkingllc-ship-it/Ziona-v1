@@ -5,6 +5,7 @@ import type { ActiveAnchor } from "@/constants/circleTypes";
 import { YStack } from "tamagui";
 import React, { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { markAnchorViewed } from "@/utils/viewedAnchors";
 
 interface AnchorCardProps {
   anchor?: ActiveAnchor;
@@ -23,7 +24,16 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
 
   const handlePress = useCallback(() => {
     if (!anchor || disabled || loading || isEmpty) return;
+
+    if (expired && anchor.expiresAt) {
+      const daysSinceExpiry =
+        (Date.now() - new Date(anchor.expiresAt).getTime()) /
+        (1000 * 60 * 60 * 24);
+      if (daysSinceExpiry > 5) return;
+    }
     
+    if (anchor.id) markAnchorViewed(anchor.id);
+
     setLoading(true);
 
     const url = anchor.mediaUrl || "";
@@ -50,7 +60,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
     router.push(path as any);
     
     setTimeout(() => setLoading(false), 500);
-  }, [disabled, loading, anchor, router, circleId, isEmpty]);
+  }, [disabled, loading, anchor, router, circleId, isEmpty, expired]);
 
   if (isEmpty) {
     return (

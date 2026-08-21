@@ -17,6 +17,7 @@ export default function CreatePassword() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   const setPasswordStore = useSignupStore((s) => s.setPassword);
 
@@ -28,13 +29,16 @@ export default function CreatePassword() {
 
   const passwordIsValid = isPasswordValid(password);
 
-  const showInvalid = isFocus && password.length > 0 && !passwordIsValid;
+  const showInvalid = attempted && !passwordIsValid;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : showInvalid ? false : true;
+    attempted ? (passwordIsValid ? true : false) : undefined;
 
   const handleNext = () => {
-    if (!passwordIsValid) return;
+    if (!passwordIsValid) {
+      setAttempted(true);
+      return;
+    }
 
     setPasswordStore(password);
 
@@ -85,7 +89,10 @@ export default function CreatePassword() {
             isValid={visualValidity}
             onFocus={() => setIsFocus(true)}
             onBlur={() => setIsFocus(false)}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setAttempted(false);
+            }}
             endIconVisible={password.length > 0 && isFocus}
             endIcon={
               show ? (
@@ -114,7 +121,7 @@ export default function CreatePassword() {
           text="Next"
           textColor={colors.white}
           color={colors.primary}
-          disabled={!passwordIsValid}
+          disabled={false}
           onPress={handleNext}
           style={{
             width: "100%",

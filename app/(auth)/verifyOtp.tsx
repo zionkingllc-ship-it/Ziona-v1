@@ -28,6 +28,7 @@ export default function VerifyOtp() {
   const [errorMessage, setErrorMessage] = useState("Please check the code and try again");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
 
   /* ---------------- TIMER ---------------- */
 
@@ -136,8 +137,6 @@ export default function VerifyOtp() {
   return (
     <KeyboardAvoidingWrapper>
       <Header />
-      
-
       <YStack flex={1} padding="$4" gap="$4" marginTop="$10">
         <Image
           source={require("@/assets/images/messageIcon.png")}
@@ -190,9 +189,8 @@ export default function VerifyOtp() {
 
         <OtpContainer
           length={OTP_LENGTH}
-            onComplete={(code: string) => {
-              submitOtp(code);
-            }}
+          value={otpDigits}
+          onChange={setOtpDigits}
         />
 
         {/* RESEND */}
@@ -213,17 +211,34 @@ export default function VerifyOtp() {
               {timer.toString().padStart(2, "0")}s
             </Text>
           ) : (
-            <PrimaryButton
+            <Text
               onPress={resendCode}
-              disabled={isResending}
-              loading={isResending}
               style={{ marginTop: 10 }}
-              text="Resend code"
-              textColor={colors.white}
-              color={colors.primary}
-            />
+              fontFamily="$body"
+              fontSize={16}
+              color={colors.black}
+              textDecorationLine="underline"
+            >
+              {isResending ? "Resending..." : "Resend code"}
+            </Text>
           )}
         </YStack>
+
+        {/* SUBMIT */}
+
+        <PrimaryButton
+          onPress={() => {
+            if (otpDigits.every((digit) => digit !== "")) {
+              submitOtp(otpDigits.join(""));
+            }
+          }}
+          disabled={!otpDigits.every((digit) => digit !== "") || isSubmitting}
+          loading={isSubmitting}
+          style={{ marginTop: 8 }}
+          text="Submit OTP"
+          textColor={colors.white}
+          color={colors.primary}
+        />
       </YStack>
 
       {/* ERROR MODAL */}

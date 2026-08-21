@@ -6,12 +6,26 @@ import { Text, XStack, YStack } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { CircleComment, CircleCommentAuthor } from "@/services/graphQL/mutation/actions/circleComments";
+import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
+import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 import themeColors from "@/constants/colors";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { useAuthStore } from "@/store/useAuthStore";
+import OptionsModal from "@/components/ui/modals/OptionsModal";
+import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
+import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
+import OtherReportModal from "@/components/ui/modals/OtherReportModal";
+import SuccessModal from "@/components/ui/modals/successModal";
 import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
+
+type MenuTarget =
+  | { type: "comment"; id: string; isOwner: boolean }
+  | { type: "reply"; commentId: string; replyId: string; isOwner: boolean }
+  | null;
 
 type Props = {
   comment: CircleComment;
+  circleId: string;
   onLike: (id: string, liked: boolean) => void;
   onDelete: (id: string) => void;
   onReply: (commentId: string, username: string) => void;
@@ -25,6 +39,7 @@ type ReplyRowProps = {
   onDelete: (id: string) => void;
   isPending: boolean;
   onViewProfile: (userId: string) => void;
+  onOpenMenu: (replyId: string) => void;
 };
 
 function authorName(author?: CircleCommentAuthor | null): string {
@@ -86,7 +101,7 @@ function AvatarCircle({ uri, name, size }: { uri?: string | null; name?: string 
   );
 }
 
-function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfile }: ReplyRowProps) {
+function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfile, onOpenMenu }: ReplyRowProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   return (
     <TouchableOpacity
@@ -107,6 +122,13 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfil
             <Text fontSize={10} color="#999">
               {formatDate(reply.createdAt)}
             </Text>
+            <Pressable
+              onPress={() => onOpenMenu(reply.id)}
+              hitSlop={10}
+              style={{ padding: 2, marginLeft: "auto" }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={15} color="#777" />
+            </Pressable>
           </XStack>
           <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} lineHeight={16} />
           <XStack gap="$2" paddingTop="$1" alignItems="center">
@@ -140,14 +162,56 @@ function ReplyRow({ reply, mentionMap, onLike, onDelete, isPending, onViewProfil
   );
 }
 
-export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPending }: Props) {
+export function CircleCommentItem({ comment, circleId, onLike, onDelete, onReply, isPending }: Props) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
+  const [menuTarget, setMenuTarget] = useState<MenuTarget>(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
+  const [reportSuccessVisible, setReportSuccessVisible] = useState(false);
+  const [reportFailedVisible, setReportFailedVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MenuTarget>(null);
   const hasReplies = (comment.replies?.length || 0) > 0;
   const { requireAuth, AuthModal } = useRequireAuth();
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const isCommentOwner = comment.author?.id != null && comment.author.id === currentUserId;
   const goToProfile = useMemo(() => (userId: string) => {
     requireAuth(() => router.push(`/guest?userId=${userId}`));
   }, [requireAuth]);
+
+  const openMenu = (target: MenuTarget) => {
+    requireAuth(() => setMenuTarget(target));
+  };
+
+  const openReplyMenu = (replyId: string) => {
+    const reply = comment.replies?.find((r) => r.id === replyId);
+    const isOwner = reply?.author?.id != null && reply.author.id === currentUserId;
+    requireAuth(() => setMenuTarget({ type: "reply", commentId: comment.id, replyId, isOwner }));
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.type === "comment" ? deleteTarget.id : deleteTarget.replyId;
+    onDelete(id);
+    setDeleteTarget(null);
+  };
+
+  const submitReport = (reason: ReportReason, description?: string) => {
+    const commentId =
+      menuTarget?.type === "comment"
+        ? menuTarget.id
+        : menuTarget?.type === "reply"
+          ? menuTarget.replyId
+          : undefined;
+    reportCircleContent(reason, circleId, commentId || "", "CIRCLE_COMMENT")
+      .then(() => {
+        setReportSuccessVisible(true);
+      })
+      .catch(() => {
+        setReportFailedVisible(true);
+      });
+  };
 
   const mentionMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -178,6 +242,13 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
               {formatDate(comment.createdAt)}
             </Text>
           </YStack>
+          <Pressable
+            onPress={() => openMenu({ type: "comment", id: comment.id, isOwner: isCommentOwner })}
+            hitSlop={10}
+            style={{ padding: 2 }}
+          >
+            <Ionicons name="ellipsis-horizontal" size={18} color="#777" />
+          </Pressable>
         </XStack>
 
         <MentionText text={comment.text} mentionMap={mentionMap} fontSize={13} lineHeight={18} />
@@ -220,6 +291,7 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
                 onDelete={onDelete}
                 isPending={isPending}
                 onViewProfile={goToProfile}
+                onOpenMenu={openReplyMenu}
               />
             ))}
           </YStack>
@@ -239,6 +311,81 @@ export function CircleCommentItem({ comment, onLike, onDelete, onReply, isPendin
         onConfirm={() => { setShowDeleteModal(false); onDelete(comment.id); }}
         title="Delete comment"
         message="Are you sure?"
+        confirmText="Delete"
+      />
+      <OptionsModal
+        visible={!!menuTarget}
+        onClose={() => setMenuTarget(null)}
+        onReportPost={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onReportComment={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onDelete={() => {
+          setDeleteTarget(menuTarget);
+          setMenuTarget(null);
+        }}
+        isOwner={menuTarget?.type === "comment" ? menuTarget.isOwner : menuTarget?.isOwner}
+      />
+
+      <ConfirmReportModal
+        visible={confirmVisible}
+        contentType="comment"
+        onClose={() => setConfirmVisible(false)}
+        onConfirm={() => {
+          setConfirmVisible(false);
+          setReasonsVisible(true);
+        }}
+      />
+
+      <ReportReasonsModal
+        visible={reasonsVisible}
+        onClose={() => setReasonsVisible(false)}
+        onSelectReason={(reason) => {
+          setReasonsVisible(false);
+          submitReport(reason as ReportReason);
+        }}
+        onSelectOther={() => {
+          setReasonsVisible(false);
+          setOtherVisible(true);
+        }}
+      />
+
+      <OtherReportModal
+        visible={otherVisible}
+        onClose={() => setOtherVisible(false)}
+        onSubmit={(description) => {
+          setOtherVisible(false);
+          submitReport("OTHER" as ReportReason, description);
+        }}
+      />
+
+      <SuccessModal
+        visible={reportSuccessVisible}
+        onClose={() => setReportSuccessVisible(false)}
+        title="Report Submitted"
+        message="Thank you for your report. We'll review it shortly."
+        autoClose
+      />
+
+      <SuccessModal
+        visible={reportFailedVisible}
+        onClose={() => setReportFailedVisible(false)}
+        title="Something went wrong"
+        message="Please try again later."
+        type="failed"
+        autoClose
+      />
+
+      <DeleteConfirmationModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment? This cannot be undone."
         confirmText="Delete"
       />
       {AuthModal}

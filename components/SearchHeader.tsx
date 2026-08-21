@@ -22,7 +22,7 @@ export default function SearchHeader({
   return (
     <XStack alignItems="center" paddingVertical={10} paddingLeft={20} paddingRight={10}>
       {onBackPress && (
-        <Pressable onPress={onBackPress}>
+        <Pressable onPress={onBackPress} hitSlop={12} accessibilityLabel="Go back">
           <ChevronLeft size={24} color={colors.text} />
         </Pressable>
       )}
@@ -37,7 +37,7 @@ export default function SearchHeader({
         alignItems="center"
         gap={8}
       >
-        <Ionicons name="search" size={20} color={colors.tertiary} />
+        <Ionicons name="search" size={20} color={colors.placeHolderText} />
 
         <TextInput
           placeholder={placeholder}

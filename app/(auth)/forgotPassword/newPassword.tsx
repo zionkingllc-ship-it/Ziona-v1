@@ -21,6 +21,7 @@ export default function CreatePassword() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("Password reset failed");
@@ -35,13 +36,18 @@ export default function CreatePassword() {
 
   const passwordIsValid = isPasswordValid(password);
 
-  const showInvalid = isFocus && password.length > 0 && !passwordIsValid;
+  const showInvalid = attempted && !passwordIsValid;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : showInvalid ? false : true;
+    attempted ? (passwordIsValid ? true : false) : undefined;
 
   const handleSubmit = async () => {
-    if (!passwordIsValid || loading) return;
+    if (!passwordIsValid) {
+      setAttempted(true);
+      return;
+    }
+
+    if (loading) return;
     if (!email || !otp) return;
 
     try {
@@ -104,6 +110,7 @@ export default function CreatePassword() {
           onBlur={() => setIsFocus(false)}
           onChangeText={(text) => {
             setPassword(text);
+            setAttempted(false);
           }}
           endIconVisible={password.length > 0 && isFocus}
           endIcon={
@@ -138,7 +145,7 @@ export default function CreatePassword() {
           loading={loading}
           textColor={colors.white}
           color={colors.primary}
-          disabled={!passwordIsValid}
+          disabled={loading}
           onPress={handleSubmit}
         />
       </YStack>

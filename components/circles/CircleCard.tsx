@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import colors from "@/constants/colors";
-import React, { memo } from "react";
+import React, { memo, useMemo } from "react";
 
 interface Props {
   id: string;
@@ -25,6 +25,18 @@ const CircleCard = memo(function CircleCard({
   avatars = [],
   onPress,
 }: Props) {
+  const avatarCount = Math.min(3, Math.max(0, members));
+  const randomAvatars = useMemo(() => {
+    const pool = [...avatars].filter(Boolean);
+    if (pool.length <= avatarCount) return pool;
+    const copy = [...pool];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, avatarCount);
+  }, [avatars, avatarCount]);
+
   return (
     <Pressable onPress={onPress}>
       <YStack style={styles.container}>
@@ -48,9 +60,9 @@ const CircleCard = memo(function CircleCard({
             <Text style={styles.description} numberOfLines={2}>{description}</Text>
 
             <XStack alignItems="center" marginTop={6} justifyContent="flex-start">
-              {avatars.length > 0 && (
-                <View style={[styles.avatarStack, { width: avatars.length * 28 }]}>
-                  {avatars.slice(0, 3).map((uri, index) => (
+              {randomAvatars.length > 0 && (
+                <View style={[styles.avatarStack, { width: randomAvatars.length * 28 }]}>
+                  {randomAvatars.map((uri, index) => (
                     uri ? (
                       <Image
                         key={index}

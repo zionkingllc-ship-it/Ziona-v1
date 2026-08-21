@@ -96,6 +96,11 @@ export default function CirclesSuggestion() {
   }
 
   const mapCircle = useCallback((circle: any) => {
+    const memberAvatars = Array.isArray(circle.memberPreviews)
+      ? circle.memberPreviews
+          .map((m: any) => m.avatarUrl)
+          .filter(Boolean)
+      : [];
     return {
       id: circle.id,
       title: circle.name,
@@ -103,7 +108,7 @@ export default function CirclesSuggestion() {
       image: circle.coverImage,
       members: circle.memberCount,
       isJoined: circle.isSubscribed,
-      avatars: circle.avatars || [],
+      avatars: memberAvatars.length > 0 ? memberAvatars : circle.avatars || [],
     };
   }, []);
 
@@ -255,10 +260,10 @@ export default function CirclesSuggestion() {
           borderRadius={12}
           paddingLeft={12}
         >
-          <Ionicons name="search" size={16} color={colors.gray} />
+          <Ionicons name="search" size={20} color={colors.gray} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search circles by name or keyword"
+            placeholder="Search"
             placeholderTextColor={colors.placeholderText}
             value={searchText}
             onChangeText={setSearchText}
@@ -301,9 +306,6 @@ export default function CirclesSuggestion() {
             {/* ANCHOR OF THE DAY */}
             {activeAnchors.length > 0 && (
               <YStack marginTop={hp(2)}>
-                <Text fontFamily="$body" fontWeight="600" fontSize={14} marginBottom={hp(1)}>
-                  Anchor of the Day
-                </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {activeAnchors.map((anchor: any) => (
                     <AnchorCardSmall
@@ -336,7 +338,7 @@ export default function CirclesSuggestion() {
 
             {/* SUGGESTED CIRCLES */}
             <Text fontFamily="$body" fontWeight="600" fontSize={14} marginTop={hp(2)} marginBottom={hp(1)}>
-              Suggested Circles
+              Suggestions
             </Text>
 
             {suggestedCircles.length === 0 ? (
@@ -361,7 +363,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   compactCardWrapper: {
-    width: 220,
+    width: 167,
+    height: 160,
     marginRight: 10,
+    overflow: "hidden",
+    borderRadius: 14,
   },
 });

@@ -224,7 +224,7 @@ export default function CirclePostDetailScreen() {
         borderBottomWidth={1}
         borderBottomColor="#EEE"
       >
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={12} accessibilityLabel="Go back">
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text fontSize={16} fontWeight="600">
@@ -382,6 +382,7 @@ export default function CirclePostDetailScreen() {
                 <CircleCommentItem
                   key={comment.id}
                   comment={comment}
+                  circleId={circleId || ""}
                   onLike={handleLikeComment}
                   onDelete={handleDeleteComment}
                   onReply={handleReply}

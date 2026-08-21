@@ -10,7 +10,17 @@ import GuestProfileContent from "@/components/profile/GuestProfileContent";
 import MentionText from "./MentionText";
 import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
-import { Comment } from "@/services/graphQL/mutation/actions/comments";
+import { Ionicons } from "@expo/vector-icons";
+import { Comment, deleteComment as deleteCommentService } from "@/services/graphQL/mutation/actions/comments";
+import { reportContent, ReportReason } from "@/services/graphQL/mutation/actions/report";
+import { patchCommentCountAcrossQueries } from "@/services/graphQL/queries/actions/commentCache";
+import OptionsModal from "@/components/ui/modals/OptionsModal";
+import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
+import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
+import OtherReportModal from "@/components/ui/modals/OtherReportModal";
+import SuccessModal from "@/components/ui/modals/successModal";
+import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
@@ -54,6 +64,11 @@ interface ReplyState {
   username: string | null;
 }
 
+type MenuTarget =
+  | { type: "comment"; id: string; isOwner: boolean }
+  | { type: "reply"; commentId: string; replyId: string; isOwner: boolean }
+  | null;
+
 export function CommentsSheet({ visible, onClose, postId }: Props) {
   const insets = useSafeAreaInsets();
   const { requireAuth, AuthModal } = useRequireAuth();
@@ -69,6 +84,15 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<ReplyState>({ commentId: null, username: null });
+  const [menuTarget, setMenuTarget] = useState<MenuTarget>(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
+  const [reportSuccessVisible, setReportSuccessVisible] = useState(false);
+  const [reportFailedVisible, setReportFailedVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MenuTarget>(null);
+
+  const queryClient = useQueryClient();
 
   const inputRef = useRef<TextInput>(null);
 
@@ -78,6 +102,34 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const createCommentMutation = useCreateComment();
   const toggleLikeMutation = useToggleCommentLike();
   const replyLikeMutation = useReplyLike();
+
+  const deleteMutation = useMutation({
+    mutationFn: (commentId: string) => deleteCommentService(commentId),
+    onSuccess: (_data, commentId) => {
+      queryClient.setQueryData(["postComments", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            comments: page.comments
+              .filter((c: any) => c.id !== commentId)
+              .map((c: any) => {
+                const hadReply = (c.replies || []).some((r: any) => r.id === commentId);
+                return {
+                  ...c,
+                  replies: (c.replies || []).filter((r: any) => r.id !== commentId),
+                  stats: hadReply
+                    ? { ...c.stats, repliesCount: Math.max(0, (c.stats?.repliesCount || 0) - 1) }
+                    : c.stats,
+                };
+              }),
+          })),
+        };
+      });
+      patchCommentCountAcrossQueries(queryClient, { postId, delta: -1 });
+    },
+  });
 
   const comments = data?.pages?.flatMap((page) => page.comments) || [];
 
@@ -196,6 +248,33 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     });
   };
 
+  const openMenu = (target: MenuTarget) => {
+    requireAuth(() => setMenuTarget(target));
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.type === "comment" ? deleteTarget.id : deleteTarget.replyId;
+    deleteMutation.mutate(id);
+    setDeleteTarget(null);
+  };
+
+  const submitReport = (reason: ReportReason, description?: string) => {
+    const commentId =
+      menuTarget?.type === "comment"
+        ? menuTarget.id
+        : menuTarget?.type === "reply"
+          ? menuTarget.replyId
+          : undefined;
+    reportContent(reason, postId, commentId, description)
+      .then(() => {
+        setReportSuccessVisible(true);
+      })
+      .catch(() => {
+        setReportFailedVisible(true);
+      });
+  };
+
   return (
     <BaseModal visible={visible} onClose={onClose} alignBottom>
       <Animated.View
@@ -232,6 +311,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
                 startReply={startReply}
                 toggleLikeMutation={toggleLikeMutation}
                 onViewProfile={goToProfile}
+                onOpenMenu={openMenu}
               />
             )}
             onEndReached={() => hasNextPage && fetchNextPage()}
@@ -302,6 +382,82 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
         </View>
       )}
 
+      <OptionsModal
+        visible={!!menuTarget}
+        onClose={() => setMenuTarget(null)}
+        onReportPost={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onReportComment={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onDelete={() => {
+          setDeleteTarget(menuTarget);
+          setMenuTarget(null);
+        }}
+        isOwner={menuTarget?.type === "comment" ? menuTarget.isOwner : menuTarget?.isOwner}
+      />
+
+      <ConfirmReportModal
+        visible={confirmVisible}
+        contentType="comment"
+        onClose={() => setConfirmVisible(false)}
+        onConfirm={() => {
+          setConfirmVisible(false);
+          setReasonsVisible(true);
+        }}
+      />
+
+      <ReportReasonsModal
+        visible={reasonsVisible}
+        onClose={() => setReasonsVisible(false)}
+        onSelectReason={(reason) => {
+          setReasonsVisible(false);
+          submitReport(reason as ReportReason);
+        }}
+        onSelectOther={() => {
+          setReasonsVisible(false);
+          setOtherVisible(true);
+        }}
+      />
+
+      <OtherReportModal
+        visible={otherVisible}
+        onClose={() => setOtherVisible(false)}
+        onSubmit={(description) => {
+          setOtherVisible(false);
+          submitReport("OTHER" as ReportReason, description);
+        }}
+      />
+
+      <SuccessModal
+        visible={reportSuccessVisible}
+        onClose={() => setReportSuccessVisible(false)}
+        title="Report Submitted"
+        message="Thank you for your report. We'll review it shortly."
+        autoClose
+      />
+
+      <SuccessModal
+        visible={reportFailedVisible}
+        onClose={() => setReportFailedVisible(false)}
+        title="Something went wrong"
+        message="Please try again later."
+        type="failed"
+        autoClose
+      />
+
+      <DeleteConfirmationModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment? This cannot be undone."
+        confirmText="Delete"
+      />
+
       {AuthModal}
     </BaseModal>
   );
@@ -321,6 +477,7 @@ function CommentItem({
   startReply,
   toggleLikeMutation,
   onViewProfile,
+  onOpenMenu,
 }: {
   comment: Comment;
   mentionMap: Record<string, string>;
@@ -335,6 +492,7 @@ function CommentItem({
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
   onViewProfile: (userId: string) => void;
+  onOpenMenu: (target: MenuTarget) => void;
 }) {
   const isExpanded = expandedComments.has(comment.id);
   const areRepliesExpanded = expandedReplies.has(comment.id);
@@ -360,6 +518,13 @@ function CommentItem({
                 <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
               </Pressable>
               <Text color="#999" fontFamily="$body" fontSize={11}>{formatDate(comment.createdAt)}</Text>
+              <Pressable
+                onPress={() => onOpenMenu({ type: "comment", id: comment.id, isOwner: !!comment.viewerState?.isOwner })}
+                hitSlop={10}
+                style={{ padding: 2, marginLeft: "auto" }}
+              >
+                <Ionicons name="ellipsis-horizontal" size={17} color="#777" />
+              </Pressable>
             </XStack>
 
             <MentionText text={displayText} mentionMap={mentionMap} fontSize={13} />
@@ -402,6 +567,8 @@ function CommentItem({
                     toggleLike={() => toggleReplyLike(comment.id, reply.id)}
                     startReply={startReply}
                     onViewProfile={onViewProfile}
+                    onOpenMenu={onOpenMenu}
+                    commentId={comment.id}
                   />
                 ))}
               </View>
@@ -430,6 +597,8 @@ function ReplyItem({
   toggleLike,
   startReply,
   onViewProfile,
+  onOpenMenu,
+  commentId,
 }: {
   reply: any;
   mentionMap: Record<string, string>;
@@ -438,6 +607,8 @@ function ReplyItem({
   toggleLike: () => void;
   startReply: (id: string, username: string) => void;
   onViewProfile: (userId: string) => void;
+  onOpenMenu: (target: MenuTarget) => void;
+  commentId: string;
 }) {
   return (
     <XStack gap="$2" marginTop="$2" alignItems="flex-start">
@@ -456,6 +627,13 @@ function ReplyItem({
             <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
           </Pressable>
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
+          <Pressable
+            onPress={() => onOpenMenu({ type: "reply", commentId, replyId: reply.id, isOwner: !!reply.viewerState?.isOwner })}
+            hitSlop={10}
+            style={{ padding: 2, marginLeft: "auto" }}
+          >
+            <Ionicons name="ellipsis-horizontal" size={15} color="#777" />
+          </Pressable>
         </XStack>
         <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>

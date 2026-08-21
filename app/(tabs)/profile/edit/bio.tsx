@@ -86,8 +86,9 @@ export default function EditBioScreen() {
             fontSize={13}
             fontWeight="400"
             borderWidth={0.5}
-            borderColor={colors.border}
-            backgroundColor={colors.borderBackground}
+            borderColor="#EEEBEF"
+            backgroundColor="#FAF9FA"
+            borderRadius={8}
             padding="$2"
             maxLength={100}
           />
@@ -98,7 +99,7 @@ export default function EditBioScreen() {
                 fontFamily="$body"
                 fontSize={13}
                 fontWeight="400"
-                color={colors.termsText}
+                color={colors.placeHolderText}
               >
                 {charCount}/100
               </Text>
@@ -112,15 +113,7 @@ export default function EditBioScreen() {
             fontSize={13}
             fontWeight="500"
           >
-            Social Link
-          </Text>
-          <Text
-            fontFamily="$body"
-            fontSize={12}
-            fontWeight="400"
-            color={colors.termsText}
-          >
-            Add a link to your social profile or personal website (optional).
+            Add link <Text color={colors.placeHolderText}>(optional)</Text>
           </Text>
           <Input
             value={bioLink}
@@ -130,23 +123,24 @@ export default function EditBioScreen() {
             fontSize={13}
             fontWeight="400"
             borderWidth={0.5}
-            borderColor={colors.border}
-            backgroundColor={colors.borderBackground}
+            borderColor="#EEEBEF"
+            backgroundColor="#FAF9FA"
+            borderRadius={8}
             padding="$2"
+            marginTop={8}
             autoCapitalize="none"
             autoCorrect={false}
           />
         </YStack>
 
-        <YStack marginTop="$4">
-          <SimpleButton
-            disabled={mutation.isPending || (!bio.trim() && !bioLink.trim())}
-            onPress={handleSave}
-            color={colors.primary}
-            textColor={colors.white}
-            text={mutation.isPending ? "Saving..." : "Save"}
-          />
-        </YStack>
+<SimpleButton
+          disabled={mutation.isPending || (!bio.trim() && !bioLink.trim())}
+          onPress={handleSave}
+          color={colors.primary}
+          textColor={colors.white}
+          text={mutation.isPending ? "Saving..." : "Save"}
+          style={{ marginTop: 20 }}
+        />
 
         <SuccessModal
           visible={modalVisible}

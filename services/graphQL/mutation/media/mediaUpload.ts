@@ -182,7 +182,11 @@ export async function uploadFileToStorage(
   // Estimate progress based on assumed upload speed
   if (onProgress && size > 0) {
     const ASSUMED_BYTES_PER_SEC = 2 * 1024 * 1024; // 2 MB/s
-    const estimatedSeconds = size / ASSUMED_BYTES_PER_SEC;
+    const MIN_ESTIMATED_SECONDS = 3; // avoid 0→90 flash for small files
+    const estimatedSeconds = Math.max(
+      size / ASSUMED_BYTES_PER_SEC,
+      MIN_ESTIMATED_SECONDS,
+    );
     const startTime = Date.now();
     progressInterval = setInterval(() => {
       const elapsed = (Date.now() - startTime) / 1000;

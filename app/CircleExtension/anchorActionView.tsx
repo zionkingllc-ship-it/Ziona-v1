@@ -35,13 +35,6 @@ export default function AnchorActionView() {
   };
 
   const doActionSelected = async (action: string, anchorText?: string) => {
-    const prompt =
-      action === "pray"
-        ? "How can we pray for you?"
-        : action === "encouraged"
-          ? "What encouraged you?"
-          : "What's on your mind?";
-
     const tempId = `tempAnchor_${Date.now()}`;
     await saveAnchorRef(tempId, {
       type: "text",

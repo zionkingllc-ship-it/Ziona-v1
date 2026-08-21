@@ -39,7 +39,7 @@ const POST_TYPES = [
 ];
 
 export default function CreateScreen() {
-  const { startDraft, setMedia } = useCreatePostStore();
+  const { startDraft, setMedia, setMediaError } = useCreatePostStore();
   const { wp, hp, fs } = useResponsive();
   const { width } = useWindowDimensions();
   const { requireAuth, AuthModal } = useRequireAuth(
@@ -103,11 +103,15 @@ export default function CreateScreen() {
 
       if (video) {
         if (assets.length > 1) {
-          alert("Only one video allowed.");
+          startDraft("MEDIA", "VIDEO");
+          setMediaError("Only one video allowed.");
+          router.push("/create/media");
           return;
         }
         if ((video.duration ?? 0) > MAX_VIDEO_DURATION_MS) {
-          alert(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}.`);
+          startDraft("MEDIA", "VIDEO");
+          setMediaError(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}.`);
+          router.push("/create/media");
           return;
         }
         startDraft("MEDIA", "VIDEO");
@@ -118,12 +122,14 @@ export default function CreateScreen() {
 
       const images = assets.filter((a) => !a.type?.toLowerCase().includes("video")).slice(0, 5);
 
+      let imageError = "";
       if (assets.length > 5) {
-        alert("Maximum 5 images allowed.");
+        imageError = "Maximum 5 images allowed.";
       }
 
       startDraft("MEDIA", "IMAGE");
       setMedia(images.map(normalizeMedia));
+      setMediaError(imageError);
       router.push("/create/media");
     } finally {
       setIsLoading(false);

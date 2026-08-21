@@ -11,6 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
 import { useEffect } from "react";
 import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
+import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
 import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
@@ -40,10 +41,18 @@ const formatTimeAgo = (dateString: string): string => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+type CircleMedia = {
+  id?: string;
+  url?: string;
+  type?: string;
+  thumbnailUrl?: string;
+};
+
 type CirclePost = {
   id: string;
   text?: string;
   image?: string;
+  media?: CircleMedia[];
   mediaUrl?: string;
   mediaType?: string;
   createdAt: string;
@@ -109,13 +118,28 @@ const CircleFeedItem = memo(function CircleFeedItem({
       reportCircleContent(reason, circleId || "", post.id, "CIRCLE_POST", description),
   });
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
-  const [postImageError, setPostImageError] = useState(false);
-  const [videoThumbError, setVideoThumbError] = useState(false);
+  const [failedMediaUrls, setFailedMediaUrls] = useState<string[]>([]);
   const [anchorImageError, setAnchorImageError] = useState(false);
 
   const imageUri = post.image || "";
-  const isVideoByUrl = !!post.mediaUrl && /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(post.mediaUrl);
-  const isVideo = post.mediaType === "VIDEO" || isVideoByUrl;
+  const isVideoUrl = (url?: string) => !!url && /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(url);
+
+  const rawMedia = (post.media ?? []).filter((m) => m?.url);
+  const mediaList = rawMedia.length
+    ? rawMedia
+    : post.mediaUrl
+      ? [{ url: post.mediaUrl, thumbnailUrl: post.image || undefined }]
+      : post.image
+        ? [{ url: post.image }]
+        : [];
+
+  const imageItems = mediaList.filter((m) => (m?.type ?? "").toLowerCase() !== "video" && !isVideoUrl(m?.url));
+  const videoItems = mediaList.filter((m) => (m?.type ?? "").toLowerCase() === "video" || isVideoUrl(m?.url));
+
+  const markMediaFailed = (url?: string) => {
+    if (!url || failedMediaUrls.includes(url)) return;
+    setFailedMediaUrls((prev) => [...prev, url]);
+  };
 
   const { isLiked, likeCount: localLikeCount, handleToggleLike, togglingLike } = useCirclePostLike(
     post.id,
@@ -168,6 +192,8 @@ const CircleFeedItem = memo(function CircleFeedItem({
       setAnchorExpiredVisible(true);
       return;
     }
+
+    if (resolved.anchorId) markAnchorViewed(resolved.anchorId);
 
     const qs = new URLSearchParams({
       id: resolved.anchorId || "",
@@ -224,46 +250,62 @@ const CircleFeedItem = memo(function CircleFeedItem({
             </Text>
           )}
 
-          {/* VIDEO */}
-          {isVideo && post.mediaUrl && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/postVideoViewer?video=${encodeURIComponent(post.mediaUrl || "")}`; router.push(path as any); }}>
-              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
-                {imageUri && !videoThumbError ? (
-                  <>
-                    <ExpoImage source={{ uri: imageUri }} style={{ width: "100%", height: 139 }} contentFit="cover" onError={() => setVideoThumbError(true)} />
-                    <View style={{ position: "absolute", width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
-                      <Ionicons name="play" size={24} color="#FFF" />
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="videocam" size={32} color="#FFF" />
-                    <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
-                  </>
-                )}
-              </View>
+          {/* IMAGES */}
+          {imageItems.map((item, index) => (
+            <Pressable
+              key={item.url || `img-${index}`}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                const path = `/circleImageViewer?image=${encodeURIComponent(item.url || post.image || "")}`;
+                router.push(path as any);
+              }}
+            >
+              {!!item.url && failedMediaUrls.includes(item.url) ? (
+                <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
+                  <Ionicons name="image-outline" size={32} color="#999" />
+                  <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
+                </View>
+              ) : (
+                <ExpoImage
+                  source={{ uri: item.url }}
+                  style={{ width: "100%", height: 139, borderRadius: 14 }}
+                  contentFit="cover"
+                  onError={() => markMediaFailed(item.url)}
+                />
+              )}
             </Pressable>
-          )}
+          ))}
 
-          {/* IMAGE */}
-          {!isVideo && imageUri && !postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; router.push(path as any); }}>
-              <ExpoImage
-                source={{ uri: post.image || post.mediaUrl }}
-                style={{ width: "100%", height: 139, borderRadius: 14 }}
-                contentFit="cover"
-                onError={() => setPostImageError(true)}
-              />
-            </Pressable>
-          )}
-          {!isVideo && imageUri && postImageError && (
-            <Pressable onPress={(e) => { e.stopPropagation?.(); const path = `/circleImageViewer?image=${encodeURIComponent(post.image || post.mediaUrl || "")}`; router.push(path as any); }}>
-              <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}>
-                <Ionicons name="image-outline" size={32} color="#999" />
-                <Text fontFamily="$body" fontSize={11} color="#999" marginTop={4}>Image unavailable</Text>
-              </View>
-            </Pressable>
-          )}
+          {/* VIDEOS */}
+          {videoItems.map((item, index) => {
+            const thumb = item.thumbnailUrl || imageUri;
+            return (
+              <Pressable
+                key={item.url || `vid-${index}`}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  const path = `/postVideoViewer?video=${encodeURIComponent(item.url || post.mediaUrl || "")}`;
+                  router.push(path as any);
+                }}
+              >
+                <View style={{ height: 139, borderRadius: 14, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", overflow: "hidden" }}>
+                  {thumb && !failedMediaUrls.includes(thumb) ? (
+                    <>
+                      <ExpoImage source={{ uri: thumb }} style={{ width: "100%", height: 139 }} contentFit="cover" onError={() => markMediaFailed(thumb)} />
+                      <View style={{ position: "absolute", width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+                        <Ionicons name="play" size={24} color="#FFF" />
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="videocam" size={32} color="#FFF" />
+                      <Text fontFamily="$body" color="#FFF" fontSize={12}>Tap to view video</Text>
+                    </>
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
 
           {/* ANCHOR QUOTE */}
           {resolved && (<>

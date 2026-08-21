@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   labelBadge: {
     borderWidth: 1,
-    borderColor: "#CCC",
+    borderColor: "#69586E",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,

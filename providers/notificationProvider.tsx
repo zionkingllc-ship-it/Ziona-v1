@@ -9,6 +9,8 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { isIOS } from "@/constants/platform";
+import { resolveNotificationDestination } from "@/src/services/notifications/notificationNavigation";
+import { emitNotificationReceived } from "@/src/services/notifications/notificationService";
 
 let messaging: any = null;
 try {
@@ -48,6 +50,7 @@ async function setupAndroidChannel() {
 }
 
 let registrationInFlight: Promise<void> | null = null;
+let registeredToken: string | null = null;
 
 async function serializeRegistration(run: () => Promise<void>): Promise<void> {
   if (registrationInFlight) return registrationInFlight;
@@ -61,29 +64,38 @@ async function serializeRegistration(run: () => Promise<void>): Promise<void> {
   return registrationInFlight;
 }
 
-async function requestPermissionsAndRegister() {
-  return serializeRegistration(async () => {
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status !== "granted") {
-        const { status: newStatus } = await Notifications.requestPermissionsAsync({
-          ios: { allowAlert: true, allowSound: true, allowBadge: true },
-        });
-        if (newStatus !== "granted") {
-          return;
-        }
-      }
-      if (messaging) {
-        const fcmToken = await messaging.getToken();
-        await registerDeviceToken(fcmToken, Platform.OS);
-      } else {
-        const devicePushToken = await Notifications.getDevicePushTokenAsync();
-        await registerDeviceToken(devicePushToken.data, Platform.OS);
-      }
-    } catch (err) {
-      console.warn("🔔 Push token registration failed:", err);
-    }
+async function registerTokenOnce(token: string): Promise<void> {
+  if (!token || token === registeredToken) return;
+
+  await serializeRegistration(async () => {
+    if (token === registeredToken) return;
+    const registered = await registerDeviceToken(token, Platform.OS);
+    if (registered) registeredToken = token;
   });
+}
+
+async function requestPermissionsAndRegister() {
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") {
+      const { status: newStatus } = await Notifications.requestPermissionsAsync({
+        ios: { allowAlert: true, allowSound: true, allowBadge: true },
+      });
+      if (newStatus !== "granted") {
+        return;
+      }
+    }
+    if (messaging) {
+      const fcmToken = await messaging.getToken();
+      console.log("🔔 FCM token sent to backend:", fcmToken);
+      await registerTokenOnce(fcmToken);
+    } else {
+      const devicePushToken = await Notifications.getDevicePushTokenAsync();
+      await registerTokenOnce(devicePushToken.data);
+    }
+  } catch (err) {
+    console.warn("🔔 Push token registration failed:", err);
+  }
 }
 
 async function syncBadgeFromServer() {
@@ -108,6 +120,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
+  const pendingResponseRef = useRef<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     setupAndroidChannel();
@@ -117,13 +130,11 @@ export default function NotificationProvider({ children }: { children: React.Rea
     if (!isAuthenticated || !messaging) return;
 
     const unsubscribe = messaging.onTokenRefresh(async (token: string) => {
-      await serializeRegistration(async () => {
-        try {
-          await registerDeviceToken(token, Platform.OS);
-        } catch (err) {
-          console.warn("🔔 Token refresh registration failed:", err);
-        }
-      });
+      try {
+        await registerTokenOnce(token);
+      } catch (err) {
+        console.warn("🔔 Token refresh registration failed:", err);
+      }
     });
 
     return unsubscribe;
@@ -150,25 +161,13 @@ export default function NotificationProvider({ children }: { children: React.Rea
 
   useEffect(() => {
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data as Record<string, string> | undefined;
+      const data = response.notification.request.content.data as Record<string, unknown> | undefined;
       if (!data) return;
-
-      if (!navReady) return;
-
-      const { referenceType, referenceId } = data;
-
-      if (referenceType === "post" && referenceId) {
-        pushOnce(`/viewer/${referenceId}`);
-      } else if (referenceType === "comment" && referenceId) {
-        pushOnce(`/notifications`);
-      } else if ((referenceType === "circle" || referenceType === "circle_post") && referenceId) {
-        pushOnce(`/circleFeed?id=${referenceId}`);
-      } else {
-        pushOnce("/notifications");
-      }
+      pendingResponseRef.current = data;
     });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
+      emitNotificationReceived(notification);
       if (isIOS) {
         const badge = notification.request.content.badge;
         if (badge != null) {
@@ -181,7 +180,28 @@ export default function NotificationProvider({ children }: { children: React.Rea
       responseSubscription.remove();
       receivedSubscription.remove();
     };
-  }, [navReady]);
+  }, []);
+
+  useEffect(() => {
+    if (!navReady || !isAuthenticated) return;
+
+    const handleData = (data: Record<string, unknown>) => {
+      pushOnce(resolveNotificationDestination(data));
+    };
+
+    if (pendingResponseRef.current) {
+      handleData(pendingResponseRef.current);
+      pendingResponseRef.current = null;
+    }
+
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response) return;
+        const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+        if (data) handleData(data);
+      })
+      .catch(() => {});
+  }, [navReady, isAuthenticated]);
 
   return <>{children}</>;
 }

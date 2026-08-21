@@ -3,6 +3,7 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { router } from 'expo-router'
 import { onAppEvent } from '../data/eventBus'
 import { useRootNavigationReady } from '@/hooks/useRootNavigationReady'
+import { resolveNotificationDestination } from '../services/notifications/notificationNavigation'
 
 interface NotificationBannerData {
   id: string; title: string; body: string; data?: Record<string, unknown>
@@ -25,12 +26,20 @@ export function NotificationBanner() {
   }, [navReady])
 
   useEffect(() => {
-    const unsub = onAppEvent('notification_received', (event) => {
+    const unsubNotification = onAppEvent('notification_received', (event) => {
       if (event.data) {
         showBanner({ id: event.data.id as string, title: event.data.title as string, body: event.data.body as string, data: event.data.data as Record<string, unknown> })
       }
     })
-    return () => { unsub(); if (timeoutRef.current) clearTimeout(timeoutRef.current) }
+    const unsubUpload = onAppEvent('upload_completed', (event) => {
+      showBanner({
+        id: `upload-${Date.now()}`,
+        title: (event.data?.title as string) || 'Post uploaded',
+        body: (event.data?.body as string) || 'Your post is now live in your feed',
+        data: {},
+      })
+    })
+    return () => { unsubNotification(); unsubUpload(); if (timeoutRef.current) clearTimeout(timeoutRef.current) }
   }, [])
 
   const showBanner = (data: NotificationBannerData) => {
@@ -51,7 +60,7 @@ export function NotificationBanner() {
   }
 
   const handlePress = () => {
-    const screen = notification?.data?.screen
+    const screen = resolveNotificationDestination(notification?.data)
     hideBanner()
     if (!screen) return
     pendingScreenRef.current = screen as string

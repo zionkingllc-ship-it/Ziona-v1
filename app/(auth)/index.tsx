@@ -239,11 +239,13 @@ export default function AuthIndex() {
             <XStack
               alignItems="center"
               justifyContent="center"
-              left={0}
-              right={0}
               padding={0}
-              width={"100%"}
+              width="auto"
+              maxWidth={Math.min(wp(92), 420)}
+              alignSelf="center"
               flexWrap="wrap"
+              columnGap={4}
+              rowGap={2}
             >
               <Text
                 fontSize={fs(13)}
@@ -296,13 +298,11 @@ export default function AuthIndex() {
                 >
                   Privacy Policy
                 </InlineUnderlineText>
-              </Pressable>
-                          <Text>{" "} </Text>
-            <Text>and</Text>
-            <Text>{" "} </Text>
-            <Pressable onPress={() => {
-              router.push("/settings/terms/community");
-            }}>
+</Pressable>
+              <Text>and</Text>
+              <Pressable onPress={() => {
+                router.push("/settings/terms/community");
+              }}>
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}

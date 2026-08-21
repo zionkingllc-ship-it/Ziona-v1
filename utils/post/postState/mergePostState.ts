@@ -42,10 +42,16 @@ export function mergePostState(
   const baseSaves = post.stats?.savesCount ?? 0;
 
   let likesCount = baseLikesCount;
+  let savesCount = baseSaves;
  
   if (hasLikedOverride) {
     if (liked && !baseLiked) likesCount += 1;
     if (!liked && baseLiked) likesCount -= 1;
+  }
+
+  if (hasSavedOverride) {
+    if (saved && !baseSaved) savesCount += 1;
+    if (!saved && baseSaved) savesCount -= 1;
   }
 
   return {
@@ -62,7 +68,7 @@ export function mergePostState(
       likesCount,
       commentsCount: baseComments,
       sharesCount: baseShares,
-      savesCount: baseSaves,
+      savesCount,
     },
   };
 }

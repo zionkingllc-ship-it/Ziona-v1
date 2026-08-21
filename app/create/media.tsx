@@ -2,18 +2,17 @@ import Header from "@/components/layout/header";
 import TagSelectorCard from "@/components/post/TagSelectorCard";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
-import ErrorModal from "@/components/ui/modals/ErrorModal";
 
 import colors from "@/constants/colors";
 import { MAX_VIDEO_DURATION_LABEL, MAX_VIDEO_DURATION_MS } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
+import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 
 import { useCreatePostStore } from "@/store/createPostStore";
 import { MediaItem } from "@/types/createPost";
-import { Trash } from "@tamagui/lucide-icons";
+import { Play, Trash, AlertCircle } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { VideoView, useVideoPlayer } from "expo-video";
 
 import { useEffect, useState } from "react";
 import { convertToSupportedFormat, compressImage } from "@/services/utils/imageConversion";
@@ -29,26 +28,50 @@ function MediaPreviewTile({
   width: number;
   height: number;
 }) {
-  const getVideoUri = (uri: string) => uri;
+  const [videoThumb, setVideoThumb] = useState<string | null>(null);
 
-  const player = useVideoPlayer(
-    item.type === "VIDEO" ? getVideoUri(item.uri) : "",
-    item.type === "VIDEO" ? (instance) => { instance.loop = true; } : undefined
-  );
+  useEffect(() => {
+    if (item.type !== "VIDEO") return;
+    let active = true;
+    generateVideoThumbnail(item.uri).then((thumb) => {
+      if (active && thumb) setVideoThumb(thumb);
+    });
+    return () => {
+      active = false;
+    };
+  }, [item.uri, item.type]);
 
   if (item.type === "VIDEO") {
     return (
-      <VideoView
-        player={player}
+      <View
         style={{
           width,
           height,
           borderRadius: 6,
           marginRight: 8,
+          backgroundColor: "#000",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
         }}
-        contentFit="contain"
-        nativeControls={false}
-      />
+      >
+        {videoThumb ? (
+          <Image source={{ uri: videoThumb }} style={{ width: "100%", height: "100%" }} />
+        ) : (
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#ffffff33",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Play size={20} color="#fff" fill="#fff" />
+          </View>
+        )}
+      </View>
     );
   }
 
@@ -68,12 +91,11 @@ function MediaPreviewTile({
 export default function CreateMediaScreen() {
   const { wp, hp, fs } = useResponsive();
 
-  const { draft, startDraft, setCaption, setMedia, setCategory } =
+  const { draft, startDraft, setCaption, setMedia, setCategory, mediaError, setMediaError } =
     useCreatePostStore();
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [error, setError] = useState("");
-  const [errorVisible, setErrorVisible] = useState(false);
   const [picking, setPicking] = useState(false);
 
   /* =========================
@@ -85,6 +107,13 @@ export default function CreateMediaScreen() {
       startDraft("MEDIA", "IMAGE");
     }
   }, []);
+
+  useEffect(() => {
+    if (mediaError) {
+      setError(mediaError);
+      setMediaError("");
+    }
+  }, [mediaError, setMediaError]);
 
   if (!draft || draft.type !== "MEDIA") {
     return null;
@@ -117,7 +146,6 @@ export default function CreateMediaScreen() {
 
     if (status !== "granted") {
       setError("Permission required");
-      setErrorVisible(true);
       return false;
     }
 
@@ -131,6 +159,7 @@ export default function CreateMediaScreen() {
   async function pickMedia() {
     if (picking) return;
     setPicking(true);
+    setError("");
     try {
     const allowed = await ensurePermission();
     if (!allowed) { setPicking(false); return; }
@@ -153,19 +182,16 @@ export default function CreateMediaScreen() {
     if (video) {
       if (existing.length > 0) {
         setError("Cannot add video when images exist.");
-        setErrorVisible(true);
         return;
       }
 
       if (assets.length > 1) {
         setError("Only one video allowed");
-        setErrorVisible(true);
         return;
       }
 
       if ((video.duration ?? 0) > MAX_VIDEO_DURATION_MS) {
         setError(`Videos must be under ${MAX_VIDEO_DURATION_LABEL}.`);
-        setErrorVisible(true);
         return;
       }
 
@@ -175,7 +201,6 @@ export default function CreateMediaScreen() {
 
     if (hasExistingVideo) {
       setError("Cannot add media when a video is selected.");
-      setErrorVisible(true);
       return;
     }
 
@@ -183,7 +208,6 @@ export default function CreateMediaScreen() {
 
     if (remainingSlots <= 0) {
       setError("Maximum 5 images allowed");
-      setErrorVisible(true);
       return;
     }
 
@@ -202,7 +226,6 @@ export default function CreateMediaScreen() {
 
     if (images.length > remainingSlots) {
       setError(`Maximum 5 images allowed. You can only add ${remainingSlots} more.`);
-      setErrorVisible(true);
       return;
     }
 
@@ -210,13 +233,13 @@ export default function CreateMediaScreen() {
     setMedia(updated);
     } catch {
       setError("Could not load that image. Try a different one.");
-      setErrorVisible(true);
     } finally {
       setPicking(false);
     }
   }
 
   function removeMedia(id: string) {
+    setError("");
     setMedia(mediaItems.filter((m) => m.id !== id));
   }
 
@@ -294,11 +317,13 @@ export default function CreateMediaScreen() {
           disabled={addDisabled || picking}
           style={{
             backgroundColor: addDisabled ? "#E5E3E5" : picking ? "#E5E3E5" : "#F1EFF2",
-            paddingVertical: hp(0.7),
-            marginTop: hp(2),
-            borderRadius: 6,
+            paddingVertical: 8,
+            marginTop: hp(1),
+            borderRadius: 4,
             alignItems: "center",
-            width: wp(40),
+            justifyContent: "center",
+            width: 169,
+            height: 35,
             opacity: addDisabled || picking ? 0.5 : 1,
           }}
         >
@@ -306,8 +331,6 @@ export default function CreateMediaScreen() {
             {picking ? "Loading..." : hasVideo ? "Video selected" : mediaItems.length >= 5 ? "Max images reached" : "Add media"}
           </Text>
         </TouchableOpacity>
-
-        <Text marginVertical={hp(1)}>Write a caption</Text>
 
         <TextInput
           multiline
@@ -323,6 +346,7 @@ export default function CreateMediaScreen() {
           style={{
             minHeight: 35,
             maxHeight: 35,
+            marginTop: 30,
             borderBottomWidth: 1,
             borderColor: "#E5E5E5",
             fontSize: fs(14),
@@ -350,7 +374,36 @@ export default function CreateMediaScreen() {
           />
         </XStack>
 
-        <YStack marginTop={hp(7)} marginBottom={hp(4)}>
+        {error !== "" && (
+          <View
+            style={{
+              width: "100%",
+              alignSelf: "center",
+              height: 37,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: colors.errorBoxBorder,
+              backgroundColor: colors.errorBackground,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: hp(3),
+            }}
+          >
+            <AlertCircle size={20} color={colors.errorBoxBorder} />
+            <Text
+              fontFamily="$body"
+              fontSize={10}
+              color={colors.errorBoxBorder}
+              textAlign="center"
+              marginLeft={4}
+            >
+              {error}
+            </Text>
+          </View>
+        )}
+
+        <YStack marginTop={hp(3)} marginBottom={hp(4)}>
           <SimpleButton
             text="Preview"
             onPress={() => router.push("/create/mediaPreview")}
@@ -369,14 +422,6 @@ export default function CreateMediaScreen() {
             setCategory(category);
             setCategoryVisible(false);
           }}
-        />
-      )}
-
-      {errorVisible && (
-        <ErrorModal
-          visible={errorVisible}
-          message={error}
-          onClose={() => setErrorVisible(false)}
         />
       )}
     </YStack>

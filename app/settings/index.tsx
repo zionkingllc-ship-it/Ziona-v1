@@ -53,12 +53,19 @@ export default function SettingsScreen() {
   }, []);
 
   useEffect(() => {
-    if (profile?.avatarUrl && profile.avatarUrl.trim() && !imageError) {
+    if (profile?.avatarUrl && profile.avatarUrl.trim()) {
       setAvatarSource({ uri: profile.avatarUrl });
+      setImageError(false);
     } else {
       setAvatarSource(null);
     }
-  }, [profile?.avatarUrl, imageError]);
+  }, [profile?.avatarUrl]);
+
+  useEffect(() => {
+    if (imageError) {
+      setAvatarSource(null);
+    }
+  }, [imageError]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -110,6 +117,7 @@ export default function SettingsScreen() {
                 <Image
                   source={avatarSource}
                   style={{ width: 40, height: 40, borderRadius: 20 }}
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <View

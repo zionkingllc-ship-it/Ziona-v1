@@ -135,8 +135,8 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
   );
 });
 
-const CARD_WIDTH = 120;
-const CARD_HEIGHT = 100;
+const CARD_WIDTH = 84;
+const CARD_HEIGHT = 86;
 
 const styles = StyleSheet.create({
   card: {

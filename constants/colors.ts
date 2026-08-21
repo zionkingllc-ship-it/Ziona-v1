@@ -39,6 +39,7 @@ const colors = {
   errorBorderColor: "#770E0E",
   errorText: "#770E0E",
   errorBackground: "#FDEDED",
+  errorBoxBorder: "#A41313",
   subHeader: "#4E4252",
   placeHolderText: "#836F8B",
   borderColor: "#EEEBEF",

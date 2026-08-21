@@ -1,43 +1,44 @@
 import Header from "@/components/layout/header";
-import TagSelectorCard from "@/components/post/TagSelectorCard";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 import { MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_SIZE_LABEL } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
-import { publishMediaPost, preUploadMedia } from "@/services/graphQL/drafts/mediaDraft";
-import { movePostToFeedTop } from "@/services/feed/invalidateFeed";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
 
 import { useVideoPlayer, VideoView } from "expo-video";
 import { FlatList, Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
 import { Play } from "@tamagui/lucide-icons";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { getMimeType } from "@/services/utils/mime";
-import { isImageTypeAllowed } from "@/services/utils/imageConversion";
+import { Image as ExpoImage } from "expo-image";
 
-function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
+function VideoPreview({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (instance) => {
     instance.loop = false;
   });
+  const isFocused = useIsFocused();
   const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
+    if (!isFocused) {
+      player.pause();
+      return;
+    }
+
     if (playing) {
       player.play();
     } else {
       player.pause();
     }
-  }, [playing, player]);
+  }, [isFocused, playing, player]);
 
   useEffect(() => {
     const sub = player.addListener("playToEnd", () => {
@@ -51,8 +52,7 @@ function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
     <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
       <Pressable
         onPress={() => setPlaying((p) => !p)}
-        disabled={uploading}
-        style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
+        style={{ width: "100%", height: "100%" }}
       >
         <VideoView
           player={player}
@@ -83,8 +83,6 @@ function VideoPreview({ uri, uploading }: { uri: string; uploading: boolean }) {
     </View>
   );
 }
-
-import { Image as ExpoImage } from "expo-image";
 
 function getInitials(name?: string): string {
   if (!name) return "Ur";
@@ -129,42 +127,11 @@ function AuthorAvatar({ username, avatarUrl }: { username?: string; avatarUrl?: 
 }
 
 export default function CreateMediaPreviewScreen() {
-  const { wp, hp, fs } = useResponsive();
+  const { wp, hp, insets } = useResponsive();
   const { draft } = useCreatePostStore();
-  const resetDraft = useCreatePostStore((s) => s.resetDraft);
   const currentUser = useAuthStore((s) => s.user);
-
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [showProgress, setShowProgress] = useState(false);
-  const progressRef = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const preUploadedRef = useRef<{ mediaIds: string[]; mediaUrls: string[] } | null>(null);
-  const cancelledRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    const items = draft?.type === "MEDIA" ? draft.media?.items : undefined;
-    if (!items?.length) return;
-    preUploadMedia(items).then((result) => {
-      preUploadedRef.current = result;
-    });
-  }, []);
-
-
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (!showProgress) return;
-    const interval = setInterval(() => {
-      setUploadProgress(progressRef.current);
-    }, 150);
-    return () => clearInterval(interval);
-  }, [showProgress]);
+  const { data: profile } = useUserProfile(currentUser?.id);
+  const avatarUrl = profile?.avatarUrl ?? currentUser?.avatarUrl;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<
@@ -179,21 +146,13 @@ export default function CreateMediaPreviewScreen() {
   const mediaDraft = draft;
   const items = mediaDraft.media.items;
 
-  const getVideoUri = (uri: string) => uri;
   const cardWidth = wp(100) - wp(12);
 
   const caption = mediaDraft.caption ?? "";
 
   const canUpload = items.length > 0 && !!mediaDraft.category?.id;
 
-  function handleCancel() {
-    cancelledRef.current = true;
-    setShowProgress(false);
-  }
-
-  async function handleUpload() {
-    if (showProgress) return;
-
+  function handleUpload() {
     if (!canUpload) {
       setModalType("failed");
       setModalTitle("Required Fields");
@@ -213,55 +172,7 @@ export default function CreateMediaPreviewScreen() {
       return;
     }
 
-    cancelledRef.current = false;
-    progressRef.current = 0;
-    setUploadProgress(0);
-    setShowProgress(true);
-
-    const onProgress = (pct: number) => {
-      progressRef.current = pct;
-    };
-
-    try {
-      const result = await publishMediaPost(
-        mediaDraft,
-        queryClient,
-        onProgress,
-        preUploadedRef.current ?? undefined,
-      );
-
-      if (cancelledRef.current) return;
-
-      setUploadProgress(100);
-
-      if (result?.post?.id) {
-        await queryClient.refetchQueries({ queryKey: ["forYouFeed"], exact: true });
-        movePostToFeedTop(queryClient, result.post.id, result.post);
-      }
-      await queryClient.refetchQueries({ queryKey: ["userPosts"] });
-      setShowProgress(false);
-      setModalType("success");
-      setModalTitle("Success");
-      setModalMessage("Post uploaded successfully");
-      setModalVisible(true);
-
-      timeoutRef.current = setTimeout(() => {
-        setModalVisible(false);
-        resetDraft();
-        router.replace("/(tabs)/feed");
-      }, 1500);
-    } catch (error: any) {
-      if (cancelledRef.current) return;
-      setShowProgress(false);
-      const feedback = getNetworkModalCopy(
-        error,
-        error?.message || "Upload failed",
-      );
-      setModalType(feedback.type);
-      setModalTitle(feedback.title);
-      setModalMessage(feedback.message);
-      setModalVisible(true);
-    }
+    router.push("/create/uploadProgress");
   }
 
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -270,7 +181,6 @@ export default function CreateMediaPreviewScreen() {
   };
 
   const handleBack = () => {
-    if (showProgress) return;
     router.back();
   };
 
@@ -286,7 +196,7 @@ export default function CreateMediaPreviewScreen() {
       <View
         style={{
           width: "100%",
-          height: hp(55),
+          height: hp(80),
           borderRadius: 10,
           overflow: "hidden",
           marginTop: hp(2),
@@ -303,12 +213,12 @@ export default function CreateMediaPreviewScreen() {
               {item.type === "IMAGE" ? (
                 <Image
                   source={{ uri: item.uri }}
-                  style={{ width: "100%", height: "100%", opacity: showProgress ? 0.5 : 1 }}
+                  style={{ width: "100%", height: "100%" }}
                   resizeMode="cover"
                 />
               ) : (
                 <View width={cardWidth} height="100%">
-                  <VideoPreview uri={getVideoUri(item.uri)} uploading={showProgress} />
+                  <VideoPreview uri={item.uri} />
                 </View>
               )}
             </View>
@@ -330,7 +240,6 @@ export default function CreateMediaPreviewScreen() {
 
         <TouchableOpacity
           onPress={handleBack}
-          disabled={showProgress}
           style={{
             position: "absolute",
             top: 14,
@@ -341,7 +250,6 @@ export default function CreateMediaPreviewScreen() {
             borderRadius: 13,
             alignItems: "center",
             justifyContent: "center",
-            opacity: showProgress ? 0.5 : 1,
           }}
         >
           <Text color="white">✕</Text>
@@ -370,7 +278,7 @@ export default function CreateMediaPreviewScreen() {
           )}
 
           <XStack gap={10} alignItems="center">
-            <AuthorAvatar username={currentUser?.username} avatarUrl={currentUser?.avatarUrl} />
+            <AuthorAvatar username={currentUser?.username} avatarUrl={avatarUrl} />
             <YStack flex={1}>
               <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
                 {currentUser?.username || "User"}
@@ -390,14 +298,15 @@ export default function CreateMediaPreviewScreen() {
         </View>
       </View>
 
-      <XStack justifyContent="center" marginTop={hp(5)}>
-        <TagSelectorCard category={mediaDraft.category} disabled={showProgress} onPress={() => {}} />
-      </XStack>
+      <View style={{ flex: 1 }} />
 
-      <YStack marginTop={hp(3)}>
+      <YStack
+        marginTop={hp(3)}
+        paddingBottom={insets.bottom + hp(2)}
+      >
         <SimpleButton
-          text={showProgress ? "Uploading..." : "Upload"}
-          disabled={!canUpload || showProgress}
+          text="Upload"
+          disabled={!canUpload}
           onPress={handleUpload}
           color={colors.primary}
           textColor={colors.buttonText}
@@ -412,13 +321,6 @@ export default function CreateMediaPreviewScreen() {
           message={modalMessage}
           type={modalType}
           autoClose
-        />
-      )}
-      {showProgress && (
-        <PostProgressModal
-          visible={showProgress}
-          progress={uploadProgress}
-          onCancel={handleCancel}
         />
       )}
       </YStack>

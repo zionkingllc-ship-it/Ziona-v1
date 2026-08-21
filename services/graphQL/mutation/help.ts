@@ -31,6 +31,10 @@ const RESOLVE_HELP_CONVERSATION = `
   mutation ResolveHelpConversation($contactId: String!) {
     resolveHelpConversation(contactId: $contactId) {
       success
+      contact {
+        id
+        status
+      }
       error {
         code
         message
@@ -73,11 +77,25 @@ export async function sendHelpMessage(params: {
   return res as { success: boolean };
 }
 
+const RESOLVED_HELP_STATUSES = new Set([
+  "RESOLVED",
+  "CLOSED",
+  "COMPLETED",
+  "DONE",
+  "ARCHIVED",
+]);
+
 export async function resolveHelpConversation(contactId: string) {
   const data = await graphqlRequest(RESOLVE_HELP_CONVERSATION, { contactId });
   const res = data?.resolveHelpConversation;
   if (!res?.success) {
     throw new Error(res?.error?.message || "Failed to resolve conversation");
   }
-  return res as { success: boolean };
+
+  const status = (res?.contact?.status || "").trim().toUpperCase();
+  if (status && !RESOLVED_HELP_STATUSES.has(status)) {
+    console.warn(`[help] resolve returned unrecognized status: ${status}`);
+  }
+
+  return res as { success: boolean; contact?: { id: string; status: string } };
 }

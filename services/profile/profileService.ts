@@ -113,7 +113,14 @@ export async function updateUsername(
   const res = data?.updateUsername;
 
   if (!res?.success) {
-    throw new Error(res?.message || "Failed to update username");
+    const dateMatch = res?.message?.match(/Next change on ([\w\s\d,]+)\./);
+    throw Object.assign(
+      new Error(res?.message || "Failed to update username"),
+      {
+        errorCode: res?.errorCode,
+        rateLimitDate: dateMatch ? dateMatch[1] : null,
+      },
+    );
   }
 
   return res;

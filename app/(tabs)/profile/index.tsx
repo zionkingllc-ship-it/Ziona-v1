@@ -39,6 +39,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import { useMutation } from "@tanstack/react-query";
 import { unlikePost } from "@/services/graphQL/mutation/actions";
+import { formatProfileLink } from "@/utils/formatProfileLink";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
@@ -325,15 +327,17 @@ export default function ProfileScreen() {
               Linking.openURL(url);
             }}
           >
-            <Text
-              fontFamily={"$body"}
-              fontSize={13}
-              color={"#0000EE"}
-              textDecorationLine="underline"
-              marginTop={4}
-            >
-              {profile.bioLink}
-            </Text>
+            <XStack alignItems="center" gap={5} marginTop={4}>
+              <Ionicons name="link-outline" size={16} color={colors.buttonBlue} />
+              <Text
+                fontFamily={"$body"}
+                fontSize={13}
+                color={colors.buttonBlue}
+                fontWeight="500"
+              >
+                {formatProfileLink(profile.bioLink)}
+              </Text>
+            </XStack>
           </TouchableOpacity>
         ) : null}
       </YStack>
