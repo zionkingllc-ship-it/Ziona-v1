@@ -4,21 +4,10 @@ import colors from "@/constants/colors";
 import { useLogout } from "@/hooks/useAccountSettings";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
-import {
-  Bell,
-  Bookmark,
-  BookOpen,
-  ChevronRight,
-  FileText,
-  HelpCircle,
-  Lock,
-  User,
-} from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, XStack, YStack } from "tamagui";
+import { Text, View, XStack, YStack, Ionicons } from "tamagui";
 
 function getColorFromName(name?: string): string {
   if (!name) return "#7A2E8A";
@@ -38,9 +27,8 @@ export default function SettingsScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile, refetch: refetchProfile } = useUserProfile(userId);
   const [refreshing, setRefreshing] = useState(false);
-  const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(
-    null,
-  );
+  const [avatarSource, setAvatarSource] = useState<{ uri: string } | null>(null);
+  const [search, setSearch] = useState("");
   const [imageError, setImageError] = useState(false);
   const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Ur";
 
@@ -84,24 +72,90 @@ export default function SettingsScreen() {
     }
   };
 
+  const searchQuery = search.trim().toLowerCase();
+
+  const settingsSections = useMemo(() => {
+    const all = [
+      {
+        title: "Account settings",
+        rows: [{ label: "Notification", route: "/settings/Notification", icon: <Bell size={18} color={colors.secondaryGray} /> }],
+      },
+      {
+        title: "Activity",
+        rows: [{ label: "Bookmarks", route: "/settings/Bookmarks", icon: <Bookmark size={18} color={colors.secondaryGray} /> }],
+      },
+      {
+        title: "Terms and policies",
+        rows: [
+          { label: "Community guidelines", route: "/settings/terms/community", icon: <BookOpen size={18} color={colors.secondaryGray} /> },
+          { label: "Privacy policy", route: "/settings/terms/privacy", icon: <Lock size={18} color={colors.secondaryGray} /> },
+          { label: "Terms of use", route: "/settings/terms/use", icon: <FileText size={18} color={colors.secondaryGray} /> },
+        ],
+      },
+      {
+        title: "Support",
+        rows: [
+          { label: "Help", route: "/settings/Help", icon: <HelpCircle size={18} color={colors.secondaryGray} /> },
+          { label: "About your account", route: "/settings/About", icon: <User size={18} color={colors.secondaryGray} /> },
+        ],
+      },
+    ];
+
+    if (!searchQuery) return all;
+
+    return all
+      .map((section) => ({
+        ...section,
+        rows: section.rows.filter((row) => row.label.toLowerCase().includes(searchQuery)),
+      }))
+      .filter((section) => section.rows.length > 0);
+  }, [searchQuery]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Settings" />
       <ScrollView contentContainerStyle={{ padding: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* SEARCH */}
-        {/* <View
-          backgroundColor={colors.lightGrayBg}
-          borderRadius={10}
-          paddingHorizontal={12}
-          paddingVertical={8}
+        <YStack
+          paddingHorizontal={16}
           marginBottom={15}
         >
-          <TextInput
-            placeholder="Search"
-            placeholderTextColor={colors.placeholderText}
-          />
-        </View> */}
+          <XStack
+            alignItems="center"
+            backgroundColor="#F4F3F4"
+            borderRadius={12}
+            borderWidth={1}
+            borderColor={colors.border}
+            paddingLeft={12}
+          >
+            <Ionicons name="search" size={20} color={colors.placeHolderText} />
+            <TextInput
+              placeholder="Search"
+              placeholderTextColor={colors.placeholderText}
+              value={search}
+              onChangeText={setSearch}
+              autoCorrect={false}
+              style={{
+                flex: 1,
+                height: 40,
+                fontFamily: "MonaSans",
+                fontSize: 14,
+                color: colors.black,
+                paddingHorizontal: 8,
+              }}
+            />
+            {search.length > 0 && (
+              <Pressable
+                onPress={() => setSearch("")}
+                style={{ paddingRight: 12 }}
+                hitSlop={8}
+              >
+                <Ionicons name="close-circle" size={18} color={colors.gray} />
+              </Pressable>
+            )}
+          </XStack>
+        </YStack>
 
         {/* PROFILE */}
         <Pressable onPress={() => router.push("/settings/AccountSetup")}>
@@ -153,62 +207,18 @@ export default function SettingsScreen() {
           </XStack>
         </Pressable>
 
-        {/* ACCOUNT SETTINGS */}
-        <SettingsSection title="Account settings">
-          <SettingsRow
-            icon={<Bell size={18} color={colors.secondaryGray} />}
-            label="Notification"
-            onPress={() => router.push("/settings/Notification")}
-          />
-        </SettingsSection>
-
-        {/* ACTIVITY */}
-        <SettingsSection title="Activity">
-          <SettingsRow
-            icon={<Bookmark size={18} color={colors.secondaryGray} />}
-            label="Bookmarks"
-            onPress={() => router.push("/settings/Bookmarks")}
-          />
-        </SettingsSection>
-
-        {/* TERMS AND POLICIES */}
-        <SettingsSection title="Terms and policies">
-          <SettingsRow
-            icon={<BookOpen size={18} color={colors.secondaryGray} />}
-            label="Community guidelines"
-            onPress={() => {
-              router.push("/settings/terms/community");
-            }}
-          />
-          <SettingsRow
-            icon={<Lock size={18} color={colors.secondaryGray} />}
-            label="Privacy policy"
-            onPress={() => {
-              router.push("/settings/terms/privacy");
-            }}
-          />
-          <SettingsRow
-            icon={<FileText size={18} color={colors.secondaryGray} />}
-            label="Terms of use"
-            onPress={() => {
-              router.push("/settings/terms/use");
-            }}
-          />
-        </SettingsSection>
-
-        {/* SUPPORT */}
-        <SettingsSection title="Support">
-          <SettingsRow
-            icon={<HelpCircle size={18} color={colors.secondaryGray} />}
-            label="Help"
-            onPress={() => router.push("/settings/Help")}
-          />
-          <SettingsRow
-            icon={<User size={18} color={colors.secondaryGray} />}
-            label="About your account"
-            onPress={() => router.push("/settings/About")}
-          />
-        </SettingsSection>
+        {settingsSections.map((section, index) => (
+          <SettingsSection title={section.title} key={index}>
+            {section.rows.map((row, rowIndex) => (
+              <SettingsRow
+                key={rowIndex}
+                icon={row.icon}
+                label={row.label}
+                onPress={() => router.push(row.route)}
+              />
+            ))}
+          </SettingsSection>
+        ))}
 
         {/* LOGOUT */}
         <Pressable onPress={handleLogout} disabled={logout.isPending}>

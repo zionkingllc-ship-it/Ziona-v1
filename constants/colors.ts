@@ -27,7 +27,7 @@ const colors = {
   lightGrayBg: "#F9F9F9",
   border: "#E0E0E0",
   inputBorder: "#E0E0E0",
-  placeholderText: "#999999",
+  placeholderText: "#836F8B",
   buttonBlue: "#0E0E55",
   SUCCESS_GREEN: "#30A413",
   successText: "#23770E",
