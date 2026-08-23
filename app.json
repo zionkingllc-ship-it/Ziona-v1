@@ -11,6 +11,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
         "com.apple.developer.applesignin": [
+          "Default",
           "Default"
         ]
       },
@@ -26,6 +27,10 @@
           "whatsapp",
           "sms",
           "mailto",
+          "ziona",
+          "whatsapp",
+          "sms",
+          "mailto",
           "ziona"
         ],
         "CFBundleURLTypes": [
@@ -33,9 +38,15 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv"
+            ]
           }
         ],
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ]
       }
@@ -103,7 +114,8 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "edgeToEdge": true
+            "edgeToEdge": true,
+            "enableMinifyInReleaseBuilds": true
           }
         }
       ],
@@ -144,6 +156,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ae56ecb7-5133-4048-849f-b5f191d82d6a"
     }
   }
 }
