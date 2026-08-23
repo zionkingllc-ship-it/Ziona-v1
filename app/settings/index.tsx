@@ -6,6 +6,16 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
+import {
+  Bell,
+  Bookmark,
+  BookOpen,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  Lock,
+  User,
+} from "@tamagui/lucide-icons";
 import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack, Ionicons } from "tamagui";
