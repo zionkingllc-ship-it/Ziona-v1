@@ -5,6 +5,7 @@ import { useLogout } from "@/hooks/useAccountSettings";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "expo-router";
 import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack, Ionicons } from "tamagui";
