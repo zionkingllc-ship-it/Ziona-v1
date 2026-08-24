@@ -6,9 +6,6 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
-import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, XStack, YStack } from "tamagui";
 import {
   Bell,
   Bookmark,
@@ -19,6 +16,10 @@ import {
   Lock,
   User,
 } from "@tamagui/lucide-icons";
+import { Image, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View, XStack, YStack } from "tamagui";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 function getColorFromName(name?: string): string {
   if (!name) return "#7A2E8A";
@@ -129,7 +130,7 @@ export default function SettingsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* SEARCH */}
         <YStack
-          paddingHorizontal={16}
+          paddingHorizontal={12}
           marginBottom={15}
         >
           <XStack
