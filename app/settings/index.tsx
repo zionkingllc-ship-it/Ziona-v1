@@ -129,8 +129,9 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ padding: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
         {/* SEARCH */}
-        <YStack
-          paddingHorizontal={12}
+<YStack
+          width: '100%'
+          paddingHorizontal: 0
           marginBottom={15}
         >
           <XStack
@@ -139,7 +140,6 @@ export default function SettingsScreen() {
             borderRadius={12}
             borderWidth={1}
             borderColor={colors.border}
-            paddingLeft={12}
           >
             <Ionicons name="search" size={20} color={colors.placeHolderText} />
             <TextInput
@@ -154,7 +154,6 @@ export default function SettingsScreen() {
                 fontFamily: "MonaSans",
                 fontSize: 14,
                 color: colors.black,
-                paddingHorizontal: 8,
               }}
             />
             {search.length > 0 && (
