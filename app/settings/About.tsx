@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
+import { APP_VERSION } from "@/constants/version";
 
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
@@ -74,7 +75,7 @@ export default function AboutScreen() {
           <YStack gap={12}>
             <XStack justifyContent="space-between">
               <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>Version</Text>
-              <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>1.0.0</Text>
+              <Text fontFamily="$body" fontSize={14} fontWeight="500" color={colors.black}>{APP_VERSION}</Text>
             </XStack>
           </YStack>
         </View>
