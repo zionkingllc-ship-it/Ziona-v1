@@ -86,17 +86,17 @@ async function requestPermissionsAndRegister() {
         return;
       }
     }
-    if (messaging) {
-      const fcmToken = await messaging.getToken();
-      console.log("🔔 FCM token sent to backend:", fcmToken);
-      await registerTokenOnce(fcmToken);
-    } else {
-      const devicePushToken = await Notifications.getDevicePushTokenAsync();
-      await registerTokenOnce(devicePushToken.data);
-    }
-  } catch (err) {
-    console.warn("🔔 Push token registration failed:", err);
-  }
+try {
+if (!messaging) {
+  console.warn("[Notifications] Firebase Messaging unavailable — skipping token registration");
+  return;
+}
+const fcmToken = await messaging.getToken();
+console.log("🔔 FCM token sent to backend:", fcmToken);
+await registerTokenOnce(fcmToken);
+} catch (err) {
+  console.warn("🔔 Push token registration failed:", err);
+}
 }
 
 async function syncBadgeFromServer() {
