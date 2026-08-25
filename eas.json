@@ -17,12 +17,18 @@
       "android": { "buildType": "app-bundle" }
     },
     "staging": {
+      "environment": "preview",
       "ios": { "distribution": "store" },
       "android": { "buildType": "app-bundle" },
       "autoIncrement": true,
-      "env": { "FIREBASE_ENV": "staging" }
+      "env": { 
+        "FIREBASE_ENV": "staging",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.staging.ziona.app",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql"
+      }
     },
     "production": {
+      "environment": "production",
       "ios": {
         "distribution": "store"
       },
@@ -30,7 +36,11 @@
         "buildType": "app-bundle"
       },
       "autoIncrement": true,
-      "env": { "FIREBASE_ENV": "prod" }
+      "env": { 
+        "FIREBASE_ENV": "prod",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
+      }
     }
   },
   "submit": {
