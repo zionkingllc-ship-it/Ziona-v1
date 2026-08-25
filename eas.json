@@ -8,39 +8,42 @@
       "developmentClient": true,
       "autoIncrement": true,
       "distribution": "internal",
-      "env": { "FIREBASE_ENV": "staging" }
+      "env": { 
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.dev.ziona.app",
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.dev.ziona.app/graphql",
+        "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionadev",
+        "EXPO_PUBLIC_SHARE_DOMAIN": "dev.ziona.app"
+      },
+      "env": { 
+        "channel": "development"
+      }
     },
     "preview": {
-      "distribution": "internal",
-      "autoIncrement": true,
-      "env": { "FIREBASE_ENV": "staging" },
-      "android": { "buildType": "app-bundle" }
-    },
-    "staging": {
       "environment": "preview",
-      "ios": { "distribution": "store" },
-      "android": { "buildType": "app-bundle" },
       "autoIncrement": true,
+      "distribution": "internal",
       "env": { 
-        "FIREBASE_ENV": "staging",
+        "APP_VARIANT": "staging",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.staging.ziona.app",
-        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql"
-      }
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql",
+        "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionastaging",
+        "EXPO_PUBLIC_SHARE_DOMAIN": "staging.ziona.app"
+      },
+      "android": { "buildType": "apk" },
+      "env": { "channel": "staging" }
     },
     "production": {
       "environment": "production",
-      "ios": {
-        "distribution": "store"
-      },
-      "android": {
-        "buildType": "app-bundle"
-      },
       "autoIncrement": true,
       "env": { 
-        "FIREBASE_ENV": "prod",
+        "APP_VARIANT": "production",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.ziona.app",
-        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql"
-      }
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.ziona.app/graphql",
+        "EXPO_PUBLIC_DEEP_LINK_SCHEME": "ziona",
+        "EXPO_PUBLIC_SHARE_DOMAIN": "ziona.app"
+      },
+      "android": { "buildType": "app-bundle" }
     }
   },
   "submit": {
@@ -48,28 +51,6 @@
       "android": {
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
         "track": "production"
-      },
-      "ios": {
-        "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
-        "appleTeamId": "RLL2NX9J5Z"
-      }
-    },
-    "preview": {
-      "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "internal"
-      },
-      "ios": {
-        "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
-        "appleTeamId": "RLL2NX9J5Z"
-      }
-    },
-    "staging": {
-      "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
-        "track": "internal"
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
