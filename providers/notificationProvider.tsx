@@ -69,6 +69,7 @@ async function registerTokenOnce(token: string): Promise<void> {
 
   await serializeRegistration(async () => {
     if (token === registeredToken) return;
+    console.log("[Notifications] device token:", token);
     const registered = await registerDeviceToken(token, Platform.OS);
     if (registered) registeredToken = token;
   });
@@ -118,9 +119,16 @@ function pushOnce(path: string) {
 
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id);
   const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
   const pendingResponseRef = useRef<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log("[Notifications] user ID:", userId);
+    }
+  }, [isAuthenticated, userId]);
 
   useEffect(() => {
     setupAndroidChannel();
@@ -161,12 +169,14 @@ export default function NotificationProvider({ children }: { children: React.Rea
 
   useEffect(() => {
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log("[Notifications] notification ID opened:", response.notification.request.identifier);
       const data = response.notification.request.content.data as Record<string, unknown> | undefined;
       if (!data) return;
       pendingResponseRef.current = data;
     });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log("[Notifications] notification ID received:", notification.request.identifier);
       emitNotificationReceived(notification);
       if (isIOS) {
         const badge = notification.request.content.badge;

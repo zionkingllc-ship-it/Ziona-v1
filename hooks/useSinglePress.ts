@@ -16,13 +16,13 @@ export function useSinglePress(options?: Options) {
       locked.current = true;
       fn();
 
-      if (options?.timeout) {
+      if (options?.timeout !== undefined) {
         timer.current = setTimeout(() => {
           locked.current = false;
-        }, options.timeout);
+        }, options.timeout!);
       }
     },
-    [options?.timeout]
+    []
   );
 
   const reset = useCallback(() => {

@@ -25,8 +25,8 @@ export default function ChangePasswordScreen() {
 
   const [error, setError] = useState("");
   const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorModalTitle, setErrorModalTitle] = useState("");
-  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [errorModalTitle, setErrorModalTitle] = useState("Error");
+  const [errorModalMessage, setErrorModalMessage] = useState("An error occurred. Please try again.");
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -60,8 +60,8 @@ export default function ChangePasswordScreen() {
       setConfirmPassword("");
     } catch (e: any) {
       const feedback = getNetworkModalCopy(e, e?.message || "Failed to change password");
-      setErrorModalTitle(feedback.title);
-      setErrorModalMessage(feedback.message);
+      setErrorModalTitle(feedback.title || "Error");
+      setErrorModalMessage(feedback.message || "An error occurred. Please try again.");
       setErrorModalVisible(true);
     }
   };

@@ -494,16 +494,28 @@ export default function BookmarksScreen() {
                 }}
               />
             </YStack>
-          ) : (
-            <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={wp(10)}>
-              <Text fontFamily="$body" fontWeight="400" color={colors.gray} textAlign="center">
-                No folders yet
-              </Text>
-              <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={4} textAlign="center">
-                Save posts and create folders to organize your bookmarks
-              </Text>
-            </YStack>
-          )}
+           ) : (
+             <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={wp(10)}>
+               <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray} textAlign="center">
+                 You have not created any folders
+               </Text>
+               <Pressable
+                 style={{
+                   width: 82,
+                   height: 19,
+                   marginTop: 8,
+                   backgroundColor: colors.primary,
+                   alignItems: "center",
+                   justifyContent: "center",
+                   borderRadius: 4,
+                 }}
+               >
+                 <Text fontFamily="$body" fontSize={13} color={colors.white} textAlign="center">
+                   create folder
+                 </Text>
+               </Pressable>
+             </YStack>
+           )}
         </>
       )}
     </SafeAreaView>

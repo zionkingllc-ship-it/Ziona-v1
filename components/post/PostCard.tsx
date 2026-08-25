@@ -325,7 +325,7 @@ function PostCardComponent({
               <TouchableOpacity
                 onPress={() => {
                   if (!post.author?.id) return;
-                  requireAuth(() => router.push(`/guest?userId=${post.author.id}`));
+                  requireAuth(() => router.push(`/guest?userId=${post.author?.id}`));
                 }}
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >

@@ -3,7 +3,6 @@ import { ChevronRight, Shield, Heart, UserX } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, XStack, YStack } from "tamagui";
-import { Pressable } from "react-native";
 import colors from "@/constants/colors";
 import { SettingsSection, SettingsRow } from "@/components/settings";
 

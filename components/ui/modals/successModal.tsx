@@ -30,7 +30,7 @@ export default function SuccessModal({
   onClose,
   title = "",
   message = "",
-  autoClose = true,
+  autoClose = false,
   duration = 5000,
   type = "success",
   withButton = false,
@@ -44,7 +44,7 @@ export default function SuccessModal({
   buttonStyle,
 }: Props) {
   useEffect(() => {
-   let timer: ReturnType<typeof setTimeout>;
+    let timer: ReturnType<typeof setTimeout>;
 
     if (visible && autoClose) {
       timer = setTimeout(() => {
@@ -64,10 +64,8 @@ export default function SuccessModal({
   return (
     <BaseModal visible={visible} onClose={onClose}>
       <View style={styles.card}>
-        {!autoClose && (
-          <CloseButton onPress={onClose} size={24} style={styles.closeButton} />
-        )}
-
+        <CloseButton onPress={onClose} size={24} style={styles.closeButton} />
+        
         {type === "success" ? (
           <Image source={successImage} width={50} height={50} bottom={10} />
         ) : type === "failed" ? (

@@ -148,7 +148,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
                 source={require("@/assets/images/AnchorPrayingHandLight.png")}
                 style={{ width: 18, height: 18 }}
               />
-              <Text style={styles.count}>{anchor.anchorLikedCount ?? 0}</Text>
+              <Text style={styles.count}>{anchor!.anchorLikedCount ?? 0}</Text>
             </YStack>
           </View>
         </View>
