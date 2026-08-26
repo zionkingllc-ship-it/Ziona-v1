@@ -1,187 +1,145 @@
-/**
- * Multi-variant EAS configuration.
- * Reads APP_VARIANT environment variable to determine the active variant.
- * Variants: development, staging, production
- */
 const variants = {
   development: {
     appName: "Ziona Dev",
-    bundleId: "com.zionking.ziona.dev",
-    packageId: "com.zionking.ziona.dev",
+    bundleIdentifier: "com.zionking.ziona.dev",
+    package: "com.zionking.ziona.dev",
     scheme: "zionadev",
-    associatedDomains: ["applinks:ziona.dev"],
-    googleServicesFile: "./google-services.dev.json",
-    googleServicesAndroid: "./google-services.dev.json",
+    googleServicesFileIos: "./GoogleService-Info.dev.plist",
+    googleServicesFileAndroid: "./google-services.dev.json",
   },
   staging: {
     appName: "Ziona Staging",
-    bundleId: "com.zionking.ziona.staging",
-    packageId: "com.zionking.ziona.staging",
+    bundleIdentifier: "com.zionking.ziona.staging",
+    package: "com.zionking.ziona.staging",
     scheme: "zionastaging",
-    associatedDomains: ["applinks:staging.ziona.app", "applinks:api.staging.ziona.app"],
-    googleServicesFile: "./google-services.staging.json",
-    googleServicesAndroid: "./google-services.staging.json",
+    googleServicesFileIos: "./GoogleService-Info.staging.plist",
+    googleServicesFileAndroid: "./google-services.staging.json",
   },
   production: {
     appName: "Ziona",
-    bundleId: "com.zionking.ziona",
-    packageId: "com.zionking.ziona",
+    bundleIdentifier: "com.zionking.ziona",
+    package: "com.zionking.ziona",
     scheme: "ziona",
-    associatedDomains: ["applinks:ziona.app", "applinks:api.ziona.app"],
-    googleServicesFile: "./google-services.json",
-    googleServicesAndroid: "./google-services.json",
+    googleServicesFileIos: "./GoogleService-Info.plist",
+    googleServicesFileAndroid: "./google-services.json",
   },
 };
 
-const variant = process.env.APP_VARIANT || "production";
-const config = variants[variant];
+const variant = variants[process.env.APP_VARIANT ?? "production"];
 
-if (!config) {
-  throw new Error(`Unknown APP_VARIANT: ${process.env.APP_VARIANT}`);
-}
-
-// The bundle identifier for iOS and Android
-const bundleId = config.bundleId;
-const packageId = config.packageId;
-
-// App name to display
-const appName = config.appName;
-
-// Deep link scheme
-const scheme = config.scheme;
-
-// Associated domains for universal links
-const associatedDomains = config.associatedDomains;
-
-// Google Services files path
-const googleServicesFile = config.googleServicesFile;
-const googleServicesAndroid = config.googleServicesAndroid;
+// Helper: attempt variant file; fall back to production if missing (keeps builds green pre-Firebase-setup)
+const fs = require("fs");
+const resolveGoogleServicesFile = (variantFile, prodFile) =>
+  fs.existsSync(variantFile) ? variantFile : prodFile;
 
 module.exports = {
   expo: {
-    name: config.appName,
+    name: variant.appName,
     slug: "ziona",
-    slug: config.appName.replace(/\s+/g, "-").toLowerCase(),
     version: "1.0.3",
-    orientation: "portrait",
-    orientationLock: "portrait",
+    scheme: variant.scheme,
+    // Carried from app.json (deduplicated & cleaned)
     icon: "./assets/images/icon.png",
     userInterfaceStyle: "light",
-    npm: {
-      // "expo-go" only supports expo-manifest v2
-      "peerDependencies": {
-        "expo": "~52.0.0"
+    ios: {
+      bundleIdentifier: variant.bundleIdentifier,
+      googleServicesFile: resolveGoogleServicesFile(
+        "./GoogleService-Info." + variant.scheme + ".plist",
+        "./GoogleService-Info.plist"
+      ),
+      entitlements: {
+        "com.apple.developer.applesignin": ["Default"],
+      },
+      associatedDomains: ["applinks:ziona.app", "applinks:api.ziona.app"],
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription:
+          "Ziona needs access to your photo library to let you upload profile pictures and attach images to posts and comments.",
+        NSPhotoLibraryAddUsageDescription:
+          "Ziona needs access to save images to your photo library.",
+        LSApplicationQueriesSchemes: ["whatsapp", "sms", "mailto", "ziona"],
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes:
+              "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
+          },
+        ],
+        UIBackgroundModes: ["remote-notification"],
       },
     },
-    // The form below matches the form used by Expo Application Services
-    // to build and publish your app to the app stores.
-    // Instead of learning the exact shape of the native config experience
-    // expected by EAS, you can preview the rendered config here.
-    // learn more at https://docs.expo.dev/config/app-config/
-    // find more info on native config experience at
-    // https://docs.expo.dev/bare/#configuring-xcode-and-android-studio
-    plugins: [
-      "./plugins/withFirebaseConfig",
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      "expo-apple-authentication",
-      "./plugins/withAndroidQueries",
-      "./plugins/withImagePickerCropColors",
-    ],
-    // The following keys are part of the Expo application configuration
-    // format, and will be evaluated when building your app on EAS.
-    // The config will be merged with app.json values, with app.config.js
-    // taking precedence.
-    ios: {
-      // The bundle identifier for iOS.
-      bundleIdentifier: config.bundleId,
-      // The iOS associated domains for universal links
-      associatedDomains: config.associatedDomains,
-      // The iOS google services file
-      googleServicesFile: config.googleServicesFile,
-      // The iOS google services file for Android (same as iOS in this config)
-      googleServicesAndroid: config.googleServicesAndroid,
-      // The iOS google services file path (for Expo Google Services)
-      googleServicesFileIOS: config.googleServicesFile,
-      // The iOS google services file path (for Android)
-      googleServicesFileAndroid: config.googleServicesAndroid,
-    },
     android: {
-      // The package name for Android.
-      package: config.packageId,
-      // The Android version code (autoIncrement handled by EAS)
-      versionCode: 1,
-      // The Android version name
-      version: "1.0.3",
-      // The Android theme engine
-      theme: "Theme.Styled.NoActionBar",
-      // The Android google services file path
-      googleServicesFile: config.googleServicesAndroid,
-      // The Android google services file path (for iOS compatibility)
-      googleServicesFileIOS: config.googleServicesFile,
-      // The Android google services file path (for iOS compatibility)
-      googleServicesFileAndroid: config.googleServicesAndroid,
+      googleServicesFile: resolveGoogleServicesFile(
+        "./google-services." + variant.scheme + ".json",
+        "./google-services.json"
+      ),
+      softwareKeyboardLayoutMode: "resize",
+      package: variant.package,
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "ziona.app",
+              pathPrefix: "/post",
+            },
+            {
+              scheme: "https",
+              host: "api.ziona.app",
+              pathPrefix: "/post",
+            },
+            {
+              scheme: "ziona",
+              host: "*",
+              pathPrefix: "/viewer",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
+      permissions: [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+      ],
     },
-    // The following keys are part of the Expo application configuration
-    // and will be evaluated when building your app on EAS.
-    // The config will be merged with app.json values, with app.config.js
-    // taking precedence.
+    web: {
+      output: "static",
+      favicon: "./assets/images/favicon.png",
+    },
+    plugins: [
+      "./plugins/withFirebaseNotificationColor",
+      "expo-router",
+      ["@react-native-google-signin/google-signin", { iosUrlScheme: "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv" }],
+      ["expo-build-properties", { ios: { useFrameworks: "static", forceStaticLinking: ["RNFBApp", "RNFBMessaging"] }, android: { enableProguardInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, edgeToEdge: true, enableMinifyInReleaseBuilds: true } }],
+      "expo-splash-screen",
+      "expo-asset",
+      "expo-font",
+      "expo-web-browser",
+      "expo-video",
+      "expo-apple-authentication",
+      "./plugins/withAndroidOrientation",
+      "./plugins/withImagePickerCropColors",
+      ["expo-notifications", { color: "#742092" }],
+      "./plugins/withAndroidQueries",
+      // NOTE: withFirebaseConfig removed — source files never existed; variant googleServicesFile above handles native config
+    ],
     extra: {
-      // These values are available via process.env.extra in your app.
-      APP_VARIANT: process.env.APP_VARIANT || "production",
-      APP_NAME: config.appName,
+      router: {},
+      eas: {
+        projectId: "ae56ecb7-5133-4048-849f-b5f191d82d6a",
+      },
     },
-    // The runtimeVersion is used for EAS Updates.
-    // The runtimeVersion is set to "runtimeVersion": "1.0.0" by default,
-    // but you can use "runtimeVersion: { policy: "appVersion" }"
-    // to have Expo automatically increment the runtimeVersion when
-    // appVersion is incremented in app.json.
-    // Uncomment the following line if you want to use this feature:
-    // runtimeVersion: { policy: "appVersion" },
-    "extra": {
-      "APP_VARIANT": process.env.APP_VARIANT || "production",
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true,
     },
-    "extra": {
-      "channel": process.env.APP_VARIANT || "production",
+    runtimeVersion: {
+      policy: "appVersion",
     },
-    "plugins": [
-      "./plugins/withFirebaseConfig",
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      "expo-apple-authentication",
-      "./plugins/withAndroidQueries",
-      "./plugins/withImagePickerCropColors",
-    ],
-    "runtimeVersion": "1.0.3",
-    "slug": "ziona",
-    "ios": {
-      "associatedDomains": config.associatedDomains,
-      "googleServicesFile": config.googleServicesFile,
-      "googleServicesAndroid": config.googleServicesAndroid,
+    updates: {
+      url: "https://u.expo.dev/ae56ecb7-5133-4048-849f-b5f191d82d6a",
     },
-    "android": {
-      "package": config.packageId,
-      "version": "1.0.3",
-      "versionCode": 1,
-      "googleServicesFile": config.googleServicesAndroid,
-    },
-    "plugins": [
-      "./plugins/withFirebaseConfig",
-      "expo-router",
-      "expo-font",
-      "expo-web-browser",
-      "expo-apple-authentication",
-      "./plugins/withAndroidQueries",
-      "./plugins/withImagePickerCropColors",
-    ],
-  };
-}
-`;
-
-Now let me also update the eas.json to set the APP_VARIANT per profile and add channels:Now let me update the eas.json to set the APP_VARIANT per profile and add channels:
-<tool_call>
-<function=bash>
-<parameter=workdir>
-D:\work\Ziona\ziona-v1
+  },
+};
