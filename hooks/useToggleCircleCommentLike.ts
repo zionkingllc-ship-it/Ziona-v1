@@ -7,14 +7,10 @@ export function useToggleCircleCommentLike() {
   return useMutation({
     mutationFn: ({
       commentId,
-      currentLiked,
     }: {
       commentId: string;
       currentLiked: boolean;
     }) => {
-      if (currentLiked) {
-        throw new Error("Unlike not supported for circle comments");
-      }
       return likeCircleComment(commentId);
     },
 
