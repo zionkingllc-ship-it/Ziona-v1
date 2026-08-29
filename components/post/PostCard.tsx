@@ -397,7 +397,7 @@ function PostCardComponent({
                   {likedState ? (
                     <LikeActiveIcon width={30} height={30} />
                   ) : (
-                    <LikeIcon width={30} height={30} />
+                    <LikeIcon width={25} height={23} />
                   )}
                 </Pressable>
               </GestureDetector>

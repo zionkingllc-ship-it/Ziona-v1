@@ -6,6 +6,7 @@ import { YStack } from "tamagui";
 import React, { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 
 interface AnchorCardProps {
   anchor?: ActiveAnchor;
@@ -136,9 +137,11 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
 
           {showTextPreview && (
             <View style={styles.textArea}>
-              <Text style={styles.previewText} numberOfLines={4}>
-                {previewText}
-              </Text>
+              <AnchorHtmlText
+                html={previewText}
+                contentWidth={300}
+                baseStyle={styles.previewText}
+              />
             </View>
           )}
 
