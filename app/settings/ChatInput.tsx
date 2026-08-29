@@ -10,6 +10,7 @@ import { submitHelpMessage } from "@/services/graphQL/mutation/help";
 import { useAuthStore } from "@/store/useAuthStore";
 import colors from "@/constants/colors";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 export default function ChatInputScreen() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function ChatInputScreen() {
         params: { message: message.trim(), ticketId: result.contact?.id || "" },
       });
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to send message. Please try again.");
+      Alert.alert("Error", getErrorMessage(err) || "Failed to send message. Please try again.");
     } finally {
       setSubmitting(false);
     }

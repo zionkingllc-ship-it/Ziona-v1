@@ -7,6 +7,7 @@ import OtpContainer from "@/components/auth/OtpContainer";
 import colors from "@/constants/colors";
 import { useChangePassword } from "@/hooks/useAccountSettings";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { Eye, EyeClosed } from "@tamagui/lucide-icons";
 import { useState } from "react";
 import { Text, XStack, YStack, View } from "tamagui";
@@ -59,7 +60,7 @@ export default function ChangePasswordScreen() {
       setNewPassword("");
       setConfirmPassword("");
     } catch (e: any) {
-      const feedback = getNetworkModalCopy(e, e?.message || "Failed to change password");
+      const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to change password");
       setErrorModalTitle(feedback.title || "Error");
       setErrorModalMessage(feedback.message || "An error occurred. Please try again.");
       setErrorModalVisible(true);

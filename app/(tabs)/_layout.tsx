@@ -13,6 +13,8 @@ import { Text } from "tamagui";
 import { useAuthStore } from "@/store/useAuthStore";
 import { queryClient } from "@/lib/queryClient";
 import { isAndroid, tabBarHeight as TAB_BAR_VISUAL_HEIGHT } from "@/constants/platform";
+import CreateActiveIcon from "@/assets/images/create-active.svg";
+import CreateInactiveIcon from "@/assets/images/Create.svg";
 
 function getColorFromName(name?: string): string {
   if (!name) return "#7A2E8A";
@@ -52,8 +54,6 @@ export default function TabsLayout() {
   const homeInActive = require("@/assets/images/HomeTabA.png");
   const discoverActive = require("@/assets/images/discover-active.png");
   const discoverInActive = require("@/assets/images/discoverTabA.png");
-  const createActive = require("@/assets/images/create-active.jpg");
-  const createInActive = require("@/assets/images/createTabsA.png");
   const circleInActive = require("@/assets/images/circleTabA.png");
   const circleActive = require("@/assets/images/circleTabB.png");
 
@@ -140,12 +140,10 @@ export default function TabsLayout() {
         name="create"
         options={{
           title: "Create",
-          tabBarIcon: ({ focused }) => (
-            <Image
-              source={focused ? createActive : createInActive}
-              style={{ width: 23, height: 23 }}
-            />
-          ),
+          tabBarIcon: ({ focused }) => {
+            const Icon = focused ? CreateActiveIcon : CreateInactiveIcon;
+            return <Icon width={23} height={23} />;
+          },
         }}
       />
       <Tabs.Screen

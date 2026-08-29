@@ -15,6 +15,7 @@ import { useAsyncStore } from "@/store/useAsyncStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { authApi } from "@/services/api/authApi";
 import { isLoginPasswordValid } from "@/utils/passwordRules";
+import { AppError, getErrorMessage, isAuthError, isNetworkError } from "@/utils/error";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
@@ -95,14 +96,16 @@ export default function SignIn() {
 
       stop("signin");
     } catch (error: any) {
-      const message = error?.error?.message || error?.message || "";
+      const message = getErrorMessage(error);
       if (message.toLowerCase().includes("suspended") || message.toLowerCase().includes("does not exist")) {
         setSuspendMessage(message);
         setShowSuspendModal(true);
-      } else if (error?._status) {
+      } else if (isAuthError(error)) {
         setAuthError(message || "Email or password incorrect");
-      } else {
+      } else if (isNetworkError(error)) {
         setAuthError("Network error. Please check your connection.");
+      } else {
+        setAuthError(message || "An error occurred. Please try again.");
       }
       stop("signin");
     }

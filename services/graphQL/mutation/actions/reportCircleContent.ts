@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 const REASON_MAP: Record<string, string> = {
   DISRESPECTFUL: "disrespectful_to_faith",
@@ -53,7 +54,7 @@ export async function reportCircleContent(
     const errorCode = res?.error?.code || "UNKNOWN";
     const errorMsg = res?.error?.message || errorCode || "Failed to submit circle report";
     console.error("[ReportFlow] reportCircleContent failed:", { code: errorCode, message: errorMsg });
-    throw new Error(errorMsg);
+    throw new AppError(errorMsg, { code: errorCode });
   }
 
   return res;

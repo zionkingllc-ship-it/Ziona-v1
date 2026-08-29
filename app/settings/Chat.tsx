@@ -12,6 +12,7 @@ import { useChatStore } from "@/store/useChatStore";
 import colors from "@/constants/colors";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 const RESOLVED_STATUSES = new Set([
   "RESOLVED",
@@ -124,7 +125,7 @@ export default function ChatScreen() {
         ], result.contact?.id || "");
         setInput("");
       } catch (err: any) {
-        Alert.alert("Error", err?.message || "Failed to send message. Please try again.");
+        Alert.alert("Error", getErrorMessage(err) || "Failed to send message. Please try again.");
       }
       setSubmitting(false);
     } else {
@@ -137,7 +138,7 @@ export default function ChatScreen() {
       try {
         await sendHelpMessage({ contactId: ticketId, message: text, clientMessageId });
       } catch (err: any) {
-        setErrorMsg(err?.message || "Failed to send message.");
+        setErrorMsg(getErrorMessage(err) || "Failed to send message.");
         setShowError(true);
       } finally {
         setSubmitting(false);
@@ -154,7 +155,7 @@ export default function ChatScreen() {
       setShowConfirm(false);
       setShowModal(true);
     } catch (err: any) {
-      setErrorMsg(err?.message || "Failed to resolve conversation. Please try again.");
+      setErrorMsg(getErrorMessage(err) || "Failed to resolve conversation. Please try again.");
       setShowConfirm(false);
       setShowError(true);
     } finally {

@@ -9,6 +9,7 @@ import { Text, YStack, XStack, Image } from "tamagui";
 import colors from "@/constants/colors";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 const OTP_LENGTH = 6;
 
@@ -78,7 +79,7 @@ export default function ChangePasswordOtp() {
 
       const feedback = getNetworkModalCopy(
         error,
-        error?.message || "Please check the code and try again"
+        getErrorMessage(error) || "Please check the code and try again"
       );
       setErrorTitle(feedback.title || "Invalid code");
       setErrorMessage(feedback.message || "Please check the code and try again");
@@ -106,7 +107,7 @@ export default function ChangePasswordOtp() {
       console.error("Resend OTP failed:", error);
       const feedback = getNetworkModalCopy(
         error,
-        error?.message || "Failed to resend code"
+        getErrorMessage(error) || "Failed to resend code"
       );
       setErrorTitle(feedback.title || "Failed to resend");
       setErrorMessage(feedback.message || "Please try again later");

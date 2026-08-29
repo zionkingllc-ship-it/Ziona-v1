@@ -29,6 +29,7 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { keyboardBehavior } from "@/constants/platform";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 type Props = {
   /** Optional circleId passed from a wrapper route to ensure the param is available */
@@ -152,7 +153,7 @@ export default function PostComposer({ initialCircleId }: Props) {
       if (!result?.success) {
         console.error("[PostComposer] Post failed:", JSON.stringify(result?.error));
         setErrorType("failed");
-        setErrorMessage(result?.error?.message || "Failed to create post");
+        setErrorMessage(getErrorMessage(result?.error) || "Failed to create post");
         setShowError(true);
         setPosting(false);
         return;
@@ -171,7 +172,7 @@ export default function PostComposer({ initialCircleId }: Props) {
       if (cancelledRef.current) return;
       console.error("Failed to create post:", error);
       setErrorType("failed");
-      setErrorMessage(error?.message || "Something went wrong. Please try again.");
+      setErrorMessage(getErrorMessage(error) || "Something went wrong. Please try again.");
       setShowError(true);
     } finally {
       setPosting(false);

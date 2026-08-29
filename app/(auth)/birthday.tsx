@@ -10,6 +10,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { InteractionManager, Pressable } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 export default function Birthday() {
   const [showPicker, setShowPicker] = useState(false);
@@ -72,7 +73,7 @@ export default function Birthday() {
       stop("birthdayNext");
     } catch (err: any) {
       console.error("🟥 BIRTHDAY ERROR:", err?.response?.data || err?.message || err);
-      setError(err?.error?.message || err?.message || "Unable to verify birthday. Please try again.");
+      setError(getErrorMessage(err));
       stop("birthdayNext");
     }
   };

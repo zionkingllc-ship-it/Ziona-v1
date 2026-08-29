@@ -11,6 +11,9 @@ import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { isIOS } from "@/constants/platform";
 import { resolveNotificationDestination } from "@/src/services/notifications/notificationNavigation";
 import { emitNotificationReceived } from "@/src/services/notifications/notificationService";
+import { storage } from "@/utils/storage";
+
+const LAST_HANDLED_NOTIF_KEY = "lastHandledNotificationId";
 
 let messaging: any = null;
 try {
@@ -207,9 +210,19 @@ export default function NotificationProvider({ children }: { children: React.Rea
       pendingResponseRef.current = null;
     }
 
+    // `getLastNotificationResponseAsync` returns the most recent notification
+    // response the user ever interacted with, and it persists across cold
+    // starts. Acting on it unconditionally routes the user to a notification
+    // destination on *every* launch once they have ever tapped a push (prod
+    // only). Only navigate when this is a genuinely new response we haven't
+    // already handled, by remembering the last handled response identifier.
     Notifications.getLastNotificationResponseAsync()
-      .then((response) => {
+      .then(async (response) => {
         if (!response) return;
+        const id = response.notification.request.identifier;
+        const lastHandled = await storage.get<string>(LAST_HANDLED_NOTIF_KEY);
+        if (id && id === lastHandled) return;
+        if (id) await storage.set(LAST_HANDLED_NOTIF_KEY, id);
         const data = response.notification.request.content.data as Record<string, unknown> | undefined;
         if (data) handleData(data);
       })

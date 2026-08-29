@@ -8,6 +8,7 @@ import { cleanAvatarUrl } from "@/services/utils/cleanAvatarUrl";
 import { getMimeType } from "@/services/utils/mime";
 import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import * as FileSystem from "expo-file-system/legacy";
+import { AppError } from "@/utils/error";
 
 /* =========================
    UPDATE PROFILE
@@ -71,13 +72,13 @@ mutation UpdateProfile(
     ) {
       const dateMatch = error?.message?.match(/Next change on ([\w\s\d,]+)\./);
       throw Object.assign(
-        new Error(error?.message || "Failed to update profile"),
+        new AppError(error?.message || "Failed to update profile", { code: error?.code }),
         {
           rateLimitDate: dateMatch ? dateMatch[1] : null,
         },
       );
     }
-    throw new Error(res?.error?.message || "Failed to update profile");
+    throw new AppError(res?.error?.message || "Failed to update profile");
   }
 
   return res.profile;
@@ -115,7 +116,7 @@ export async function updateUsername(
   if (!res?.success) {
     const dateMatch = res?.message?.match(/Next change on ([\w\s\d,]+)\./);
     throw Object.assign(
-      new Error(res?.message || "Failed to update username"),
+      new AppError(res?.message || "Failed to update username", { code: res?.errorCode }),
       {
         errorCode: res?.errorCode,
         rateLimitDate: dateMatch ? dateMatch[1] : null,
@@ -169,7 +170,7 @@ mutation UpdateProfile(
   const res = data?.updateProfile;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to update avatar");
+    throw new AppError(res?.error?.message || "Failed to update avatar");
   }
 
   return cleanAvatarUrl(res.profile?.avatarUrl) ?? null;

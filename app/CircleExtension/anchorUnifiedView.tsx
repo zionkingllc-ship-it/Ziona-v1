@@ -5,6 +5,7 @@ import AnchorTextCard from "@/components/circles/AnchorTextCard";
 import AnchorVideoPlayer from "@/components/circles/AnchorVideoPlayer";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import { getGradientColors } from "@/lib/anchorUtils";
+import { chunkHtmlByBlocks, chunkText, isHtml } from "@/lib/anchorHtmlChunk";
 import { saveAnchorRef } from "@/utils/anchorRef";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,25 +19,6 @@ import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width;
-
-function calculateChunkSize(textLength: number): number {
-  if (textLength <= 400) return 400;
-  if (textLength <= 600) return 500;
-  if (textLength <= 900) return 700;
-  return 800;
-}
-
-function chunkText(text: string): string[] {
-  const chunkSize = calculateChunkSize(text.length);
-  const chunks: string[] = [];
-  let remaining = text;
-  while (remaining.length > chunkSize) {
-    chunks.push(remaining.slice(0, chunkSize));
-    remaining = remaining.slice(chunkSize);
-  }
-  if (remaining.length > 0) chunks.push(remaining);
-  return chunks;
-}
 
 type SlideType = "text" | "video" | "image" | "action";
 
@@ -75,7 +57,7 @@ function createSlides(
   }
 
   if (text) {
-    const chunks = chunkText(text);
+    const chunks = isHtml(text) ? chunkHtmlByBlocks(text) : chunkText(text);
     chunks.forEach((chunk, index) => {
       slides.push({
         id: `text-${index}`,

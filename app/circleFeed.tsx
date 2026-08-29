@@ -38,6 +38,8 @@ import {
   View,
 } from "react-native";
 
+import { AppError, getErrorMessage } from "@/utils/error";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isIOS } from "@/constants/platform";
 
@@ -241,7 +243,15 @@ export default function CircleFeedScreen() {
   );
 
   const fallbackAvatars = useMemo(() => {
-    try { return _avatars ? JSON.parse(_avatars) : []; } catch { return []; }
+    let avatars: any[] = [];
+    if (_avatars) {
+      try {
+        avatars = JSON.parse(_avatars);
+      } catch {
+        avatars = [];
+      }
+    }
+    return avatars;
   }, [_avatars]);
 
   const circle = useMemo(() => {
@@ -362,7 +372,7 @@ export default function CircleFeedScreen() {
       const payload = result?.joinCircle ?? result;
       if (payload?.success === false) {
         setJoinErrorTitle("Unable to join");
-        setJoinErrorMessage(payload?.error?.message || "Something went wrong. Please try again.");
+        setJoinErrorMessage(getErrorMessage(payload?.error) || "Something went wrong. Please try again.");
         setJoinErrorVisible(true);
       } else {
         setJoinSuccessTitle("Joined circle");
@@ -372,7 +382,7 @@ export default function CircleFeedScreen() {
     } catch (err: any) {
       console.error("Failed to join:", err);
       setJoinErrorTitle("Action failed");
-      setJoinErrorMessage(err?.message || "Something went wrong. Please try again.");
+      setJoinErrorMessage(getErrorMessage(err) || "Something went wrong. Please try again.");
       setJoinErrorVisible(true);
     } finally {
       setJoining(false);
@@ -387,7 +397,7 @@ export default function CircleFeedScreen() {
       const payload = result?.leaveCircle ?? result;
       if (payload?.success === false) {
         setJoinErrorTitle("Unable to leave");
-        setJoinErrorMessage(payload?.error?.message || "Something went wrong. Please try again.");
+        setJoinErrorMessage(getErrorMessage(payload?.error) || "Something went wrong. Please try again.");
         setJoinErrorVisible(true);
       } else {
         setJoinSuccessTitle("Left circle");
@@ -397,7 +407,7 @@ export default function CircleFeedScreen() {
     } catch (err: any) {
       console.error("Failed to leave:", err);
       setJoinErrorTitle("Action failed");
-      setJoinErrorMessage(err?.message || "Something went wrong. Please try again.");
+      setJoinErrorMessage(getErrorMessage(err) || "Something went wrong. Please try again.");
       setJoinErrorVisible(true);
     } finally {
       setJoining(false);

@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 const SUBMIT_CONTACT = `
   mutation SubmitContact($brand: ContactBrand!, $email: String!, $message: String!, $name: String!) {
@@ -22,7 +23,7 @@ export async function submitContact(params: {
   const data = await graphqlRequest(SUBMIT_CONTACT, params);
   const res = data?.submitContact;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to send message");
+    throw new AppError(res?.error?.message || "Failed to send message", { code: res?.error?.code });
   }
   return res as { success: boolean; ticketId?: string };
 }

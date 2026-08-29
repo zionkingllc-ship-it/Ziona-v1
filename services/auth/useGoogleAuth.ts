@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 type GoogleAuthResponse = {
   user?: {
@@ -101,10 +102,7 @@ export const useGoogleAuth = () => {
       });
 
       return {
-        error:
-          error?.error?.message ||
-          error?.message ||
-          "Google login failed, try again later",
+        error: getErrorMessage(error) || "Google login failed, try again later",
       };
     }
   };

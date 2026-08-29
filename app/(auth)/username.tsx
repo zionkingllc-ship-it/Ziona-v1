@@ -12,6 +12,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
@@ -103,9 +104,7 @@ const handleSubmit = async () => {
     stop("signup");
   } catch (err: any) {
     console.error("🟥 USERNAME ERROR:", err);
-    console.error("🟥 raw error shape:", JSON.stringify(err).slice(0, 300));
-    console.error("🟥 message:", err?.error?.message || err?.message);
-    setError(err?.error?.message || err?.message || "Signup failed. Please try again.");
+    setError(getErrorMessage(err));
     setShowErrorModal(true);
     stop("signup");
   }

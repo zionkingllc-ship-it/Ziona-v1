@@ -1,3 +1,5 @@
+import { AppError } from "@/utils/error"
+
 type RequestOptions = {
   headers?: Record<string, string>
 }
@@ -15,7 +17,7 @@ async function request(method: string, path: string, body?: unknown, options?: R
   })
   if (!res.ok) {
     const errBody = await res.text()
-    throw new Error(`API ${method} ${path} failed (${res.status}): ${errBody}`)
+    throw new AppError(`API ${method} ${path} failed (${res.status}): ${errBody}`, { status: res.status })
   }
   return res.json()
 }

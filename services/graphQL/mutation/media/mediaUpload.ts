@@ -1,5 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 const REQUEST_UPLOAD_MUTATION = `
 mutation UploadMedia($fileName: String!, $fileType: String!, $fileSize: Int!) {
@@ -38,7 +39,7 @@ export async function requestMediaUpload(
 
   if (!payload?.success) {
     console.error("[requestMediaUpload] Server rejected:", JSON.stringify(payload));
-    throw new Error(payload?.error?.message || `Media upload request failed (${fileName}, ${fileType}, ${fileSize})`);
+    throw new AppError(payload?.error?.message || `Media upload request failed (${fileName}, ${fileType}, ${fileSize})`, { code: payload?.error?.code });
   }
 
   return payload as { uploadUrl: string; mediaId: string; mediaUrl?: string; status?: string };
@@ -62,7 +63,7 @@ export async function confirmMediaUpload(mediaId: string) {
   const payload = data?.confirmMediaUpload;
 
   if (!payload?.success) {
-    throw new Error(payload?.error?.message || "Media upload confirmation failed");
+    throw new AppError(payload?.error?.message || "Media upload confirmation failed", { code: payload?.error?.code });
   }
 
   return payload as { mediaUrl: string };
@@ -122,7 +123,7 @@ export async function waitForMediaProcessing(
       if (result?.status === "ready" || result?.status === "completed" || result?.status === "available") {
         statuses.set(id, true);
       } else if (result?.status === "failed") {
-        throw new Error(`Media ${id} processing failed: ${result?.error?.message || "Unknown error"}`);
+        throw new AppError(`Media ${id} processing failed: ${result?.error?.message || "Unknown error"}`);
       } else {
         statuses.set(id, false);
       }
@@ -222,7 +223,7 @@ export async function uploadFileToStorage(
 
       if (isLastAttempt || !isRetryableError(error)) {
         cleanup();
-        throw new Error(error.message || "Upload to storage failed");
+        throw new AppError(error.message || "Upload to storage failed");
       }
 
       const delay = RETRY_DELAYS[attempt] ?? 4000;

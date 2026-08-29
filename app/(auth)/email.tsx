@@ -10,6 +10,7 @@ import { useSignupStore } from "@/store/useSignupStore";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -101,10 +102,7 @@ export default function Email() {
       });
     } catch (err: any) {
       console.error("🟥 EMAIL ERROR:", err?.response?.data || err?.message || err);
-      setServerError(
-        err?.error?.message || err?.message ||
-          "Unable to verify email, please try again",
-      );
+      setServerError(getErrorMessage(err));
       stop("emailNext");
     }
   };

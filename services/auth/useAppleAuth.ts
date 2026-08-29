@@ -3,6 +3,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
+import { AppError, getErrorMessage, isAuthError, isNetworkError } from "@/utils/error";
 
 type AppleAuthResponse = {
   user?: {
@@ -49,12 +50,12 @@ function getUserFacingError(error: any): string {
     return APPLE_ERROR_MESSAGES[error.errorCode as AppleErrorCode];
   }
 
-  if (error._status) {
-    if (error._status === 401) return "Session expired. Please try again.";
-    if (error._status === 429) return "Too many attempts. Please wait and try again.";
+  if (isAuthError(error)) {
+    if (error.status === 401) return "Session expired. Please try again.";
+    if (error.status === 429) return "Too many attempts. Please wait and try again.";
   }
 
-  return error?.message || "Apple login failed, try again later.";
+  return getErrorMessage(error) || "Apple login failed, try again later.";
 }
 
 export const useAppleAuth = () => {

@@ -28,6 +28,7 @@ import { Image, Text, XStack, YStack } from "tamagui";
 import { keyboardBehavior } from "@/constants/platform";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { useCircleDetail, useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
@@ -172,7 +173,7 @@ export default function CircleCommentComposer({
 
       if (!result?.success) {
         setErrorType("failed");
-        setErrorMessage(result?.error?.message || "Failed to create post");
+        setErrorMessage(getErrorMessage(result?.error) || "Failed to create post");
         setShowError(true);
         setPosting(false);
         return;
@@ -206,7 +207,7 @@ export default function CircleCommentComposer({
     } catch (error: any) {
       console.error("Failed to create post:", error);
       setErrorType("failed");
-      setErrorMessage(error?.message || "Something went wrong. Please try again.");
+      setErrorMessage(getErrorMessage(error) || "Something went wrong. Please try again.");
       setShowError(true);
     } finally {
       setPosting(false);

@@ -1,4 +1,5 @@
 import { refreshTokenProactively, refreshWithRetry } from "@/services/auth/refresh";
+import { AppError, isAuthError, getErrorMessage } from "@/utils/error";
 
 const GRAPHQL_URL = process.env.EXPO_PUBLIC_GRAPHQL_URL || "https://ziona-api-staging.onrender.com/graphql/";
 
@@ -8,23 +9,6 @@ function getAuthStore(): any {
     _getAuthStore = require("@/store/useAuthStore").useAuthStore;
   }
   return _getAuthStore;
-}
-
-const AUTH_ERROR_MESSAGES = [
-  "unauthorized",
-  "not authenticated",
-  "authentication required",
-  "token expired",
-  "invalid token",
-  "missing token",
-  "jwt",
-  "bearer",
-];
-
-function isAuthErrorMessage(message: string | null | undefined): boolean {
-  if (!message) return false;
-  const lower = message.toLowerCase();
-  return AUTH_ERROR_MESSAGES.some((authMsg) => lower.includes(authMsg));
 }
 
 export async function graphqlRequest(
@@ -64,14 +48,14 @@ export async function graphqlRequest(
   };
 
   let res = await makeRequest(token);
-  let json = await res.json();
+  let json: any = await res.json();
 
   const isAuthError =
     res.status === 401 ||
     json?.errors?.some(
       (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
                     err?.extensions?.code === "FORBIDDEN" ||
-                    isAuthErrorMessage(err?.message)
+                    isAuthError(err?.message)
     );
 
   if (isAuthError) {
@@ -85,12 +69,12 @@ export async function graphqlRequest(
         json?.errors?.some(
           (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
                         err?.extensions?.code === "FORBIDDEN" ||
-                        isAuthErrorMessage(err?.message)
+                        isAuthError(err?.message)
         );
 
       if (stillHasAuthError) {
         await getAuthStore().getState().clearSession?.();
-        throw new Error("Session expired");
+        throw new AppError("Session expired", { code: "SESSION_EXPIRED" });
       }
     } else {
       await getAuthStore().getState().clearSession?.();
@@ -101,7 +85,7 @@ export async function graphqlRequest(
   if (json?.errors?.length) {
     const errorMessage = json.errors[0]?.message || "Request failed";
     console.error("🔍 [graphql] Request errors:", JSON.stringify(json.errors));
-    throw new Error(errorMessage);
+    throw new AppError(errorMessage);
   }
 
   return json?.data;

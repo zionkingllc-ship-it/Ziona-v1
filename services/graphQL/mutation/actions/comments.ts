@@ -1,4 +1,5 @@
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 export type CommentUser = {
   id?: string;
@@ -206,7 +207,7 @@ export async function createComment(
 
   const res = data?.createComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to create comment");
+    throw new AppError(res?.error?.message || "Failed to create comment", { code: res?.error?.code });
   }
 
   return {
@@ -232,7 +233,7 @@ export async function deleteComment(commentId: string) {
   const data = await graphqlRequest(mutation, { commentId });
   const res = data?.deleteComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to delete comment");
+    throw new AppError(res?.error?.message || "Failed to delete comment", { code: res?.error?.code });
   }
   return res;
 }
@@ -262,7 +263,7 @@ export async function likeComment(commentId: string) {
 
   const res = data?.likeComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to like comment");
+    throw new AppError(res?.error?.message || "Failed to like comment", { code: res?.error?.code });
   }
 
   return res;

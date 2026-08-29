@@ -9,6 +9,7 @@ import { Modal, Pressable as RNPressable, TextInput as RNTextInput } from "react
 import { Text, XStack, YStack, TextArea } from "tamagui";
 import { useRouter } from "expo-router";
 import { useDeleteAccount } from "@/hooks/useAccountSettings";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 type Reason =
   | "temporary"
@@ -65,10 +66,10 @@ export default function DeleteReasonScreen() {
         onError: (error: any) => {
           setPasswordVisible(false);
           setVerifying(false);
-          if (error?.message?.toLowerCase().includes("password") || error?._status === 401 || error?._status === 403) {
+          if (isAuthError(error) || getErrorMessage(error).toLowerCase().includes("password") || error?.status === 401 || error?.status === 403) {
             setPasswordError("Incorrect password. Please try again.");
           } else {
-            setErrorMessage(error?.message || "Failed to delete account. Please try again.");
+            setErrorMessage(getErrorMessage(error) || "Failed to delete account. Please try again.");
             setErrorVisible(true);
           }
         },
@@ -109,6 +110,8 @@ export default function DeleteReasonScreen() {
             <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray}>
               If you may return in the future, consider deactivating your account
               instead. Deactivation lets you restore your account at any time.
+              Deleting your account will permanently remove your account and all
+              content after 30 days.
             </Text>
             
             <RNPressable onPress={() => router.push("/settings/DeactivateAccount")}>

@@ -6,6 +6,7 @@ import { useUpdateBio } from "@/hooks/useUpdateBio";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { useEffect, useState } from "react";
 import { TextArea, XStack, YStack, Text, Input } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -52,7 +53,7 @@ export default function EditBioScreen() {
       setModalMessage("Your changes have been saved successfully.");
       setModalVisible(true);
     } catch (e: any) {
-      const feedback = getNetworkModalCopy(e, e?.message || "Failed to update bio");
+      const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to update bio");
       setModalType(feedback.type);
       setModalTitle(feedback.title);
       setModalMessage(feedback.message);

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { refreshWithRetry, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
+import { AppError } from "@/utils/error";
 
 let _getAuthStore: (() => any) | null = null;
 function getAuthStore() {
@@ -72,8 +73,10 @@ api.interceptors.response.use(
 
     return Promise.reject(
       error.response
-        ? { ...error.response.data, _status: error.response.status }
-        : error,
+        ? new AppError(error.response.data?.message || "Request failed", {
+            status: error.response.status,
+          })
+        : new AppError(error.message || "Network error", { retryable: true }),
     );
   }
 );

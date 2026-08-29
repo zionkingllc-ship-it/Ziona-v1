@@ -7,6 +7,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { updateUsername, UpdateUsernameResponse } from "@/services/profile/profileService";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -108,7 +109,7 @@ export default function EditUsernameScreen() {
           storage.set(dateKey, { timestamp: parsedDate });
         }
       }
-      const feedback = getNetworkModalCopy(e, e?.message || "Failed to update username");
+      const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to update username");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
       setErrorVisible(true);

@@ -7,6 +7,7 @@ import { useUpdateProfile } from "@/hooks/useProfileMutations";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { storage } from "@/utils/storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -115,7 +116,7 @@ export default function EditNameScreen() {
               storage.set(dateKey, { timestamp: parsedDate });
             }
           }
-          const feedback = getNetworkModalCopy(e, e?.message || "Failed to update name");
+          const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to update name");
           setErrorTitle(feedback.title);
           setErrorMessage(feedback.message);
           setErrorVisible(true);

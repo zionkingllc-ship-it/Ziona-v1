@@ -1,4 +1,5 @@
 import { get } from '../../../network/api/client'
+import { AppError, getErrorMessage } from '@/utils/error'
 
 export type MobileNotification = {
   id: string
@@ -24,6 +25,7 @@ type GetNotificationsResponse = {
     nextCursor?: string
     hasMore: boolean
   }
+  error?: string
 }
 
 export async function getNotifications(): Promise<GetNotificationsResponse> {
@@ -31,6 +33,7 @@ export async function getNotifications(): Promise<GetNotificationsResponse> {
     const data = await get('/api/v1/notifications')
     return { ok: true, data }
   } catch (error) {
-    return { ok: false }
+    console.error("🔴 [bff] getNotifications error:", error)
+    return { ok: false, error: getErrorMessage(error) }
   }
 }

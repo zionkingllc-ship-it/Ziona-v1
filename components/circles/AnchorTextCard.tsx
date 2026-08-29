@@ -1,6 +1,7 @@
 import React from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
@@ -40,7 +41,9 @@ export default function AnchorTextCard({
             </Text>
           </YStack>
         )}
-        {text && <Text style={styles.contentText}>{text}</Text>}
+        {text && (
+          <AnchorHtmlText html={text} contentWidth={SLIDE_WIDTH - 32} />
+        )}
       </View>
       <YStack
         style={{
@@ -93,11 +96,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 16,
-  },
-  contentText: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: "#333",
-    textAlign: "center",
   },
 });

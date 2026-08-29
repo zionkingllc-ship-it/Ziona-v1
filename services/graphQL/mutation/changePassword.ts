@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 const CHANGE_PASSWORD_MUTATION = `
   mutation ChangePassword($currentPassword: String!, $newPassword: String!, $signOutOtherDevices: Boolean) {
@@ -30,7 +31,7 @@ export async function changePassword(
 
   if (!result?.success) {
     const errMsg = result?.error?.message || result?.message || "Failed to change password";
-    const errorCode = result?.errorCode;
-    throw new Error(errorCode ? `${errorCode}: ${errMsg}` : errMsg);
+    const errorCode = result?.errorCode || result?.error?.code;
+    throw new AppError(errMsg, { code: errorCode });
   }
 }

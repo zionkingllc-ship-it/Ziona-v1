@@ -11,6 +11,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Keyboard } from "react-native";
 import { Image, Text, YStack, XStack } from "tamagui";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 const OTP_LENGTH = 6;
 
@@ -102,10 +103,8 @@ export default function VerifyOtp() {
     } catch (error: any) {
       console.error("OTP verification failed:", error);
 
-      setErrorTitle(error?.message || error?.error?.message || "Incorrect code entered");
-      setErrorMessage(
-        error?.error?.details || "Please check the code and try again",
-      );
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
       setErrorVisible(true);
       setIsSubmitting(false);
     }
@@ -124,8 +123,9 @@ export default function VerifyOtp() {
       await authApi.resendOtp(email);
     } catch (error: any) {
       console.error("Resend OTP failed:", error);
-      setErrorTitle(error?.message || error?.error?.message || "Failed to resend code");
-      setErrorMessage(error?.error?.details || "Please try again later");
+
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
       setErrorVisible(true);
     } finally {
       setIsResending(false);

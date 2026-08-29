@@ -17,17 +17,12 @@ import { Image, Text, YStack } from "tamagui";
 import { saveAnchorRef } from "@/utils/anchorRef";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
+import { chunkHtmlByBlocks, chunkText, isHtml } from "@/lib/anchorHtmlChunk";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
 const ITEM_WIDTH = SLIDE_WIDTH + 16;
-
-function calculateChunkSize(textLength: number): number {
-  if (textLength <= 400) return 400;
-  if (textLength <= 600) return 500;
-  if (textLength <= 900) return 700;
-  return 800;
-}
 
 type SlideItem = {
   id: string;
@@ -71,15 +66,7 @@ function createSlides(
   }
 
   if (text) {
-    const textLength = text.length;
-    const chunkSize = calculateChunkSize(textLength);
-    const chunks: string[] = [];
-    let remaining = text;
-    while (remaining.length > chunkSize) {
-      chunks.push(remaining.slice(0, chunkSize));
-      remaining = remaining.slice(chunkSize);
-    }
-    if (remaining.length > 0) chunks.push(remaining);
+    const chunks = isHtml(text) ? chunkHtmlByBlocks(text) : chunkText(text);
 
     chunks.forEach((chunk, index) => {
       slides.push({
@@ -265,7 +252,10 @@ export default function AnchorTextView() {
                     </YStack>
                   )}
                   {item.text && (
-                    <Text style={styles.contentText}>{item.text}</Text>
+                    <AnchorHtmlText
+                      html={item.text}
+                      contentWidth={SLIDE_WIDTH - 32}
+                    />
                   )}
                 </View>
                 <YStack
@@ -371,12 +361,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 16,
-  },
-  contentText: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: "#333",
-    textAlign: "center",
   },
   dots: {
     position: "absolute",

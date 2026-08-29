@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 export type ReportReason =
   | "DISRESPECTFUL"
@@ -58,7 +59,7 @@ export async function reportContent(
   const res = data?.reportContent;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to submit report");
+    throw new AppError(res?.error?.message || "Failed to submit report", { code: res?.error?.code });
   }
 
   return res;

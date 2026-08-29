@@ -11,6 +11,7 @@ import { Eye, EyeClosed } from "@tamagui/lucide-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Text, YStack } from "tamagui";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 export default function CreatePassword() {
   const { email, otp } = useLocalSearchParams<{
@@ -63,10 +64,9 @@ export default function CreatePassword() {
     } catch (error: any) {
       console.error("🔴 PASSWORD RESET FAILED", error?.response?.data || error);
 
-      const feedback = getNetworkModalCopy(error, "Your reset code may have expired. Please request a new code.");
-      setErrorTitle(feedback.title);
-      setErrorMessage(feedback.message);
-      setErrorType(feedback.type as "warning" | "failed");
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
+      setErrorType("failed");
       setErrorVisible(true);
     } finally {
       setLoading(false);

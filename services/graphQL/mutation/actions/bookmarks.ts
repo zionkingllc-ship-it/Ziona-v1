@@ -1,4 +1,5 @@
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 /* CREATE BOOKMARK FOLDER */
 export async function createBookmarkFolder(name: string) {
@@ -49,7 +50,7 @@ export async function deleteBookmarkFolder(folderId: string) {
   const res = data?.deleteBookmarkFolder;
   if (!res?.success) {
     console.error("🔍 [deleteBookmarkFolder] Backend error:", res?.errorCode, res?.message, res?.error);
-    throw new Error(res?.message || res?.error?.message || "Failed to delete folder");
+    throw new AppError(res?.error?.message || res?.message || "Failed to delete folder", { code: res?.error?.code });
   }
 
   return res;

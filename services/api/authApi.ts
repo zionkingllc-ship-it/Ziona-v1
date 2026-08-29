@@ -1,17 +1,13 @@
 import { User } from "@/types";
 import { api } from "./client";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 /* ---------------- DEBUG HELPERS ---------------- */
 
 const log = (...args: any[]) => {};
 
 const errorLog = (label: string, err: any) => {
-  console.error("🟥 AUTH API ERROR:", label);
-
-  if (!err?.response && !err?.message) {
-    try {
-    } catch { console.warn("[authApi] error serializer failed"); }
-  }
+  console.error("🟥 AUTH API ERROR:", label, getErrorMessage(err));
 };
 
 export const authApi = {
@@ -89,7 +85,7 @@ export const authApi = {
       log("suggestUsername response:", response.data);
       return response.data?.data?.suggestions ?? [];
     } catch (err: any) {
-      errorLog("suggestUsername failed:", err?.response?.data || err);
+      errorLog("suggestUsername failed:", err);
       throw err;
     }
   },

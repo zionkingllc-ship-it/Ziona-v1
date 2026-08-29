@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 const DELETE_POST_MUTATION = `
   mutation DeletePost($postId: String!) {
@@ -21,7 +22,7 @@ export async function deletePost(postId: string): Promise<boolean> {
   if (!result?.success) {
     const errMsg = result?.error?.message || result?.message || "Unknown error";
     console.error("[deletePost] Mutation failed:", errMsg);
-    throw new Error(errMsg);
+    throw new AppError(errMsg, { code: result?.error?.code });
   }
 
   return true;

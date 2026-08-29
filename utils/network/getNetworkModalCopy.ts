@@ -4,22 +4,13 @@ export type NetworkModalCopy = {
   message: string;
 };
 
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") return error;
-
-  if (error && typeof error === "object") {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === "string") return maybeMessage;
-  }
-
-  return "";
-}
+import { getErrorMessage as getCentralizedErrorMessage } from "@/utils/error";
 
 export function getNetworkModalCopy(
   error: unknown,
   fallbackMessage: string,
 ): NetworkModalCopy {
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getCentralizedErrorMessage(error).toLowerCase();
 
   const isOfflineError =
     message.includes("network request failed") ||

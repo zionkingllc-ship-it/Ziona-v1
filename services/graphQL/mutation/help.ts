@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 const SUBMIT_HELP_MESSAGE = `
   mutation SubmitHelpMessage($message: String!, $email: String, $name: String) {
@@ -51,7 +52,7 @@ export async function submitHelpMessage(params: {
   const data = await graphqlRequest(SUBMIT_HELP_MESSAGE, params);
   const res = data?.submitHelpMessage;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to send message");
+    throw new AppError(res?.error?.message || "Failed to send message", { code: res?.error?.code });
   }
   return res as { success: boolean; contact?: { id: string } };
 }
@@ -72,7 +73,7 @@ export async function sendHelpMessage(params: {
   });
   const res = data?.sendHelpMessage;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to send message");
+    throw new AppError(res?.error?.message || "Failed to send message", { code: res?.error?.code });
   }
   return res as { success: boolean };
 }
@@ -89,7 +90,7 @@ export async function resolveHelpConversation(contactId: string) {
   const data = await graphqlRequest(RESOLVE_HELP_CONVERSATION, { contactId });
   const res = data?.resolveHelpConversation;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to resolve conversation");
+    throw new AppError(res?.error?.message || "Failed to resolve conversation", { code: res?.error?.code });
   }
 
   const status = (res?.contact?.status || "").trim().toUpperCase();
