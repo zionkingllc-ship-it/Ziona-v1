@@ -21,13 +21,13 @@ export default function DeactivateAccountScreen() {
 
         <YStack gap="$4" marginTop={10}>
           <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
-            · If you deactivate your account?
+            <Text fontWeight="700">·</Text> If you deactivate your account?
           </Text>
           <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
-            · Ziona will continue to keep your data so that you can recover it when you reactivate your account
+            <Text fontWeight="700">·</Text> Ziona will continue to keep your data so that you can recover it when you reactivate your account
           </Text>
           <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
-            · you can reactivate your account and recover all content anytime by using the same login details
+            <Text fontWeight="700">·</Text> you can reactivate your account and recover all content anytime by using the same login details
           </Text>
         </YStack>
       </YStack>
