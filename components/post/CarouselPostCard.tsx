@@ -36,8 +36,8 @@ function CarouselPostCardComponent({
 
   const rawMedia = (post?.media ?? [])
     .filter((item) => item?.type === "image" && item?.url);
-  const mediaItems = rawMedia.some((m) => m.sortOrder !== undefined)
-    ? [...rawMedia].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const mediaItems = rawMedia.some((m: any) => m.sortOrder !== undefined)
+    ? [...rawMedia].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     : rawMedia;
 
   if (!mediaItems?.length) {
