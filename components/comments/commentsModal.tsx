@@ -535,7 +535,10 @@ function CommentItem({
             )}
 
             <XStack marginTop={12} gap={15}>
-              <TouchableOpacity onPress={() => startReply(comment.id, comment.user?.username || "User")}>
+              <TouchableOpacity
+                onPress={() => startReply(comment.id, comment.user?.username || "User")}
+                style={{ width: 40, height: 15, borderRadius: 4, justifyContent: "center", alignItems: "center" }}
+              >
                 <Text fontSize={12} fontFamily="$body" color="#836F8B">Reply</Text>
               </TouchableOpacity>
 
