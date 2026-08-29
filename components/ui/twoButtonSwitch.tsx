@@ -5,7 +5,6 @@ import { Button, XStack } from "tamagui";
 type TwoButtonSwitchProps = {
   value: "forYou" | "following";
   onChange: (value: "forYou" | "following") => void;
-  width: number | string;
   emptyFeed?: boolean;
   fontFamily?: any;
 };
@@ -13,7 +12,6 @@ type TwoButtonSwitchProps = {
 export default function TwoButtonSwitch({
   value,
   onChange,
-  width,
   emptyFeed = false,
   fontFamily = "$body",
 }: TwoButtonSwitchProps) {
@@ -32,14 +30,15 @@ export default function TwoButtonSwitch({
       borderColor={"#E4C0F1"}
       borderWidth={1}
       height={"$3"}
-      gap="$2"
+      gap={0}
       alignSelf="center"
       justifyContent="center"
       borderRadius={999}
-      width={width}
+      flex={1}
+      maxWidth={280}
     >
       <Button
-        width={"50%"}
+        flex={1}
         height={"100%"}
         borderRadius={99}
         backgroundColor={isForYou ? activeBg : "transparent"}
@@ -59,7 +58,7 @@ export default function TwoButtonSwitch({
       </Button>
 
       <Button
-        width={"50%"}
+        flex={1}
         height={"100%"}
         borderRadius={99}
         backgroundColor={!isForYou ? activeBg : "transparent"}

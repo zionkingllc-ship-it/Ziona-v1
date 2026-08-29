@@ -41,7 +41,6 @@ export default function FeedHeader({
       <TwoButtonSwitch
         value={feedType}
         onChange={onChangeFeedType}
-        width="65%"
         emptyFeed={emptyFeed}
       />
 
