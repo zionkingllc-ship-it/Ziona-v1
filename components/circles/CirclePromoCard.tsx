@@ -258,7 +258,7 @@ const CirclePromoCard = memo(function CirclePromoCard({
                       height: 8 * scale,
                       borderRadius: 4 * scale,
                       marginHorizontal: 4 * scale,
-                      backgroundColor: index === activeIndex ? "#7C5004" : "#DDB56E",
+                      backgroundColor: index === activeIndex ? colors.primary : "#DDB56E",
                     },
                   ]}
                 />
