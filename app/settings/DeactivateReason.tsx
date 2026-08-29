@@ -52,7 +52,7 @@ export default function DeactivateReasonScreen() {
         headingWeight="500"
       />
 
-      <YStack flex={1} paddingHorizontal={16}>
+      <YStack paddingHorizontal={16}>
         {/* TITLE */}
         <Text fontFamily="$body" fontSize={16} fontWeight="600" marginBottom={6} color={colors.black}>
           Before you go, we may be of help?
@@ -139,7 +139,7 @@ export default function DeactivateReasonScreen() {
       </YStack>
 
       {/* BUTTON */}
-      <YStack padding={16}>
+      <YStack padding={16} marginTop={15}>
         <SimpleButton
           text="Deactivate account"
           onPress={handleDeactivate}
