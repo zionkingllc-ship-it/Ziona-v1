@@ -223,6 +223,7 @@ export default function PostComposer({ initialCircleId }: Props) {
               onChangeText={setText}
               style={{
                 marginTop: 12,
+                marginLeft: 44,
                 paddingVertical: 8,
                 minHeight: 120,
                 color: colors.black,
