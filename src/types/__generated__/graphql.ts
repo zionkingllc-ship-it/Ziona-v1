@@ -1292,6 +1292,7 @@ export type MediaFileType = {
   duration: Maybe<Scalars['Int']['output']>;
   height: Maybe<Scalars['Int']['output']>;
   id: Scalars['String']['output'];
+  sortOrder: Maybe<Scalars['Int']['output']>;
   thumbnailUrl: Maybe<Scalars['String']['output']>;
   type: MediaType;
   url: Scalars['String']['output'];

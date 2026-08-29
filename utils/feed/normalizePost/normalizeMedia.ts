@@ -7,7 +7,8 @@ export function normalizeMedia(p: any, base: any) {
   if (p.image?.items?.length) {
     const media = p.image.items
       .map((i: any) => buildMediaItem({ ...i, type: "image" }))
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
     if (!media.length) {
       return null;
@@ -51,7 +52,7 @@ export function normalizeMedia(p: any, base: any) {
   }
 
   if (Array.isArray(p.media) && p.media.length > 0) {
-    const media = p.media.map(buildMediaItem).filter(Boolean);
+    const media = p.media.map(buildMediaItem).filter(Boolean).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
     if (!media.length) {
       return null;
