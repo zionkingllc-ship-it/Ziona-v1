@@ -14,7 +14,7 @@ export default function DeactivateAccountScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
       <Header heading="Deactivate account" />
 
-      <YStack flex={1} paddingHorizontal={16} marginTop={20} gap="$4">
+      <YStack paddingHorizontal={16} marginTop={20} gap="$4">
         <Text fontFamily="$body" fontSize={16} fontWeight="600" color={colors.black}>
           Deactivate account : @{username}
         </Text>
@@ -32,7 +32,7 @@ export default function DeactivateAccountScreen() {
         </YStack>
       </YStack>
 
-      <YStack padding={16}>
+      <YStack padding={16} marginTop={150}>
         <SimpleButton
           text="Deactivate account"
           onPress={() => router.push("/settings/DeactivateReason")}
