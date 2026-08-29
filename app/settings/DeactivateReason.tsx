@@ -54,11 +54,11 @@ export default function DeactivateReasonScreen() {
 
       <YStack flex={1} paddingHorizontal={16}>
         {/* TITLE */}
-        <Text fontFamily="$body" fontSize={14} fontWeight="600" marginBottom={6} color={colors.black}>
+        <Text fontFamily="$body" fontSize={16} fontWeight="600" marginBottom={6} color={colors.black}>
           Before you go, we may be of help?
         </Text>
 
-        <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginBottom={20}>
+        <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray} marginBottom={20}>
           We are so sorry to see you leave, before you go, please let us know why
           you are thinking of leaving, so we can help with common issues and
           improve our service
@@ -69,7 +69,7 @@ export default function DeactivateReasonScreen() {
 
         {selected === "temporary" && (
           <YStack marginBottom={12} paddingLeft={26}>
-            <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.gray}>
               If you may return in the future, you can reactivate anytime — your data is kept.
             </Text>
           </YStack>
@@ -79,19 +79,19 @@ export default function DeactivateReasonScreen() {
 
         {selected === "safety" && (
           <YStack marginBottom={12} paddingLeft={26}>
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.gray}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.gray}>
               Try this instead:
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={6}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={6}>
               Report a problem
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={4}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={4}>
               Blocking users
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={4}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={4}>
               Keeping your account secure
             </Text>
           </YStack>
@@ -101,19 +101,19 @@ export default function DeactivateReasonScreen() {
 
         {selected === "trouble" && (
           <YStack marginBottom={12} paddingLeft={26}>
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.gray}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.gray}>
               Try this instead:
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={6}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={6}>
               Report a problem
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={4}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={4}>
               Blocking users
             </Text>
 
-            <Text fontFamily="$body" fontSize={12} fontWeight="500" color={colors.primary} marginTop={4}>
+            <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary} marginTop={4}>
               Keeping your account secure
             </Text>
           </YStack>
