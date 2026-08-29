@@ -86,8 +86,8 @@ export function NotificationBanner() {
 
 const styles = StyleSheet.create({
   container: { position: 'absolute', top: 50, left: 16, right: 16, zIndex: 9999 },
-  banner: { backgroundColor: '#1a1a2e', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  banner: { backgroundColor: '#ffffff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 8 },
   content: { gap: 4 },
-  title: { fontSize: 16, fontWeight: '600', color: '#ffffff' },
-  body: { fontSize: 14, color: '#e0e0e0', lineHeight: 20 },
+  title: { fontSize: 16, fontWeight: '600', color: '#181419' },
+  body: { fontSize: 14, color: '#4E4252', lineHeight: 20 },
 })
