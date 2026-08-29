@@ -216,6 +216,23 @@ export default function PostComposer({ initialCircleId }: Props) {
               <Text fontWeight="600">{userName}</Text>
             </XStack>
 
+            <TextInput
+              placeholder="Write something..."
+              placeholderTextColor={colors.placeHolderText}
+              value={text}
+              onChangeText={setText}
+              style={{
+                marginTop: 12,
+                paddingVertical: 8,
+                minHeight: 120,
+                color: colors.black,
+                fontSize: 16,
+              }}
+              multiline
+              autoFocus
+              editable={!posting}
+            />
+
             {image && (
               <YStack marginTop="$3">
                 <Image source={{ uri: image }} height={120} borderRadius={12} />
@@ -278,7 +295,7 @@ export default function PostComposer({ initialCircleId }: Props) {
               padding: 8,
               flexDirection: "row",
               alignItems: "center",
-              gap: 8,
+              justifyContent: "space-between",
               backgroundColor: "#FFF",
               paddingBottom: insets.bottom || 8,
             }}
@@ -339,23 +356,6 @@ export default function PostComposer({ initialCircleId }: Props) {
                 <Ionicons name="image-outline" size={26} color={posting ? "#999" : "#333"} />
               )}
             </Pressable>
-
-            <TextInput
-              placeholder="Write something..."
-              placeholderTextColor={colors.placeHolderText}
-              value={text}
-              onChangeText={setText}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                minHeight: 36,
-                maxHeight: 120,
-                color: colors.black,
-              }}
-              multiline
-              autoFocus
-              editable={!posting}
-            />
 
             <Pressable onPress={handleSend} disabled={posting} style={{ paddingVertical: 8 }}>
               <View
