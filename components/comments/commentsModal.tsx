@@ -543,10 +543,11 @@ function CommentItem({
               </TouchableOpacity>
 
               {comment.stats?.repliesCount > 0 && (
-                <TouchableOpacity onPress={() => toggleReplies(comment.id)}>
+                <TouchableOpacity onPress={() => toggleReplies(comment.id)} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                   <Text fontSize={12} fontFamily="$body" color="#836F8B">
                     {areRepliesExpanded ? "Hide" : "View"} Replies ({comment.stats?.repliesCount})
                   </Text>
+                  <Ionicons name={areRepliesExpanded ? "chevron-up" : "chevron-down"} size={12} color="#836F8B" />
                 </TouchableOpacity>
               )}
             </XStack>
