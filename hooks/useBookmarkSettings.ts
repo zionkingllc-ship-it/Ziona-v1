@@ -52,6 +52,7 @@ export function useBulkRemoveBookmarks() {
     mutationFn: bulkRemoveBookmarks,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarkFolders"] });
+      queryClient.invalidateQueries({ queryKey: ["userSavedPosts"] });
     },
   });
 }

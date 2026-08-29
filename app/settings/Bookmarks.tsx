@@ -183,6 +183,7 @@ export default function BookmarksScreen() {
       onSuccess: () => {
         removeBookmarks([confirmDeletePostId], selectedFolderId || undefined);
         setConfirmDeletePostId(null);
+        refetchPosts();
         // Delay showing success modal slightly to avoid the backdrop Pressable capturing the same tap
         setTimeout(() => {
           setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: "Post removed from bookmarks." });
@@ -195,7 +196,7 @@ export default function BookmarksScreen() {
         }, 150);
       },
     });
-  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId]);
+  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId, refetchPosts]);
 
   const folderCardWidth = (width - wp(4)) / 2 - 5;
 
