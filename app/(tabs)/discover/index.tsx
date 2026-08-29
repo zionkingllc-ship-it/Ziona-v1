@@ -4,7 +4,7 @@ import colors from "@/constants/colors";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack } from "tamagui";
-import { ActivityIndicator, FlatList } from "react-native";
+import { ActivityIndicator, FlatList, Pressable } from "react-native";
 import { View } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { useDiscoverCategories } from "@/hooks/useDiscover";
@@ -39,20 +39,26 @@ export default function DiscoverScreen() {
     });
   };
 
+  const handleUserPress = (userId: string) => {
+    router.push(`/guest?userId=${userId}`);
+  };
+
   const renderUserResult = ({ item }: { item: any }) => {
     const initials = item.username?.[0]?.toUpperCase() ?? "?";
     return (
-      <XStack alignItems="center" gap="$3" paddingHorizontal={16} paddingVertical={10} borderBottomWidth={1} borderColor={colors.border}>
-        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray, justifyContent: "center", alignItems: "center" }}>
-          <Text color={colors.white} fontSize={14} fontWeight="600">{initials}</Text>
-        </View>
-        <View>
-          <Text fontFamily="$body" fontWeight="600" fontSize={15} color={colors.text}>{item.username}</Text>
-          {item.fullName ? (
-            <Text fontFamily="$body" fontWeight="400" fontSize={13} color={colors.gray}>{item.fullName}</Text>
-          ) : null}
-        </View>
-      </XStack>
+      <Pressable onPress={() => handleUserPress(item.id)}>
+        <XStack alignItems="center" gap="$3" paddingHorizontal={16} paddingVertical={10} borderBottomWidth={1} borderColor={colors.border}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray, justifyContent: "center", alignItems: "center" }}>
+            <Text color={colors.white} fontSize={14} fontWeight="600">{initials}</Text>
+          </View>
+          <View>
+            <Text fontFamily="$body" fontWeight="600" fontSize={15} color={colors.text}>{item.username}</Text>
+            {item.fullName ? (
+              <Text fontFamily="$body" fontWeight="400" fontSize={13} color={colors.gray}>{item.fullName}</Text>
+            ) : null}
+          </View>
+        </XStack>
+      </Pressable>
     );
   };
 
