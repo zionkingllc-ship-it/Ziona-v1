@@ -9,8 +9,9 @@ import { router } from "expo-router";
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, TouchableOpacity } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Svg, { Path } from "react-native-svg";
 import { Image as ExpoImage } from "expo-image";
+import LikeIcon from "@/assets/images/likeIcon.svg";
+import LikeActiveIcon from "@/assets/images/like-active-icon.svg";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import PostMedia from "./postcard/PostMedia";
 
@@ -34,7 +35,6 @@ import { useReportContent } from "@/hooks/useReportContent";
 import { ReportReason } from "@/services/graphQL/mutation/actions/report";
 
 /* ICONS */
-const likeIconActive = require("@/assets/images/likeIcon2.png");
 const commentIcon = require("@/assets/images/commentIcon.png");
 const bookmarkIcon = require("@/assets/images/bookmarkIcon.png");
 const bookmarkIconActive = require("@/assets/images/bookmarkIconActive.png");
@@ -393,20 +393,11 @@ function PostCardComponent({
           <YStack gap="$4">
             <YStack alignItems="center">
               <GestureDetector gesture={Gesture.Native()}>
-                <Pressable onPress={handleLike} style={{ transform: [{ translateX: 4 }] }}>
+                <Pressable onPress={handleLike}>
                   {likedState ? (
-                    <Image
-                      source={likeIconActive}
-                      width={38}
-                      height={38}
-                    />
+                    <LikeActiveIcon width={30} height={30} />
                   ) : (
-                    <Svg width={38} height={38} viewBox="64 128 384 384">
-                      <Path
-                        d="M256 448a32 32 0 01-18-5.57c-78.59-53.35-112.62-89.93-131.39-121.88C88.69 289.2 80 252.62 80 224c0-44.18 34.82-80 78-80 26.63 0 52.23 13.81 66.79 36.22 11.62-18.72 31-36.22 63.21-36.22 43.18 0 78 35.82 78 80 0 28.62-8.69 65.2-26.61 96.59-18.77 31.95-52.8 68.53-131.39 121.88A32 32 0 01256 448z"
-                        fill="#F6EAFA"
-                      />
-                    </Svg>
+                    <LikeIcon width={30} height={30} />
                   )}
                 </Pressable>
               </GestureDetector>
