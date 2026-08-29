@@ -361,10 +361,12 @@ export default function PostComposer({ initialCircleId }: Props) {
             <Pressable onPress={handleSend} disabled={posting} style={{ paddingVertical: 8 }}>
               <View
                 style={{
-                  backgroundColor: (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  borderRadius: 20,
+                  backgroundColor: (text.trim() || image || video) && !posting ? "#742092" : "#CCC",
+                  width: 60,
+                  height: 25,
+                  borderRadius: 10,
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 {posting ? (
