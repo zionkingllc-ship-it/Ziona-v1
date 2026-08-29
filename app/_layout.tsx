@@ -1,4 +1,5 @@
 import AuthGate from "@/components/auth/AuthGate";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ScreenDimensionsProvider } from "@/context/ScreenDimensionsContext";
 import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
 import { queryClient } from "@/lib/queryClient";
@@ -137,6 +138,7 @@ export default function RootLayout() {
                 <SyncHooks />
                 <OfflineProvider>
                 <AuthGate>
+                  <ErrorBoundary>
                   <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="index" />
                   <Stack.Screen name="(tabs)" />
@@ -154,6 +156,7 @@ export default function RootLayout() {
                   <Stack.Screen name="posts" />
                   <Stack.Screen name="circlePostComposer" />
                 </Stack>
+                  </ErrorBoundary>
                 </AuthGate>
                 </OfflineProvider>
               </QueryClientProvider>

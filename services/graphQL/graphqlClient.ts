@@ -50,7 +50,7 @@ export async function graphqlRequest(
   let res = await makeRequest(token);
   let json: any = await res.json();
 
-  const isAuthError =
+  const hasAuthError =
     res.status === 401 ||
     json?.errors?.some(
       (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
@@ -58,7 +58,7 @@ export async function graphqlRequest(
                     isAuthError(err?.message)
     );
 
-  if (isAuthError) {
+  if (hasAuthError) {
     const newAccessToken = await refreshWithRetry(3);
 
     if (newAccessToken) {

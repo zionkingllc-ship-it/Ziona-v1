@@ -62,7 +62,7 @@ export async function compressImage(uri: string): Promise<string> {
     }
 
     return result;
-  } catch {
-    return uri;
+  } catch (err) {
+    throw new Error(`Image compression failed: ${err instanceof Error ? err.message : "Unknown error"}`);
   }
 }

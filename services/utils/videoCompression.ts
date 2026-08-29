@@ -47,7 +47,7 @@ export async function compressVideo(
     }
 
     return result;
-  } catch {
-    return uri;
+  } catch (err) {
+    throw new Error(`Video compression failed: ${err instanceof Error ? err.message : "Unknown error"}`);
   }
 }
