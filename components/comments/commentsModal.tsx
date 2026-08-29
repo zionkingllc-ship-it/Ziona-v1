@@ -518,13 +518,6 @@ function CommentItem({
                 <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
               </Pressable>
               <Text color="#999" fontFamily="$body" fontSize={11}>{formatDate(comment.createdAt)}</Text>
-              <Pressable
-                onPress={() => onOpenMenu({ type: "comment", id: comment.id, isOwner: !!comment.viewerState?.isOwner })}
-                hitSlop={10}
-                style={{ padding: 2, marginLeft: "auto" }}
-              >
-                <Ionicons name="ellipsis-horizontal" size={17} color="#777" />
-              </Pressable>
             </XStack>
 
             <MentionText text={displayText} mentionMap={mentionMap} fontSize={13} />
@@ -627,13 +620,6 @@ function ReplyItem({
             <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
           </Pressable>
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
-          <Pressable
-            onPress={() => onOpenMenu({ type: "reply", commentId, replyId: reply.id, isOwner: !!reply.viewerState?.isOwner })}
-            hitSlop={10}
-            style={{ padding: 2, marginLeft: "auto" }}
-          >
-            <Ionicons name="ellipsis-horizontal" size={15} color="#777" />
-          </Pressable>
         </XStack>
         <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>
