@@ -135,6 +135,7 @@ export default function BookmarksScreen() {
     setSelectedFolderId(null);
     setConfirmDeletePostId(null);
     setConfirmDeleteFolderId(null);
+    refetchPosts();
   };
 
   const handleFolderLongPress = useCallback((folderId: string, folderName: string) => {
@@ -204,6 +205,7 @@ export default function BookmarksScreen() {
     if (!selectedFolderId) return;
     const onBackPress = () => {
       setSelectedFolderId(null);
+      refetchPosts();
       return true;
     };
     const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
