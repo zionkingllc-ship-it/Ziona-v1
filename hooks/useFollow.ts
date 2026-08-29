@@ -44,6 +44,7 @@ export function useFriendsList(search?: string) {
   return useQuery({
     queryKey: [FRIENDS_QUERY_KEY, search],
     queryFn: () => getFriendsList(search),
+    enabled: !!search,
   });
 }
 
