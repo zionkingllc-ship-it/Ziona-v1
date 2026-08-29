@@ -55,6 +55,7 @@ export default function CategoryModal({ visible, onClose, onSelect }: Props) {
                   source={
                     item.icon ?? require("@/assets/images/tagIcon.png")
                   }
+                  resizeMode="contain"
                   style={styles.icon}
                 />
               </XStack>
@@ -82,8 +83,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   icon: {
-    width: 30,
-    height: 40,
-    resizeMode: "contain",
+    width: 40,
+    height: 50,
   },
 });
