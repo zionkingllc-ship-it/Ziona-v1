@@ -5,6 +5,7 @@ import {
   deleteBookmarkFolder,
   bulkRemoveBookmarks,
 } from "@/services/graphQL/queries/actions/bookmarkFolders";
+import { usePostActionsStore } from "@/store/usePostActionStore";
 
 export { type BookmarkFolder, type BookmarkPost } from "@/services/graphQL/queries/actions/bookmarkFolders";
 
@@ -47,12 +48,19 @@ export function useDeleteBookmarkFolder() {
 
 export function useBulkRemoveBookmarks() {
   const queryClient = useQueryClient();
+  const toggleSave = usePostActionsStore((s) => s.toggleSave);
 
   return useMutation({
     mutationFn: bulkRemoveBookmarks,
+    onMutate: async (postIds) => {
+      postIds.forEach((postId) => toggleSave(postId, false));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarkFolders"] });
       queryClient.invalidateQueries({ queryKey: ["userSavedPosts"] });
+    },
+    onError: (_err, postIds) => {
+      postIds.forEach((postId) => toggleSave(postId, true));
     },
   });
 }
