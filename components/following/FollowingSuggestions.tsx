@@ -86,6 +86,19 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
       <View style={styles.sheet}>
         <Text
           fontFamily={"$body"}
+          fontStyle="italic"
+          fontSize={16}
+          color="#4E4252"
+          marginLeft={16}
+          marginTop={16}
+          marginBottom={8}
+        >
+          {hasFollowedAnyone
+            ? 'Click on "Done" to refresh this page'
+            : "You are currently not following anyone"}
+        </Text>
+        <Text
+          fontFamily={"$body"}
           fontWeight={"400"}
           style={styles.header}
         >
@@ -118,18 +131,6 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
             borderRadius={8}
             onPress={handleDone}
           />
-          <Text
-            fontFamily={"$body"}
-            fontStyle="italic"
-            fontSize={16}
-            color="#4E4252"
-            textAlign="center"
-            marginTop={12}
-          >
-            {hasFollowedAnyone
-              ? 'Click on "Done" to refresh this page'
-              : "You are currently not following anyone"}
-          </Text>
         </View>
       </View>
     </SafeAreaView>
