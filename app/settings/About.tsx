@@ -1,10 +1,10 @@
 import Header from "@/components/layout/header";
 import colors from "@/constants/colors";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useUpdateLocation } from "@/hooks/useUpdateLocation";
+import { useLocationFirstTime } from "@/hooks/useLocationFirstTime";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useEffect } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, XStack, YStack, View } from "tamagui";
 import { APP_VERSION } from "@/constants/version";
@@ -26,13 +26,9 @@ function formatDate(dateStr?: string): string {
 export default function AboutScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile } = useUserProfile(userId);
-  const { mutate: updateLocation, isPending: isLocationUpdating } = useUpdateLocation();
+  const { isLocationSetup, isChecking, permissionDenied, requestLocation, isUpdatingLocation } = useLocationFirstTime();
 
-  useEffect(() => {
-    if (profile && !profile.location) {
-      updateLocation();
-    }
-  }, [profile?.location]);
+  const isLoadingLocation = isChecking || isUpdatingLocation;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
@@ -53,10 +49,16 @@ export default function AboutScreen() {
             <XStack justifyContent="space-between">
               <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.gray}>Location</Text>
               <XStack gap={6} alignItems="center">
-                {isLocationUpdating && !profile?.location ? (
+                {isLoadingLocation && !profile?.location ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : null}
-                <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.black}>{profile?.location || "-"}</Text>
+                {permissionDenied ? (
+                  <Pressable onPress={requestLocation}>
+                    <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.primary}>Set your location</Text>
+                  </Pressable>
+                ) : (
+                  <Text fontFamily="$body" fontSize={14} fontWeight="400" color={colors.black}>{profile?.location || "-"}</Text>
+                )}
               </XStack>
             </XStack>
 

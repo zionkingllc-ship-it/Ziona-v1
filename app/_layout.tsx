@@ -2,6 +2,7 @@ import AuthGate from "@/components/auth/AuthGate";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ScreenDimensionsProvider } from "@/context/ScreenDimensionsContext";
 import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
+import { useLocationFirstTime } from "@/hooks/useLocationFirstTime";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
 import { OfflineProvider } from "@/providers/OfflineProvider";
@@ -29,6 +30,11 @@ SplashScreen.preventAutoHideAsync();
 
 function SyncHooks() {
   useSyncSavedPosts();
+  return null;
+}
+
+function LocationFirstTimeInitializer() {
+  useLocationFirstTime();
   return null;
 }
 
@@ -136,6 +142,7 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <QueryClientProvider client={queryClient}>
                 <SyncHooks />
+                <LocationFirstTimeInitializer />
                 <OfflineProvider>
                 <AuthGate>
                   <ErrorBoundary>
