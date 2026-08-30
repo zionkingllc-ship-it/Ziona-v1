@@ -13,6 +13,7 @@ import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useBookmarksStore } from "@/store/useBookmarkStore";
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import PostFilters from "@/components/discover/PostFilters";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -48,6 +49,7 @@ export default function BookmarksScreen() {
   const deleteFolderMutation = useDeleteBookmarkFolder();
   const bulkRemoveMutation = useBulkRemoveBookmarks();
   const { deleteFolder, removeBookmarks, folders: localFolders } = useBookmarksStore();
+  const queryClient = useQueryClient();
 
   const {
     data: folders,
@@ -142,7 +144,7 @@ export default function BookmarksScreen() {
     setConfirmDeletePostId(null);
     setConfirmDeleteFolderId(null);
     exitSelectMode();
-    refetchPosts();
+    queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
   };
 
   const handleFolderLongPress = useCallback((folderId: string, folderName: string) => {
@@ -194,7 +196,7 @@ export default function BookmarksScreen() {
       onSuccess: () => {
         removeBookmarks([confirmDeletePostId], selectedFolderId || undefined);
         setConfirmDeletePostId(null);
-        refetchPosts();
+        queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
         setTimeout(() => {
           setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: "Post removed from bookmarks." });
         }, 150);
@@ -206,7 +208,7 @@ export default function BookmarksScreen() {
         }, 150);
       },
     });
-  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId, refetchPosts]);
+  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId, queryClient]);
 
   const folderCardWidth = (width - wp(4)) / 2 - 5;
 
@@ -218,7 +220,7 @@ export default function BookmarksScreen() {
         return true;
       }
       setSelectedFolderId(null);
-      refetchPosts();
+      queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
       return true;
     };
     const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
@@ -286,7 +288,7 @@ export default function BookmarksScreen() {
           removeBookmarks(postIds, selectedFolderId || undefined);
           exitSelectMode();
           setConfirmBulkRemoveVisible(false);
-          refetchPosts();
+          queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
           setTimeout(() => {
             setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: `${postIds.length} post(s) removed from bookmarks.` });
           }, 150);
