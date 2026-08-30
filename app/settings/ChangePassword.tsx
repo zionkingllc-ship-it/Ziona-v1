@@ -131,11 +131,6 @@ export default function ChangePasswordScreen() {
           onEndIconPress={() => setShowConfirm((p) => !p)}
         />
 
-        {/* FORGOT PASSWORD */}
-        <Text fontFamily="$body" fontSize={13} fontWeight="500" color={colors.primary}>
-          Forgot password?
-        </Text>
-
         {/* RULES */}
         <YStack gap="$2" marginTop="$2">
           <Text fontFamily="$body" fontWeight="500" color={colors.black}>Your password must have at least:</Text>
