@@ -1,5 +1,5 @@
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
-import { saveAnchorRef } from "@/utils/anchorRef";
+import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
@@ -45,6 +45,7 @@ export default function AnchorActionView() {
       expiresAt: expiresAt || undefined,
       backgroundColors: colors || undefined,
     });
+    await saveAnchorText(tempId, text || "");
 
     const qs = new URLSearchParams({
       action,

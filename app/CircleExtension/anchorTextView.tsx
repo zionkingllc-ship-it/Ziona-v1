@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, YStack } from "tamagui";
-import { saveAnchorRef } from "@/utils/anchorRef";
+import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
@@ -148,6 +148,7 @@ export default function AnchorTextView() {
       anchorImage: anchorImage || undefined,
       backgroundColors: colors || undefined,
     });
+    await saveAnchorText(tempId, text || "");
 
     const qs = new URLSearchParams({
       action,

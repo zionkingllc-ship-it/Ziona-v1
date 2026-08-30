@@ -6,7 +6,7 @@ import AnchorVideoPlayer from "@/components/circles/AnchorVideoPlayer";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import { getGradientColors } from "@/lib/anchorUtils";
 import { chunkHtmlByBlocks, chunkText, isHtml } from "@/lib/anchorHtmlChunk";
-import { saveAnchorRef } from "@/utils/anchorRef";
+import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -182,6 +182,7 @@ export default function AnchorUnifiedView() {
       anchorVideo: video || undefined,
       backgroundColors: colors || undefined,
     });
+    await saveAnchorText(tempId, text || "");
 
     const qs = new URLSearchParams({
       action,

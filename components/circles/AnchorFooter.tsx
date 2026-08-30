@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text, XStack } from "tamagui";
 import { likeAnchor } from "@/services/graphQL/mutation/circles";
-import { saveAnchorRef } from "@/utils/anchorRef";
+import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
@@ -100,10 +100,11 @@ export default function AnchorFooter({
 
   const doReflection = async () => {
     const tempId = `tempAnchor_${Date.now()}`;
+    const text = anchorText || "";
     await saveAnchorRef(tempId, {
       type: anchorImage ? "image" : "text",
       title: "Anchor",
-      content: anchorText || "",
+      content: text,
       mediaUrl: anchorImage || undefined,
       anchorId,
       circleId,
@@ -114,6 +115,7 @@ export default function AnchorFooter({
       anchorVideo: anchorVideo || undefined,
       backgroundColors: anchorColors || undefined,
     });
+    await saveAnchorText(tempId, text);
 
     const qs = new URLSearchParams({
       ...(anchorId ? { anchorId } : {}),

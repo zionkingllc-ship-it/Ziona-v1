@@ -10,7 +10,7 @@ import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { useMutation } from "@tanstack/react-query";
 import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
 import { useEffect } from "react";
-import { getAnchorRef, AnchorRefData } from "@/utils/anchorRef";
+import { getAnchorRef, getAnchorText, AnchorRefData } from "@/utils/anchorRef";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
@@ -151,12 +151,26 @@ const CircleFeedItem = memo(function CircleFeedItem({
     getAnchorRef(post.id).then(setAnchorRef).catch(() => {});
   }, [post.id]);
 
+  const [anchorTextFallback, setAnchorTextFallback] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!anchorRef) {
+      getAnchorText(post.id).then(setAnchorTextFallback).catch(() => {});
+    }
+  }, [post.id, anchorRef]);
+
   const handleLike = (e: any) => {
     e.stopPropagation?.();
     runAction(() => handleToggleLike());
   };
 
   const resolved = anchorRef;
+
+  const isExpired = resolved?.expiresAt ? new Date(resolved.expiresAt).getTime() <= Date.now() : false;
+
+  const displayAnchorContent = resolved?.content || resolved?.title || anchorTextFallback || "";
+  const hasAnchorContent = !!displayAnchorContent;
+  const hasFullRef = !!resolved;
 
   const handlePostPress = () => {
     router.push({
@@ -308,29 +322,34 @@ const CircleFeedItem = memo(function CircleFeedItem({
           })}
 
           {/* ANCHOR QUOTE */}
-          {resolved && (<>
-            {(resolved.content || resolved.title) ? (
-              <Pressable onPress={() => handleAnchorMediaTap()}>
-                <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
-                  <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                    {resolved.content || resolved.title || ""}
+          {hasAnchorContent && (
+            <Pressable onPress={hasFullRef ? handleAnchorMediaTap : undefined} disabled={!hasFullRef}>
+              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
+                  {displayAnchorContent}
+                </Text>
+                {isExpired && (
+                  <Text fontFamily="$body" color="#888" fontSize={10} marginTop={4}>
+                    Anchor expired
                   </Text>
-                </View>
-              </Pressable>
-            ) : resolved.type === "image" && resolved.mediaUrl && !anchorImageError ? (
+                )}
+              </View>
+            </Pressable>
+          )}
+          {hasFullRef && !hasAnchorContent && resolved?.type === "image" && resolved.mediaUrl && !anchorImageError ? (
               <Pressable onPress={() => handleAnchorMediaTap()}>
                 <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
                   <ExpoImage source={{ uri: resolved.mediaUrl }} style={{ width: "100%", height: 100, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
                 </View>
               </Pressable>
-            ) : resolved.type === "image" && resolved.mediaUrl && anchorImageError ? (
+            ) : resolved && resolved.type === "image" && resolved.mediaUrl && anchorImageError ? (
               <Pressable onPress={() => handleAnchorMediaTap()}>
                 <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
                   <Ionicons name="image-outline" size={24} color="#FFF" />
                   <Text fontFamily="$body" color="#FFF" fontSize={10} marginTop={2}>Image unavailable</Text>
                 </View>
               </Pressable>
-            ) : resolved.type === "video" ? (
+            ) : resolved && resolved.type === "video" ? (
               <Pressable onPress={() => handleAnchorMediaTap()}>
                 <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
                   <Ionicons name="videocam" size={24} color="#FFF" />
@@ -338,9 +357,8 @@ const CircleFeedItem = memo(function CircleFeedItem({
                 </View>
               </Pressable>
             ) : null}
-          </>)}
- 
-          {/* ACTIONS */}
+
+           {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">
             <Pressable onPress={handleLike} disabled={togglingLike}>
               <XStack alignItems="center" gap="$1">
