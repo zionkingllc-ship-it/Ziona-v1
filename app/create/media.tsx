@@ -266,7 +266,16 @@ export default function CreateMediaScreen() {
           <FlatList
             data={mediaItems}
             renderItem={({ item }) => (
-              <YStack>
+              <View
+                style={{
+                  width: wp(40),
+                  height: wp(45),
+                  borderRadius: 6,
+                  marginRight: wp(2),
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
                 {item.type === "VIDEO" ? (
                   <MediaPreviewTile item={item} width={wp(40)} height={wp(45)} />
                 ) : (
@@ -276,18 +285,30 @@ export default function CreateMediaScreen() {
                       width: wp(40),
                       height: wp(45),
                       borderRadius: 6,
-                      marginRight: wp(2),
                     }}
                   />
                 )}
 
-              <TouchableOpacity
-                onPress={() => removeMedia(item.id)}
-                style={{ position: "absolute", top: 6, right: wp(2) + 6 }}
-              >
-                <Trash color={colors.white} size={20} />
-              </TouchableOpacity>
-              </YStack>
+                <TouchableOpacity
+                  onPress={() => removeMedia(item.id)}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    marginTop: -12,
+                    marginLeft: -12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    borderRadius: 12,
+                    padding: 6,
+                    elevation: 5,
+                    zIndex: 10,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Trash color={colors.white} size={20} />
+                </TouchableOpacity>
+              </View>
             )}
             keyExtractor={(item) => item.id}
             horizontal
