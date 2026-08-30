@@ -17,9 +17,10 @@ interface Props {
   onPress: () => void;
   onLongPress?: () => void;
   pressable?: boolean;
+  selected?: boolean;
 }
 
-export default function PostThumbnail({ post, size, onPress, onLongPress, pressable = true }: Props) {
+export default function PostThumbnail({ post, size, onPress, onLongPress, pressable = true, selected = false }: Props) {
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
   const [cachedTextUri, setCachedTextUri] = useState<string | null>(null);
   const [needsCapture, setNeedsCapture] = useState(false);
@@ -264,6 +265,27 @@ export default function PostThumbnail({ post, size, onPress, onLongPress, pressa
           color="white"
           style={{ position: "absolute", top: 6, left: 6 }}
         />
+      )}
+
+      {/* SELECTION CHECKMARK */}
+      {selected && (
+        <View
+          style={{
+            position: "absolute",
+            top: 4,
+            right: 4,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: colors.primary,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 2,
+            borderColor: "white",
+          }}
+        >
+          <Ionicons name="checkmark" size={14} color="white" />
+        </View>
       )}
     </>
   );
