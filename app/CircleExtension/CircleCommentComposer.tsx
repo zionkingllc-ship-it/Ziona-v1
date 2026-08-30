@@ -271,7 +271,7 @@ export default function CircleCommentComposer({
             )}
 
             {image && (
-              <YStack marginTop="$3">
+              <View style={{ borderRadius: 12, marginTop: 12 }}>
                 <Image source={{ uri: image }} height={120} borderRadius={12} />
                 <Pressable
                   onPress={() => setImage(null)}
@@ -282,15 +282,17 @@ export default function CircleCommentComposer({
                     backgroundColor: "rgba(0,0,0,0.6)",
                     borderRadius: 20,
                     padding: 6,
+                    elevation: 5,
+                    zIndex: 10,
                   }}
                 >
-                  <Ionicons name="trash-outline" size={16} color="#FFF" />
+                  <Ionicons name="trash" size={16} color="#FFF" />
                 </Pressable>
-              </YStack>
+              </View>
             )}
 
             {video && (
-              <YStack marginTop="$3">
+              <View style={{ borderRadius: 12, marginTop: 12 }}>
                 <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
                   <Image
                     source={{ uri: videoThumbnail || video }}
@@ -311,11 +313,13 @@ export default function CircleCommentComposer({
                     backgroundColor: "rgba(0,0,0,0.6)",
                     borderRadius: 20,
                     padding: 6,
+                    elevation: 5,
+                    zIndex: 10,
                   }}
                 >
-                  <Ionicons name="trash-outline" size={16} color="#FFF" />
+                  <Ionicons name="trash" size={16} color="#FFF" />
                 </Pressable>
-              </YStack>
+              </View>
             )}
           </ScrollView>
 
