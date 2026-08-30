@@ -3,7 +3,7 @@ import { useSuggestedCreators } from "@/hooks/useFollow";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { YStack, Text } from "tamagui"; 
+import { YStack, Text } from "tamagui";
 import CenteredMessage from "@/components/ui/CenteredMessage";
 import FollowUserRow from "@/components/follow/UserRow";
 import { SimpleButtonWithStyle } from "@/components/ui/SimpleButtonWithStyle";
@@ -21,6 +21,7 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
   const pendingFollows = useIsMutating({ mutationKey: ["followUser"] });
   const [isProcessing, setIsProcessing] = useState(false);
   const doneTriggeredRef = useRef(false);
+  const [hasFollowedAnyone, setHasFollowedAnyone] = useState(false);
 
   const handleDone = useCallback(() => {
     if (doneTriggeredRef.current) return;
@@ -35,6 +36,12 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
       onDone();
     }
   }, [isProcessing, pendingFollows, onDone]);
+
+  useEffect(() => {
+    if (pendingFollows > 0) {
+      setHasFollowedAnyone(true);
+    }
+  }, [pendingFollows]);
 
   const isButtonLoading = isProcessing || pendingFollows > 0;
 
@@ -111,6 +118,18 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
             borderRadius={8}
             onPress={handleDone}
           />
+          <Text
+            fontFamily={"$body"}
+            fontStyle="italic"
+            fontSize={16}
+            color="#4E4252"
+            textAlign="center"
+            marginTop={12}
+          >
+            {hasFollowedAnyone
+              ? 'Click on "Done" to refresh this page'
+              : "You are currently not following anyone"}
+          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -120,6 +139,7 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.white,
   },
   sheet: {
     flex: 1,
