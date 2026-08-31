@@ -49,6 +49,9 @@ export default function FeedHeader({
         style={{
           alignItems: "center",
           justifyContent: "center",
+          backgroundColor: "#00000088",
+          borderRadius: 12,
+          padding: 4,
         }}
       >
         <Ionicons
