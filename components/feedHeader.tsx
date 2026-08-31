@@ -49,7 +49,7 @@ export default function FeedHeader({
         style={{
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#00000088",
+          backgroundColor: "#00000033",
           borderRadius: 12,
           padding: 4,
         }}
