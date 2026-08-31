@@ -135,7 +135,6 @@ export default function DiscoverSearchResults({
           <XStack
             paddingHorizontal={16}
             paddingVertical={8}
-            marginTop={8}
           >
             <Text
               fontFamily="$body"
