@@ -1,16 +1,37 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { likeComment } from "@/services/graphQL/mutation/actions/comments";
+import { likeComment, unlikeComment } from "@/services/graphQL/mutation/actions/comments";
 
 export function useToggleCommentLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       commentId,
+      isLiked,
     }: {
       commentId: string;
+      isLiked?: boolean;
     }) => {
-      return likeComment(commentId);
+      // Use explicit isLiked when provided (pre-optimistic value); fallback to cache for backward compat
+      let wasLiked = isLiked;
+      if (wasLiked === undefined) {
+        const queries = queryClient.getQueriesData({ queryKey: ["postComments"] });
+        for (const [, data] of queries as any[]) {
+          if (!data) continue;
+          const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
+          for (const page of pages) {
+            for (const c of page.comments ?? []) {
+              if (c.id === commentId) wasLiked = c.viewerState?.liked ?? false;
+              if (c.replies) {
+                for (const r of c.replies) if (r.id === commentId) wasLiked = r.viewerState?.liked ?? false;
+              }
+            }
+          }
+          if (wasLiked !== undefined) break;
+        }
+      }
+      // wasLiked is the state BEFORE tap; if it was liked we need to unlike, else like
+      return wasLiked ? unlikeComment(commentId) : likeComment(commentId);
     },
 
     onMutate: async ({ commentId }) => {

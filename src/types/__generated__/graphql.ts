@@ -116,6 +116,51 @@ export type AdminCirclePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminCircleReportPayload = {
+  __typename: 'AdminCircleReportPayload';
+  error: Maybe<ErrorType>;
+  report: Maybe<AdminCircleReportType>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type AdminCircleReportPreviewType = {
+  __typename: 'AdminCircleReportPreviewType';
+  available: Scalars['Boolean']['output'];
+  mediaType: Scalars['String']['output'];
+  mediaUrl: Scalars['String']['output'];
+  text: Scalars['String']['output'];
+  thumbnailUrl: Scalars['String']['output'];
+  unavailableReason: Scalars['String']['output'];
+};
+
+export type AdminCircleReportType = {
+  __typename: 'AdminCircleReportType';
+  autoHidden: Scalars['Boolean']['output'];
+  circleId: Scalars['String']['output'];
+  circleName: Scalars['String']['output'];
+  contentPreview: AdminCircleReportPreviewType;
+  createdAt: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  reason: Scalars['String']['output'];
+  reportCount: Scalars['Int']['output'];
+  reporterUsername: Scalars['String']['output'];
+  resolvedAt: Maybe<Scalars['String']['output']>;
+  resolvedByUsername: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  targetId: Scalars['String']['output'];
+  targetType: Scalars['String']['output'];
+};
+
+export type AdminCircleReportsPaginatedType = {
+  __typename: 'AdminCircleReportsPaginatedType';
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  reports: Array<AdminCircleReportType>;
+  summary: CircleReportSummaryType;
+  totalCount: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type AdminCircleStatsPayload = {
   __typename: 'AdminCircleStatsPayload';
   error: Maybe<ErrorType>;
@@ -137,6 +182,7 @@ export type AdminCircleType = {
   cooldownRemainingDays: Scalars['Int']['output'];
   coverImage: Scalars['String']['output'];
   createdAt: Scalars['String']['output'];
+  createdByEmail: Scalars['String']['output'];
   createdByName: Scalars['String']['output'];
   description: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -181,10 +227,14 @@ export type AdminContactType = {
   lastMessageAt: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
   name: Scalars['String']['output'];
+  originUrl: Scalars['String']['output'];
+  platform: Scalars['String']['output'];
   repliedAt: Maybe<Scalars['String']['output']>;
   replies: Array<ContactReplyType>;
+  requesterAvatarUrl: Scalars['String']['output'];
   requesterUsername: Scalars['String']['output'];
   source: Scalars['String']['output'];
+  sourceLabel: Scalars['String']['output'];
   status: Scalars['String']['output'];
   topic: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
@@ -245,6 +295,20 @@ export type AdminLoginPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type AdminPriorReportType = {
+  __typename: 'AdminPriorReportType';
+  action: Scalars['String']['output'];
+  createdAt: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  internalNotes: Scalars['String']['output'];
+  reason: Scalars['String']['output'];
+  reporter: Maybe<ReporterType>;
+  reviewedAt: Maybe<Scalars['String']['output']>;
+  reviewedByName: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+};
+
 export type AdminReportMediaType = {
   __typename: 'AdminReportMediaType';
   mediaType: Scalars['String']['output'];
@@ -275,6 +339,8 @@ export type AdminReportType = {
   id: Scalars['String']['output'];
   internalNotes: Scalars['String']['output'];
   postId: Maybe<Scalars['String']['output']>;
+  /** Other reports on the same content (detail view only), newest first. */
+  priorReports: Array<AdminPriorReportType>;
   reason: Scalars['String']['output'];
   reporter: Maybe<ReporterType>;
   reviewedAt: Maybe<Scalars['String']['output']>;
@@ -380,6 +446,7 @@ export type AdminUserType = {
   lastLogin: Maybe<Scalars['String']['output']>;
   lifecycleState: Scalars['String']['output'];
   postsCount: Scalars['Int']['output'];
+  receivedReports: Scalars['Int']['output'];
   role: Scalars['String']['output'];
   status: Scalars['String']['output'];
   submittedReports: Scalars['Int']['output'];
@@ -772,6 +839,14 @@ export type CircleReportPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type CircleReportSummaryType = {
+  __typename: 'CircleReportSummaryType';
+  pending: Scalars['Int']['output'];
+  resolvedKept: Scalars['Int']['output'];
+  resolvedRemoved: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+};
+
 export type CircleRule = {
   __typename: 'CircleRule';
   description: Scalars['String']['output'];
@@ -929,6 +1004,25 @@ export type CreatePostPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type CreatorSearchResponse = {
+  __typename: 'CreatorSearchResponse';
+  creators: Array<CreatorSearchResultType>;
+  hasMore: Scalars['Boolean']['output'];
+  page: Scalars['Int']['output'];
+  pageSize: Scalars['Int']['output'];
+  totalCount: Scalars['Int']['output'];
+};
+
+export type CreatorSearchResultType = {
+  __typename: 'CreatorSearchResultType';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  bio: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  isFollowing: Scalars['Boolean']['output'];
+  stats: Maybe<ProfileStatsType>;
+  username: Scalars['String']['output'];
+};
+
 export type CurrentUserResponse = {
   __typename: 'CurrentUserResponse';
   accountDetails: AccountDetails;
@@ -983,6 +1077,34 @@ export type DeleteFolderPayload = {
   message: Maybe<Scalars['String']['output']>;
   movedPostsCount: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
+};
+
+export type DiscoverCreatorResult = {
+  __typename: 'DiscoverCreatorResult';
+  avatarUrl: Maybe<Scalars['String']['output']>;
+  bio: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  isFollowing: Scalars['Boolean']['output'];
+  stats: Maybe<DiscoverCreatorStats>;
+  username: Scalars['String']['output'];
+};
+
+export type DiscoverCreatorStats = {
+  __typename: 'DiscoverCreatorStats';
+  followersCount: Scalars['String']['output'];
+  followingCount: Scalars['String']['output'];
+  postsCount: Scalars['String']['output'];
+};
+
+export type DiscoverSearchResponse = {
+  __typename: 'DiscoverSearchResponse';
+  creatorCount: Scalars['Int']['output'];
+  creators: Array<DiscoverCreatorResult>;
+  emptyState: Maybe<EmptyState>;
+  hasMore: Scalars['Boolean']['output'];
+  nextCursor: Maybe<Scalars['String']['output']>;
+  postCount: Scalars['Int']['output'];
+  posts: Array<FeedPost>;
 };
 
 export type DonationConfirmationType = {
@@ -1292,7 +1414,6 @@ export type MediaFileType = {
   duration: Maybe<Scalars['Int']['output']>;
   height: Maybe<Scalars['Int']['output']>;
   id: Scalars['String']['output'];
-  sortOrder: Maybe<Scalars['Int']['output']>;
   thumbnailUrl: Maybe<Scalars['String']['output']>;
   type: MediaType;
   url: Scalars['String']['output'];
@@ -1318,16 +1439,21 @@ export type MediaUploadPayload = {
   __typename: 'MediaUploadPayload';
   error: Maybe<ErrorType>;
   expiresIn: Maybe<Scalars['Int']['output']>;
+  maxFileSize: Maybe<Scalars['Int']['output']>;
   mediaId: Maybe<Scalars['String']['output']>;
   mediaUrl: Maybe<Scalars['String']['output']>;
+  recommendedChunkSize: Maybe<Scalars['Int']['output']>;
+  resumableUploadUrl: Maybe<Scalars['String']['output']>;
   status: Maybe<Scalars['String']['output']>;
   success: Scalars['Boolean']['output'];
+  uploadMode: Maybe<Scalars['String']['output']>;
   uploadUrl: Maybe<Scalars['String']['output']>;
 };
 
 export type MetricCardType = {
   __typename: 'MetricCardType';
   change: Scalars['Float']['output'];
+  engagementRate: Maybe<Scalars['Float']['output']>;
   label: Scalars['String']['output'];
   value: Scalars['Int']['output'];
 };
@@ -1356,6 +1482,8 @@ export type Mutation = {
   adminCreateCircle: AdminCirclePayload;
   /** Deactivate a circle. */
   adminDeactivateCircle: AdminCirclePayload;
+  /** Soft-delete any anchor (including a live one) for moderation. */
+  adminDeleteAnchor: AdminAnchorPayload;
   /** Soft-delete a circle. */
   adminDeleteCircle: AdminCirclePayload;
   /** Edit a circle (admin only). */
@@ -1368,6 +1496,8 @@ export type Mutation = {
   adminReplyToContact: AdminContactReplyPayload;
   /** Restore (un-hide) content previously hidden via moderation. */
   adminRestoreContent: AdminReportReviewPayload;
+  /** Resolve a circle-content report: keep (restore if auto-hidden) or remove. */
+  adminReviewCircleReport: AdminCircleReportPayload;
   /** Review a report and take action. */
   adminReviewReport: AdminReportReviewPayload;
   /** Schedule an anchor for posting. */
@@ -1402,6 +1532,8 @@ export type Mutation = {
   createDonation: DonationPayload;
   /** Create a new multimedia app post. Supports Text, Media, and Bible variants. */
   createPost: CreatePostPayload;
+  /** Create a staging-gated GCS resumable upload session for large media */
+  createResumableUploadSession: MediaUploadPayload;
   debugSendPush: DebugSendPushPayload;
   /** Delete a bookmark folder */
   deleteBookmarkFolder: DeleteFolderPayload;
@@ -1461,6 +1593,8 @@ export type Mutation = {
   reportCircleContent: CircleReportPayload;
   /** File a Community Guidelines violation against an active node. */
   reportContent: ReportPayload;
+  /** Request a one-time code for the authenticated change-password flow. */
+  requestPasswordChangeOtp: OtpPayload;
   /** Resend the verification OTP for an unverified password account. Returns timing metadata for resend countdown UI. */
   resendVerificationOtp: OtpPayload;
   /** Request a password reset code for the email/password flow. Returns a generic success message to avoid exposing account existence. */
@@ -1483,6 +1617,8 @@ export type Mutation = {
   sharePostDirect: SharePayload;
   /** Share a post externally (generate link) */
   sharePostExternal: SharePayload;
+  /** Generate a public share link for a user profile. */
+  shareProfileExternal: SharePayload;
   /** Submit a contact form message for ZIONA or ZIONKING. */
   submitContact: ContactPayload;
   /** Public: submit a contact/support message (no auth required). */
@@ -1497,6 +1633,8 @@ export type Mutation = {
   unfollowUser: FollowPayload;
   /** Unhide a previously hidden post */
   unhidePost: HidePostPayload;
+  /** Remove a like from a comment */
+  unlikeComment: LikePayload;
   /** Unlike a post */
   unlikePost: LikePayload;
   /** Unsave/remove a bookmark */
@@ -1581,6 +1719,11 @@ export type MutationAdminDeactivateCircleArgs = {
 };
 
 
+export type MutationAdminDeleteAnchorArgs = {
+  anchorId: Scalars['String']['input'];
+};
+
+
 export type MutationAdminDeleteCircleArgs = {
   circleId: Scalars['String']['input'];
 };
@@ -1626,6 +1769,12 @@ export type MutationAdminReplyToContactArgs = {
 
 
 export type MutationAdminRestoreContentArgs = {
+  reportId: Scalars['String']['input'];
+};
+
+
+export type MutationAdminReviewCircleReportArgs = {
+  action: Scalars['String']['input'];
   reportId: Scalars['String']['input'];
 };
 
@@ -1676,6 +1825,7 @@ export type MutationCancelSubscriptionArgs = {
 export type MutationChangePasswordArgs = {
   currentPassword: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
+  otpCode?: InputMaybe<Scalars['String']['input']>;
   signOutOtherDevices?: Scalars['Boolean']['input'];
 };
 
@@ -1780,6 +1930,13 @@ export type MutationCreatePostArgs = {
   textMessage?: InputMaybe<Scalars['String']['input']>;
   thumbnailUrl?: InputMaybe<Scalars['String']['input']>;
   width?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type MutationCreateResumableUploadSessionArgs = {
+  fileName: Scalars['String']['input'];
+  fileSize: Scalars['Int']['input'];
+  fileType: Scalars['String']['input'];
 };
 
 
@@ -2053,6 +2210,11 @@ export type MutationSharePostExternalArgs = {
 };
 
 
+export type MutationShareProfileExternalArgs = {
+  userId: Scalars['String']['input'];
+};
+
+
 export type MutationSubmitContactArgs = {
   brand: ContactBrand;
   email: Scalars['String']['input'];
@@ -2067,6 +2229,7 @@ export type MutationSubmitContactMessageArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
   message: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+  platform?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -2075,6 +2238,7 @@ export type MutationSubmitHelpMessageArgs = {
   email?: InputMaybe<Scalars['String']['input']>;
   message: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+  platform?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -2096,6 +2260,11 @@ export type MutationUnfollowUserArgs = {
 
 export type MutationUnhidePostArgs = {
   postId: Scalars['String']['input'];
+};
+
+
+export type MutationUnlikeCommentArgs = {
+  commentId: Scalars['String']['input'];
 };
 
 
@@ -2174,6 +2343,13 @@ export type MutationWarnUserArgs = {
   userId: Scalars['String']['input'];
 };
 
+export enum NotificationCategory {
+  All = 'ALL',
+  Circles = 'CIRCLES',
+  Interactions = 'INTERACTIONS',
+  Updates = 'UPDATES'
+}
+
 export type NotificationConnection = {
   __typename: 'NotificationConnection';
   hasMore: Scalars['Boolean']['output'];
@@ -2181,9 +2357,20 @@ export type NotificationConnection = {
   nextCursor: Maybe<Scalars['String']['output']>;
 };
 
+export type NotificationDestinationType = {
+  __typename: 'NotificationDestinationType';
+  deepLink: Maybe<Scalars['String']['output']>;
+  entityId: Maybe<Scalars['ID']['output']>;
+  entityType: Scalars['String']['output'];
+  route: Scalars['String']['output'];
+  secondaryEntityId: Maybe<Scalars['ID']['output']>;
+};
+
 export type NotificationItem = {
   __typename: 'NotificationItem';
   createdAt: Scalars['String']['output'];
+  deepLink: Maybe<Scalars['String']['output']>;
+  destination: NotificationDestinationType;
   id: Scalars['ID']['output'];
   isRead: Scalars['Boolean']['output'];
   message: Scalars['String']['output'];
@@ -2208,6 +2395,7 @@ export type NotificationPreferencesType = {
   interactionLikes: Scalars['Boolean']['output'];
   interactionNewFollower: Scalars['Boolean']['output'];
   interactionPostInteraction: Scalars['Boolean']['output'];
+  mutedUserIds: Array<Scalars['ID']['output']>;
 };
 
 export type OtpPayload = {
@@ -2339,6 +2527,8 @@ export type PreferencesInput = {
   interactionLikes?: InputMaybe<Scalars['Boolean']['input']>;
   interactionNewFollower?: InputMaybe<Scalars['Boolean']['input']>;
   interactionPostInteraction?: InputMaybe<Scalars['Boolean']['input']>;
+  /** When provided, REPLACES the full mute list atomically. Omit this field to preserve existing mutes unchanged. Send the complete desired list, not just new additions. */
+  mutedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type ProfilePayload = {
@@ -2389,6 +2579,8 @@ export type Query = {
   adminCircleDetail: AdminCirclePayload;
   /** List circle members. */
   adminCircleMembers: CircleMembersPaginatedType;
+  /** List reports on circle content (anchors, responses, circles). */
+  adminCircleReports: AdminCircleReportsPaginatedType;
   /** Get circle-scoped stats for the admin circle detail page. */
   adminCircleStats: AdminCircleStatsPayload;
   /** List circles with search and filter. */
@@ -2402,6 +2594,8 @@ export type Query = {
   adminFailedSupportPayments: Scalars['JSON']['output'];
   /** Get recent admin activities timeline. */
   adminRecentActivities: Array<ActivityType>;
+  /** A single report with the history of prior reports on the same content. */
+  adminReport: Maybe<AdminReportType>;
   /** List reports with search and filter. */
   adminReports: AdminReportsPaginatedType;
   adminSupportDonations: Scalars['JSON']['output'];
@@ -2446,6 +2640,8 @@ export type Query = {
   discoverCategories: Array<CategoryType>;
   /** Get the Discover feed by category */
   discoverFeed: FeedResponse;
+  /** Search creators and content from the Discover screen. */
+  discoverSearch: DiscoverSearchResponse;
   /** Retrieve donation confirmation by transaction ID. */
   donationConfirmation: Maybe<DonationConfirmationType>;
   /** Get the public or personalized feed. Works with or without authentication. */
@@ -2498,6 +2694,8 @@ export type Query = {
   scripture: ScriptureResponse;
   /** Fetch verses in a range and return combined text as a single string. No verse numbers included — just the concatenated text. */
   scriptureRange: Scalars['String']['output'];
+  /** Search creators by username or name for the Discover screen. */
+  searchCreators: CreatorSearchResponse;
   /** Generate 4 available username suggestions based on email and optional date of birth. Returns unique, available usernames. */
   suggestUsernames: Array<Scalars['String']['output']>;
   suggestedCircles: Array<CircleType>;
@@ -2543,6 +2741,16 @@ export type QueryAdminCircleMembersArgs = {
 };
 
 
+export type QueryAdminCircleReportsArgs = {
+  circleId?: Scalars['String']['input'];
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+  search?: Scalars['String']['input'];
+  status?: Scalars['String']['input'];
+  targetType?: Scalars['String']['input'];
+};
+
+
 export type QueryAdminCircleStatsArgs = {
   circleId: Scalars['String']['input'];
 };
@@ -2579,6 +2787,11 @@ export type QueryAdminFailedSupportPaymentsArgs = {
 
 export type QueryAdminRecentActivitiesArgs = {
   limit?: Scalars['Int']['input'];
+};
+
+
+export type QueryAdminReportArgs = {
+  reportId: Scalars['String']['input'];
 };
 
 
@@ -2724,6 +2937,15 @@ export type QueryDiscoverFeedArgs = {
 };
 
 
+export type QueryDiscoverSearchArgs = {
+  category?: InputMaybe<Scalars['String']['input']>;
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: Scalars['Int']['input'];
+  mediaType?: InputMaybe<Scalars['String']['input']>;
+  query: Scalars['String']['input'];
+};
+
+
 export type QueryDonationConfirmationArgs = {
   transactionId: Scalars['String']['input'];
 };
@@ -2826,6 +3048,7 @@ export type QueryMyHelpConversationsArgs = {
 
 
 export type QueryNotificationsArgs = {
+  category?: InputMaybe<NotificationCategory>;
   cursor?: InputMaybe<Scalars['String']['input']>;
   limit?: Scalars['Int']['input'];
 };
@@ -2870,6 +3093,13 @@ export type QueryScriptureRangeArgs = {
   translation?: Scalars['String']['input'];
   verseEnd?: InputMaybe<Scalars['Int']['input']>;
   verseStart?: Scalars['Int']['input'];
+};
+
+
+export type QuerySearchCreatorsArgs = {
+  page?: Scalars['Int']['input'];
+  pageSize?: Scalars['Int']['input'];
+  query: Scalars['String']['input'];
 };
 
 
@@ -3068,6 +3298,7 @@ export type SharePayload = {
   errorCode: Maybe<Scalars['String']['output']>;
   message: Maybe<Scalars['String']['output']>;
   shareId: Maybe<Scalars['String']['output']>;
+  shareType: Maybe<Scalars['String']['output']>;
   shareUrl: Maybe<Scalars['String']['output']>;
   stats: Maybe<PostStats>;
   success: Scalars['Boolean']['output'];
@@ -3119,6 +3350,14 @@ export type UserMiniType = {
   avatarUrl: Scalars['String']['output'];
   id: Scalars['String']['output'];
   username: Scalars['String']['output'];
+  viewerState: UserMiniViewerState;
+};
+
+export type UserMiniViewerState = {
+  __typename: 'UserMiniViewerState';
+  isFollowedBy: Scalars['Boolean']['output'];
+  isFollowing: Scalars['Boolean']['output'];
+  isOwner: Scalars['Boolean']['output'];
 };
 
 export type UserProfileType = {
@@ -3132,6 +3371,7 @@ export type UserProfileType = {
   id: Scalars['String']['output'];
   location: Scalars['String']['output'];
   recentPosts: Array<FeedPost>;
+  shareUrl: Scalars['String']['output'];
   stats: ProfileStatsType;
   username: Scalars['String']['output'];
   viewerState: Maybe<ProfileViewerState>;

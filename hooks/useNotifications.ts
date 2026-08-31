@@ -6,6 +6,7 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
 } from "@/services/graphQL/queries/actions/notifications";
+import type { NotificationCategory } from "@/src/types/__generated__/graphql";
 import { setBadgeCountAsync } from "expo-notifications";
 
 async function syncBadgeCount() {
@@ -15,10 +16,10 @@ async function syncBadgeCount() {
   } catch { console.warn("[useNotifications] syncBadgeCount failed"); }
 }
 
-export function useNotifications(limit: number = 20) {
+export function useNotifications(limit: number = 20, category?: NotificationCategory) {
   return useInfiniteQuery({
-    queryKey: ["notifications", limit],
-    queryFn: ({ pageParam }) => getNotifications(limit, pageParam),
+    queryKey: ["notifications", limit, category],
+    queryFn: ({ pageParam }) => getNotifications(limit, pageParam, category),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage?.hasMore ? lastPage.nextCursor : undefined,
     staleTime: 0,

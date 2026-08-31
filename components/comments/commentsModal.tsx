@@ -193,14 +193,25 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
         : Math.max(0, keyboardHeight.value - insets.bottom),
   }));
 
-  const toggleLike = (commentId: string) => {
+  const toggleLike = (commentId: string, isLiked?: boolean) => {
     if (toggleLikeMutation.isPending) return;
-    toggleLikeMutation.mutate({ commentId });
+    let liked = isLiked;
+    if (liked === undefined) {
+      const comment = comments.find((c: any) => c.id === commentId);
+      liked = comment?.viewerState?.liked ?? false;
+    }
+    toggleLikeMutation.mutate({ commentId, isLiked: !!liked });
   };
 
-  const toggleReplyLike = (commentId: string, replyId: string) => {
+  const toggleReplyLike = (commentId: string, replyId: string, isLiked?: boolean) => {
     if (replyLikeMutation.isPending) return;
-    replyLikeMutation.mutate({ postId, commentId, replyId });
+    let liked = isLiked;
+    if (liked === undefined) {
+      const parent = comments.find((c: any) => c.id === commentId);
+      const reply = parent?.replies?.find((r: any) => r.id === replyId);
+      liked = reply?.viewerState?.liked ?? false;
+    }
+    replyLikeMutation.mutate({ postId, commentId, replyId, isLiked: !!liked });
   };
 
   const startReply = (commentId: string, username: string) => {
@@ -487,8 +498,8 @@ function CommentItem({
   toggleReplies: (id: string) => void;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string) => void;
-  toggleReplyLike: (commentId: string, replyId: string) => void;
+  toggleLike: (id: string, isLiked?: boolean) => void;
+  toggleReplyLike: (commentId: string, replyId: string, isLiked?: boolean) => void;
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
   onViewProfile: (userId: string) => void;
@@ -561,7 +572,7 @@ function CommentItem({
                     mentionMap={mentionMap}
                     failedAvatarUrls={failedAvatarUrls}
                     setFailedAvatarUrls={setFailedAvatarUrls}
-                    toggleLike={() => toggleReplyLike(comment.id, reply.id)}
+                    toggleLike={() => toggleReplyLike(comment.id, reply.id, !!reply.viewerState?.liked)}
                     startReply={startReply}
                     onViewProfile={onViewProfile}
                     onOpenMenu={onOpenMenu}
@@ -573,7 +584,7 @@ function CommentItem({
           </YStack>
         </XStack>
 
-        <Pressable onPress={() => toggleLike(comment.id)} disabled={toggleLikeMutation.isPending}>
+        <Pressable onPress={() => toggleLike(comment.id, !!comment.viewerState?.liked)} disabled={toggleLikeMutation.isPending}>
           {comment.viewerState?.liked ? (
             <Image source={likeIconActive} width={20} height={20} />
           ) : (

@@ -3,16 +3,17 @@ import type {
   NotificationItem as GQLNotificationItem,
   NotificationConnection,
   NotificationPreferencesType,
+  NotificationCategory,
 } from "@/src/types/__generated__/graphql";
 
 export type NotificationItem = Omit<GQLNotificationItem, "__typename">;
 
 export type NotificationsResponse = Omit<NotificationConnection, "__typename">;
 
-export async function getNotifications(limit: number = 50, cursor?: string): Promise<NotificationsResponse> {
+export async function getNotifications(limit: number = 50, cursor?: string, category?: NotificationCategory): Promise<NotificationsResponse> {
   const query = `
-    query MyNotifications($limit: Int, $cursor: String) {
-      notifications(limit: $limit, cursor: $cursor) {
+    query MyNotifications($limit: Int, $cursor: String, $category: NotificationCategory) {
+      notifications(limit: $limit, cursor: $cursor, category: $category) {
         hasMore
         nextCursor
         items {
@@ -23,11 +24,24 @@ export async function getNotifications(limit: number = 50, cursor?: string): Pro
           isRead
           referenceId
           referenceType
+          deepLink
+          destination {
+            route
+            deepLink
+            entityType
+            entityId
+            secondaryEntityId
+          }
           createdAt
           user {
             id
             username
             avatarUrl
+            viewerState {
+              isFollowing
+              isFollowedBy
+              isOwner
+            }
           }
         }
       }
@@ -35,7 +49,7 @@ export async function getNotifications(limit: number = 50, cursor?: string): Pro
   `;
 
   try {
-    const data = await graphqlRequest(query, { limit, cursor });
+    const data = await graphqlRequest(query, { limit, cursor, category });
     return data?.notifications ?? { items: [], hasMore: false, nextCursor: null };
   } catch {
     return { items: [], hasMore: false, nextCursor: null };
@@ -116,6 +130,7 @@ export async function updateNotificationPreferences(
         circleAnchorPost
         circleComment
         circleFriendInteraction
+        mutedUserIds
       }
     }
   `;

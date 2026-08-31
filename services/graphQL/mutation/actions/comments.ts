@@ -269,4 +269,35 @@ export async function likeComment(commentId: string) {
   return res;
 }
 
+/* UNLIKE COMMENT */
+export async function unlikeComment(commentId: string) {
+  const query = `
+    mutation UnlikeComment($commentId: String!) {
+      unlikeComment(commentId: $commentId) {
+        success
+        liked
+        stats {
+          likesCount
+        }
+        commentStats {
+          likesCount
+        }
+        error {
+          code
+          message
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(query, { commentId });
+
+  const res = data?.unlikeComment;
+  if (!res?.success) {
+    throw new AppError(res?.error?.message || "Failed to unlike comment", { code: res?.error?.code });
+  }
+
+  return res;
+}
+
 

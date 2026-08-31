@@ -8,17 +8,27 @@ import colors from "@/constants/colors";
 import { useNotifications, useMarkNotificationAsRead, useDeleteNotification } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
+import { NotificationCategory } from "@/src/types/__generated__/graphql";
+import type { UserMiniViewerState } from "@/src/types/__generated__/graphql";
 import Header from "@/components/layout/header";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useNotificationMuteStore } from "@/store/useNotificationMuteStore";
-import { resolveNotificationDestination } from "@/src/services/notifications/notificationNavigation";
+import { useToggleFollow } from "@/hooks/useFollow";
+import { resolveDestinationFromNotification } from "@/src/services/notifications/notificationNavigation";
+import { updateNotificationPreferences } from "@/services/graphQL/queries/actions/notifications";
 
-const filters = ["All", "Follows", "Mentions", "Replies", "Circles"] as const;
+const filters: { label: string; category?: NotificationCategory }[] = [
+  { label: "All" },
+  { label: "Follows" },
+  { label: "Mentions" },
+  { label: "Replies" },
+  { label: "Circles", category: NotificationCategory.Circles },
+] as const;
 type Filter = (typeof filters)[number];
 
-function matchesFilter(item: NotificationItem, filter: Filter): boolean {
-  switch (filter) {
+function matchesFilter(item: NotificationItem, label: string): boolean {
+  switch (label) {
     case "Follows":
       return item.referenceType === "follow" || item.type === "follow";
     case "Mentions":
@@ -50,6 +60,15 @@ function getColorFromName(name?: string): string {
   }
   const palette = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
   return palette[Math.abs(hash) % palette.length];
+}
+
+function getFollowButtonLabel(viewerState?: UserMiniViewerState): string {
+  if (!viewerState) return "Follow";
+  const { isFollowing, isFollowedBy } = viewerState;
+  if (isFollowing && isFollowedBy) return "Friends";
+  if (!isFollowing && isFollowedBy) return "Follow back";
+  if (isFollowing && !isFollowedBy) return "Unfollow";
+  return "Follow";
 }
 
 function NotificationAvatar({ avatarUrl, username, size = 31 }: { avatarUrl?: string | null; username?: string; size?: number }) {
@@ -85,19 +104,23 @@ function NotificationAvatar({ avatarUrl, username, size = 31 }: { avatarUrl?: st
 export default function ActivityScreen() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useNotifications(50);
+  const currentUserId = useAuthStore((s) => s.user?.id);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<Filter>("All");
+  const [selectedFilter, setSelectedFilter] = useState<Filter>(filters[0]);
+  const selectedCategory = selectedFilter.category;
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useNotifications(50, selectedCategory);
   const markAsRead = useMarkNotificationAsRead();
   const deleteNotif = useDeleteNotification();
   const [menuItem, setMenuItem] = useState<NotificationItem | null>(null);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const mutedUserIds = useNotificationMuteStore((s) => s.mutedUserIds);
-  const muteUser = useNotificationMuteStore((s) => s.muteUser);
+  const muteUserLocal = useNotificationMuteStore((s) => s.muteUser);
+  const { mutate: toggleFollow } = useToggleFollow();
 
   const notifications = useMemo(() => {
     const all: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
     return all.filter(
-      (n) => matchesFilter(n, selectedFilter) && !mutedUserIds.includes(n.user?.id ?? ""),
+      (n) => matchesFilter(n, selectedFilter.label) && !mutedUserIds.includes(n.user?.id ?? ""),
     );
   }, [data, selectedFilter, mutedUserIds]);
 
@@ -118,15 +141,20 @@ export default function ActivityScreen() {
     return `${day}/${month}/${d.getFullYear()}`;
   }, []);
 
+  const handleMuteUser = useCallback((userId: string) => {
+    const newMuted = mutedUserIds.includes(userId)
+      ? mutedUserIds.filter((id) => id !== userId)
+      : [...mutedUserIds, userId];
+    muteUserLocal(userId);
+    updateNotificationPreferences({ mutedUserIds: newMuted } as any).catch(() => {});
+  }, [mutedUserIds, muteUserLocal]);
+
   const handleNotificationPress = useCallback(
     (item: NotificationItem) => {
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
-      const path = resolveNotificationDestination({
-        referenceType: item.referenceType,
-        referenceId: item.referenceId,
-      });
+      const path = resolveDestinationFromNotification(item);
       if (path !== "/notifications") {
         router.push(path as any);
       }
@@ -134,8 +162,29 @@ export default function ActivityScreen() {
     [markAsRead, router],
   );
 
+  const handleFollowPress = useCallback(
+    (e: any, item: NotificationItem) => {
+      e.stopPropagation?.();
+      if (!item.user?.id || item.user.id === currentUserId) return;
+      const viewerState = item.user.viewerState;
+      if (!viewerState) return;
+      setFollowingIds((prev) => new Set(prev).add(item.user!.id!));
+      toggleFollow({ userId: item.user.id, currentFollowing: viewerState.isFollowing });
+    },
+    [currentUserId, toggleFollow],
+  );
+
   const renderNotification = useCallback(
     ({ item }: { item: NotificationItem }) => {
+      const viewerState = item.user?.viewerState;
+      const isFollowNotif = item.referenceType === "follow" || item.type === "follow";
+      const isSuggestion = item.type === "suggest";
+      const isFollowing = followingIds.has(item.user?.id ?? "");
+      const showFollowBtn = (isFollowNotif || isSuggestion) && item.user?.id && item.user.id !== currentUserId && !!viewerState;
+      const followLabel = isSuggestion ? "Follow" : (viewerState ? getFollowButtonLabel(viewerState) : "Follow");
+      const displayLabel = isFollowing ? "Following" : followLabel;
+      const showMenuButton = !isFollowNotif;
+
       return (
         <Pressable style={styles.activityRow} onPress={() => handleNotificationPress(item)}>
           <NotificationAvatar avatarUrl={item.user?.avatarUrl} username={item.user?.username} />
@@ -159,15 +208,23 @@ export default function ActivityScreen() {
             )}
           </View>
 
-          <Pressable style={styles.menuButton} hitSlop={10} onPress={() => setMenuItem(item)}>
-            <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
-          </Pressable>
-
-          {!item.isRead && <View style={styles.notificationDot} />}
+          <View style={styles.rightActions}>
+            {showFollowBtn && (
+              <Pressable onPress={(e) => handleFollowPress(e, item)} style={[styles.followBtn, isFollowing && styles.followingBtn]}>
+                <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>{displayLabel}</Text>
+              </Pressable>
+            )}
+            {showMenuButton && (
+              <Pressable style={styles.menuButton} hitSlop={10} onPress={() => setMenuItem(item)}>
+                <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
+              </Pressable>
+            )}
+            {!item.isRead && <View style={styles.notificationDot} />}
+          </View>
         </Pressable>
       );
     },
-    [formatTime, handleNotificationPress],
+    [formatTime, handleNotificationPress, handleFollowPress, currentUserId],
   );
 
   if (!isAuthenticated) {
@@ -195,17 +252,17 @@ export default function ActivityScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={filters}
-            keyExtractor={(item) => item}
+            keyExtractor={(item) => item.label}
             contentContainerStyle={styles.filterContent}
             renderItem={({ item }) => {
-              const selected = selectedFilter === item;
+              const selected = selectedFilter.label === item.label;
               return (
                 <Pressable
                   onPress={() => setSelectedFilter(item)}
                   style={[styles.filterButton, selected && styles.filterButtonSelected]}
                 >
                   <Text style={[styles.filterText, selected && styles.filterTextSelected]}>
-                    {item}
+                    {item.label}
                   </Text>
                 </Pressable>
               );
@@ -265,7 +322,7 @@ export default function ActivityScreen() {
             <Pressable
               style={styles.menuRow}
               onPress={() => {
-                if (menuItem.user?.id) muteUser(menuItem.user.id);
+                handleMuteUser(menuItem.user?.id ?? "");
                 setMenuItem(null);
               }}
             >
@@ -348,12 +405,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     position: "relative",
+    paddingRight: 44,
   },
 
   activityContent: {
     flex: 1,
     marginLeft: 9,
-    paddingRight: 4,
+    paddingRight: 80,
   },
 
   nameRow: {
@@ -367,15 +425,38 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     fontWeight: "600",
     color: "#201B22",
-    maxWidth: 120,
+    maxWidth: 130,
   },
 
   date: {
-    marginLeft: 4,
     fontSize: 13,
     lineHeight: 17,
     color: "#8B7191",
     fontWeight: "400",
+    marginLeft: 20,
+  },
+
+  followBtn: {
+    width: 104,
+    height: 35,
+    borderRadius: 4,
+    backgroundColor: "#742092",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  followingBtn: {
+    backgroundColor: "#EEEBEF",
+  },
+
+  followBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+
+  followingBtnText: {
+    color: "#17131A",
   },
 
   subtitle: {
@@ -393,22 +474,27 @@ const styles = StyleSheet.create({
     paddingRight: 3,
   },
 
+  rightActions: {
+    position: "absolute",
+    right: 0,
+    top: 10,
+    alignItems: "flex-end",
+    gap: 12,
+  },
+
   menuButton: {
     width: 23,
     height: 23,
     alignItems: "flex-end",
     justifyContent: "flex-start",
-    marginLeft: 2,
   },
 
   notificationDot: {
-    position: "absolute",
-    right: -1,
-    top: 32,
     width: 5,
     height: 5,
     borderRadius: 3,
     backgroundColor: "#17131A",
+    marginTop: 10,
   },
 
   separator: {

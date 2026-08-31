@@ -100,7 +100,7 @@ export const GET_DISCOVER_SEARCH = `
 
 /* =========================
    DISCOVER FEED (USE REAL SHAPE)
- ========================= */
+  ========================= */
 
 export const GET_DISCOVER_FEED = `
   query GetDiscoverFeed($category: String, $mediaType: String, $cursor: String, $limit: Int = 20) {

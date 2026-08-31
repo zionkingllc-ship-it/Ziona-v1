@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-q
 import {
   getCommentReplies,
   likeComment,
+  unlikeComment,
 } from "@/services/graphQL/mutation/actions/comments";
 
 export function useCommentReplies(commentId: string) {
@@ -22,12 +23,38 @@ export function useReplyLike() {
       postId,
       commentId,
       replyId,
+      isLiked,
     }: {
       postId: string;
       commentId: string;
       replyId: string;
+      isLiked?: boolean;
     }) => {
-      return likeComment(replyId);
+      // Use explicit isLiked (pre-optimistic) when provided
+      let wasLiked = isLiked;
+      if (wasLiked === undefined) {
+        const postData = queryClient.getQueryData(["postComments", postId]) as any;
+        if (postData?.pages) {
+          for (const page of postData.pages) {
+            for (const c of page.comments ?? []) {
+              if (c.id === commentId) {
+                const r = (c.replies ?? []).find((x: any) => x.id === replyId);
+                if (r) wasLiked = r.viewerState?.liked ?? false;
+              }
+            }
+          }
+        }
+        if (wasLiked === undefined) {
+          const replyData = queryClient.getQueryData(["commentReplies", commentId]) as any;
+          if (replyData?.pages) {
+            for (const page of replyData.pages) {
+              const r = (page.comments ?? []).find((x: any) => x.id === replyId);
+              if (r) wasLiked = r.viewerState?.liked ?? false;
+            }
+          }
+        }
+      }
+      return wasLiked ? unlikeComment(replyId) : likeComment(replyId);
     },
     onMutate: async ({ postId, commentId, replyId }) => {
       await Promise.all([
