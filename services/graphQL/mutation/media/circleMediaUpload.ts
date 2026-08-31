@@ -1,7 +1,7 @@
 import {
-  requestMediaUpload,
+  requestUploadSession,
+  uploadWithStrategy,
   confirmMediaUpload,
-  uploadFileToStorage,
 } from "@/services/graphQL/mutation/media/mediaUpload";
 import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import { compressVideo } from "@/services/utils/videoCompression";
@@ -55,12 +55,11 @@ export async function uploadCircleMedia(
     throw new Error("File is empty");
   }
 
-  const result = await requestMediaUpload(fileName, uploadType, fileSize);
-  const { uploadUrl, mediaId } = result;
+  const result = await requestUploadSession(fileName, uploadType, fileSize);
 
-  await uploadFileToStorage(uploadUrl, uploadUri, uploadType, undefined, fileSize);
+  await uploadWithStrategy(result, uploadUri, uploadType, fileSize);
 
-  const { mediaUrl } = await confirmMediaUpload(mediaId);
+  const { mediaUrl } = await confirmMediaUpload(result.mediaId);
 
-  return { mediaId, mediaUrl };
+  return { mediaId: result.mediaId, mediaUrl };
 }

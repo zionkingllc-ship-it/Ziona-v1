@@ -1,7 +1,7 @@
 import {
-  requestMediaUpload,
+  requestUploadSession,
+  uploadWithStrategy,
   confirmMediaUpload,
-  uploadFileToStorage,
   waitForMediaProcessing,
 } from "../mutation/media/mediaUpload";
 import { createMediaPost } from "../mutation/createPost";
@@ -49,7 +49,7 @@ export async function preUploadMedia(
       if (!fileInfo.size || fileInfo.size <= 0)
         throw new Error("Invalid file size");
 
-      const upload = await requestMediaUpload(
+      const upload = await requestUploadSession(
         fileName,
         fileType,
         fileInfo.size,
@@ -60,7 +60,7 @@ export async function preUploadMedia(
         onProgress?.(overall);
       };
 
-      await uploadFileToStorage(upload.uploadUrl, fileUri, fileType, itemProgress, fileInfo.size);
+      await uploadWithStrategy(upload, fileUri, fileType, fileInfo.size, itemProgress);
 
       const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
 
@@ -140,7 +140,7 @@ export async function publishMediaPost(
         if (!fileInfo.size || fileInfo.size <= 0)
           throw new Error("Invalid file size");
 
-        const upload = await requestMediaUpload(
+        const upload = await requestUploadSession(
           fileName,
           fileType,
           fileInfo.size,
@@ -151,7 +151,7 @@ export async function publishMediaPost(
           onProgress?.(overall);
         };
 
-        await uploadFileToStorage(upload.uploadUrl, fileUri, fileType, itemProgress, fileInfo.size);
+        await uploadWithStrategy(upload, fileUri, fileType, fileInfo.size, itemProgress);
 
         const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
 

@@ -2,6 +2,39 @@ import * as FileSystem from "expo-file-system/legacy";
 import { graphqlRequest } from "../../graphqlClient";
 import { AppError } from "@/utils/error";
 
+/* =========================
+   STABLE BACKEND ERROR CODES
+   ========================= */
+
+const STABLE_ERROR_CODES = new Set([
+  "RESUMABLE_UPLOADS_DISABLED",
+  "UPLOAD_SESSION_CREATION_FAILED",
+  "UPLOAD_GCS_PERMISSION_DENIED",
+  "UPLOAD_GCS_TIMEOUT",
+  "VIDEO_TOO_LARGE",
+  "INVALID_MEDIA_TYPE",
+  "INVALID_FILE_SIZE",
+]);
+
+function throwIfStableError(payload: any, context: string) {
+  const code = payload?.error?.code;
+  if (code && STABLE_ERROR_CODES.has(code)) {
+    throw new AppError(payload.error.message || `${context} failed`, { code });
+  }
+}
+
+/* =========================
+   RESUMABLE UPLOAD THRESHOLD
+   Files larger than this use resumable flow
+   ========================= */
+
+export const RESUMABLE_UPLOAD_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+export const DEFAULT_CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB (matches backend recommendedChunkSize)
+
+/* =========================
+   STANDARD UPLOAD (existing)
+   ========================= */
+
 const REQUEST_UPLOAD_MUTATION = `
 mutation UploadMedia($fileName: String!, $fileType: String!, $fileSize: Int!) {
   uploadMedia(
@@ -39,11 +72,91 @@ export async function requestMediaUpload(
 
   if (!payload?.success) {
     console.error("[requestMediaUpload] Server rejected:", JSON.stringify(payload));
+    throwIfStableError(payload, "Upload request");
     throw new AppError(payload?.error?.message || `Media upload request failed (${fileName}, ${fileType}, ${fileSize})`, { code: payload?.error?.code });
   }
 
   return payload as { uploadUrl: string; mediaId: string; mediaUrl?: string; status?: string };
 }
+
+/* =========================
+   RESUMABLE UPLOAD SESSION
+   ========================= */
+
+const CREATE_RESUMABLE_SESSION_MUTATION = `
+mutation CreateResumableUploadSession($fileName: String!, $fileType: String!, $fileSize: Int!) {
+  createResumableUploadSession(
+    fileName: $fileName
+    fileType: $fileType
+    fileSize: $fileSize
+  ) {
+    success
+    mediaId
+    uploadUrl
+    resumableUploadUrl
+    mediaUrl
+    uploadMode
+    maxFileSize
+    recommendedChunkSize
+    error {
+      code
+      message
+    }
+  }
+}
+`;
+
+export type ResumableSession = {
+  mediaId: string;
+  uploadUrl: string;
+  resumableUploadUrl: string;
+  mediaUrl?: string;
+  uploadMode: string;
+  maxFileSize?: number;
+  recommendedChunkSize: number;
+};
+
+export async function createResumableUploadSession(
+  fileName: string,
+  fileType: string,
+  fileSize: number,
+): Promise<ResumableSession> {
+  let data: any;
+  try {
+    data = await graphqlRequest(CREATE_RESUMABLE_SESSION_MUTATION, {
+      fileName,
+      fileType,
+      fileSize,
+    });
+  } catch (err: any) {
+    console.error("[createResumableUploadSession] Network error:", err?.message ?? err);
+    throw err;
+  }
+
+  const payload = data?.createResumableUploadSession;
+
+  if (!payload?.success) {
+    throwIfStableError(payload, "Resumable session creation");
+    throw new AppError(
+      payload?.error?.message || "Failed to create resumable upload session",
+      { code: payload?.error?.code },
+    );
+  }
+
+  return {
+    mediaId: payload.mediaId,
+    uploadUrl: payload.uploadUrl,
+    resumableUploadUrl: payload.resumableUploadUrl,
+    mediaUrl: payload.mediaUrl,
+    uploadMode: payload.uploadMode,
+    maxFileSize: payload.maxFileSize,
+    recommendedChunkSize: payload.recommendedChunkSize || DEFAULT_CHUNK_SIZE,
+  };
+}
+
+/* =========================
+   CONFIRM MEDIA UPLOAD
+   ========================= */
 
 const CONFIRM_MEDIA_UPLOAD = `
 mutation ConfirmMediaUpload($mediaId: String!) {
@@ -63,6 +176,7 @@ export async function confirmMediaUpload(mediaId: string) {
   const payload = data?.confirmMediaUpload;
 
   if (!payload?.success) {
+    throwIfStableError(payload, "Media upload confirmation");
     throw new AppError(payload?.error?.message || "Media upload confirmation failed", { code: payload?.error?.code });
   }
 
@@ -141,7 +255,7 @@ export async function waitForMediaProcessing(
 }
 
 /* =========================
-   FILE UPLOAD (with size-based progress estimate)
+   FILE UPLOAD — STANDARD (PUT)
    ========================= */
 
 const MAX_RETRIES = 3;
@@ -233,4 +347,188 @@ export async function uploadFileToStorage(
 
   cleanup();
   throw new Error("Upload to storage failed");
+}
+
+/* =========================
+   FILE UPLOAD — RESUMABLE (chunked PUT)
+   GCS resumable upload protocol:
+   1. Initiate: PUT with Content-Length=0 and x-goog-resumable=start
+   2. Upload chunks: PUT with Content-Range header
+   3. Final chunk completes the upload
+   ========================= */
+
+async function readChunk(fileUri: string, offset: number, length: number): Promise<string> {
+  // expo-file-system doesn't support partial reads, so we read the whole file
+  // and slice. For very large files on mobile, the entire file is accessible
+  // via URI and the OS handles paging.
+  const base64 = await FileSystem.readAsStringAsync(fileUri, {
+    encoding: FileSystem.EncodingType.Base64,
+    position: offset,
+    length,
+  });
+  return base64;
+}
+
+export async function uploadFileToStorageResumable(
+  resumableUploadUrl: string,
+  fileUri: string,
+  fileType: string,
+  fileSize: number,
+  onProgress?: (percent: number) => void,
+  chunkSize: number = DEFAULT_CHUNK_SIZE,
+): Promise<{ size: number }> {
+  const totalChunks = Math.ceil(fileSize / chunkSize);
+  let uploadedBytes = 0;
+
+  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+    const start = chunkIndex * chunkSize;
+    const end = Math.min(start + chunkSize, fileSize);
+    const currentChunkSize = end - start;
+    const isLastChunk = chunkIndex === totalChunks - 1;
+
+    // Read chunk as base64, then convert to binary for upload
+    const base64Data = await readChunk(fileUri, start, currentChunkSize);
+
+    // Convert base64 to binary blob
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const contentRange = `bytes ${start}-${end - 1}/${fileSize}`;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(resumableUploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": fileType,
+            "Content-Length": String(currentChunkSize),
+            "Content-Range": contentRange,
+          },
+          body: bytes,
+        });
+
+        // 308 Resume Incomplete or 200/201 means chunk accepted
+        if (response.status === 308 || response.status === 200 || response.status === 201) {
+          uploadedBytes = end;
+          const pct = Math.min(Math.round((uploadedBytes / fileSize) * 90), 90);
+          onProgress?.(pct);
+          break;
+        }
+
+        // If we get an error response, try to parse backend error
+        if (!response.ok) {
+          let errorBody: any;
+          try {
+            errorBody = await response.json();
+          } catch {}
+          const errorCode = errorBody?.error?.code || errorBody?.code;
+          const errorMessage = errorBody?.error?.message || errorBody?.message || `Chunk upload failed (${response.status})`;
+
+          if (errorCode && STABLE_ERROR_CODES.has(errorCode)) {
+            throw new AppError(errorMessage, { code: errorCode });
+          }
+          throw new AppError(errorMessage);
+        }
+
+        uploadedBytes = end;
+        onProgress?.(Math.min(Math.round((uploadedBytes / fileSize) * 90), 90));
+        break;
+      } catch (error: any) {
+        const isLastAttempt = attempt >= MAX_RETRIES;
+        if (isLastAttempt || !isRetryableError(error)) {
+          throw error;
+        }
+        const delay = RETRY_DELAYS[attempt] ?? 4000;
+        await sleep(delay);
+      }
+    }
+  }
+
+  onProgress?.(95);
+  return { size: fileSize };
+}
+
+/* =========================
+   UNIFIED UPLOAD STRATEGY
+   Chooses resumable for large files, standard for small
+   ========================= */
+
+export type UploadStrategy = {
+  useResumable: boolean;
+  mediaId: string;
+  uploadUrl: string;
+  resumableUploadUrl?: string;
+  chunkSize: number;
+};
+
+export async function requestUploadSession(
+  fileName: string,
+  fileType: string,
+  fileSize: number,
+): Promise<UploadStrategy> {
+  // Always try resumable first for videos
+  const isVideo = fileType.startsWith("video/");
+  const isLarge = fileSize > RESUMABLE_UPLOAD_THRESHOLD;
+
+  if (isVideo || isLarge) {
+    try {
+      const session = await createResumableUploadSession(fileName, fileType, fileSize);
+      return {
+        useResumable: true,
+        mediaId: session.mediaId,
+        uploadUrl: session.uploadUrl,
+        resumableUploadUrl: session.resumableUploadUrl,
+        chunkSize: session.recommendedChunkSize,
+      };
+    } catch (err: any) {
+      // If resumables are disabled or session creation fails, fall back to standard
+      if (
+        err?.code === "RESUMABLE_UPLOADS_DISABLED" ||
+        err?.code === "UPLOAD_SESSION_CREATION_FAILED"
+      ) {
+        console.warn("[requestUploadSession] Resumable unavailable, falling back to standard:", err.code);
+        const standard = await requestMediaUpload(fileName, fileType, fileSize);
+        return {
+          useResumable: false,
+          mediaId: standard.mediaId,
+          uploadUrl: standard.uploadUrl,
+          chunkSize: 0,
+        };
+      }
+      throw err;
+    }
+  }
+
+  // Small files or images: use standard upload
+  const standard = await requestMediaUpload(fileName, fileType, fileSize);
+  return {
+    useResumable: false,
+    mediaId: standard.mediaId,
+    uploadUrl: standard.uploadUrl,
+    chunkSize: 0,
+  };
+}
+
+export async function uploadWithStrategy(
+  strategy: UploadStrategy,
+  fileUri: string,
+  fileType: string,
+  fileSize: number,
+  onProgress?: (percent: number) => void,
+): Promise<{ size: number }> {
+  if (strategy.useResumable && strategy.resumableUploadUrl) {
+    return uploadFileToStorageResumable(
+      strategy.resumableUploadUrl,
+      fileUri,
+      fileType,
+      fileSize,
+      onProgress,
+      strategy.chunkSize,
+    );
+  }
+
+  return uploadFileToStorage(strategy.uploadUrl, fileUri, fileType, onProgress, fileSize);
 }
