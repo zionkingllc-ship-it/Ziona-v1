@@ -90,7 +90,8 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
           fontStyle="italic"
           fontSize={16}
           color="#4E4252"
-          marginLeft={16}
+          textAlign="center"
+          marginHorizontal={16}
           marginTop={16}
           marginBottom={8}
         >
