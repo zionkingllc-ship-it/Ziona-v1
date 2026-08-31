@@ -19,7 +19,7 @@ export default function TwoButtonSwitch({
 
   const activeBg = colorsDefault.primary;
   const activeText = colorsDefault.white;
-  const inactiveBg = "rgba(68, 68, 68, 0.5)";
+  const inactiveBg = "rgba(68, 68, 68, 0.3)";
   const inactiveText = colorsDefault.white;
 
   return (
