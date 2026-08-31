@@ -1,14 +1,13 @@
 import CategoryGrid from "@/components/discover/CategoryGrid";
+import DiscoverSearchResults from "@/components/discover/SearchResults";
 import SearchHeader from "@/components/SearchHeader";
 import colors from "@/constants/colors";
+import { useDiscoverCategories, useDiscoverSearch } from "@/hooks/useDiscover";
 import { router } from "expo-router";
+import { useCallback, useState, useEffect } from "react";
+import { RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, XStack, YStack } from "tamagui";
-import { ActivityIndicator, FlatList, Pressable } from "react-native";
-import { View } from "react-native";
-import { useState, useEffect, useCallback } from "react";
-import { useDiscoverCategories } from "@/hooks/useDiscover";
-import { useFriendsList } from "@/hooks/useFollow";
+import { Text, YStack } from "tamagui";
 
 export default function DiscoverScreen() {
   const { categories, loading, refetch } = useDiscoverCategories();
@@ -21,73 +20,37 @@ export default function DiscoverScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data: searchResults, isLoading: searchLoading } = useFriendsList(debouncedSearch || undefined);
+  const {
+    creators,
+    posts,
+    creatorCount,
+    postCount,
+    isLoading: searchLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useDiscoverSearch(debouncedSearch);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await refetch();
-    } catch { console.warn("[discover] refresh failed"); } finally {
+    } catch {
+      console.warn("[discover] refresh failed");
+    } finally {
       setRefreshing(false);
     }
   }, [refetch]);
 
-  const handleCategoryPress = (categoryId: string, categoryLabel?: string, categorySlug?: string) => {
+  const handleCategoryPress = (
+    categoryId: string,
+    categoryLabel?: string,
+    categorySlug?: string,
+  ) => {
     router.push({
       pathname: "/[categoryId]",
       params: { categoryId, label: categoryLabel, slug: categorySlug },
     });
-  };
-
-  const handleUserPress = (userId: string) => {
-    router.push(`/guest?userId=${userId}`);
-  };
-
-  const renderUserResult = ({ item }: { item: any }) => {
-    const initials = item.username?.[0]?.toUpperCase() ?? "?";
-    return (
-      <Pressable onPress={() => handleUserPress(item.id)}>
-        <XStack alignItems="center" gap="$3" paddingHorizontal={16} paddingVertical={10} borderBottomWidth={1} borderColor={colors.border}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gray, justifyContent: "center", alignItems: "center" }}>
-            <Text color={colors.white} fontSize={14} fontWeight="600">{initials}</Text>
-          </View>
-          <View>
-            <Text fontFamily="$body" fontWeight="600" fontSize={15} color={colors.text}>{item.username}</Text>
-            {item.fullName ? (
-              <Text fontFamily="$body" fontWeight="400" fontSize={13} color={colors.gray}>{item.fullName}</Text>
-            ) : null}
-          </View>
-        </XStack>
-      </Pressable>
-    );
-  };
-
-  const renderSearchResults = () => {
-    if (searchLoading) {
-      return (
-        <YStack flex={1} justifyContent="center" alignItems="center" paddingTop={20}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </YStack>
-      );
-    }
-
-    if (!searchResults || searchResults.length === 0) {
-      return (
-        <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={16} paddingTop={40}>
-          <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.gray}>No users found</Text>
-        </YStack>
-      );
-    }
-
-    return (
-      <FlatList
-        data={searchResults}
-        keyExtractor={(item) => item.id}
-        renderItem={renderUserResult}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        showsVerticalScrollIndicator={false}
-      />
-    );
   };
 
   return (
@@ -100,14 +63,23 @@ export default function DiscoverScreen() {
         <SearchHeader
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search users"
+          placeholder="Search users and content"
         />
 
         {searchQuery.trim() ? (
-          renderSearchResults()
+          <DiscoverSearchResults
+            creators={creators}
+            posts={posts}
+            creatorCount={creatorCount}
+            postCount={postCount}
+            isLoading={searchLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage}
+            onFetchNextPage={fetchNextPage}
+          />
         ) : loading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">
-            <ActivityIndicator size={40} color={colors.primary}/>
+            <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.gray}>Loading categories...</Text>
           </YStack>
         ) : categories.length === 0 ? (
           <YStack flex={1} justifyContent="center" alignItems="center" paddingHorizontal={16}>

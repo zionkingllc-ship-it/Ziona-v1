@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   fetchDiscoverCategories,
   fetchDiscoverFeed,
+  fetchDiscoverSearch,
 } from "@/services/graphQL/queries/discover/discover";
 
 import { FeedPost } from "@/types/feedTypes";
@@ -11,7 +12,7 @@ import { normalizePost } from "@/utils/feed/normalizePost";
 
 /* =========================
    TYPES
-========================= */
+ ========================= */
 
 type DiscoverResponse = {
   posts: any[];
@@ -19,9 +20,18 @@ type DiscoverResponse = {
   hasMore: boolean;
 };
 
+type DiscoverSearchResult = {
+  creators: any[];
+  posts: any[];
+  nextCursor?: string;
+  hasMore: boolean;
+  creatorCount: number;
+  postCount: number;
+};
+
 /* =========================
    CATEGORIES
-========================= */
+ ========================= */
 
 export function useDiscoverCategories() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -45,7 +55,7 @@ export function useDiscoverCategories() {
 
 /* =========================
    FEED
-========================= */
+ ========================= */
 
 export function useDiscoverFeed(categoryId?: string, categorySlug?: string) {
   const query = useInfiniteQuery<
@@ -55,8 +65,6 @@ export function useDiscoverFeed(categoryId?: string, categorySlug?: string) {
     [string, string | undefined],
     string | undefined
   >({
-    // Key includes the slug so stale cache from older builds (without slug)
-    // can never serve data; pull-to-refresh matches by ["discoverFeed"] prefix.
     queryKey: ["discoverFeed", categorySlug ?? categoryId],
 
     queryFn: async ({ pageParam }) => {
@@ -80,10 +88,6 @@ export function useDiscoverFeed(categoryId?: string, categorySlug?: string) {
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor : undefined,
   });
-
-  /* =========================
-     NORMALIZE + FILTER
-  ========================== */
 
   const posts: FeedPost[] =
     query.data?.pages
@@ -118,5 +122,73 @@ export function useDiscoverFeed(categoryId?: string, categorySlug?: string) {
   return {
     ...query,
     posts,
+  };
+}
+
+/* =========================
+   SEARCH
+ ========================= */
+
+export function useDiscoverSearch(
+  query: string,
+  categorySlug?: string,
+  enabled?: boolean,
+) {
+  const q = useInfiniteQuery<
+    DiscoverSearchResult,
+    Error,
+    InfiniteData<DiscoverSearchResult>,
+    [string, string, string | undefined],
+    string | undefined
+  >({
+    queryKey: ["discoverSearch", query, categorySlug],
+    queryFn: async ({ pageParam }) => {
+      const res = await fetchDiscoverSearch({
+        query,
+        category: categorySlug,
+        cursor: pageParam,
+      });
+
+      return {
+        creators: res?.creators ?? [],
+        posts: res?.posts ?? [],
+        nextCursor: res?.nextCursor,
+        hasMore: res?.hasMore ?? false,
+        creatorCount: res?.creatorCount ?? 0,
+        postCount: res?.postCount ?? 0,
+      };
+    },
+
+    initialPageParam: undefined,
+
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextCursor : undefined,
+
+    enabled: (enabled !== undefined ? enabled : query.trim().length > 0),
+  });
+
+  const creators = q.data?.pages?.flatMap((p) => p.creators) ?? [];
+  const posts: FeedPost[] =
+    q.data?.pages
+      ?.flatMap((p) => p.posts)
+      .map((p) => normalizePost(p))
+      .filter((p): p is FeedPost => !!p)
+      .reduce<FeedPost[]>((acc, post) => {
+        if (!acc.some((p) => p.id === post.id)) {
+          acc.push(post);
+        }
+        return acc;
+      }, []) ?? [];
+  const creatorCount =
+    q.data?.pages?.[0]?.creatorCount ?? creators.length;
+  const postCount =
+    q.data?.pages?.[0]?.postCount ?? posts.length;
+
+  return {
+    ...q,
+    creators,
+    posts,
+    creatorCount,
+    postCount,
   };
 }
