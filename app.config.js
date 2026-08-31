@@ -27,10 +27,12 @@ const variants = {
 
 const variant = variants[process.env.APP_VARIANT ?? "production"];
 
-// Helper: attempt variant file; fall back to production if missing (keeps builds green pre-Firebase-setup)
+// Helper: attempt variant file(s); fall back to production if missing
 const fs = require("fs");
-const resolveGoogleServicesFile = (variantFile, prodFile) =>
-  fs.existsSync(variantFile) ? variantFile : prodFile;
+const resolveGoogleServicesFile = (...candidates) => {
+  for (const f of candidates) if (f && fs.existsSync(f)) return f;
+  return candidates[candidates.length - 1];
+};
 
 module.exports = {
   expo: {
@@ -44,6 +46,7 @@ module.exports = {
     ios: {
       bundleIdentifier: variant.bundleIdentifier,
       googleServicesFile: resolveGoogleServicesFile(
+        variant.googleServicesFileIos,
         "./GoogleService-Info." + variant.scheme + ".plist",
         "./GoogleService-Info.plist"
       ),
@@ -69,6 +72,7 @@ module.exports = {
     },
     android: {
       googleServicesFile: resolveGoogleServicesFile(
+        variant.googleServicesFileAndroid,
         "./google-services." + variant.scheme + ".json",
         "./google-services.json"
       ),
