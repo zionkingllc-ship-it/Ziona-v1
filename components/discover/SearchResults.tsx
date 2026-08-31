@@ -85,7 +85,7 @@ export default function DiscoverSearchResults({
             {item.avatarUrl ? (
               <Image
                 source={{ uri: item.avatarUrl }}
-                style={{ width: 40, height: 40 }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
                 contentFit="cover"
               />
             ) : (
@@ -98,7 +98,7 @@ export default function DiscoverSearchResults({
             <Text
               fontFamily="$body"
               fontWeight="600"
-              fontSize={15}
+              fontSize={16}
               color={colors.text}
             >
               {item.username}
