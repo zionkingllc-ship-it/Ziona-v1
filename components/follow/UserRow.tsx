@@ -56,7 +56,7 @@ export default function FollowUserRow({
 
   const getButtonText = () => {
     if (isFollowing && listType === "followers") return "Friends";
-    if (isFollowing) return "Unfollow";
+    if (isFollowing) return "Following";
     if (isFollowedBy) return "Follow back";
     return "Follow";
   };
@@ -123,15 +123,20 @@ export default function FollowUserRow({
       </XStack>
 
       {showFollowButton && !isSelf && (
-        <TouchableOpacity
-          style={getButtonStyle()}
-          onPress={handleToggleFollow}
-          disabled={isPending}
+        <View
+          onStartShouldSetResponder={() => true}
+          onResponderTerminationRequest={() => false}
         >
-          <Text style={getButtonTextStyle()}>
-            {getButtonText()}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={getButtonStyle()}
+            onPress={handleToggleFollow}
+            disabled={isPending}
+          >
+            <Text style={getButtonTextStyle()}>
+              {getButtonText()}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
       {AuthModal}
     </TouchableOpacity>
