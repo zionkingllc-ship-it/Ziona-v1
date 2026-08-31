@@ -21,10 +21,8 @@ export default function TwoButtonSwitch({
   const activeText = emptyFeed
     ? colorsDefault.white
     : colorsDefault.primary;
-  const inactiveBg = emptyFeed ? colorsDefault.white : colorsDefault.primary;
-  const inactiveText = emptyFeed
-    ? colorsDefault.primary
-    : colorsDefault.white;
+  const inactiveBg = colorsDefault.primary;
+  const inactiveText = colorsDefault.white;
 
   return (
     <XStack
@@ -64,7 +62,7 @@ export default function TwoButtonSwitch({
         borderRadius={99}
         backgroundColor={!isForYou ? inactiveBg : activeBg}
         borderColor={!isForYou ? "#E4C0F1" : "transparent"}
-        color={!isForYou ? activeText : inactiveText}
+        color={!isForYou ? inactiveText : activeText}
         shadowColor="#000"
         shadowOffset={{ width: 0, height: 2 }}
         shadowOpacity={0.1}
