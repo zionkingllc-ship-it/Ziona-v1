@@ -125,29 +125,6 @@ export default function DiscoverSearchResults({
 
     return (
       <View>
-        <XStack
-          paddingHorizontal={16}
-          paddingVertical={8}
-          alignItems="center"
-        >
-          <Text
-            fontFamily="$body"
-            fontWeight="600"
-            fontSize={14}
-            color={colors.subHeader}
-          >
-            People
-          </Text>
-          <Text
-            fontFamily="$body"
-            fontWeight="400"
-            fontSize={12}
-            color={colors.gray}
-            marginLeft={8}
-          >
-            {creatorCount}
-          </Text>
-        </XStack>
         <FlatList
           data={creators}
           keyExtractor={(item) => item.id}
