@@ -104,7 +104,7 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
           fontWeight={"400"}
           style={styles.header}
         >
-          Suggested for you
+          Suggestions
         </Text>
         <FlatList
           data={suggestions ?? []}
