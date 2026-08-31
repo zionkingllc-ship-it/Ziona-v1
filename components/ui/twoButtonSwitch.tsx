@@ -19,8 +19,8 @@ export default function TwoButtonSwitch({
 
   const activeBg = colorsDefault.primary;
   const activeText = colorsDefault.white;
-  const inactiveBg = colorsDefault.white;
-  const inactiveText = colorsDefault.primary;
+  const inactiveBg = "rgba(68, 68, 68, 0.5)";
+  const inactiveText = colorsDefault.white;
 
   return (
     <XStack
