@@ -434,7 +434,7 @@ export default function ProfileScreen() {
                 fontFamily={"$body"}
                 text="Your message matters"
                 subtitle="Create with intention. Post with purpose."
-                actionLabel="Create Post"
+                actionLabel="Create"
                 onActionPress={() => router.navigate("/(tabs)/create")}
                 fullScreen={false}
               />
