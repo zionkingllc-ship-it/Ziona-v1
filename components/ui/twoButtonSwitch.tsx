@@ -21,6 +21,7 @@ export default function TwoButtonSwitch({
   const activeText = emptyFeed
     ? colorsDefault.white
     : colorsDefault.primary;
+  const inactiveBg = emptyFeed ? colorsDefault.white : colorsDefault.primary;
   const inactiveText = emptyFeed
     ? colorsDefault.primary
     : colorsDefault.white;
@@ -41,9 +42,9 @@ export default function TwoButtonSwitch({
         flex={1}
         height={"100%"}
         borderRadius={99}
-        backgroundColor={isForYou ? activeBg : "transparent"}
+        backgroundColor={isForYou ? activeBg : inactiveBg}
         borderColor={isForYou ? "#E4C0F1" : "transparent"}
-        color={isForYou ? activeText : colorsDefault.white}
+        color={isForYou ? activeText : inactiveText}
         fontSize={13}
         fontFamily={fontFamily}
         fontWeight={"500"}
@@ -61,7 +62,7 @@ export default function TwoButtonSwitch({
         flex={1}
         height={"100%"}
         borderRadius={99}
-        backgroundColor={!isForYou ? activeBg : "transparent"}
+        backgroundColor={!isForYou ? inactiveBg : activeBg}
         borderColor={!isForYou ? "#E4C0F1" : "transparent"}
         color={!isForYou ? activeText : inactiveText}
         shadowColor="#000"
