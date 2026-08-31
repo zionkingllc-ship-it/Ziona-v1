@@ -63,7 +63,7 @@ export default function SearchHeader({
                 width: 22,
                 height: 22,
                 borderRadius: 11,
-                backgroundColor: colors.text,
+                backgroundColor: "#4E4252",
                 justifyContent: "center",
                 alignItems: "center",
               }}
