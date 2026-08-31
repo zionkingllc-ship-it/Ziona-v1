@@ -86,6 +86,7 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
       <View style={styles.sheet}>
         <Text
           fontFamily={"$body"}
+          fontWeight="300"
           fontStyle="italic"
           fontSize={16}
           color="#4E4252"
