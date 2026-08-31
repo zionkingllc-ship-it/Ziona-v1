@@ -1,6 +1,7 @@
 import colors from "@/constants/colors";
 import { FeedPost } from "@/types/feedTypes";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -69,8 +70,6 @@ export default function DiscoverSearchResults({
           gap="$3"
           paddingHorizontal={16}
           paddingVertical={10}
-          borderBottomWidth={1}
-          borderColor={colors.border}
         >
           <View
             style={{
@@ -84,7 +83,11 @@ export default function DiscoverSearchResults({
             }}
           >
             {item.avatarUrl ? (
-              <React.Fragment />
+              <Image
+                source={{ uri: item.avatarUrl }}
+                style={{ width: 40, height: 40 }}
+                contentFit="cover"
+              />
             ) : (
               <Text color={colors.white} fontSize={14} fontWeight="600">
                 {initials}
@@ -112,7 +115,6 @@ export default function DiscoverSearchResults({
               </Text>
             ) : null}
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.gray} />
         </XStack>
       </Pressable>
     );
