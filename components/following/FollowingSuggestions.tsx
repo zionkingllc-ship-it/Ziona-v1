@@ -86,13 +86,14 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
       <View style={styles.sheet}>
         <Text
           fontFamily={"$body"}
+          fontWeight="300"
+          fontStyle="italic"
           fontSize={16}
           color="#4E4252"
           textAlign="center"
           marginHorizontal={16}
           marginTop={6}
           marginBottom={20}
-          style={{ fontStyle: "italic" }}
         >
           {hasFollowedAnyone
             ? 'Click on "Done" to refresh this page'

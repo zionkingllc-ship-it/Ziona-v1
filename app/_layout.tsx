@@ -60,6 +60,7 @@ export default function RootLayout() {
     MonaSans_500: require("../assets/fonts/MonaSans-Medium.ttf"),
     MonaSans_600: require("../assets/fonts/MonaSans-SemiBold.ttf"),
     MonaSans_700: require("../assets/fonts/MonaSans-Bold.ttf"),
+    MonaSans_300_Italic: require("../assets/fonts/MonaSans-LightItalic.ttf"),
     EBGaramond_400: require("../assets/fonts/EBGaramond-Regular.ttf"),
     EBGaramond_500: require("../assets/fonts/EBGaramond-Medium.ttf"),
     EBGaramond_600: require("../assets/fonts/EBGaramond-SemiBold.ttf"),
