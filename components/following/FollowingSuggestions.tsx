@@ -92,8 +92,8 @@ export default function FollowSuggestions({ onDone, suggestions: preloaded }: Fo
           color="#4E4252"
           textAlign="center"
           marginHorizontal={16}
-          marginTop={16}
-          marginBottom={8}
+          marginTop={6}
+          marginBottom={20}
         >
           {hasFollowedAnyone
             ? 'Click on "Done" to refresh this page'
