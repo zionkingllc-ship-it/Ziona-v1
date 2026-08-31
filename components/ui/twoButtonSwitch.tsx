@@ -17,8 +17,8 @@ export default function TwoButtonSwitch({
 }: TwoButtonSwitchProps) {
   const isForYou = value === "forYou";
 
-  const activeBg = colorsDefault.primary;
-  const activeText = colorsDefault.white;
+  const activeBg = colorsDefault.white;
+  const activeText = colorsDefault.primary;
   const inactiveBg = "rgba(68, 68, 68, 0.3)";
   const inactiveText = colorsDefault.white;
 
