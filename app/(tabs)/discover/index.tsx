@@ -56,10 +56,6 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top"]}>
       <YStack flex={1}>
-        <Text fontFamily="$body" fontWeight="600" fontSize={18} paddingHorizontal={16} marginBottom={12}>
-          Discover
-        </Text>
-
         <SearchHeader
           value={searchQuery}
           onChangeText={setSearchQuery}

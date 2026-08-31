@@ -2,7 +2,7 @@ import colors from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { ChevronLeft } from "@tamagui/lucide-icons";
 import React from "react";
-import { Pressable, TextInput } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
 import { XStack } from "tamagui";
 
 interface Props {
@@ -51,6 +51,27 @@ export default function SearchHeader({
             color: colors.black,
           }}
         />
+
+        {value.length > 0 && (
+          <Pressable
+            onPress={() => onChangeText("")}
+            hitSlop={8}
+            accessibilityLabel="Clear search"
+          >
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 11,
+                backgroundColor: colors.text,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="close" size={14} color={colors.white} />
+            </View>
+          </Pressable>
+        )}
       </XStack>
     </XStack>
   );
