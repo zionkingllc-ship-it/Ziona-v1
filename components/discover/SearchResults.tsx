@@ -136,24 +136,14 @@ export default function DiscoverSearchResults({
             paddingHorizontal={16}
             paddingVertical={8}
             marginTop={8}
-            alignItems="center"
           >
             <Text
               fontFamily="$body"
-              fontWeight="600"
-              fontSize={14}
+              fontWeight="700"
+              fontSize={16}
               color={colors.subHeader}
             >
               Posts
-            </Text>
-            <Text
-              fontFamily="$body"
-              fontWeight="400"
-              fontSize={12}
-              color={colors.gray}
-              marginLeft={8}
-            >
-              {postCount}
             </Text>
           </XStack>
         )}
