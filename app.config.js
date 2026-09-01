@@ -6,6 +6,8 @@ const variants = {
     scheme: "zionadev",
     googleServicesFileIos: "./GoogleService-Info.dev.plist",
     googleServicesFileAndroid: "./google-services.dev.json",
+    googleIosClientId: "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
+    googleIosReversedClientId: "com.googleusercontent.apps.511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9",
   },
   staging: {
     appName: "Ziona Staging",
@@ -14,6 +16,8 @@ const variants = {
     scheme: "zionastaging",
     googleServicesFileIos: "./GoogleService-Info.staging.plist",
     googleServicesFileAndroid: "./google-services.staging.json",
+    googleIosClientId: "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
+    googleIosReversedClientId: "com.googleusercontent.apps.511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9",
   },
   production: {
     appName: "Ziona",
@@ -22,6 +26,8 @@ const variants = {
     scheme: "ziona",
     googleServicesFileIos: "./GoogleService-Info.plist",
     googleServicesFileAndroid: "./google-services.json",
+    googleIosClientId: "433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv.apps.googleusercontent.com",
+    googleIosReversedClientId: "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
   },
 };
 
@@ -63,8 +69,7 @@ module.exports = {
         LSApplicationQueriesSchemes: ["whatsapp", "sms", "mailto", "ziona"],
         CFBundleURLTypes: [
           {
-            CFBundleURLSchemes:
-              "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
+            CFBundleURLSchemes: variant.googleIosReversedClientId,
           },
         ],
         UIBackgroundModes: ["remote-notification"],
@@ -115,9 +120,9 @@ module.exports = {
     plugins: [
       "./plugins/withFirebaseNotificationColor",
       "expo-router",
-      ["@react-native-google-signin/google-signin", { iosUrlScheme: "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv" }],
+      ["@react-native-google-signin/google-signin", { iosUrlScheme: variant.googleIosReversedClientId }],
       ["expo-build-properties", { ios: { useFrameworks: "static", forceStaticLinking: ["RNFBApp", "RNFBMessaging"] }, android: { enableProguardInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, edgeToEdge: true, enableMinifyInReleaseBuilds: true } }],
-      "expo-splash-screen",
+      ["expo-splash-screen", { image: "./assets/images/splash-icon.png", backgroundColor: "#1a0a2e", resizeMode: "contain", imageWidth: 200 }],
       "expo-asset",
       "expo-font",
       "expo-web-browser",

@@ -12,7 +12,12 @@
           "package_name": "com.zionking.ziona.staging"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAJJhz2siek3Aq-yxaDrXkKfUXaFQCTgI4"

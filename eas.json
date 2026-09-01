@@ -33,14 +33,9 @@
         "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql",
         "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionastaging",
         "EXPO_PUBLIC_SHARE_DOMAIN": "staging.ziona.app",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "433767985127-g78pqsa8bhtaqmh98n9khka2hdvti17d.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "433767985127-j7ruvcarb1fk4191gbi8v44vkunjppqk.apps.googleusercontent.com"
-      },
-      "ios": {
-        "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
-        "appleTeamId": "RLL2NX9J5Z"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "511999112847-lqtrejs5hik2avpgmkdhs90pdn6o1vfg.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com"
       },
       "android": {
         "buildType": "apk"
@@ -72,6 +67,13 @@
         "serviceAccountKeyPath": "./serviceAccountZiona.json",
         "track": "production"
       },
+      "ios": {
+        "appleId": "onyeama.a.k@gmail.com",
+        "ascAppId": "6768301878",
+        "appleTeamId": "RLL2NX9J5Z"
+      }
+    },
+    "preview": {
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
         "ascAppId": "6768301878",
