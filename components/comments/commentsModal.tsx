@@ -231,7 +231,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     const text = inputValue.trim();
     setInputValue("");
     setReplyingTo({ commentId: null, username: null });
-    inputRef.current?.blur();
+    // Keep focus for continued typing
 
     createCommentMutation.mutate(
       { postId, text, parentCommentId: replyingTo.commentId || undefined },
@@ -373,6 +373,7 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               maxLength={500}
+              blurOnSubmit={false}
               style={{ flex: 1, fontFamily: "$body" }}
             />
             <TouchableOpacity onPress={addComment} disabled={createCommentMutation.isPending || !inputValue.trim()}>
