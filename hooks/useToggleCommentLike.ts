@@ -94,7 +94,7 @@ export function useToggleCommentLike() {
       return { previousComments, preOptimisticWasLiked };
     },
 
-    onSuccess: (response, { commentId }, context) => {
+    onSuccess: (response, { commentId }) => {
       if (!response) return;
       queryClient.setQueriesData(
         { queryKey: ["postComments"], exact: false },

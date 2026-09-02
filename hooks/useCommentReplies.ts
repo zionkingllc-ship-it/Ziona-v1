@@ -19,44 +19,12 @@ export function useReplyLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      postId,
-      commentId,
-      replyId,
-      isLiked,
-    }: {
-      postId: string;
-      commentId: string;
-      replyId: string;
-      isLiked?: boolean;
-    }) => {
-      // Use explicit isLiked (pre-optimistic) when provided
-      let wasLiked = isLiked;
-      if (wasLiked === undefined) {
-        const postData = queryClient.getQueryData(["postComments", postId]) as any;
-        if (postData?.pages) {
-          for (const page of postData.pages) {
-            for (const c of page.comments ?? []) {
-              if (c.id === commentId) {
-                const r = (c.replies ?? []).find((x: any) => x.id === replyId);
-                if (r) wasLiked = r.viewerState?.liked ?? false;
-              }
-            }
-          }
-        }
-        if (wasLiked === undefined) {
-          const replyData = queryClient.getQueryData(["commentReplies", commentId]) as any;
-          if (replyData?.pages) {
-            for (const page of replyData.pages) {
-              const r = (page.comments ?? []).find((x: any) => x.id === replyId);
-              if (r) wasLiked = r.viewerState?.liked ?? false;
-            }
-          }
-        }
-      }
-      return wasLiked ? unlikeComment(replyId) : likeComment(replyId);
+    mutationFn: async (_vars: any, context?: any) => {
+      const wasLiked = context?.preOptimisticWasLiked ?? false;
+      return wasLiked ? unlikeComment(_vars.replyId) : likeComment(_vars.replyId);
     },
-    onMutate: async ({ postId, commentId, replyId }) => {
+
+    onMutate: async ({ postId, commentId, replyId, isLiked }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ["postComments", postId] }),
         queryClient.cancelQueries({ queryKey: ["commentReplies", commentId] }),
@@ -70,6 +38,32 @@ export function useReplyLike() {
         "commentReplies",
         commentId,
       ]);
+
+      let foundInPostComments = false;
+      let preOptimisticWasLiked = isLiked;
+
+      if (preOptimisticWasLiked === undefined) {
+        const postData = queryClient.getQueryData(["postComments", postId]) as any;
+        if (postData?.pages) {
+          for (const page of postData.pages) {
+            for (const c of page.comments ?? []) {
+              if (c.id === commentId) {
+                const r = (c.replies ?? []).find((x: any) => x.id === replyId);
+                if (r) preOptimisticWasLiked = r.viewerState?.liked ?? false;
+              }
+            }
+          }
+        }
+        if (preOptimisticWasLiked === undefined) {
+          const replyData = queryClient.getQueryData(["commentReplies", commentId]) as any;
+          if (replyData?.pages) {
+            for (const page of replyData.pages) {
+              const r = (page.comments ?? []).find((x: any) => x.id === replyId);
+              if (r) preOptimisticWasLiked = r.viewerState?.liked ?? false;
+            }
+          }
+        }
+      }
 
       const toggleReply = (reply: any) => {
         if (reply.id !== replyId) return reply;
@@ -88,8 +82,6 @@ export function useReplyLike() {
           },
         };
       };
-
-      let foundInPostComments = false;
 
       queryClient.setQueryData(
         ["postComments", postId],
@@ -130,8 +122,10 @@ export function useReplyLike() {
         previousPostComments,
         previousReplies,
         foundInPostComments,
+        preOptimisticWasLiked,
       };
     },
+
     onSuccess: (response, { postId, commentId, replyId }) => {
       if (!response) return;
 
@@ -188,6 +182,7 @@ export function useReplyLike() {
         },
       );
     },
+
     onError: (_err, { postId, commentId }, context) => {
       if (context?.previousPostComments) {
         queryClient.setQueryData(
@@ -201,9 +196,6 @@ export function useReplyLike() {
           context.previousReplies,
         );
       }
-    },
-    onSettled: (_data, _err, { commentId }) => {
-      queryClient.invalidateQueries({ queryKey: ["commentReplies", commentId] });
     },
   });
 }
