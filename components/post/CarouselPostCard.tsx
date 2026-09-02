@@ -95,11 +95,11 @@ function CarouselPostCardComponent({
             {mediaItems.map((_, i) => (
               <View
                 key={i}
-                width={activeIndex === i ? 8 : 6}
+                width={activeIndex === i ? 8 : 8}
                 height={activeIndex === i ? 8 : 6}
                 borderRadius={4}
                 backgroundColor={
-                  activeIndex === i ? colors.white : "rgba(255,255,255,0.5)"
+                  activeIndex === i ? colors.primary : "rgba(255,255,255,0.5)"
                 }
               />
             ))}
