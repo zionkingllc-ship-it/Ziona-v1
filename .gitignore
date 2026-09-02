@@ -10,6 +10,10 @@ web-build/
 expo-env.d.ts
 
 serviceAccountZiona.json
+
+# Firebase console downloads (raw, unrenamed)
+GoogleService-Info (1).plist
+google-services (2).json
 # Native
 *.orig.*
 *.jks
