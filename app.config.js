@@ -122,7 +122,7 @@ module.exports = {
       "expo-router",
       ["@react-native-google-signin/google-signin", { iosUrlScheme: variant.googleIosReversedClientId }],
       ["expo-build-properties", { ios: { useFrameworks: "static", forceStaticLinking: ["RNFBApp", "RNFBMessaging"] }, android: { enableProguardInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, edgeToEdge: true, enableMinifyInReleaseBuilds: true } }],
-      ["expo-splash-screen", { image: "./assets/images/splash-icon.png", backgroundColor: "#1a0a2e", resizeMode: "contain", imageWidth: 200 }],
+      ["expo-splash-screen", { image: "./assets/images/splash-icon.png", backgroundColor: "#ffffff", resizeMode: "contain", imageWidth: 200 }],
       "expo-asset",
       "expo-font",
       "expo-web-browser",
