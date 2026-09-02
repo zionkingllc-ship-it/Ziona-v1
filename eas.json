@@ -25,7 +25,6 @@
     "preview": {
       "environment": "preview",
       "autoIncrement": true,
-      "autoSubmit": true,
       "distribution": "internal",
       "channel": "staging",
       "env": {
@@ -45,7 +44,6 @@
     "production": {
       "environment": "production",
       "autoIncrement": true,
-      "autoSubmit": true,
       "channel": "production",
       "env": {
         "APP_VARIANT": "production",
