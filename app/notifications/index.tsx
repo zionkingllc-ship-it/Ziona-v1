@@ -135,7 +135,23 @@ export default function ActivityScreen() {
   }, [refetch]);
 
   const formatTime = useCallback((dateString: string) => {
+    if (!dateString) return "";
     const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "";
+
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return `${diffSecs}s`;
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+
+    // Older than a week: DD/MM/YYYY
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
     return `${day}/${month}/${d.getFullYear()}`;
