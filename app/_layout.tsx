@@ -89,13 +89,23 @@ export default function RootLayout() {
 
   /* -------- DEEP LINK HANDLER -------- */
 
-  const navReady = useRootNavigationReady();
+const navReady = useRootNavigationReady();
 
   useEffect(() => {
     if (!navReady) return;
 
     function handleDeepLink(event: { url: string }) {
-      const url = event.url;
+      let url = event.url;
+      // Strip scheme if present (Android adds 'ziona://' or 'http://' prefix)
+      // but only parse if it's a valid URL format
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        try {
+          const parsed = new URL(url);
+          url = parsed.pathname + (parsed.search ? parsed.search : "");
+        } catch {
+          // Keep original url if parsing fails
+        }
+      }
       const match = url.match(/\/post\/([^/?\s]+)/) || url.match(/\/viewer\/([^/?\s]+)/);
       if (!match?.[1]) return;
       const path = `/viewer/${match[1]}`;
