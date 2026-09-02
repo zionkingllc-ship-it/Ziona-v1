@@ -59,7 +59,7 @@ export default function DiscoverScreen() {
         <SearchHeader
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search users and content"
+          placeholder="search"
         />
 
         {searchQuery.trim() ? (
