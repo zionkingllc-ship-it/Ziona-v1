@@ -20,16 +20,20 @@ export const useGoogleAuth = () => {
     const { GoogleSignin } = require("@react-native-google-signin/google-signin");
     const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
     const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+    const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
     console.log("[GoogleAuth] configure", {
       platform: Platform.OS,
       webClientId,
       iosClientId,
+      androidClientId,
       hasWebClientId: !!webClientId,
       hasIosClientId: !!iosClientId,
+      hasAndroidClientId: !!androidClientId,
     });
     GoogleSignin.configure({
       webClientId,
       iosClientId,
+      androidClientId,
     });
     return GoogleSignin;
   };
