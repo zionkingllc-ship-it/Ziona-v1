@@ -60,6 +60,14 @@ export function useReportContent() {
       return { previous, postId };
     },
 
+    onSuccess: (_data, { postId }) => {
+      if (!postId) return;
+
+      queryClient.invalidateQueries({ queryKey: ["discoverFeed"] });
+      queryClient.invalidateQueries({ queryKey: ["circleFeedData"] });
+      queryClient.invalidateQueries({ queryKey: ["userPosts"] });
+    },
+
     onError: (_err, _vars, context) => {
       if (!context?.previous) return;
 
