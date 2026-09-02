@@ -5,36 +5,12 @@ export function useToggleCommentLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      commentId,
-      isLiked,
-    }: {
-      commentId: string;
-      isLiked?: boolean;
-    }) => {
-      // Use explicit isLiked when provided (pre-optimistic value); fallback to cache for backward compat
-      let wasLiked = isLiked;
-      if (wasLiked === undefined) {
-        const queries = queryClient.getQueriesData({ queryKey: ["postComments"] });
-        for (const [, data] of queries as any[]) {
-          if (!data) continue;
-          const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
-          for (const page of pages) {
-            for (const c of page.comments ?? []) {
-              if (c.id === commentId) wasLiked = c.viewerState?.liked ?? false;
-              if (c.replies) {
-                for (const r of c.replies) if (r.id === commentId) wasLiked = r.viewerState?.liked ?? false;
-              }
-            }
-          }
-          if (wasLiked !== undefined) break;
-        }
-      }
-      // wasLiked is the state BEFORE tap; if it was liked we need to unlike, else like
-      return wasLiked ? unlikeComment(commentId) : likeComment(commentId);
+    mutationFn: async (_vars: any, context?: any) => {
+      const wasLiked = context?.preOptimisticWasLiked ?? false;
+      return wasLiked ? unlikeComment(_vars.commentId) : likeComment(_vars.commentId);
     },
 
-    onMutate: async ({ commentId }) => {
+    onMutate: async ({ commentId, isLiked }) => {
       await queryClient.cancelQueries({
         queryKey: ["postComments"],
         exact: false,
@@ -42,40 +18,59 @@ export function useToggleCommentLike() {
 
       const previousComments = queryClient.getQueryData(["postComments"]);
 
+      let preOptimisticWasLiked = isLiked;
+
+      if (preOptimisticWasLiked === undefined) {
+        const queries = queryClient.getQueriesData({ queryKey: ["postComments"] });
+        for (const [, data] of queries as any[]) {
+          if (!data) continue;
+          const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
+          for (const page of pages) {
+            for (const c of page.comments ?? []) {
+              if (c.id === commentId) preOptimisticWasLiked = c.viewerState?.liked ?? false;
+              if (c.replies) {
+                for (const r of c.replies) if (r.id === commentId) preOptimisticWasLiked = r.viewerState?.liked ?? false;
+              }
+            }
+          }
+          if (preOptimisticWasLiked !== undefined) break;
+        }
+      }
+
+      const findAndToggle = (item: any) => {
+        if (item.id !== commentId) return item;
+        const wasLiked = item.viewerState?.liked ?? false;
+        return {
+          ...item,
+          viewerState: {
+            ...item.viewerState,
+            liked: !wasLiked,
+          },
+          stats: {
+            ...item.stats,
+            likesCount: wasLiked
+              ? item.stats.likesCount - 1
+              : item.stats.likesCount + 1,
+          },
+        };
+      };
+
+      const updateComment = (comment: any) => {
+        const toggled = findAndToggle(comment);
+        if (toggled !== comment) return toggled;
+        if (comment.replies) {
+          return {
+            ...comment,
+            replies: comment.replies.map(findAndToggle),
+          };
+        }
+        return comment;
+      };
+
       queryClient.setQueriesData(
         { queryKey: ["postComments"], exact: false },
         (old: any) => {
           if (!old) return old;
-
-          const findAndToggle = (item: any) => {
-            if (item.id !== commentId) return item;
-            const wasLiked = item.viewerState?.liked ?? false;
-            return {
-              ...item,
-              viewerState: {
-                ...item.viewerState,
-                liked: !wasLiked,
-              },
-              stats: {
-                ...item.stats,
-                likesCount: wasLiked
-                  ? item.stats.likesCount - 1
-                  : item.stats.likesCount + 1,
-              },
-            };
-          };
-
-          const updateComment = (comment: any) => {
-            const toggled = findAndToggle(comment);
-            if (toggled !== comment) return toggled;
-            if (comment.replies) {
-              return {
-                ...comment,
-                replies: comment.replies.map(findAndToggle),
-              };
-            }
-            return comment;
-          };
 
           if (old.pages) {
             return {
@@ -96,10 +91,10 @@ export function useToggleCommentLike() {
         }
       );
 
-      return { previousComments };
+      return { previousComments, preOptimisticWasLiked };
     },
 
-    onSuccess: (response, { commentId }) => {
+    onSuccess: (response, { commentId }, context) => {
       if (!response) return;
       queryClient.setQueriesData(
         { queryKey: ["postComments"], exact: false },
