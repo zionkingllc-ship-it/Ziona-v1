@@ -30,9 +30,9 @@ export default function TwoButtonSwitch({
       gap={0}
       alignSelf="center"
       justifyContent="center"
-      borderRadius={999}
-      flex={1}
-      maxWidth={280}
+borderRadius={999}
+    flex={1}
+    maxWidth={200}
     >
       <Button
         flex={1}
