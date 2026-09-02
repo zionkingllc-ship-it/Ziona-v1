@@ -13,7 +13,7 @@ export default function PaginationDots({
   total,
   activeIndex,
   dotSize = 8,
-  activeColor = "#6C2BD9",
+  activeColor = "#742092",
   inactiveColor = "#D9C7F5",
 }: Props) {
   return (
