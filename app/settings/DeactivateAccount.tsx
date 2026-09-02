@@ -20,20 +20,24 @@ export default function DeactivateAccountScreen() {
         </Text>
 
         <YStack gap="$4" marginTop={10}>
+          <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray}>
+            If you deactivate your account?
+          </Text>
+
           <XStack alignItems="center" gap={4}>
-            <Text fontSize={50} fontWeight="800" lineHeight={50} color={colors.secondaryGray}>·</Text>
+            <Text fontSize={12} fontWeight="800" lineHeight={12} color={colors.secondaryGray}>·</Text>
             <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray} flex={1}>
-              If you deactivate your account?
+              No one will see your account and content
             </Text>
           </XStack>
           <XStack alignItems="center" gap={4}>
-            <Text fontSize={50} fontWeight="800" lineHeight={50} color={colors.secondaryGray}>·</Text>
+            <Text fontSize={12} fontWeight="800" lineHeight={12} color={colors.secondaryGray}>·</Text>
             <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray} flex={1}>
               Ziona will continue to keep your data so that you can recover it when you reactivate your account
             </Text>
           </XStack>
           <XStack alignItems="center" gap={4}>
-            <Text fontSize={50} fontWeight="800" lineHeight={50} color={colors.secondaryGray}>·</Text>
+            <Text fontSize={12} fontWeight="800" lineHeight={12} color={colors.secondaryGray}>·</Text>
             <Text fontFamily="$body" fontSize={13} fontWeight="400" color={colors.secondaryGray} flex={1}>
               you can reactivate your account and recover all content anytime by using the same login details
             </Text>
