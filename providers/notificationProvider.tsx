@@ -15,6 +15,9 @@ import { storage } from "@/utils/storage";
 
 const LAST_HANDLED_NOTIF_KEY = "lastHandledNotificationId";
 
+// In-memory set to track handled IDs in current session (prevents duplicate navigation)
+const handledNotificationIds = new Set<string>();
+
 let messaging: any = null;
 try {
   if (NativeModules.RNFBAppModule) {
@@ -123,12 +126,48 @@ function pushOnce(path: string) {
   router.push(path as any);
 }
 
+// Atomic storage helper: read, compare, write in one async operation
+async function tryMarkHandled(id: string): Promise<boolean> {
+  if (!id) return false;
+  // Fast path: check in-memory set first
+  if (handledNotificationIds.has(id)) {
+    console.log("[Notifications] already handled in session:", id);
+    return false;
+  }
+  try {
+    const lastHandled = await storage.get<string>(LAST_HANDLED_NOTIF_KEY);
+    if (id === lastHandled) {
+      handledNotificationIds.add(id);
+      console.log("[Notifications] already handled in storage:", id);
+      return false;
+    }
+    // Mark as handled
+    await storage.set(LAST_HANDLED_NOTIF_KEY, id);
+    handledNotificationIds.add(id);
+    console.log("[Notifications] marked as handled:", id);
+    return true;
+  } catch (err) {
+    console.warn("[Notifications] storage error:", err);
+    return false;
+  }
+}
+
+// Clear stored ID after successful navigation (prevents stale re-trigger)
+async function clearHandled() {
+  try {
+    await storage.delete(LAST_HANDLED_NOTIF_KEY);
+    handledNotificationIds.clear();
+    console.log("[Notifications] cleared handled ID");
+  } catch { /* ignore */ }
+}
+
 export default function NotificationProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const userId = useAuthStore((s) => s.user?.id);
   const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
   const pendingResponseRef = useRef<Record<string, unknown> | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -203,30 +242,39 @@ export default function NotificationProvider({ children }: { children: React.Rea
 
     const handleData = (data: Record<string, unknown>) => {
       pushOnce(resolveNotificationDestination(data));
+      // Clear stored ID after successful navigation so next launch doesn't re-trigger
+      clearHandled();
     };
 
+    // Handle pending response from when app was backgrounded
     if (pendingResponseRef.current) {
       handleData(pendingResponseRef.current);
       pendingResponseRef.current = null;
     }
 
-    // `getLastNotificationResponseAsync` returns the most recent notification
-    // response the user ever interacted with, and it persists across cold
-    // starts. Acting on it unconditionally routes the user to a notification
-    // destination on *every* launch once they have ever tapped a push (prod
-    // only). Only navigate when this is a genuinely new response we haven't
-    // already handled, by remembering the last handled response identifier.
+    // On cold start, check for a genuinely new notification response
     Notifications.getLastNotificationResponseAsync()
       .then(async (response) => {
+        if (!isMountedRef.current) return;
         if (!response) return;
         const id = response.notification.request.identifier;
-        const lastHandled = await storage.get<string>(LAST_HANDLED_NOTIF_KEY);
-        if (id && id === lastHandled) return;
-        if (id) await storage.set(LAST_HANDLED_NOTIF_KEY, id);
+        console.log("[Notifications] cold start last response:", id);
+        
+        // Only navigate if this is a new unhandled notification
+        const shouldHandle = await tryMarkHandled(id);
+        if (!shouldHandle) {
+          console.log("[Notifications] skipping already-handled notification:", id);
+          return;
+        }
+        
         const data = response.notification.request.content.data as Record<string, unknown> | undefined;
         if (data) handleData(data);
       })
       .catch(() => {});
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [navReady, isAuthenticated]);
 
   return <>{children}</>;
