@@ -137,8 +137,8 @@ export default function EditUsernameScreen() {
         />
 
       <YStack flex={1} padding="$4" gap="$4">
-        <Text fontSize={16} fontFamily={"$body"}>
-          Your username is used to identify you. You’re allowed one username change every 30 days.
+<Text fontSize={16} fontFamily={"$body"}>
+          You’re allowed one username change every 30 days.
         </Text>
 
         <YStack
