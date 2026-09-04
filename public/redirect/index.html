@@ -5,15 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ziona</title>
   <meta name="robots" content="noindex, nofollow" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #fff; color: #17131A; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px; text-align: center;
+    }
+    .logo-wrap { margin-bottom: 16px; }
+    .logo { width: 100px; height: 100px; object-fit: contain; }
+    .app-name { font-size: 28px; font-weight: 700; color: #17131A; letter-spacing: -0.5px; }
+    .tagline { margin-top: 8px; font-size: 16px; color: #6B6B6B; }
+    .btn {
+      margin-top: 28px; display: inline-flex; align-items: center; gap: 10px;
+      background: #742092; color: #fff; border: none; border-radius: 12px;
+      padding: 14px 28px; font-size: 16px; font-weight: 600; cursor: pointer;
+      text-decoration: none; box-shadow: 0 4px 14px rgba(116,32,146,0.3);
+    }
+    .btn:active { transform: scale(0.98); }
+    .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn.loading .btn-text { display: none; }
+    .btn.loading .spinner { display: inline-block; }
+    .spinner { display: none; }
+  </style>
 </head>
 <body>
+  <div class="logo-wrap">
+    <img class="logo" src="https://ziona.app/logoColored.png" alt="Ziona" onerror="this.src='https://api.ziona.app/logoColored.png'">
+    <div class="app-name">Ziona</div>
+    <div class="tagline">Opening Ziona&hellip;</div>
+  </div>
+
+  <button class="btn" id="openBtn" aria-label="Open in Ziona">
+    <span class="btn-text">Open in Ziona</span>
+    <span class="spinner" aria-hidden="true"></span>
+  </button>
+
   <script>
     (function () {
       // Detect environment from hostname
       var hostname = location.hostname;
       var isStaging = hostname === "staging.ziona.app" || hostname === "api.staging.ziona.app";
       
-      // ---- Config per environment ----
+      // Config per environment
       var STORE_URL_ANDROID = isStaging
         ? "https://play.google.com/store/apps/details?id=com.zionking.ziona.staging"
         : "https://play.google.com/store/apps/details?id=com.zionking.ziona";
@@ -43,26 +79,32 @@
 
       function openApp() {
         var deepLink = APP_SCHEME + (postId || "");
-        var hidden, visible;
+        var btn = document.getElementById('openBtn');
 
         // Detect if app took focus
         try {
-          hidden = "hidden";
-          visible = "visibilitychange";
+          var hidden = "hidden";
+          var visible = "visibilitychange";
           var onVisibility = function () {
             if (document[hidden]) {
               window.clearTimeout(fallbackTimer);
+              // App opened successfully
             }
           };
           document.addEventListener(visible, onVisibility, false);
         } catch (e) {}
 
-        var fallbackTimer = window.setTimeout(redirectToStore, REDIRECT_TIMEOUT_MS);
+        var fallbackTimer = window.setTimeout(function() {
+          if (btn) btn.classList.remove('loading');
+          redirectToStore();
+        }, REDIRECT_TIMEOUT_MS);
+
+        if (btn) btn.classList.add('loading');
 
         if (isIOS) {
           window.location.replace(deepLink);
         } else if (isAndroid && navigator.userAgent.match(/Chrome\//)) {
-          // Android Chrome: intent:// scheme to avoid chooser
+          // Android Chrome: intent:// to avoid chooser, with fallback
           var intent =
             "intent://viewer/" + (postId || "") +
             "#Intent;scheme=" + (isStaging ? "zionastaging" : "ziona") +
@@ -75,11 +117,18 @@
         }
       }
 
+      // Auto-attempt on load
       openApp();
+
+      // Manual "Open in Ziona" button
+      var btn = document.getElementById('openBtn');
+      if (btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          openApp();
+        });
+      }
     })();
   </script>
-  <p style="font-family:system-ui,-apple-system,sans-serif;color:#333;padding:2em;text-align:center">
-    Opening Ziona&hellip;
-  </p>
 </body>
 </html>
