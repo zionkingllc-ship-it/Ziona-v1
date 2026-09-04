@@ -119,13 +119,13 @@ export function TextInputWithIcon({
             props.keyboardType ??
             (inputType === "numeric" ? "number-pad" : "default")
           }
-          style={{
-            fontSize: 10,
-            color: colors.black,
-            fontFamily,
-            lineHeight: fs(14),
-            paddingVertical: 0,
-          }}
+style={{
+              fontSize: 16,
+              color: colors.black,
+              fontFamily,
+              lineHeight: fs(14),
+              paddingVertical: 0,
+            }}
           onChangeText={handleChange}
           onFocus={(e) => {
             if (isFocusedProp === undefined) setInternalFocused(true);
