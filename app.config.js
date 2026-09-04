@@ -86,20 +86,20 @@ module.exports = {
       intentFilters: [
         {
           action: "VIEW",
-          autoVerify: true,
+          autoVerify: variant.scheme === "ziona", // only production verifies
           data: [
             {
               scheme: "https",
-              host: "ziona.app",
+              host: variant.scheme === "ziona" ? "ziona.app" : "staging.ziona.app",
               pathPrefix: "/post",
             },
             {
               scheme: "https",
-              host: "api.ziona.app",
+              host: variant.scheme === "ziona" ? "api.ziona.app" : "api.staging.ziona.app",
               pathPrefix: "/post",
             },
             {
-              scheme: "ziona",
+              scheme: variant.scheme,
               host: "*",
               pathPrefix: "/viewer",
             },
