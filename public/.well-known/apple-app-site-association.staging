@@ -1,0 +1,25 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["RLL2NX9J5Z.com.zionking.ziona.staging"],
+        "components": [
+          {
+            "#": "no_universal_links",
+            "exclude": true,
+            "comment": "Matches any URL whose path fragment does not begin with 'no_universal_links'"
+          },
+          {
+            "/": "/post/*",
+            "comment": "Open shared post URLs in the Ziona app"
+          },
+          {
+            "/": "/viewer/*",
+            "comment": "Open viewer URLs in the Ziona app"
+          }
+        ]
+      }
+    ]
+  }
+}
