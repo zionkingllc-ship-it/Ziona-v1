@@ -66,8 +66,8 @@ export function TextInputWithIcon({
       ? colors.successText
       : colors.inputTitle;
 
-  const INPUT_HEIGHT = hp(7);
-  const INPUT_MIN_HEIGHT = 48;
+  const INPUT_HEIGHT = hp(8);
+  const INPUT_MIN_HEIGHT = 56;
   const ICON_SIZE = wp(5);
 
   const handleChange = (text: string) => {
@@ -84,7 +84,7 @@ export function TextInputWithIcon({
     <XStack
       alignItems="center"
       paddingHorizontal={wp(3)}
-      paddingVertical={wp(1.5)}
+      paddingVertical={wp(2)}
       minHeight={Math.max(INPUT_HEIGHT, INPUT_MIN_HEIGHT)}
       height={INPUT_HEIGHT}
       width="100%"
@@ -105,7 +105,7 @@ export function TextInputWithIcon({
 
       <YStack flex={1} justifyContent="center">
         {showFloatingLabel && (
-          <Text fontSize={10} color={headerColor} marginBottom={hp(0.3)}>
+          <Text fontSize={10} color={headerColor} marginBottom={hp(0.5)}>
             {headingText}
           </Text>
         )}
