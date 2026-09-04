@@ -4,36 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ziona</title>
-
-  <!--
-    Ziona deep-link redirect page.
-    Host this at the SHARE DOMAIN root (e.g. https://api.ziona.app/ and https://ziona.app/)
-    so that shared links like https://<domain>/post/{id} resolve here.
-
-    Behavior:
-      1) If the Ziona app is installed, this page attempts to open it via the
-         ziona://viewer/{id} custom scheme.
-      2) If the app is not detected within the timeout, the page redirects the
-         user to the App Store / Google Play listing.
-
-    Set STORE_URL_ANDROID and STORE_URL_IOS below. Editable path handling comes
-    from the requested URL, so no URL rewriting is required on this host.
-  -->
-
   <meta name="robots" content="noindex, nofollow" />
 </head>
 <body>
   <script>
     (function () {
-      // ---- Config: fill these in ------
-      var STORE_URL_ANDROID =
-        "https://play.google.com/store/apps/details?id=com.zionking.ziona";
-      var STORE_URL_IOS = ""; // set to https://apps.apple.com/app/id{AppleID} after release
-      var APP_SCHEME = "ziona://viewer/";
+      // Detect environment from hostname
+      var hostname = location.hostname;
+      var isStaging = hostname === "staging.ziona.app" || hostname === "api.staging.ziona.app";
+      
+      // ---- Config per environment ----
+      var STORE_URL_ANDROID = isStaging
+        ? "https://play.google.com/store/apps/details?id=com.zionking.ziona.staging"
+        : "https://play.google.com/store/apps/details?id=com.zionking.ziona";
+      var STORE_URL_IOS = isStaging ? "" : ""; // set after release
+      var APP_SCHEME = isStaging ? "zionastaging://viewer/" : "ziona://viewer/";
+      var ANDROID_PACKAGE = isStaging ? "com.zionking.ziona.staging" : "com.zionking.ziona";
       var REDIRECT_TIMEOUT_MS = 1500;
-      // ----------------------------------
 
-      // Extract the postId from /post/{id} or /viewer/{id}
+      // Extract postId from /post/{id} or /viewer/{id}
       var path = location.pathname;
       var m = path.match(/\/(?:post|viewer)\/([^\/?#\s]+)/);
       var postId = m && m[1] ? m[1] : null;
@@ -42,7 +31,6 @@
       var isAndroid = /android/i.test(ua);
       var isIOS = /iphone|ipad|ipod/i.test(ua);
 
-      // Fallback store target by platform
       function storeUrl() {
         return isIOS && STORE_URL_IOS ? STORE_URL_IOS
           : (isAndroid && STORE_URL_ANDROID ? STORE_URL_ANDROID : STORE_URL_ANDROID);
@@ -57,13 +45,12 @@
         var deepLink = APP_SCHEME + (postId || "");
         var hidden, visible;
 
-        // Detect if the app took focus (page loses visibility).
+        // Detect if app took focus
         try {
           hidden = "hidden";
           visible = "visibilitychange";
           var onVisibility = function () {
             if (document[hidden]) {
-              // App successfully opened; cancel the store fallback.
               window.clearTimeout(fallbackTimer);
             }
           };
@@ -73,14 +60,14 @@
         var fallbackTimer = window.setTimeout(redirectToStore, REDIRECT_TIMEOUT_MS);
 
         if (isIOS) {
-          // iOS: custom scheme navigation.
           window.location.replace(deepLink);
         } else if (isAndroid && navigator.userAgent.match(/Chrome\//)) {
-          // Android Chrome: intent:// scheme to avoid the "open with" chooser.
+          // Android Chrome: intent:// scheme to avoid chooser
           var intent =
             "intent://viewer/" + (postId || "") +
-            "#Intent;scheme=ziona;package=com.zionking.ziona;S.browser_fallback_url=" +
-            encodeURIComponent(storeUrl()) +
+            "#Intent;scheme=" + (isStaging ? "zionastaging" : "ziona") +
+            ";package=" + ANDROID_PACKAGE +
+            ";S.browser_fallback_url=" + encodeURIComponent(storeUrl()) +
             ";end";
           window.location.replace(intent);
         } else {
