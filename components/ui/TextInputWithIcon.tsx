@@ -66,8 +66,8 @@ export function TextInputWithIcon({
       ? colors.successText
       : colors.inputTitle;
 
-  const INPUT_HEIGHT = hp(8);
-  const INPUT_MIN_HEIGHT = 56;
+  const INPUT_HEIGHT = hp(9);
+  const INPUT_MIN_HEIGHT = 64;
   const ICON_SIZE = wp(5);
 
   const handleChange = (text: string) => {
@@ -84,7 +84,7 @@ export function TextInputWithIcon({
     <XStack
       alignItems="center"
       paddingHorizontal={wp(3)}
-      paddingVertical={wp(2)}
+      paddingVertical={wp(4)}
       minHeight={Math.max(INPUT_HEIGHT, INPUT_MIN_HEIGHT)}
       height={INPUT_HEIGHT}
       width="100%"
@@ -124,7 +124,9 @@ style={{
               color: colors.black,
               fontFamily,
               lineHeight: fs(14),
-              paddingVertical: 0,
+              paddingVertical: 2,
+              paddingTop: 2,
+              textAlignVertical: "top",
             }}
           onChangeText={handleChange}
           onFocus={(e) => {
