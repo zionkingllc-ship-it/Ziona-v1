@@ -5,6 +5,29 @@ import {
   unlikeComment,
 } from "@/services/graphQL/mutation/actions/comments";
 
+const TEMP_ID_PREFIX = "temp-";
+
+function isTempId(id: string): boolean {
+  return id.startsWith(TEMP_ID_PREFIX);
+}
+
+function findRealId(queryClient: ReturnType<typeof useQueryClient>, tempId: string): string | null {
+  const queries = queryClient.getQueriesData({ queryKey: ["postComments"], exact: false });
+  for (const [, data] of queries as any[]) {
+    if (!data) continue;
+    const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
+    for (const page of pages) {
+      for (const c of page.comments ?? []) {
+        if (c.tempId === tempId) return c.id;
+        if (c.replies) {
+          for (const r of c.replies) if (r.tempId === tempId) return r.id;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function useCommentReplies(commentId: string) {
   return useInfiniteQuery({
     queryKey: ["commentReplies", commentId],
@@ -21,7 +44,16 @@ export function useReplyLike() {
   return useMutation({
     mutationFn: async (_vars: any, context?: any) => {
       const wasLiked = context?.preOptimisticWasLiked ?? false;
-      return wasLiked ? unlikeComment(_vars.replyId) : likeComment(_vars.replyId);
+      let replyId = _vars.replyId;
+
+      if (isTempId(replyId)) {
+        const realId = findRealId(queryClient, replyId);
+        if (realId) {
+          replyId = realId;
+        }
+      }
+
+      return wasLiked ? unlikeComment(replyId) : likeComment(replyId);
     },
 
     onMutate: async ({ postId, commentId, replyId, isLiked }) => {

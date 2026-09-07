@@ -25,7 +25,7 @@ export function useCreateComment() {
 
       if (!user) return { previousComments };
 
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `temp-${crypto.randomUUID()}`;
 
       patchCommentCountAcrossQueries(queryClient, { postId, delta: 1 });
 
@@ -101,7 +101,7 @@ export function useCreateComment() {
             pages: old.pages.map((page: any) => ({
               ...page,
               comments: page.comments.map((c: any) =>
-                c.id === tempId ? { ...c, ...response, id: response.id } : c
+                c.id === tempId ? { ...c, ...response, id: response.id, tempId } : c
               ),
             })),
           };
@@ -119,7 +119,7 @@ export function useCreateComment() {
                   comment.id === parentCommentId
                     ? {
                         ...comment,
-                        replies: [...(comment.replies || []), response],
+                        replies: [...(comment.replies || []), { ...response, tempId: context?.tempId }],
                         stats: {
                           ...comment.stats,
                           repliesCount: (comment.stats.repliesCount || 0) + 1,

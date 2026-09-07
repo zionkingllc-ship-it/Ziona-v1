@@ -1,13 +1,45 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { likeComment, unlikeComment } from "@/services/graphQL/mutation/actions/comments";
 
+const TEMP_ID_PREFIX = "temp-";
+
+function isTempId(id: string): boolean {
+  return id.startsWith(TEMP_ID_PREFIX);
+}
+
+function findRealId(queryClient: ReturnType<typeof useQueryClient>, tempId: string): string | null {
+  const queries = queryClient.getQueriesData({ queryKey: ["postComments"], exact: false });
+  for (const [, data] of queries as any[]) {
+    if (!data) continue;
+    const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
+    for (const page of pages) {
+      for (const c of page.comments ?? []) {
+        if (c.tempId === tempId) return c.id;
+        if (c.replies) {
+          for (const r of c.replies) if (r.tempId === tempId) return r.id;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function useToggleCommentLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (_vars: any, context?: any) => {
       const wasLiked = context?.preOptimisticWasLiked ?? false;
-      return wasLiked ? unlikeComment(_vars.commentId) : likeComment(_vars.commentId);
+      let commentId = _vars.commentId;
+
+      if (isTempId(commentId)) {
+        const realId = findRealId(queryClient, commentId);
+        if (realId) {
+          commentId = realId;
+        }
+      }
+
+      return wasLiked ? unlikeComment(commentId) : likeComment(commentId);
     },
 
     onMutate: async ({ commentId, isLiked }) => {
