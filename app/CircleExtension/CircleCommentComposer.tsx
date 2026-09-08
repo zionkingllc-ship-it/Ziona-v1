@@ -25,6 +25,7 @@ import {
   Keyboard,
   BackHandler,
   Dimensions,
+  StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -35,6 +36,8 @@ import { AppError, getErrorMessage } from "@/utils/error";
 import { useCircleDetail, useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
+
+const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
 type Props = {
   mode?: "action" | "comment";
@@ -247,7 +250,7 @@ export default function CircleCommentComposer({
   const renderContent = () => (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#FFF" }}
-      behavior={keyboardBehavior()}
+      behavior="position"
       keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
     >
       <View style={{ flex: 1, top: insets.top }}>
@@ -276,6 +279,34 @@ export default function CircleCommentComposer({
             <Text fontWeight="600">{userName}</Text>
           </XStack>
 
+          <TextInput
+            placeholder={
+              blocked
+                ? isAuthenticated
+                  ? "Join this circle to comment"
+                  : "Login to comment"
+                : "what's on your mind"
+            }
+            placeholderTextColor={colors.placeHolderText}
+            value={text}
+            onChangeText={setText}
+            editable={!blocked}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              minHeight: 80,
+              maxHeight: 160,
+              color: colors.black,
+              backgroundColor: "#FFF",
+              borderRadius: 12,
+              marginTop: 12,
+            }}
+            multiline
+            autoFocus={!blocked && isModal}
+            onFocus={() => {}}
+          />
+
           {anchorPreview && (
             <Pressable
               onPress={() => {}}
@@ -283,15 +314,19 @@ export default function CircleCommentComposer({
                 marginTop: 12,
                 borderRadius: 12,
                 padding: 12,
-                backgroundColor: "#F5F5F5",
-                borderWidth: 1,
-                borderColor: "#EEE",
+                overflow: "hidden",
               }}
             >
+              <Image
+                source={FALLBACK_IMAGE}
+                style={{ ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" }}
+                contentFit="cover"
+              />
+              <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
               <AnchorHtmlText
                 html={anchorPreview}
                 contentWidth={width - 60}
-                baseStyle={{ fontSize: 14, color: "#333", lineHeight: 20 }}
+                baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20 }}
               />
             </Pressable>
           )}
@@ -351,6 +386,10 @@ export default function CircleCommentComposer({
 
         <View
           style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
             borderTopWidth: 1,
             borderColor: "#EEE",
             padding: 8,
