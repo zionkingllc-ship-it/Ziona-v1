@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 import React, { memo, useState } from "react";
 import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -325,14 +326,10 @@ const CircleFeedItem = memo(function CircleFeedItem({
           {hasAnchorContent && (
             <Pressable onPress={hasFullRef ? handleAnchorMediaTap : undefined} disabled={!hasFullRef}>
               <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
-                <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                  {displayAnchorContent}
-                </Text>
-                {isExpired && (
-                  <Text fontFamily="$body" color="#888" fontSize={10} marginTop={4}>
-                    Anchor expired
-                  </Text>
-                )}
+                <AnchorHtmlText
+                  html={displayAnchorContent}
+                  contentWidth={300}
+                />
               </View>
             </Pressable>
           )}
