@@ -24,6 +24,7 @@ import {
   View,
   Keyboard,
   BackHandler,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -33,6 +34,7 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import { AppError, getErrorMessage } from "@/utils/error";
 import { useCircleDetail, useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 
 type Props = {
   mode?: "action" | "comment";
@@ -59,6 +61,7 @@ export default function CircleCommentComposer({
   isModal = false,
   visible = true,
 }: Props) {
+  const { width } = Dimensions.get("window");
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
@@ -273,11 +276,35 @@ export default function CircleCommentComposer({
             <Text fontWeight="600">{userName}</Text>
           </XStack>
 
-          {mode === "action" && prompt && (
-            <Text marginTop="$2" color="#7A6E8A">
-              {prompt}
-            </Text>
-          )}
+          <TextInput
+            placeholder={
+              blocked
+                ? isAuthenticated
+                  ? "Join this circle to comment"
+                  : "Login to comment"
+                : "what's on your mind"
+            }
+            placeholderTextColor={colors.placeHolderText}
+            value={text}
+            onChangeText={setText}
+            editable={!blocked}
+            style={{
+              flex: 1,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              minHeight: 80,
+              maxHeight: 160,
+              color: colors.black,
+              borderWidth: 1,
+              borderColor: "#EEE",
+              borderRadius: 12,
+              marginTop: 12,
+              backgroundColor: "#FFF",
+            }}
+            multiline
+            autoFocus={!blocked && isModal}
+            onFocus={() => {}}
+          />
 
           {anchorPreview && (
             <Pressable
@@ -286,25 +313,16 @@ export default function CircleCommentComposer({
                 marginTop: 12,
                 borderRadius: 12,
                 padding: 12,
-                backgroundColor: "#F8F5FF",
+                backgroundColor: "#F5F5F5",
                 borderWidth: 1,
-                borderColor: "#E4C0F1",
+                borderColor: "#EEE",
               }}
             >
-              <XStack gap={8} alignItems="flex-start">
-                <Image
-                  source={require("@/assets/images/AnchorPin.png")}
-                  style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0 }}
-                />
-                <YStack flex={1} gap={4}>
-                  <Text fontSize={11} fontWeight="600" color="#742092">
-                    Responding to Anchor
-                  </Text>
-                  <Text color="#4A3A5A" numberOfLines={3} lineHeight={18}>
-                    {anchorPreview}
-                  </Text>
-                </YStack>
-              </XStack>
+              <AnchorHtmlText
+                html={anchorPreview}
+                contentWidth={width - 60}
+                baseStyle={{ fontSize: 14, color: "#333", lineHeight: 20 }}
+              />
             </Pressable>
           )}
 
@@ -429,33 +447,7 @@ export default function CircleCommentComposer({
             )}
           </Pressable>
 
-          <TextInput
-            placeholder={
-              blocked
-                ? isAuthenticated
-                  ? "Join this circle to comment"
-                  : "Login to comment"
-                : mode === "action"
-                  ? "Share your reflection..."
-                  : "Write a comment..."
-            }
-            placeholderTextColor={colors.placeHolderText}
-            value={text}
-            onChangeText={setText}
-            editable={!blocked}
-            style={{
-              flex: 1,
-              paddingVertical: 8,
-              minHeight: 36,
-              maxHeight: 120,
-              color: colors.black,
-            }}
-            multiline
-            autoFocus={!blocked && isModal}
-            onFocus={() => {}}
-          />
-
-          <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
+          <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8, marginLeft: "auto" }}>
             <View
               style={{
                 backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
