@@ -250,10 +250,10 @@ export default function CircleCommentComposer({
       behavior={keyboardBehavior()}
       keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
     >
-      <View style={{ flex: 1, top: insets.top, paddingBottom: insets.bottom  }}>
+      <View style={{ flex: 1, top: insets.top }}>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -275,36 +275,6 @@ export default function CircleCommentComposer({
             />
             <Text fontWeight="600">{userName}</Text>
           </XStack>
-
-          <TextInput
-            placeholder={
-              blocked
-                ? isAuthenticated
-                  ? "Join this circle to comment"
-                  : "Login to comment"
-                : "what's on your mind"
-            }
-            placeholderTextColor={colors.placeHolderText}
-            value={text}
-            onChangeText={setText}
-            editable={!blocked}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              minHeight: 80,
-              maxHeight: 160,
-              color: colors.black,
-              borderWidth: 1,
-              borderColor: "#EEE",
-              borderRadius: 12,
-              marginTop: 12,
-              backgroundColor: "#FFF",
-            }}
-            multiline
-            autoFocus={!blocked && isModal}
-            onFocus={() => {}}
-          />
 
           {anchorPreview && (
             <Pressable
@@ -385,7 +355,7 @@ export default function CircleCommentComposer({
             borderColor: "#EEE",
             padding: 8,
             flexDirection: "row",
-            alignItems: "center", 
+            alignItems: "flex-end", 
             gap: 8,
             backgroundColor: "#FFF",
             paddingBottom: insets.bottom || 8,
@@ -447,7 +417,34 @@ export default function CircleCommentComposer({
             )}
           </Pressable>
 
-          <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8, marginLeft: "auto" }}>
+          <TextInput
+            placeholder={
+              blocked
+                ? isAuthenticated
+                  ? "Join this circle to comment"
+                  : "Login to comment"
+                : "what's on your mind"
+            }
+            placeholderTextColor={colors.placeHolderText}
+            value={text}
+            onChangeText={setText}
+            editable={!blocked}
+            style={{
+              flex: 1,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              minHeight: 44,
+              maxHeight: 120,
+              color: colors.black,
+              backgroundColor: "#F5F5F5",
+              borderRadius: 20,
+            }}
+            multiline
+            autoFocus={!blocked && isModal}
+            onFocus={() => {}}
+          />
+
+          <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
             <View
               style={{
                 backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
