@@ -1,3 +1,4 @@
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { memo, useState } from "react";
@@ -98,9 +99,10 @@ const AnchorCardSmall = memo(function AnchorCardSmall({ anchor, circleId, circle
             <View style={StyleSheet.absoluteFill}>
               <View style={styles.darkOverlay} />
             </View>
-            <Text style={styles.textPreviewContent} numberOfLines={3}>
-              {anchor.anchorText || anchor.content || anchor.bibleText || ""}
-            </Text>
+            <AnchorHtmlText
+              html={anchor.anchorText || anchor.content || anchor.bibleText || ""}
+              contentWidth={CARD_WIDTH - 16}
+            />
           </>
         );
     }
