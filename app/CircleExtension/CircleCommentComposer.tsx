@@ -250,128 +250,260 @@ export default function CircleCommentComposer({
   const renderContent = () => (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#FFF" }}
-      behavior="position"
+      behavior={keyboardBehavior()}
       keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
     >
-      <View style={{ flex: 1, top: insets.top }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <XStack justifyContent="flex-end" marginBottom={isModal ? 8 : 0}>
-            <Pressable onPress={handleClose}>
-              <Text color="#666" fontWeight={isModal ? "600" : "400"}>
-                {isModal ? "Cancel" : "Cancel"}
-              </Text>
-            </Pressable>
-          </XStack>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <XStack justifyContent="flex-end" marginBottom={isModal ? 8 : 0}>
+          <Pressable onPress={handleClose}>
+            <Text color="#666" fontWeight={isModal ? "600" : "400"}>
+              {isModal ? "Cancel" : "Cancel"}
+            </Text>
+          </Pressable>
+        </XStack>
 
-          <XStack alignItems="center" gap="$2" marginTop="$2">
-            <AvatarWithInitials
-              uri={userAvatar}
-              name={userName}
-              size={36}
-              failedUris={failedAvatarUrls}
-              setFailedUris={setFailedAvatarUrls}
-            />
-            <Text fontWeight="600">{userName}</Text>
-          </XStack>
-
-          <TextInput
-            placeholder={
-              blocked
-                ? isAuthenticated
-                  ? "Join this circle to comment"
-                  : "Login to comment"
-                : "what's on your mind"
-            }
-            placeholderTextColor={colors.placeHolderText}
-            value={text}
-            onChangeText={setText}
-            editable={!blocked}
-            style={{
-              flex: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              minHeight: 80,
-              maxHeight: 160,
-              color: colors.black,
-              backgroundColor: "#FFF",
-              borderRadius: 12,
-              marginTop: 12,
-            }}
-            multiline
-            autoFocus={!blocked && isModal}
-            onFocus={() => {}}
+        <XStack alignItems="center" gap="$2" marginTop="$2">
+          <AvatarWithInitials
+            uri={userAvatar}
+            name={userName}
+            size={36}
+            failedUris={failedAvatarUrls}
+            setFailedUris={setFailedAvatarUrls}
           />
+          <Text fontWeight="600">{userName}</Text>
+        </XStack>
 
-          {anchorPreview && (
+        <TextInput
+          placeholder={
+            blocked
+              ? isAuthenticated
+                ? "Join this circle to comment"
+                : "Login to comment"
+              : "what's on your mind"
+          }
+          placeholderTextColor={colors.placeHolderText}
+          value={text}
+          onChangeText={setText}
+          editable={!blocked}
+          style={{
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            minHeight: 80,
+            maxHeight: 160,
+            color: colors.black,
+            backgroundColor: "#FFF",
+            borderRadius: 12,
+            marginTop: 12,
+          }}
+          multiline
+          autoFocus={!blocked && isModal}
+          onFocus={() => {}}
+        />
+
+        {anchorPreview && (
+          <Pressable
+            onPress={() => {}}
+            style={{
+              marginTop: 12,
+              borderRadius: 12,
+              padding: 12,
+              overflow: "hidden",
+              minHeight: 100,
+            }}
+          >
+            <Image
+              source={FALLBACK_IMAGE}
+              style={{ ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" }}
+              contentFit="cover"
+            />
+            <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
+            <AnchorHtmlText
+              html={anchorPreview}
+              contentWidth={width - 60}
+              baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20 }}
+            />
+          </Pressable>
+        )}
+
+        {image && (
+          <View style={{ borderRadius: 12, marginTop: 12 }}>
+            <Image source={{ uri: image }} height={120} borderRadius={12} />
             <Pressable
-              onPress={() => {}}
+              onPress={() => setImage(null)}
               style={{
-                marginTop: 12,
-                borderRadius: 12,
-                padding: 12,
-                overflow: "hidden",
+                position: "absolute",
+                right: 8,
+                top: 8,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                borderRadius: 20,
+                padding: 6,
+                elevation: 5,
+                zIndex: 10,
               }}
             >
-              <Image
-                source={FALLBACK_IMAGE}
-                style={{ ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" }}
-                contentFit="cover"
-              />
-              <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
-              <AnchorHtmlText
-                html={anchorPreview}
-                contentWidth={width - 60}
-                baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20 }}
-              />
+              <Ionicons name="trash" size={16} color="#FFF" />
             </Pressable>
-          )}
+          </View>
+        )}
 
-          {image && (
-            <View style={{ borderRadius: 12, marginTop: 12 }}>
-              <Image source={{ uri: image }} height={120} borderRadius={12} />
-              <Pressable
-                onPress={() => setImage(null)}
-                style={{
-                  position: "absolute",
-                  right: 8,
-                  top: 8,
-                  backgroundColor: "rgba(0,0,0,0.6)",
-                  borderRadius: 20,
-                  padding: 6,
-                  elevation: 5,
-                  zIndex: 10,
-                }}
-              >
-                <Ionicons name="trash" size={16} color="#FFF" />
-              </Pressable>
-            </View>
-          )}
-
-          {video && (
-            <View style={{ borderRadius: 12, marginTop: 12 }}>
-              <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
-                <Image
-                  source={{ uri: videoThumbnail || video }}
-                  height={120}
-                />
-                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
-                    <Ionicons name="play" size={20} color="#FFF" />
-                  </View>
+        {video && (
+          <View style={{ borderRadius: 12, marginTop: 12 }}>
+            <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
+              <Image
+                source={{ uri: videoThumbnail || video }}
+                height={120}
+              />
+              <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+                  <Ionicons name="play" size={20} color="#FFF" />
                 </View>
               </View>
-              <Pressable
-                onPress={() => { setVideo(null); setVideoDuration(null); setVideoThumbnail(null); }}
-                style={{
-                  position: "absolute",
-                  right: 8,
-                  top: 8,
-                  backgroundColor: "rgba(0,0,0,0.6)",
+            </View>
+            <Pressable
+              onPress={() => { setVideo(null); setVideoDuration(null); setVideoThumbnail(null); }}
+              style={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                borderRadius: 20,
+                padding: 6,
+                elevation: 5,
+                zIndex: 10,
+              }}
+            >
+              <Ionicons name="trash" size={16} color="#FFF" />
+            </Pressable>
+          </View>
+        )}
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      <View
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          borderTopWidth: 1,
+          borderColor: "#EEE",
+          padding: 8,
+          flexDirection: "row",
+          alignItems: "flex-end", 
+          gap: 8,
+          backgroundColor: "#FFF",
+          paddingBottom: insets.bottom || 8,
+        }}
+      >
+        <Pressable
+          onPress={async () => {
+            if (picking || blocked) return;
+            setShowError(false);
+            setErrorMessage("");
+            setPicking(true);
+            try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== "granted") {
+              setErrorType("warning");
+              setErrorMessage("Please grant media library access in Settings to attach media.");
+              setShowError(true);
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images", "videos"],
+              allowsEditing: true,
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets?.[0]?.uri) {
+              const asset = result.assets[0];
+              if (asset.type === "video") {
+                setVideo(asset.uri);
+                setVideoDuration(asset.duration ?? null);
+                setImage(null);
+                setVideoThumbnail(null);
+                VideoThumbnails.getThumbnailAsync(asset.uri)
+                  .then(({ uri }) => setVideoThumbnail(uri))
+                  .catch(() => setVideoThumbnail(null));
+              } else {
+                try {
+                  const convertedUri = await convertToSupportedFormat(asset.uri, asset.mimeType);
+                  setImage(convertedUri);
+                  setVideo(null);
+                  setVideoThumbnail(null);
+                  setShowError(false);
+                  setErrorMessage("");
+                } catch {
+                  setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
+                  setShowError(true);
+                }
+              }
+            }
+            } finally {
+              setPicking(false);
+            }
+          }}
+          style={{ paddingVertical: 8 }}
+        >
+          {picking ? (
+            <ActivityIndicator size="small" color="#333" />
+          ) : (
+            <Ionicons name="image-outline" size={24} color="#333" />
+          )}
+        </Pressable>
+
+        <TextInput
+          placeholder={
+            blocked
+              ? isAuthenticated
+                ? "Join this circle to comment"
+                : "Login to comment"
+              : "what's on your mind"
+          }
+          placeholderTextColor={colors.placeHolderText}
+          value={text}
+          onChangeText={setText}
+          editable={!blocked}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            minHeight: 44,
+            maxHeight: 120,
+            color: colors.black,
+            backgroundColor: "#F5F5F5",
+            borderRadius: 20,
+          }}
+          multiline
+          autoFocus={!blocked && isModal}
+          onFocus={() => {}}
+        />
+
+        <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
+          <View
+            style={{
+              backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
+              paddingHorizontal: 14,
+              paddingVertical: 6,
+              borderRadius: 20,
+            }}
+          >
+            {posting ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text color="#FFF">{mode === "action" ? "Share" : "Post"}</Text>
+            )}
+          </View>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
+  );
                   borderRadius: 20,
                   padding: 6,
                   elevation: 5,
