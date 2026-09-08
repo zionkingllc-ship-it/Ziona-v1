@@ -62,6 +62,25 @@ const getAnchorDaysAgo = (filter: string): number => {
   return match ? parseInt(match[1]) : 0;
 };
 
+function hasAnchorInLast6Days(pastAnchors: any[], activeAnchor?: any): boolean {
+  const now = new Date();
+  const sixDaysAgo = new Date(now);
+  sixDaysAgo.setDate(now.getDate() - 5);
+  sixDaysAgo.setHours(0, 0, 0, 0);
+
+  if (activeAnchor?.createdAt) {
+    const created = new Date(activeAnchor.createdAt);
+    if (created >= sixDaysAgo) return true;
+  }
+
+  for (const anchor of pastAnchors || []) {
+    if (!anchor.createdAt) continue;
+    const created = new Date(anchor.createdAt);
+    if (created >= sixDaysAgo) return true;
+  }
+  return false;
+}
+
 // Always show all filter options — anchor data is fetched on-demand via useAnchorByDate
 const availableOptions = anchorFilterOptions;
 
@@ -269,6 +288,10 @@ export default function CircleFeedScreen() {
   }, [data, _name, _desc, _image, _members, fallbackAvatars]);
 
   const posts: CirclePost[] = circle.posts;
+
+  const hasRecentAnchors = useMemo(() => {
+    return hasAnchorInLast6Days(circle.pastAnchors, circle.activeAnchor);
+  }, [circle.pastAnchors, circle.activeAnchor]);
 
   const joinMutation = useJoinCircle();
   const leaveMutation = useLeaveCircle();
@@ -538,15 +561,17 @@ export default function CircleFeedScreen() {
                 </YStack>
               </XStack>
               </Pressable>
-              <TouchableOpacity
-                style={styles.filterButton}
-                onPress={() => setShowAnchorDropdown(!showAnchorDropdown)}
-              >
-                <Text fontFamily="$body" fontSize={11} color={colors.text}>
-                  {anchorFilter}
-                </Text>
-                <ChevronDown size={12} color={colors.text} />
-              </TouchableOpacity>
+              {hasRecentAnchors && (
+                <TouchableOpacity
+                  style={styles.filterButton}
+                  onPress={() => setShowAnchorDropdown(!showAnchorDropdown)}
+                >
+                  <Text fontFamily="$body" fontSize={11} color={colors.text}>
+                    {anchorFilter}
+                  </Text>
+                  <ChevronDown size={12} color={colors.text} />
+                </TouchableOpacity>
+              )}
             </XStack>
             {showAnchorDropdown && (
               <View style={styles.dropdownContainer}>
@@ -629,15 +654,17 @@ export default function CircleFeedScreen() {
                       </Text>
                     </YStack>
                   </XStack>
-                  <TouchableOpacity
-                    style={styles.filterButton}
-                    onPress={() => setShowAnchorDropdown(!showAnchorDropdown)}
-                  >
-                    <Text fontFamily="$body" fontSize={11} color={colors.text}>
-                      {anchorFilter}
-                    </Text>
-                    <ChevronDown size={12} color={colors.text} />
-                  </TouchableOpacity>
+                  {hasRecentAnchors && (
+                    <TouchableOpacity
+                      style={styles.filterButton}
+                      onPress={() => setShowAnchorDropdown(!showAnchorDropdown)}
+                    >
+                      <Text fontFamily="$body" fontSize={11} color={colors.text}>
+                        {anchorFilter}
+                      </Text>
+                      <ChevronDown size={12} color={colors.text} />
+                    </TouchableOpacity>
+                  )}
                 </XStack>
                 {showAnchorDropdown && (
                   <View style={styles.dropdownContainer}>
