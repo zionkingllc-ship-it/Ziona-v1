@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import * as VideoThumbnails from "expo-video-thumbnails";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { convertToSupportedFormat } from "@/services/utils/imageConversion";
 import {
   ActivityIndicator,
@@ -22,6 +22,8 @@ import {
   ScrollView,
   TextInput,
   View,
+  Keyboard,
+  BackHandler,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -41,6 +43,8 @@ type Props = {
   prompt?: string;
   onClose?: () => void;
   onSend?: (text: string, image?: string | null, video?: string | null) => void;
+  isModal?: boolean;
+  visible?: boolean;
 };
 
 export default function CircleCommentComposer({
@@ -52,6 +56,8 @@ export default function CircleCommentComposer({
   prompt: propPrompt,
   onClose,
   onSend,
+  isModal = false,
+  visible = true,
 }: Props) {
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
@@ -104,6 +110,28 @@ export default function CircleCommentComposer({
       prevBlocked.current = false;
     }
   }, [blocked, isAuthenticated, circleId, isJoined, membershipKnown, requireMembership]);
+
+  const handleClose = useCallback(() => {
+    if (isModal && onClose) {
+      onClose();
+    } else if (!isModal) {
+      if (source === "feed" && circleId) {
+        router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
+      } else {
+        router.dismissTo("/(tabs)/circle");
+      }
+    }
+  }, [isModal, onClose, source, circleId, router]);
+
+  // Handle Android back button in modal mode
+  useEffect(() => {
+    if (!isModal || !visible) return;
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleClose();
+      return true;
+    });
+    return () => backHandler.remove();
+  }, [isModal, visible, handleClose]);
 
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting || blocked) return;
@@ -160,6 +188,8 @@ export default function CircleCommentComposer({
         }
       } else if (onSend) {
         onSend(text, image, video);
+        setPosting(false);
+        handleClose();
         return;
       }
 
@@ -197,13 +227,7 @@ export default function CircleCommentComposer({
       
       setTimeout(() => {
         setShowSuccess(false);
-        if (source === "feed") {
-          router.back();
-        } else if (onClose) {
-          onClose();
-        } else {
-          router.back();
-        }
+        handleClose();
       }, 1500);
     } catch (error: any) {
       console.error("Failed to create post:", error);
@@ -215,227 +239,280 @@ export default function CircleCommentComposer({
     }
   };
 
-  return (
-    <>
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#FFF" }}
-        behavior={keyboardBehavior()}
-        keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
-      >
-        <View style={{ flex: 1, top: insets.top, paddingBottom: insets.bottom  }}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <XStack justifyContent="flex-end">
+  if (!visible && isModal) return null;
+
+  const renderContent = () => (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#FFF" }}
+      behavior={keyboardBehavior()}
+      keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
+    >
+      <View style={{ flex: 1, top: insets.top, paddingBottom: insets.bottom  }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <XStack justifyContent="flex-end" marginBottom={isModal ? 8 : 0}>
+            <Pressable onPress={handleClose}>
+              <Text color="#666" fontWeight={isModal ? "600" : "400"}>
+                {isModal ? "Cancel" : "Cancel"}
+              </Text>
+            </Pressable>
+          </XStack>
+
+          <XStack alignItems="center" gap="$2" marginTop="$2">
+            <AvatarWithInitials
+              uri={userAvatar}
+              name={userName}
+              size={36}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
+            />
+            <Text fontWeight="600">{userName}</Text>
+          </XStack>
+
+          {mode === "action" && prompt && (
+            <Text marginTop="$2" color="#7A6E8A">
+              {prompt}
+            </Text>
+          )}
+
+          {anchorPreview && (
+            <Pressable
+              onPress={() => {}}
+              style={{
+                marginTop: 12,
+                borderRadius: 12,
+                padding: 12,
+                backgroundColor: "#F8F5FF",
+                borderWidth: 1,
+                borderColor: "#E4C0F1",
+              }}
+            >
+              <XStack gap={8} alignItems="flex-start">
+                <Image
+                  source={require("@/assets/images/AnchorPin.png")}
+                  style={{ width: 16, height: 16, marginTop: 2, flexShrink: 0 }}
+                />
+                <YStack flex={1} gap={4}>
+                  <Text fontSize={11} fontWeight="600" color="#742092">
+                    Responding to Anchor
+                  </Text>
+                  <Text color="#4A3A5A" numberOfLines={3} lineHeight={18}>
+                    {anchorPreview}
+                  </Text>
+                </YStack>
+              </XStack>
+            </Pressable>
+          )}
+
+          {image && (
+            <View style={{ borderRadius: 12, marginTop: 12 }}>
+              <Image source={{ uri: image }} height={120} borderRadius={12} />
               <Pressable
-                onPress={() => {
-                  if (onClose) onClose();
-                  else router.back();
+                onPress={() => setImage(null)}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: 8,
+                  backgroundColor: "rgba(0,0,0,0.6)",
+                  borderRadius: 20,
+                  padding: 6,
+                  elevation: 5,
+                  zIndex: 10,
                 }}
               >
-                <Text color="#666">Cancel</Text>
+                <Ionicons name="trash" size={16} color="#FFF" />
               </Pressable>
-            </XStack>
+            </View>
+          )}
 
-            <XStack alignItems="center" gap="$2" marginTop="$2">
-              <AvatarWithInitials
-                uri={userAvatar}
-                name={userName}
-                size={36}
-                failedUris={failedAvatarUrls}
-                setFailedUris={setFailedAvatarUrls}
-              />
-              <Text fontWeight="600">{userName}</Text>
-            </XStack>
-
-            {mode === "action" && prompt && (
-              <Text marginTop="$2" color="#7A6E8A">
-                {prompt}
-              </Text>
-            )}
-
-            {anchorPreview && (
-              <YStack
-                marginTop="$3"
-                borderRadius={12}
-                padding="$3"
-                backgroundColor="#0B0F2F"
-              >
-                <Text color="#FFF" numberOfLines={2}>
-                  {anchorPreview}
-                </Text>
-              </YStack>
-            )}
-
-            {image && (
-              <View style={{ borderRadius: 12, marginTop: 12 }}>
-                <Image source={{ uri: image }} height={120} borderRadius={12} />
-                <Pressable
-                  onPress={() => setImage(null)}
-                  style={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    borderRadius: 20,
-                    padding: 6,
-                    elevation: 5,
-                    zIndex: 10,
-                  }}
-                >
-                  <Ionicons name="trash" size={16} color="#FFF" />
-                </Pressable>
-              </View>
-            )}
-
-            {video && (
-              <View style={{ borderRadius: 12, marginTop: 12 }}>
-                <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
-                  <Image
-                    source={{ uri: videoThumbnail || video }}
-                    height={120}
-                  />
-                  <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
-                      <Ionicons name="play" size={20} color="#FFF" />
-                    </View>
+          {video && (
+            <View style={{ borderRadius: 12, marginTop: 12 }}>
+              <View style={{ height: 120, borderRadius: 12, overflow: "hidden", backgroundColor: "#000" }}>
+                <Image
+                  source={{ uri: videoThumbnail || video }}
+                  height={120}
+                />
+                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: "center", alignItems: "center" }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+                    <Ionicons name="play" size={20} color="#FFF" />
                   </View>
                 </View>
-                <Pressable
-                  onPress={() => { setVideo(null); setVideoDuration(null); setVideoThumbnail(null); }}
-                  style={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    borderRadius: 20,
-                    padding: 6,
-                    elevation: 5,
-                    zIndex: 10,
-                  }}
-                >
-                  <Ionicons name="trash" size={16} color="#FFF" />
-                </Pressable>
               </View>
-            )}
-          </ScrollView>
-
-          <View
-            style={{
-              borderTopWidth: 1,
-              borderColor: "#EEE",
-              padding: 8,
-              flexDirection: "row",
-              alignItems: "center", 
-              gap: 8,
-              backgroundColor: "#FFF",
-              paddingBottom: insets.bottom || 8,
-            }}
-          >
-            <Pressable
-              onPress={async () => {
-                if (picking || blocked) return;
-                setShowError(false);
-                setErrorMessage("");
-                setPicking(true);
-                try {
-                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                if (status !== "granted") {
-                  setErrorType("warning");
-                  setErrorMessage("Please grant media library access in Settings to attach media.");
-                  setShowError(true);
-                  return;
-                }
-                const result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: ["images", "videos"],
-                  allowsEditing: true,
-                  quality: 0.8,
-                });
-                if (!result.canceled && result.assets?.[0]?.uri) {
-                  const asset = result.assets[0];
-                  if (asset.type === "video") {
-                    setVideo(asset.uri);
-                    setVideoDuration(asset.duration ?? null);
-                    setImage(null);
-                    setVideoThumbnail(null);
-                    VideoThumbnails.getThumbnailAsync(asset.uri)
-                      .then(({ uri }) => setVideoThumbnail(uri))
-                      .catch(() => setVideoThumbnail(null));
-                  } else {
-                    try {
-                      const convertedUri = await convertToSupportedFormat(asset.uri, asset.mimeType);
-                      setImage(convertedUri);
-                      setVideo(null);
-                      setVideoThumbnail(null);
-                      setShowError(false);
-                      setErrorMessage("");
-                    } catch {
-                      setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
-                      setShowError(true);
-                    }
-                  }
-                }
-                } finally {
-                  setPicking(false);
-                }
-              }}
-              style={{ paddingVertical: 8 }}
-            >
-              {picking ? (
-                <ActivityIndicator size="small" color="#333" />
-              ) : (
-                <Ionicons name="image-outline" size={24} color="#333" />
-              )}
-            </Pressable>
-
-            <TextInput
-              placeholder={
-                blocked
-                  ? isAuthenticated
-                    ? "Join this circle to comment"
-                    : "Login to comment"
-                  : mode === "action"
-                    ? "Share your reflection..."
-                    : "Write a comment..."
-              }
-              placeholderTextColor={colors.placeHolderText}
-              value={text}
-              onChangeText={setText}
-              editable={!blocked}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                minHeight: 36,
-                maxHeight: 120,
-                color: colors.black,
-              }}
-              multiline
-              autoFocus={!blocked}
-            />
-
-            <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
-              <View
+              <Pressable
+                onPress={() => { setVideo(null); setVideoDuration(null); setVideoThumbnail(null); }}
                 style={{
-                  backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
+                  position: "absolute",
+                  right: 8,
+                  top: 8,
+                  backgroundColor: "rgba(0,0,0,0.6)",
                   borderRadius: 20,
+                  padding: 6,
+                  elevation: 5,
+                  zIndex: 10,
                 }}
               >
-                {posting ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text color="#FFF">{mode === "action" ? "Share" : "Post"}</Text>
-                )}
-              </View>
-            </Pressable>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+                <Ionicons name="trash" size={16} color="#FFF" />
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
 
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderColor: "#EEE",
+            padding: 8,
+            flexDirection: "row",
+            alignItems: "center", 
+            gap: 8,
+            backgroundColor: "#FFF",
+            paddingBottom: insets.bottom || 8,
+          }}
+        >
+          <Pressable
+            onPress={async () => {
+              if (picking || blocked) return;
+              setShowError(false);
+              setErrorMessage("");
+              setPicking(true);
+              try {
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== "granted") {
+                setErrorType("warning");
+                setErrorMessage("Please grant media library access in Settings to attach media.");
+                setShowError(true);
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ["images", "videos"],
+                allowsEditing: true,
+                quality: 0.8,
+              });
+              if (!result.canceled && result.assets?.[0]?.uri) {
+                const asset = result.assets[0];
+                if (asset.type === "video") {
+                  setVideo(asset.uri);
+                  setVideoDuration(asset.duration ?? null);
+                  setImage(null);
+                  setVideoThumbnail(null);
+                  VideoThumbnails.getThumbnailAsync(asset.uri)
+                    .then(({ uri }) => setVideoThumbnail(uri))
+                    .catch(() => setVideoThumbnail(null));
+                } else {
+                  try {
+                    const convertedUri = await convertToSupportedFormat(asset.uri, asset.mimeType);
+                    setImage(convertedUri);
+                    setVideo(null);
+                    setVideoThumbnail(null);
+                    setShowError(false);
+                    setErrorMessage("");
+                  } catch {
+                    setErrorMessage("This image format is not supported. Please use JPEG or PNG.");
+                    setShowError(true);
+                  }
+                }
+              }
+              } finally {
+                setPicking(false);
+              }
+            }}
+            style={{ paddingVertical: 8 }}
+          >
+            {picking ? (
+              <ActivityIndicator size="small" color="#333" />
+            ) : (
+              <Ionicons name="image-outline" size={24} color="#333" />
+            )}
+          </Pressable>
+
+          <TextInput
+            placeholder={
+              blocked
+                ? isAuthenticated
+                  ? "Join this circle to comment"
+                  : "Login to comment"
+                : mode === "action"
+                  ? "Share your reflection..."
+                  : "Write a comment..."
+            }
+            placeholderTextColor={colors.placeHolderText}
+            value={text}
+            onChangeText={setText}
+            editable={!blocked}
+            style={{
+              flex: 1,
+              paddingVertical: 8,
+              minHeight: 36,
+              maxHeight: 120,
+              color: colors.black,
+            }}
+            multiline
+            autoFocus={!blocked && isModal}
+            onFocus={() => {}}
+          />
+
+          <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
+            <View
+              style={{
+                backgroundColor: !blocked && (text.trim() || image || video) && !posting ? "#6C2BD9" : "#CCC",
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+                borderRadius: 20,
+              }}
+            >
+              {posting ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text color="#FFF">{mode === "action" ? "Share" : "Post"}</Text>
+              )}
+            </View>
+          </Pressable>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+
+  if (isModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={handleClose}
+        presentationStyle="pageSheet"
+      >
+        {renderContent()}
+        <SuccessModal
+          visible={showSuccess}
+          onClose={() => setShowSuccess(false)}
+          title={mode === "action" ? "Reflection Shared!" : "Comment Posted!"}
+          type="success"
+          autoClose={false}
+        />
+        <SuccessModal
+          visible={showError}
+          onClose={() => setShowError(false)}
+          title={errorType === "warning" ? "Warning" : "Error"}
+          message={errorMessage}
+          type={errorType}
+          autoClose={false}
+          withButton
+          buttonText="OK"
+          onButtonPress={() => setShowError(false)}
+        />
+        {AuthModal}
+        {MembershipModal}
+      </Modal>
+    );
+  }
+
+  return (
+    <>
+      {renderContent()}
       <SuccessModal
         visible={showSuccess}
         onClose={() => setShowSuccess(false)}
@@ -443,7 +520,6 @@ export default function CircleCommentComposer({
         type="success"
         autoClose={false}
       />
-
       <SuccessModal
         visible={showError}
         onClose={() => setShowError(false)}
@@ -455,7 +531,6 @@ export default function CircleCommentComposer({
         buttonText="OK"
         onButtonPress={() => setShowError(false)}
       />
-
       {AuthModal}
       {MembershipModal}
     </>

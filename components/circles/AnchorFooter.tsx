@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import colors from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import {
   Image,
   Platform,
@@ -16,6 +15,7 @@ import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
+import CircleCommentComposer from "@/app/CircleExtension/CircleCommentComposer";
 
 type AnchorFooterProps = {
   prayIcon?: any;
@@ -52,7 +52,6 @@ export default function AnchorFooter({
   initialLiked = false,
   initialCount = 0,
 }: AnchorFooterProps) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { isJoined } = useCircleMembership(circleId || "");
@@ -63,6 +62,7 @@ export default function AnchorFooter({
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [likedCount, setLikedCount] = useState(initialCount);
   const [toggling, setToggling] = useState(false);
+  const [showReflection, setShowReflection] = useState(false);
 
   const bottomPadding =
     Platform.OS === "android" ? Math.max(insets.bottom, 20) : insets.bottom;
@@ -98,97 +98,87 @@ export default function AnchorFooter({
     });
   }, [anchorId, toggling, requireMembership, doPrayLike]);
 
-  const doReflection = async () => {
-    const tempId = `tempAnchor_${Date.now()}`;
-    const text = anchorText || "";
-    await saveAnchorRef(tempId, {
-      type: anchorImage ? "image" : "text",
-      title: "Anchor",
-      content: text,
-      mediaUrl: anchorImage || undefined,
-      anchorId,
-      circleId,
-      expiresAt: expiresAt || undefined,
-      bibleReference: bibleReference || undefined,
-      bibleText: bibleText || undefined,
-      anchorImage: anchorImage || undefined,
-      anchorVideo: anchorVideo || undefined,
-      backgroundColors: anchorColors || undefined,
-    });
-    await saveAnchorText(tempId, text);
-
-    const qs = new URLSearchParams({
-      ...(anchorId ? { anchorId } : {}),
-      ...(circleId ? { circleId } : {}),
-      anchorRefId: tempId,
-      fromScreen: "circleFeed",
-      mode: "action",
-      source,
-      anchorText: anchorText || "",
-      bibleReference: bibleReference || "",
-      bibleText: bibleText || "",
-      prompt: "What's on your mind?",
-    });
-    const path = `/(tabs)/circle/CircleCommentComposer?${qs.toString()}`;
-    router.push(path as any);
-  };
-
   const handleReflection = () => {
     requireMembership(() => {
-      void doReflection();
+      setShowReflection(true);
     });
+  };
+
+  const handleReflectionClose = () => {
+    setShowReflection(false);
   };
 
   return (
-    <View style={[styles.footer, { bottom: bottomOffset + bottomPadding }]}>
-      {/*Prayer like*/}
-      <TouchableOpacity
-        onPress={handlePrayLike}
-        disabled={toggling || expired}
-        style={[styles.footerButton, expired && styles.disabledButton]}
-      >
-        <XStack gap={4} alignItems="center">
-          {isLiked ? (
-            <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
-          ) : (
-            <Image
-              source={prayIcon || require("@/assets/images/AnchorPrayingHandDark.png")}
-              style={{ width: 22, height: 22 }}
-            />
-          )}
-          {likedCount > 0 && (
-            <Text fontSize={13} fontWeight="600" color={isLiked ? colors.primary || "#E74C3C" : "#666"}>
-              {likedCount}
-            </Text>
-          )}
-        </XStack>
-      </TouchableOpacity>
-
-      {/*reflection comment*/}
-      <TouchableOpacity
-        onPress={handleReflection}
-        disabled={expired}
-        style={expired ? { opacity: 0.4 } : undefined}
-      >
-        <XStack
-          backgroundColor="#000"
-          paddingHorizontal="$3"
-          paddingVertical="$2"
-          borderRadius={20}
-          alignItems="center"
-          gap="$2"
+    <>
+      <View style={[styles.footer, { bottom: bottomOffset + bottomPadding }]}>
+        {/*Prayer like*/}
+        <TouchableOpacity
+          onPress={handlePrayLike}
+          disabled={toggling || expired}
+          style={[styles.footerButton, expired && styles.disabledButton]}
         >
-          <Ionicons
-            name="chatbubble-outline"
-            size={16}
-            color="#FFF"
-            fill={colors.white}
-          />
-          <Text color="#FFF">Your reflection...</Text>
-        </XStack>
-      </TouchableOpacity>
+          <XStack gap={4} alignItems="center">
+            {isLiked ? (
+              <Ionicons name="heart" size={22} color={colors.primary || "#E74C3C"} />
+            ) : (
+              <Image
+                source={prayIcon || require("@/assets/images/AnchorPrayingHandDark.png")}
+                style={{ width: 22, height: 22 }}
+              />
+            )}
+            {likedCount > 0 && (
+              <Text fontSize={13} fontWeight="600" color={isLiked ? colors.primary || "#E74C3C" : "#666"}>
+                {likedCount}
+              </Text>
+            )}
+          </XStack>
+        </TouchableOpacity>
+
+        {/*reflection comment*/}
+        <TouchableOpacity
+          onPress={handleReflection}
+          disabled={expired}
+          style={expired ? { opacity: 0.4 } : undefined}
+        >
+          <XStack
+            backgroundColor="#000"
+            paddingHorizontal="$3"
+            paddingVertical="$2"
+            borderRadius={20}
+            alignItems="center"
+            gap="$2"
+          >
+            <Ionicons
+              name="chatbubble-outline"
+              size={16}
+              color="#FFF"
+              fill={colors.white}
+            />
+            <Text color="#FFF">Your reflection...</Text>
+          </XStack>
+        </TouchableOpacity>
+      </View>
+
+      <CircleCommentComposer
+        isModal={true}
+        visible={showReflection}
+        onClose={handleReflectionClose}
+        mode="action"
+        anchorText={anchorText}
+        bibleReference={bibleReference}
+        bibleText={bibleText}
+        anchorPreview={anchorText}
+        prompt="What's on your mind?"
+        circleId={circleId}
+        anchorId={anchorId}
+        anchorImage={anchorImage}
+        anchorVideo={anchorVideo}
+        anchorColors={anchorColors}
+        expiresAt={expiresAt}
+        source={source}
+      />
       {MembershipModal}
-    </View>
+    </>
   );
 }
 
