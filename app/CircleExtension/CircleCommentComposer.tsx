@@ -478,17 +478,15 @@ export default function CircleCommentComposer({
         onRequestClose={handleClose}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
-        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView
+          behavior={keyboardBehavior()}
+          keyboardVerticalOffset={0}
+          style={{ flex: 1, justifyContent: "flex-end" }}
+        >
           <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, flex: 1 }}>
-            <KeyboardAvoidingView
-              behavior="padding"
-              keyboardVerticalOffset={0}
-              style={{ flex: 1 }}
-            >
-              {renderContent()}
-            </KeyboardAvoidingView>
+            {renderContent()}
           </View>
-        </View>
+        </KeyboardAvoidingView>
         <SuccessModal
           visible={showSuccess}
           onClose={() => setShowSuccess(false)}
