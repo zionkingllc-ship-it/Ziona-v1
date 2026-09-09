@@ -30,6 +30,7 @@ function resolveDestination(data?: Record<string, unknown> | null): string {
     profile: "/guest?userId=",
     circle: "/circleFeed?id=",
     circle_post: "/circleFeed?id=",
+    anchor: "/circleFeed?id=",
   };
 
   const base = REFERENCE_TYPE_TO_ROUTE[referenceType];
@@ -37,6 +38,10 @@ function resolveDestination(data?: Record<string, unknown> | null): string {
 
   if (referenceType === "comment") {
     return `${base}${referenceId}?openComments=1`;
+  }
+
+  if (referenceType === "anchor") {
+    return `${base}${referenceId}`;
   }
 
   return `${base}${referenceId}`;
