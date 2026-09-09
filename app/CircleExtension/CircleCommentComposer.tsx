@@ -248,6 +248,7 @@ export default function CircleCommentComposer({
   if (!visible && isModal) return null;
 
   const renderContent = () => (
+    <View style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
@@ -355,7 +356,6 @@ export default function CircleCommentComposer({
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      <>
       <View
         style={{
           position: "absolute",
@@ -472,8 +472,8 @@ export default function CircleCommentComposer({
           </View>
         </Pressable>
       </View>
-      </>
-    );
+    </View>
+  );
 
   if (isModal) {
     return (
@@ -489,7 +489,7 @@ export default function CircleCommentComposer({
             behavior="padding"
             keyboardVerticalOffset={0}
           >
-            <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+            <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, flex: 1 }}>
               {renderContent()}
             </View>
           </KeyboardAvoidingView>
