@@ -364,8 +364,17 @@ export default function CircleFeedScreen() {
         ? liveAnchor ?? lastAnchorRef.current.anchor
         : liveAnchor;
     }
-    return anchorByDateData ?? undefined;
-  }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData, circleId]);
+    if (anchorByDateData) return anchorByDateData;
+    if (filterDate && circle.pastAnchors) {
+      const match = circle.pastAnchors.find((a: any) => {
+        if (!a.createdAt) return false;
+        const d = new Date(a.createdAt);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` === filterDate;
+      });
+      if (match) return match;
+    }
+    return undefined;
+  }, [anchorFilter, activeAnchorData, circle?.activeAnchor, anchorByDateData, circle.pastAnchors, filterDate, circleId]);
 
   const anchorExpired = useMemo(() => {
     if (!displayAnchor?.expiresAt) return false;

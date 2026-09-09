@@ -80,6 +80,38 @@ export default function AnchorFooter({
           setLikedCount(result.anchorLikedCount);
         }
       }
+      if (circleId && result?.success) {
+        const liked = result.liked ?? newLiked;
+        const count = result.anchorLikedCount;
+
+        queryClient.setQueryData(["activeAnchor", circleId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            anchorLikedCount: count != null ? count : old.anchorLikedCount,
+            viewerState: { ...old.viewerState, liked },
+          };
+        });
+
+        queryClient.setQueriesData(
+          { queryKey: ["circleFeedData", circleId] },
+          (old: any) => {
+            if (!old?.activeAnchor) return old;
+            return {
+              ...old,
+              activeAnchor: {
+                ...old.activeAnchor,
+                anchorLikedCount: count != null ? count : old.activeAnchor.anchorLikedCount,
+                viewerState: {
+                  ...old.activeAnchor.viewerState,
+                  liked,
+                },
+              },
+            };
+          },
+        );
+      }
+
       if (circleId) {
         queryClient.invalidateQueries({ queryKey: ["activeAnchor", circleId] });
         queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });

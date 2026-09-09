@@ -21,14 +21,16 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  View,
+ 
   Keyboard,
   BackHandler,
   Dimensions,
+  Image,
   StyleSheet,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { View, Text, XStack, YStack } from "tamagui";
+
 import { keyboardBehavior } from "@/constants/platform";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import SuccessModal from "@/components/ui/modals/successModal";
@@ -36,6 +38,7 @@ import { AppError, getErrorMessage } from "@/utils/error";
 import { useCircleDetail, useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
+
 
 const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
@@ -77,6 +80,7 @@ export default function CircleCommentComposer({
   const [picking, setPicking] = useState(false);
   const [posting, setPosting] = useState(false);
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const userName = user?.username || "You";
   const userAvatar = user?.avatarUrl || null;
@@ -138,6 +142,12 @@ export default function CircleCommentComposer({
     });
     return () => backHandler.remove();
   }, [isModal, visible, handleClose]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setIsKeyboardOpen(true));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setIsKeyboardOpen(false));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   const handleSend = async () => {
     if ((!text.trim() && !image && !video) || posting || blocked) return;
@@ -273,15 +283,38 @@ export default function CircleCommentComposer({
           />
           <Text fontWeight="600">{userName}</Text>
         </XStack>
-
+<TextInput
+          placeholder={
+            blocked
+              ? isAuthenticated
+                ? "Join this circle to comment"
+                : "Login to comment"
+              : "what's on your mind ?.."
+          }
+          placeholderTextColor={colors.placeHolderText}
+          value={text}
+          onChangeText={setText}
+          editable={!blocked}
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            minHeight: 44,
+            maxHeight: 120,
+            color: colors.black, 
+            borderRadius: 20,
+          }}
+          multiline
+          autoFocus={!blocked && isModal}
+          onFocus={() => {}}
+        />
         {anchorPreview && (
           <Pressable
             onPress={() => {}}
             style={{
               marginTop: 12,
               marginLeft: 30,
-              borderRadius: 12,
-              padding: 16,
+              borderRadius: 12, 
               overflow: "hidden",
               minHeight: 120,
               position: "relative",
@@ -290,13 +323,13 @@ export default function CircleCommentComposer({
             <Image
               source={FALLBACK_IMAGE}
               style={{ ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" }}
-              contentFit="cover"
+              resizeMode="cover"
             />
             <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
             <AnchorHtmlText
               html={anchorPreview}
               contentWidth={width - 90}
-              baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20 }}
+              baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20, marginTop: 8, marginBottom: 8, paddingHorizontal: 12 }}
             />
           </Pressable>
         )}
@@ -363,7 +396,8 @@ export default function CircleCommentComposer({
           alignItems: "flex-end", 
           gap: 8,
           backgroundColor: "#FFF",
-          paddingBottom: insets.bottom || 8,
+          paddingBottom: insets.bottom + (isKeyboardOpen ? 20 : 0) || 8,
+          justifyContent: "space-between",
         }}
       >
         <Pressable
@@ -422,32 +456,7 @@ export default function CircleCommentComposer({
           )}
         </Pressable>
 
-        <TextInput
-          placeholder={
-            blocked
-              ? isAuthenticated
-                ? "Join this circle to comment"
-                : "Login to comment"
-              : "what's on your mind"
-          }
-          placeholderTextColor={colors.placeHolderText}
-          value={text}
-          onChangeText={setText}
-          editable={!blocked}
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            minHeight: 44,
-            maxHeight: 120,
-            color: colors.black,
-            backgroundColor: "#F5F5F5",
-            borderRadius: 20,
-          }}
-          multiline
-          autoFocus={!blocked && isModal}
-          onFocus={() => {}}
-        />
+        
 
         <Pressable onPress={handleSend} disabled={posting || blocked} style={{ paddingVertical: 8 }}>
           <View
