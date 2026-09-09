@@ -251,7 +251,7 @@ export default function CircleCommentComposer({
     <View style={{ flex: 1, backgroundColor: "#FFF" }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -352,16 +352,10 @@ export default function CircleCommentComposer({
             </Pressable>
           </View>
         )}
-
-        <View style={{ height: 80 }} />
       </ScrollView>
 
       <View
         style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
           borderTopWidth: 1,
           borderColor: "#EEE",
           padding: 8,
@@ -485,14 +479,15 @@ export default function CircleCommentComposer({
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         <View style={{ flex: 1, justifyContent: "flex-end" }}>
-          <KeyboardAvoidingView
-            behavior="padding"
-            keyboardVerticalOffset={0}
-          >
-            <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, flex: 1 }}>
+          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, flex: 1 }}>
+            <KeyboardAvoidingView
+              behavior="padding"
+              keyboardVerticalOffset={0}
+              style={{ flex: 1 }}
+            >
               {renderContent()}
-            </View>
-          </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+          </View>
         </View>
         <SuccessModal
           visible={showSuccess}
