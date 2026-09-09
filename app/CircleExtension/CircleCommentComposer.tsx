@@ -250,7 +250,7 @@ export default function CircleCommentComposer({
   const renderContent = () => (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#FFF" }}
-      behavior={keyboardBehavior()}
+      behavior="position"
       keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
     >
       <ScrollView
@@ -278,43 +278,17 @@ export default function CircleCommentComposer({
           <Text fontWeight="600">{userName}</Text>
         </XStack>
 
-        <TextInput
-          placeholder={
-            blocked
-              ? isAuthenticated
-                ? "Join this circle to comment"
-                : "Login to comment"
-              : "what's on your mind"
-          }
-          placeholderTextColor={colors.placeHolderText}
-          value={text}
-          onChangeText={setText}
-          editable={!blocked}
-          style={{
-            flex: 1,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            minHeight: 80,
-            maxHeight: 160,
-            color: colors.black,
-            backgroundColor: "#FFF",
-            borderRadius: 12,
-            marginTop: 12,
-          }}
-          multiline
-          autoFocus={!blocked && isModal}
-          onFocus={() => {}}
-        />
-
         {anchorPreview && (
           <Pressable
             onPress={() => {}}
             style={{
               marginTop: 12,
+              marginLeft: 30,
               borderRadius: 12,
-              padding: 12,
+              padding: 16,
               overflow: "hidden",
-              minHeight: 100,
+              minHeight: 120,
+              position: "relative",
             }}
           >
             <Image
@@ -325,7 +299,7 @@ export default function CircleCommentComposer({
             <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
             <AnchorHtmlText
               html={anchorPreview}
-              contentWidth={width - 60}
+              contentWidth={width - 90}
               baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20 }}
             />
           </Pressable>
