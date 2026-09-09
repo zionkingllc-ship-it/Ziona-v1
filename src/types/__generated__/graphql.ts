@@ -1414,6 +1414,7 @@ export type MediaFileType = {
   duration: Maybe<Scalars['Int']['output']>;
   height: Maybe<Scalars['Int']['output']>;
   id: Scalars['String']['output'];
+  sortOrder: Scalars['Int']['output'];
   thumbnailUrl: Maybe<Scalars['String']['output']>;
   type: MediaType;
   url: Scalars['String']['output'];
@@ -2579,7 +2580,7 @@ export type Query = {
   adminCircleDetail: AdminCirclePayload;
   /** List circle members. */
   adminCircleMembers: CircleMembersPaginatedType;
-  /** List reports on circle content (anchors, responses, circles). */
+  /** List reports on circle content (anchors, responses, circles, posts, comments). */
   adminCircleReports: AdminCircleReportsPaginatedType;
   /** Get circle-scoped stats for the admin circle detail page. */
   adminCircleStats: AdminCircleStatsPayload;

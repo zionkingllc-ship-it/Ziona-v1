@@ -248,11 +248,6 @@ export default function CircleCommentComposer({
   if (!visible && isModal) return null;
 
   const renderContent = () => (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#FFF" }}
-      behavior="position"
-      keyboardVerticalOffset={Platform.OS === "android" ? -insets.top : 0}
-    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 12, paddingBottom: 100 }}
@@ -476,19 +471,28 @@ export default function CircleCommentComposer({
           </View>
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
-  );
+      </ScrollView>
+    );
 
   if (isModal) {
     return (
       <Modal
         visible={visible}
         animationType="slide"
-        transparent={false}
+        transparent={true}
         onRequestClose={handleClose}
-        presentationStyle="pageSheet"
       >
-        {renderContent()}
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <KeyboardAvoidingView
+            behavior="padding"
+            keyboardVerticalOffset={0}
+          >
+            <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+              {renderContent()}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
         <SuccessModal
           visible={showSuccess}
           onClose={() => setShowSuccess(false)}

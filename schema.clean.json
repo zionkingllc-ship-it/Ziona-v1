@@ -2686,7 +2686,7 @@
           },
           {
             "name": "adminCircleReports",
-            "description": "List reports on circle content (anchors, responses, circles).",
+            "description": "List reports on circle content (anchors, responses, circles, posts, comments).",
             "args": [
               {
                 "name": "status",
@@ -4738,6 +4738,22 @@
               "kind": "SCALAR",
               "name": "Int",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sortOrder",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
