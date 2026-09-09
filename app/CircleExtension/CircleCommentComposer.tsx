@@ -474,16 +474,16 @@ export default function CircleCommentComposer({
       <Modal
         visible={visible}
         animationType="slide"
-        transparent={true}
+        transparent={false}
         onRequestClose={handleClose}
+        presentationStyle="pageSheet"
       >
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         <KeyboardAvoidingView
           behavior={keyboardBehavior()}
           keyboardVerticalOffset={0}
-          style={{ flex: 1, justifyContent: "flex-end" }}
+          style={{ flex: 1 }}
         >
-          <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, flex: 1 }}>
+          <View style={{ backgroundColor: "#FFF", flex: 1 }}>
             {renderContent()}
           </View>
         </KeyboardAvoidingView>
