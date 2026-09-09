@@ -364,7 +364,11 @@ export default function CircleFeedScreen() {
         ? liveAnchor ?? lastAnchorRef.current.anchor
         : liveAnchor;
     }
-    if (anchorByDateData) return anchorByDateData;
+    if (anchorByDateData?.createdAt) {
+      const d = new Date(anchorByDateData.createdAt);
+      const anchorDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (anchorDate === filterDate) return anchorByDateData;
+    }
     if (filterDate && circle.pastAnchors) {
       const match = circle.pastAnchors.find((a: any) => {
         if (!a.createdAt) return false;
