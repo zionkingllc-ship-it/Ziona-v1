@@ -355,6 +355,7 @@ export default function CircleCommentComposer({
         <View style={{ height: 80 }} />
       </ScrollView>
 
+      <>
       <View
         style={{
           position: "absolute",
@@ -471,7 +472,7 @@ export default function CircleCommentComposer({
           </View>
         </Pressable>
       </View>
-      </ScrollView>
+      </>
     );
 
   if (isModal) {
