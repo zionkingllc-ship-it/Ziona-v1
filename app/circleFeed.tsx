@@ -62,6 +62,10 @@ const getAnchorDaysAgo = (filter: string): number => {
   return match ? parseInt(match[1]) : 0;
 };
 
+function utcDateStr(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
 function hasAnchorInLast6Days(pastAnchors: any[], activeAnchor?: any): boolean {
   const now = new Date();
   const sixDaysAgo = new Date(now);
@@ -81,8 +85,20 @@ function hasAnchorInLast6Days(pastAnchors: any[], activeAnchor?: any): boolean {
   return false;
 }
 
-// Always show all filter options — anchor data is fetched on-demand via useAnchorByDate
-const availableOptions = anchorFilterOptions;
+function doesAnchorExistForDaysAgo(pastAnchors: any[], daysAgo: number): boolean {
+  if (daysAgo === 0) return true;
+  const target = new Date();
+  target.setDate(target.getDate() - daysAgo);
+  const targetStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
+
+  for (const anchor of pastAnchors || []) {
+    if (!anchor.createdAt) continue;
+    const d = new Date(anchor.createdAt);
+    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (dStr === targetStr) return true;
+  }
+  return false;
+}
 
 type CirclePost = {
   id: string;
@@ -293,6 +309,19 @@ export default function CircleFeedScreen() {
     return hasAnchorInLast6Days(circle.pastAnchors, circle.activeAnchor);
   }, [circle.pastAnchors, circle.activeAnchor]);
 
+  const availableOptions = useMemo(() => {
+    return anchorFilterOptions.filter((opt) => {
+      const daysAgo = getAnchorDaysAgo(opt);
+      return doesAnchorExistForDaysAgo(circle.pastAnchors, daysAgo);
+    });
+  }, [circle.pastAnchors]);
+
+  useEffect(() => {
+    if (availableOptions.length > 0 && !availableOptions.includes(anchorFilter)) {
+      setAnchorFilter(availableOptions[0]);
+    }
+  }, [availableOptions, anchorFilter]);
+
   const joinMutation = useJoinCircle();
   const leaveMutation = useLeaveCircle();
 
@@ -344,8 +373,8 @@ export default function CircleFeedScreen() {
     if (anchorFilter === "Today") return null;
     const daysAgo = anchorFilter === "Yesterday" ? 1 : parseInt(anchorFilter.match(/(\d+)/)?.[0] || "0");
     const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    date.setUTCDate(date.getUTCDate() - daysAgo);
+    return utcDateStr(date);
   }, [anchorFilter]);
 
   const { data: activeAnchorData } = useActiveAnchor(anchorFilter === "Today" ? circleId : "");
@@ -365,15 +394,12 @@ export default function CircleFeedScreen() {
         : liveAnchor;
     }
     if (anchorByDateData?.createdAt) {
-      const d = new Date(anchorByDateData.createdAt);
-      const anchorDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      if (anchorDate === filterDate) return anchorByDateData;
+      if (utcDateStr(new Date(anchorByDateData.createdAt)) === filterDate) return anchorByDateData;
     }
     if (filterDate && circle.pastAnchors) {
       const match = circle.pastAnchors.find((a: any) => {
         if (!a.createdAt) return false;
-        const d = new Date(a.createdAt);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` === filterDate;
+        return utcDateStr(new Date(a.createdAt)) === filterDate;
       });
       if (match) return match;
     }

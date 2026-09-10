@@ -112,10 +112,7 @@ export default function AnchorFooter({
         );
       }
 
-      if (circleId) {
-        queryClient.invalidateQueries({ queryKey: ["activeAnchor", circleId] });
-        queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });
-      }
+
     } catch {
       setIsLiked(!newLiked);
     } finally {

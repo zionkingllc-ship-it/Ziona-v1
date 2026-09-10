@@ -225,14 +225,16 @@ const styles = StyleSheet.create({
     top: 24,
     left: 12,
     right: 12,
-    bottom: 36,
+    bottom: 44,
     justifyContent: "center",
+    alignItems: "center",
   },
   previewText: {
     fontSize: 14,
     fontWeight: "400",
     color: "#FFF",
     lineHeight: 20,
+    textAlign: "center",
   },
   bottomRow: {
     position: "absolute",
@@ -241,6 +243,7 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     padding: 8,
+    zIndex: 5,
   },
   label: {
     fontSize: 11,
