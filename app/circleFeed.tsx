@@ -68,9 +68,7 @@ function utcDateStr(date: Date): string {
 
 function hasAnchorInLast6Days(pastAnchors: any[], activeAnchor?: any): boolean {
   const now = new Date();
-  const sixDaysAgo = new Date(now);
-  sixDaysAgo.setDate(now.getDate() - 5);
-  sixDaysAgo.setHours(0, 0, 0, 0);
+  const sixDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 5, 0, 0, 0));
 
   if (activeAnchor?.createdAt) {
     const created = new Date(activeAnchor.createdAt);
@@ -87,15 +85,13 @@ function hasAnchorInLast6Days(pastAnchors: any[], activeAnchor?: any): boolean {
 
 function doesAnchorExistForDaysAgo(pastAnchors: any[], daysAgo: number): boolean {
   if (daysAgo === 0) return true;
-  const target = new Date();
-  target.setDate(target.getDate() - daysAgo);
-  const targetStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
+  const now = new Date();
+  const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
+  const targetStr = utcDateStr(target);
 
   for (const anchor of pastAnchors || []) {
     if (!anchor.createdAt) continue;
-    const d = new Date(anchor.createdAt);
-    const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    if (dStr === targetStr) return true;
+    if (utcDateStr(new Date(anchor.createdAt)) === targetStr) return true;
   }
   return false;
 }
