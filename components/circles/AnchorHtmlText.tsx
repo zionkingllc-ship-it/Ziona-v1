@@ -8,6 +8,7 @@ type AnchorHtmlTextProps = {
   html?: string;
   contentWidth?: number;
   baseStyle?: MixedStyleDeclaration;
+  numberOfLines?: number;
 };
 
 const baseTextStyle: MixedStyleDeclaration = {
@@ -44,6 +45,7 @@ export default function AnchorHtmlText({
   html,
   contentWidth,
   baseStyle,
+  numberOfLines,
 }: AnchorHtmlTextProps) {
   if (!html) return null;
 
@@ -56,6 +58,7 @@ export default function AnchorHtmlText({
       baseStyle={{ ...baseTextStyle, ...baseStyle }}
       tagsStyles={tagsStyle}
       enableExperimentalBRCollapsing
+      numberOfLines={numberOfLines}
     />
   );
 }

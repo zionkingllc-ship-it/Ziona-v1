@@ -82,6 +82,8 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
   const hasVideo = !!(anchor!.anchorVideo || anchor!.type === "video");
 
   const previewText = anchor!.anchorText || anchor!.content || anchor!.bibleText || anchor!.bibleReference || "";
+  const strippedPreview = previewText.replace(/<[^>]+>/g, "").trim();
+  const truncatedPreview = strippedPreview.length > 60 ? strippedPreview.slice(0, 60) + "..." : strippedPreview;
 
   const remoteImageUri = anchor!.type === "text"
     ? (anchor!.backgroundImage || null)
@@ -138,7 +140,7 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
           {showTextPreview && (
             <View style={styles.textArea}>
               <AnchorHtmlText
-                html={previewText}
+                html={truncatedPreview}
                 contentWidth={300}
                 baseStyle={styles.previewText}
               />
@@ -222,10 +224,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     position: "absolute",
-    top: 24,
-    left: 12,
-    right: 12,
-    bottom: 44,
+    top: 56,
+    left: 24,
+    right: 24,
+    bottom: 72,
     justifyContent: "center",
     alignItems: "center",
   },

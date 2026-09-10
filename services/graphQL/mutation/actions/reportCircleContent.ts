@@ -39,6 +39,8 @@ export async function reportCircleContent(
     targetType,
   };
 
+  console.log("[ReportFlow] reportCircleContent variables:", JSON.stringify(variables));
+
   let data: any;
   try {
     data = await graphqlRequest(query, variables);
