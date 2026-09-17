@@ -33,6 +33,9 @@ const variants = {
 
 const variant = variants[process.env.APP_VARIANT ?? "production"];
 
+const META_APP_ID = "4373332852958136";
+const META_CLIENT_TOKEN = process.env.EXPO_PUBLIC_META_CLIENT_TOKEN ?? "";
+
 // Helper: attempt variant file(s); fall back to production if missing
 const fs = require("fs");
 const resolveGoogleServicesFile = (...candidates) => {
@@ -128,6 +131,25 @@ module.exports = {
       "expo-web-browser",
       "expo-video",
       "expo-apple-authentication",
+      [
+        "react-native-fbsdk-next",
+        {
+          appID: META_APP_ID,
+          clientToken: META_CLIENT_TOKEN,
+          displayName: variant.appName,
+          scheme: `fb${META_APP_ID}`,
+          isAutoInitEnabled: false,
+          autoLogAppEventsEnabled: false,
+          advertiserIDCollectionEnabled: true,
+        },
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          userTrackingPermission:
+            "Ziona uses this to personalize your experience and measure how well our ads perform. Your data is never sold to third parties.",
+        },
+      ],
       "./plugins/withAndroidOrientation",
       "./plugins/withImagePickerCropColors",
       ["expo-notifications", { color: "#742092" }],

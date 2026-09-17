@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
+import { logCompleteRegistrationEvent } from "@/services/analytics/metaEvents";
 
 const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
@@ -89,6 +90,8 @@ const handleSubmit = async () => {
 
     if (flow === "google" || flow === "apple") {
       await authApi.finalizeUsername(cleanUsername);
+
+      logCompleteRegistrationEvent(flow);
 
       requestAnimationFrame(() => {
         setTimeout(() => {
