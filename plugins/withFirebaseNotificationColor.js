@@ -24,5 +24,26 @@ function withNotificationColorManifest(config) {
     colorMeta.$["tools:replace"] = "android:resource";
   }
 
+  const channelMeta = metaData.find(
+    (m) =>
+      m.$["android:name"] ===
+      "com.google.firebase.messaging.default_notification_channel_id",
+  );
+
+  if (channelMeta) {
+    channelMeta.$["android:value"] = "default";
+  } else {
+    metaData.push({
+      $: {
+        "android:name":
+          "com.google.firebase.messaging.default_notification_channel_id",
+        "android:value": "default",
+        "tools:replace": "android:value",
+      },
+    });
+  }
+
+  application["meta-data"] = metaData;
+
   return config;
 }

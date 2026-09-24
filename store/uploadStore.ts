@@ -3,11 +3,13 @@ import { create } from "zustand";
 export type UploadStatus =
   | "idle"
   | "uploading"
+  | "publishing"
   | "completed"
   | "failed"
   | "cancelled";
 
 interface UploadState {
+  uploadId: number;
   status: UploadStatus;
   progress: number;
   exited: boolean;
@@ -22,6 +24,7 @@ interface UploadState {
   setError: (error: { title: string; message: string } | null) => void;
   setPostId: (postId: string | null) => void;
   reset: () => void;
+  startUpload: () => number;
 }
 
 const initialState = {
@@ -34,6 +37,7 @@ const initialState = {
 };
 
 export const useUploadStore = create<UploadState>((set) => ({
+  uploadId: 0,
   ...initialState,
 
   setStatus: (status) => set({ status }),
@@ -43,11 +47,21 @@ export const useUploadStore = create<UploadState>((set) => ({
 
   setExited: (exited) => set({ exited }),
 
-  requestCancel: () => set({ cancelRequested: true }),
+  requestCancel: () => set((state) => state.status === "uploading"
+    ? { cancelRequested: true, status: "cancelled" }
+    : {}),
 
   setError: (error) => set({ error }),
 
   setPostId: (postId) => set({ postId }),
 
-  reset: () => set({ ...initialState }),
+  reset: () => set((state) => ({ ...initialState, uploadId: state.uploadId + 1 })),
+  startUpload: () => {
+    let uploadId = 0;
+    set((state) => {
+      uploadId = state.uploadId + 1;
+      return { ...initialState, status: "uploading", uploadId };
+    });
+    return uploadId;
+  },
 }));

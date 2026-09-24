@@ -57,7 +57,7 @@ export default function LikeCountScreen() {
             )}
           </XStack>
           <Text fontFamily="$body" fontSize={12} fontWeight="400" color={colors.gray} marginTop={8}>
-            When enabled, like counts won't be shown on your posts
+            When enabled, like counts won&apos;t be shown on your posts
           </Text>
         </View>
       </YStack>

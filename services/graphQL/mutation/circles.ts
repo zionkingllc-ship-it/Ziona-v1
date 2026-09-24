@@ -118,7 +118,7 @@ export async function createCirclePost(
   circleId: string,
   text: string,
   mediaIds: string[],
-  mediaType: string,
+  mediaType?: string,
 ) {
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,

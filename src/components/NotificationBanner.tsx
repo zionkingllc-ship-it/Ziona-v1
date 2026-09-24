@@ -3,7 +3,7 @@ import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { router } from 'expo-router'
 import { onAppEvent } from '../data/eventBus'
 import { useRootNavigationReady } from '@/hooks/useRootNavigationReady'
-import { resolveNotificationDestination } from '../services/notifications/notificationNavigation'
+import { resolveNotificationDestination, type NotificationHref } from '../services/notifications/notificationNavigation'
 
 interface NotificationBannerData {
   id: string; title: string; body: string; data?: Record<string, unknown>
@@ -14,7 +14,7 @@ export function NotificationBanner() {
   const translateY = useRef(new Animated.Value(-100)).current
   const opacity = useRef(new Animated.Value(0)).current
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingScreenRef = useRef<string | null>(null)
+  const pendingScreenRef = useRef<NotificationHref | null>(null)
   const navReady = useRootNavigationReady()
 
   useEffect(() => {
@@ -60,12 +60,12 @@ export function NotificationBanner() {
   }
 
   const handlePress = () => {
-    const screen = resolveNotificationDestination(notification?.data)
+    const href = resolveNotificationDestination(notification?.data)
     hideBanner()
-    if (!screen) return
-    pendingScreenRef.current = screen as string
+    if (!href) return
+    pendingScreenRef.current = href
     if (navReady) {
-      router.push(screen as any)
+      router.push(href as any)
       pendingScreenRef.current = null
     }
   }

@@ -16,13 +16,13 @@ const GET_LIKED_POSTS = `
   }
 `;
 
-export function useLikedPosts() {
+export function useLikedPosts(options: { enabled?: boolean } = {}) {
   const userId = useAuthStore((s) => s.user?.id);
 
   return useInfiniteQuery({
     queryKey: ["likedPosts", userId],
 
-    enabled: !!userId,
+    enabled: !!userId && options.enabled !== false,
 
     initialPageParam: undefined,
 

@@ -5,16 +5,16 @@ import AnchorTextCard from "@/components/circles/AnchorTextCard";
 import AnchorVideoPlayer from "@/components/circles/AnchorVideoPlayer";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import { getGradientColors } from "@/lib/anchorUtils";
-import { chunkHtmlByBlocks, chunkText, isHtml } from "@/lib/anchorHtmlChunk";
+import { chunkHtmlByBlocks, chunkText, isHtml, stripMediaFromHtml } from "@/lib/anchorHtmlChunk";
 import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useCircleMembership } from "@/hooks/useCircles";
+import { useAnchorById, useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 
 const { width, height } = Dimensions.get("window");
@@ -57,7 +57,8 @@ function createSlides(
   }
 
   if (text) {
-    const chunks = isHtml(text) ? chunkHtmlByBlocks(text) : chunkText(text);
+    const cleanText = (image || video) ? stripMediaFromHtml(text) : text;
+    const chunks = isHtml(cleanText) ? chunkHtmlByBlocks(cleanText) : chunkText(cleanText);
     chunks.forEach((chunk, index) => {
       slides.push({
         id: `text-${index}`,
@@ -68,21 +69,21 @@ function createSlides(
     });
   }
 
-  if (video) {
-    slides.push({
-      id: "video",
-      type: "video",
-      video,
-      label: "Video",
-    });
-  }
-
   if (image) {
     slides.push({
       id: "image",
       type: "image",
       image,
       label: "Image",
+    });
+  }
+
+  if (video) {
+    slides.push({
+      id: "video",
+      type: "video",
+      video,
+      label: "Video",
     });
   }
 
@@ -130,15 +131,29 @@ export default function AnchorUnifiedView() {
   const initialLiked = params.viewerLiked === "1";
   const initialCount = parseInt(params.likedCount || "0", 10);
 
-  const gradientColors = getGradientColors(colors);
+  const { data: anchorData, isLoading: isAnchorLoading } = useAnchorById(id || "");
+  const resolvedText = text || anchorData?.anchorText || anchorData?.content || undefined;
+  const resolvedBibleReference = bibleReference || anchorData?.bibleReference || undefined;
+  const resolvedBibleText = bibleText || anchorData?.bibleText || undefined;
+  const resolvedVideo = video || anchorData?.anchorVideo || undefined;
+  const resolvedImage =
+    anchorImage || anchorData?.anchorImage || anchorData?.mediaUrl || undefined;
+  const resolvedColors =
+    colors || anchorData?.backgroundColors?.join(",") || undefined;
+  const resolvedExpiresAt = expiresAt || anchorData?.expiresAt || undefined;
+  const isExpired =
+    expired === "1" ||
+    (!!resolvedExpiresAt && new Date(resolvedExpiresAt).getTime() <= Date.now());
+
+  const gradientColors = getGradientColors(resolvedColors);
   const slides = createSlides(
-    text,
-    bibleReference,
-    bibleText,
-    video,
-    anchorImage,
-    colors,
-    expiresAt,
+    resolvedText,
+    resolvedBibleReference,
+    resolvedBibleText,
+    resolvedVideo,
+    resolvedImage,
+    resolvedColors,
+    resolvedExpiresAt,
   );
   const { isJoined } = useCircleMembership(circleId || "");
   const { requireMembership, MembershipModal } = useRequireCircleMembership(
@@ -152,6 +167,14 @@ export default function AnchorUnifiedView() {
     if (id) markAnchorViewed(id);
   }, [id]);
 
+  if (id && isAnchorLoading && !text && !anchorImage && !video && !bibleReference) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#742092" />
+      </View>
+    );
+  }
+
   const handleActionSelected = (action: string, anchorText?: string) => {
     requireMembership(() => {
       void doActionSelected(action, anchorText);
@@ -159,7 +182,7 @@ export default function AnchorUnifiedView() {
   };
 
   const handleClose = useCallback(() => {
-    if (source === "feed" && circleId) {
+    if ((source === "feed" || source === "notification") && circleId) {
       router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
     } else {
       router.dismissTo("/(tabs)/circle");
@@ -169,29 +192,29 @@ export default function AnchorUnifiedView() {
   const doActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
     await saveAnchorRef(tempId, {
-      type: anchorImage ? "image" : "text",
+      type: resolvedImage ? "image" : "text",
       title: "Anchor",
-      content: text || "",
-      mediaUrl: anchorImage || undefined,
+      content: resolvedText || "",
+      mediaUrl: resolvedImage || undefined,
       anchorId: id,
       circleId,
-      expiresAt: expiresAt || undefined,
-      bibleReference: bibleReference || undefined,
-      bibleText: bibleText || undefined,
-      anchorImage: anchorImage || undefined,
-      anchorVideo: video || undefined,
-      backgroundColors: colors || undefined,
+      expiresAt: resolvedExpiresAt || undefined,
+      bibleReference: resolvedBibleReference || undefined,
+      bibleText: resolvedBibleText || undefined,
+      anchorImage: resolvedImage || undefined,
+      anchorVideo: resolvedVideo || undefined,
+      backgroundColors: resolvedColors || undefined,
     });
-    await saveAnchorText(tempId, text || "");
+    await saveAnchorText(tempId, resolvedText || "");
 
     const qs = new URLSearchParams({
       action,
       text: anchorText || "",
       anchorRefId: tempId,
       fromScreen: "circleFeed",
-      anchorType: anchorImage ? "image" : "text",
-      anchorImage: anchorImage || "",
-      anchorColors: colors || "",
+      anchorType: resolvedImage ? "image" : "text",
+      anchorImage: resolvedImage || "",
+      anchorColors: resolvedColors || "",
       ...(circleId ? { circleId } : {}),
       source: "suggestion",
     });
@@ -227,7 +250,7 @@ export default function AnchorUnifiedView() {
 
       <View style={styles.timerContainer}>
         <CountdownTimer
-          expiresAt={expiresAt || ""}
+          expiresAt={resolvedExpiresAt || ""}
           style={styles.timerText}
         />
       </View>
@@ -264,13 +287,13 @@ export default function AnchorUnifiedView() {
                 <AnchorActionContent
                   colors={item.colors || gradientColors.join(",")}
                   expiresAt={item.expiresAt}
-                  text={text}
+                  text={resolvedText}
                   fullScreen
-                  anchorType={anchorImage ? "image" : "text"}
-                  anchorImage={anchorImage}
-                  anchorColors={colors}
+                  anchorType={resolvedImage ? "image" : "text"}
+                  anchorImage={resolvedImage}
+                  anchorColors={resolvedColors}
                   onActionSelected={handleActionSelected}
-                  isExpired={expired === "1"}
+                  isExpired={isExpired}
                 />
               </View>
             )}
@@ -301,15 +324,16 @@ export default function AnchorUnifiedView() {
             bottomOffset={20}
             anchorId={id}
             circleId={circleId}
-            expired={expired === "1"}
+            expired={isExpired}
             source="suggestion"
-            anchorText={text}
-            bibleReference={bibleReference}
-            bibleText={bibleText}
-            expiresAt={expiresAt}
-            anchorColors={colors}
-            anchorImage={anchorImage}
-            anchorVideo={video}
+            anchorText={resolvedText}
+            bibleReference={resolvedBibleReference}
+            bibleText={resolvedBibleText}
+            expiresAt={resolvedExpiresAt}
+            anchorColors={resolvedColors}
+            anchorImage={resolvedImage}
+            anchorVideo={resolvedVideo}
+            anchorBackgroundImage={anchorData?.backgroundImage}
             initialLiked={initialLiked}
             initialCount={initialCount}
           />

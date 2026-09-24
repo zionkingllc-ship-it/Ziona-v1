@@ -1,22 +1,18 @@
-let _getAuthStore: (() => any) | null = null;
-function getAuthStore() {
-  if (!_getAuthStore) {
-    _getAuthStore = require("@/store/useAuthStore").useAuthStore;
-  }
-  return _getAuthStore;
+import type { useAuthStore } from "@/store/useAuthStore";
+import { AppError } from "@/utils/error";
+import { getSessionVersion } from "./session";
+
+function getAuthStore(): typeof useAuthStore {
+  return require("@/store/useAuthStore").useAuthStore;
 }
 
 const REST_BASE = `${process.env.EXPO_PUBLIC_API_BASE_URL || "https://ziona-api-staging.onrender.com"}/api`;
-
-/* =========================
-   JWT EXPIRY
-========================= */
-
 let tokenExpiresAt: number | null = null;
 
 function decodeExp(token: string): number | null {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
     return payload.exp ? payload.exp * 1000 : null;
   } catch {
     return null;
@@ -32,121 +28,85 @@ export function clearTokenExpiry() {
 }
 
 export function isTokenExpired(): boolean {
-  if (!tokenExpiresAt) return false;
-  return Date.now() >= tokenExpiresAt;
+  return tokenExpiresAt !== null && Date.now() >= tokenExpiresAt;
 }
 
-/* =========================
-   REFRESH MUTEX
-========================= */
+let refreshInProgress: { version: number; promise: Promise<string | null> } | null = null;
 
-let refreshInProgress: Promise<string | null> | null = null;
-
-/* =========================
-   REST REFRESH
-========================= */
+function assertSession(version: number) {
+  if (getSessionVersion() !== version) {
+    throw new AppError("Session changed", { code: "SESSION_CHANGED", retryable: false });
+  }
+}
 
 export async function restRefresh(refreshToken: string): Promise<string | null> {
+  const version = getSessionVersion();
   const res = await fetch(`${REST_BASE}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
+  assertSession(version);
 
+  // Only a rejected credential is evidence that the session has expired.
+  if (res.status === 401 || res.status === 403) return null;
   if (!res.ok) {
-    return null;
+    throw new AppError("Unable to refresh session", { status: res.status, retryable: true });
   }
 
   const data = await res.json();
-
-  const inner = data?.data ?? data;
-  const accessToken =
-    inner.accessToken ?? inner.access_token ?? inner.tokens?.accessToken ?? inner.tokens?.access_token ?? null;
-  const newRefreshToken =
-    inner.refreshToken ?? inner.refresh_token ?? inner.tokens?.refreshToken ?? inner.tokens?.refresh_token ?? null;
-
-  if (accessToken) {
-    setTokenExpiry(accessToken);
-    const nextTokens: { accessToken: string; refreshToken?: string } = { accessToken };
-    if (newRefreshToken) {
-      nextTokens.refreshToken = newRefreshToken;
-    }
-    getAuthStore().getState().setTokens?.(nextTokens);
-    return accessToken;
+  assertSession(version);
+  const { accessToken, refreshToken: rotatedToken } = extractTokens(data);
+  if (!accessToken) {
+    throw new AppError("Invalid token refresh response", { retryable: true });
   }
-
-  return null;
+  getAuthStore().getState().setTokens({ accessToken, refreshToken: rotatedToken || refreshToken });
+  return accessToken;
 }
-
-/* =========================
-   REFRESH WITH RETRY + MUTEX
-========================= */
 
 export async function refreshWithRetry(maxRetries = 3): Promise<string | null> {
-  const store = getAuthStore().getState();
-  const refreshToken = store.tokens?.refreshToken;
-
+  const version = getSessionVersion();
+  const refreshToken = getAuthStore().getState().tokens?.refreshToken;
   if (!refreshToken) return null;
+  if (refreshInProgress?.version === version) return refreshInProgress.promise;
 
-  // Deduplicate concurrent refresh calls
-  if (refreshInProgress) {
-    return refreshInProgress;
-  }
-
-  refreshInProgress = (async () => {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        if (attempt > 0) {
-          await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
+  const pending = {
+    version,
+    promise: (async () => {
+      let lastError: unknown;
+      for (let attempt = 0; attempt < Math.max(1, maxRetries); attempt++) {
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
+        assertSession(version);
+        try {
+          return await restRefresh(refreshToken);
+        } catch (error) {
+          assertSession(version);
+          lastError = error;
         }
-        const result = await restRefresh(refreshToken);
-        if (result) return result;
-      } catch (err) {
-        console.warn(`Refresh attempt ${attempt + 1}/${maxRetries} failed:`, err);
       }
-    }
-    return null;
-  })();
-
+      throw lastError instanceof AppError ? lastError : new AppError("Unable to connect. Please try again.", { retryable: true });
+    })(),
+  };
+  refreshInProgress = pending;
   try {
-    return await refreshInProgress;
+    return await pending.promise;
   } finally {
-    refreshInProgress = null;
+    if (refreshInProgress === pending) refreshInProgress = null;
   }
 }
 
-/* =========================
-   PROACTIVE REFRESH
-========================= */
-
 export async function refreshTokenProactively(): Promise<boolean> {
-  const store = getAuthStore().getState();
-  const token = store.tokens?.accessToken;
+  const token = getAuthStore().getState().tokens?.accessToken;
   if (!token) return false;
-
-  // If token expires within 30s, refresh now
   const expiry = decodeExp(token);
-  if (expiry && expiry - Date.now() < 30000) {
-    const newToken = await refreshWithRetry(1);
-    return !!newToken;
-  }
-
+  if (expiry && expiry - Date.now() < 30000) return !!(await refreshWithRetry(1));
   return true;
 }
 
-/* =========================
-   EXTRACT TOKENS (shared)
-========================= */
-
-export function extractTokens(data: any): {
-  accessToken: string | null;
-  refreshToken: string | null;
-} {
-  const inner = data?.data ?? data;
+export function extractTokens(data: any): { accessToken: string | null; refreshToken: string | null } {
+  const inner = data?.data ?? data ?? {};
   return {
-    accessToken:
-      inner.accessToken ?? inner.access_token ?? inner.tokens?.accessToken ?? inner.tokens?.access_token ?? null,
-    refreshToken:
-      inner.refreshToken ?? inner.refresh_token ?? inner.tokens?.refreshToken ?? inner.tokens?.refresh_token ?? null,
+    accessToken: inner.accessToken ?? inner.access_token ?? inner.tokens?.accessToken ?? inner.tokens?.access_token ?? null,
+    refreshToken: inner.refreshToken ?? inner.refresh_token ?? inner.tokens?.refreshToken ?? inner.tokens?.refresh_token ?? null,
   };
 }

@@ -3,6 +3,7 @@ import {
   View,
   ScrollView,
   StyleSheet,
+  Dimensions,
   TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -32,6 +33,7 @@ import SuccessModal from "@/components/ui/modals/successModal";
 import { keyboardBehavior } from "@/constants/platform";
 import { CircleCommentItem } from "@/components/circles/CircleCommentItem";
 import { MentionSuggestions } from "@/components/comments/MentionSuggestions";
+import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 import type { MentionUser } from "@/components/comments/MentionSuggestions";
 
 const formatDate = (dateString?: string): string => {
@@ -40,6 +42,8 @@ const formatDate = (dateString?: string): string => {
   if (isNaN(d.getTime())) return dateString;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
+
+const FALLBACK_ANCHOR_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
 export default function CirclePostDetailScreen() {
   const router = useRouter();
@@ -60,6 +64,7 @@ export default function CirclePostDetailScreen() {
     anchorTitle,
     anchorContent,
     anchorMediaUrl,
+    anchorBackgroundImage,
   } = useLocalSearchParams<{
     postId?: string;
     circleId?: string;
@@ -76,6 +81,7 @@ export default function CirclePostDetailScreen() {
     anchorTitle?: string;
     anchorContent?: string;
     anchorMediaUrl?: string;
+    anchorBackgroundImage?: string;
   }>();
 
   const isVideo = !!postMediaUrl && /\.(mp4|mov|avi|webm|mkv)(\?|$)/i.test(postMediaUrl);
@@ -303,27 +309,36 @@ export default function CirclePostDetailScreen() {
 
             {anchorType && (
               (anchorContent || anchorTitle) ? (
-                <Pressable onPress={() => handleAnchorMediaTap()}>
-                  <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+                <Pressable onPress={() => handleAnchorMediaTap()} style={{ width: "100%", alignSelf: "stretch" }}>
+                  <View style={{ width: "100%", alignSelf: "stretch", height: 100, maxHeight: 100, borderRadius: 12, marginTop: 6, padding: 12, justifyContent: "center", overflow: "hidden" }}>
+                    <ExpoImage
+                      source={anchorBackgroundImage ? { uri: anchorBackgroundImage } : FALLBACK_ANCHOR_IMAGE}
+                      style={StyleSheet.absoluteFillObject}
+                      contentFit="cover"
+                    />
+                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(0,0,0,0.5)" }]} />
                     {anchorTitle && (
                       <Text fontFamily="$body" fontSize={11} color="rgba(255,255,255,0.6)" marginBottom={4}>
                         From {anchorTitle}
                       </Text>
                     )}
-                    <Text fontFamily="$body" color="#FFF" fontSize={13} numberOfLines={3}>
-                      {anchorContent || ""}
-                    </Text>
+                    <AnchorHtmlText
+                      html={anchorContent || anchorTitle || ""}
+                      contentWidth={Dimensions.get("window").width - 48}
+                      numberOfLines={2}
+                      baseStyle={{ color: "#F2EDF4", fontSize: 13, lineHeight: 18 }}
+                    />
                   </View>
                 </Pressable>
               ) : anchorType === "image" && anchorMediaUrl && !anchorImageError ? (
                 <Pressable onPress={() => handleAnchorMediaTap()}>
-                  <View style={{ height: 120, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                    <ExpoImage source={{ uri: anchorMediaUrl }} style={{ width: "100%", height: 120, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
+                  <View style={{ height: 100, maxHeight: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                    <ExpoImage source={{ uri: anchorMediaUrl }} style={{ width: "100%", height: 100, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
                   </View>
                 </Pressable>
               ) : anchorType === "image" && anchorMediaUrl && anchorImageError ? (
                 <Pressable onPress={() => handleAnchorMediaTap()}>
-                  <View style={{ height: 120, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
+                  <View style={{ height: 100, maxHeight: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
                     <Ionicons name="image-outline" size={28} color="#FFF" />
                     <Text fontFamily="$body" color="#FFF" fontSize={11} marginTop={2}>Image unavailable</Text>
                   </View>

@@ -490,7 +490,7 @@ export default function BookmarksScreen() {
             Delete folder?
           </Text>
           <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
-            "{deleteFolderName}" will be permanently deleted along with all saved posts in it.
+            &quot;{deleteFolderName}&quot; will be permanently deleted along with all saved posts in it.
           </Text>
           <Pressable onPress={handleConfirmDeleteFolder} disabled={deleteFolderMutation.isPending}>
             {deleteFolderMutation.isPending ? (

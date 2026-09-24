@@ -135,7 +135,7 @@ export default function EditNameScreen() {
 
       <YStack flex={1} padding="$4" gap="$4">
         <Text fontFamily={"$body"} fontWeight={"400"} fontSize={16}>
-          You're allowed one name change every 14 days.
+          You&apos;re allowed one name change every 14 days.
         </Text>
 
         <YStack

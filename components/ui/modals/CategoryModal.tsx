@@ -28,7 +28,7 @@ export default function CategoryModal({ visible, onClose, onSelect }: Props) {
       <View style={styles.sheet}>
         <FlatList
           data={categories}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id ?? item.slug ?? item.label}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity

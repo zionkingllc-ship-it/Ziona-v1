@@ -64,14 +64,6 @@ export function useLogout() {
   const { logout } = useAuthStore();
 
   return useMutation({
-    mutationFn: async () => {
-      try {
-        await authApi.signOut();
-      } catch (err) {
-      }
-    },
-    onSuccess: async () => {
-      await logout();
-    },
+    mutationFn: logout,
   });
 }

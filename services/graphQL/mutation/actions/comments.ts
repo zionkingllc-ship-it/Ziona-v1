@@ -9,6 +9,7 @@ export type CommentUser = {
 
 export type CommentReply = {
   id: string;
+  postId?: string;
   text: string;
   createdAt: string;
   user: CommentUser;
@@ -23,6 +24,7 @@ export type CommentReply = {
 
 export type Comment = {
   id: string;
+  postId?: string;
   text: string;
   createdAt: string;
   user: CommentUser;
@@ -59,6 +61,7 @@ export async function getPostComments(
         nextCursor
         comments {
           id
+          postId
           text
           createdAt
           user {
@@ -76,6 +79,7 @@ export async function getPostComments(
           }
           replies {
             id
+            postId
             text
             createdAt
             user {
@@ -120,6 +124,7 @@ export async function getCommentReplies(
         nextCursor
         comments {
           id
+          postId
           text
           createdAt
           user {
@@ -166,6 +171,7 @@ export async function createComment(
         message
         comment {
           id
+          postId
           text
           parentCommentId
           createdAt
@@ -299,5 +305,4 @@ export async function unlikeComment(commentId: string) {
 
   return res;
 }
-
 

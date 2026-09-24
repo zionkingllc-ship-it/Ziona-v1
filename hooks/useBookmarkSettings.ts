@@ -9,9 +9,10 @@ import { usePostActionsStore } from "@/store/usePostActionStore";
 
 export { type BookmarkFolder, type BookmarkPost } from "@/services/graphQL/queries/actions/bookmarkFolders";
 
-export function useBookmarkFolders() {
+export function useBookmarkFolders(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["bookmarkFolders"],
+    enabled: options.enabled !== false,
     queryFn: async () => {
       try {
         const result = await getBookmarkFolders();

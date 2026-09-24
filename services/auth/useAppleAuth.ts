@@ -67,7 +67,9 @@ export const useAppleAuth = () => {
         return { error: "Apple Sign-In is only available on iOS" };
       }
 
-      const { rawNonce, nonce } = await authApi.getAppleNonce();
+      const challenge = await authApi.getAppleNonce();
+      if (!challenge) throw new Error("Unable to start Apple Sign-In. Please try again.");
+      const { rawNonce, nonce } = challenge;
 
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [

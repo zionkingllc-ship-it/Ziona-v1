@@ -37,28 +37,32 @@ export default function AnchorCard({ anchor, disabled = false, circleId, expired
 
     setLoading(true);
 
-    const url = anchor.mediaUrl || "";
-    const anchorVideo = anchor.anchorVideo || (anchor.type === "video" && url ? url : "");
-    const anchorImage = anchor.type !== "video" && url ? url : anchor.anchorImage || "";
-    const text = anchor.anchorText || anchor.content || "";
-
-    const qs = new URLSearchParams({
+    const baseParams: Record<string, string> = {
       id: anchor.id || "",
       likedCount: anchor.anchorLikedCount?.toString() || "0",
       viewerLiked: anchor.viewerState?.liked ? "1" : "0",
       expired: expired ? "1" : "0",
       source: "feed",
       ...(circleId ? { circleId } : {}),
+      ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
+    };
+
+    const url = anchor.mediaUrl || "";
+    const anchorVideo = anchor.anchorVideo || (anchor.type === "video" && url ? url : "");
+    const anchorImage = anchor.type !== "video" && url ? url : anchor.anchorImage || "";
+    const text = anchor.anchorText || anchor.content || "";
+    const colors = anchor.backgroundColors?.join(",") || "";
+
+    const qs = new URLSearchParams({
+      ...baseParams,
       ...(text ? { text } : {}),
       ...(anchorImage ? { anchorImage } : {}),
       ...(anchorVideo ? { video: anchorVideo } : {}),
-      ...(anchor.backgroundColors?.length ? { colors: anchor.backgroundColors.join(",") } : {}),
+      ...(colors ? { colors } : {}),
       ...(anchor.bibleReference ? { bibleReference: anchor.bibleReference } : {}),
       ...(anchor.bibleText ? { bibleText: anchor.bibleText } : {}),
-      ...(anchor.expiresAt ? { expiresAt: anchor.expiresAt } : {}),
     });
-    const path = `/(tabs)/circle/anchorUnifiedView?${qs.toString()}`;
-    router.push(path as any);
+    router.push(`/(tabs)/circle/anchorUnifiedView?${qs.toString()}` as any);
     
     setTimeout(() => setLoading(false), 500);
   }, [disabled, loading, anchor, router, circleId, isEmpty, expired]);
@@ -224,10 +228,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     position: "absolute",
-    top: 56,
+    top: 14,
     left: 24,
     right: 24,
-    bottom: 72,
+    bottom: 8,
     justifyContent: "center",
     alignItems: "center",
   },

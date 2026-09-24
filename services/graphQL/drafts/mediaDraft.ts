@@ -89,10 +89,12 @@ export async function publishMediaPost(
   queryClient: QueryClient,
   onProgress?: (percent: number) => void,
   preUploaded?: { mediaIds: string[]; mediaUrls: string[] },
+  lifecycle?: { assertActive: () => void; beforePublish: () => void },
 ) {
   if (!draft) throw new Error("Draft is missing");
   if (!draft.category?.id) throw new Error("Category is required");
   if (!draft.media?.items?.length) throw new Error("Media is required");
+  lifecycle?.assertActive();
 
   const firstItem = draft.media.items[0];
 
@@ -120,6 +122,7 @@ export async function publishMediaPost(
 
     const uploads = items.map(async (item, index: number) => {
       try {
+        lifecycle?.assertActive();
         let fileUri = item.uri;
 
         if (item.type === "IMAGE") {
@@ -135,6 +138,7 @@ export async function publishMediaPost(
         const fileType = getMimeType(fileUri, item.type as "IMAGE" | "VIDEO");
 
         const fileInfo = await FileSystem.getInfoAsync(fileUri);
+        lifecycle?.assertActive();
 
         if (!fileInfo.exists) throw new Error("File does not exist");
         if (!fileInfo.size || fileInfo.size <= 0)
@@ -145,6 +149,7 @@ export async function publishMediaPost(
           fileType,
           fileInfo.size,
         );
+        lifecycle?.assertActive();
 
         const itemProgress = (pct: number) => {
           const overall = Math.round((completedItems * itemWeight) + (pct * itemWeight / 100));
@@ -152,8 +157,10 @@ export async function publishMediaPost(
         };
 
         await uploadWithStrategy(upload, fileUri, fileType, fileInfo.size, itemProgress);
+        lifecycle?.assertActive();
 
         const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
+        lifecycle?.assertActive();
 
         completedItems++;
         onProgress?.(Math.round(completedItems * itemWeight));
@@ -166,11 +173,13 @@ export async function publishMediaPost(
     });
 
     const mediaResults = await Promise.all(uploads);
+    lifecycle?.assertActive();
 
     mediaIds = mediaResults.map((r) => r.mediaId);
     mediaUrls = mediaResults.map((r) => r.mediaUrl);
 
     await waitForMediaProcessing(mediaIds);
+    lifecycle?.assertActive();
   }
 
   /* =========================
@@ -194,6 +203,7 @@ export async function publishMediaPost(
   ========================= */
 
   try {
+    lifecycle?.beforePublish();
     const response = await createMediaPost(input);
 
     await invalidateFeed(queryClient);

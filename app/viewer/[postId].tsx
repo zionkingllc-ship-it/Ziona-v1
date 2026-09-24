@@ -62,7 +62,7 @@ export default function PostViewerScreen() {
     isLoading: isUserLoading,
     isError: isUserError,
     refetch: refetchUserPosts,
-  } = useUserPosts(userIdParam);
+  } = useUserPosts(userIdParam, { enabled: isUserPosts });
 
   const {
     posts: discoverPosts,
@@ -76,21 +76,21 @@ export default function PostViewerScreen() {
     isError: isLikedError,
     error: likedError,
     refetch: refetchLikedPosts,
-  } = useLikedPosts();
+  } = useLikedPosts({ enabled: isLiked });
 
   const {
     data: bookmarkData,
     isLoading: isBookmarkLoading,
     isError: isBookmarkError,
     refetch: refetchBookmarks,
-  } = useBookmarkFolders();
+  } = useBookmarkFolders({ enabled: isBookmarks });
 
   const {
     data: savedData,
     isLoading: isSavedLoading,
     isError: isSavedError,
     refetch: refetchSavedPosts,
-  } = useUserSavedPosts();
+  } = useUserSavedPosts({ enabled: isSaved });
 
   /*  NORMALIZE LIKED POSTS */
   const likedPosts: FeedPost[] = useMemo(() => {
@@ -244,11 +244,13 @@ export default function PostViewerScreen() {
     setModalVisible(true);
   }, [isError, error]);
 
-  const postNotFound = !isLoading && posts.length > 0 && targetIndex === -1;
+  // A notification can reference a removed post or an interaction ID. Treat
+  // an empty terminal response as a completed lookup instead of spinning.
+  const postNotFound = !isLoading && (posts.length === 0 || targetIndex === -1);
 
   /* ================= LOADING ================= */
 
-  if (isLoading || (!postNotFound && !isReady)) {
+  if (isLoading) {
     return (
       <View flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size={40} color={colors.primary} />

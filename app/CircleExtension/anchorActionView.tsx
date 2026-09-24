@@ -71,8 +71,6 @@ export default function AnchorActionView() {
         anchorColors={colors}
         onActionSelected={handleActionSelected}
         isExpired={expired === "1"}
-        anchorId={id}
-        circleId={circleId}
       />
       {MembershipModal}
     </View>

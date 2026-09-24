@@ -78,10 +78,10 @@ function mergeCategories(
 ): DiscoverCategory[] {
   const map = new Map<string, DiscoverCategory>();
 
-  local.forEach((c) => map.set(c.slug, c));
+  local.forEach((c) => map.set(c.slug ?? c.id ?? c.label, c));
 
   backend.forEach((b) => {
-    map.set(b.slug, b);
+    map.set(b.slug ?? b.id ?? b.label, b);
   });
 
   return Array.from(map.values()).sort(

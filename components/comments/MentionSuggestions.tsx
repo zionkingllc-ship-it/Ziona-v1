@@ -32,12 +32,13 @@ export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: 
     }
 
     setIsLoading(true);
+    const userId = currentUserId;
     const query = searchText.toLowerCase().trim();
 
     async function loadConnections() {
       const [followersRes, followingRes] = await Promise.all([
-        getFollowers(currentUserId),
-        getFollowing(currentUserId),
+        getFollowers(userId),
+        getFollowing(userId),
       ]);
 
       const merged = new Map<string, MentionUser>();

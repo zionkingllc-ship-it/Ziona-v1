@@ -161,7 +161,7 @@ export default function ChangePasswordOtp() {
 
         <YStack alignItems="center" marginTop="$6">
           <Text fontSize={16} fontFamily="$body" color={colors.subHeader}>
-            Didn't receive a code?
+            Didn&apos;t receive a code?
           </Text>
           {timer > 0 ? (
             <Text

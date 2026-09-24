@@ -1,7 +1,8 @@
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
-import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
+import { getErrorMessage } from "@/utils/error";
 
 type GoogleAuthResponse = {
   user?: {
@@ -18,22 +19,26 @@ export const useGoogleAuth = () => {
 
   const initGoogleSignIn = () => {
     const { GoogleSignin } = require("@react-native-google-signin/google-signin");
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-    const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+    const googleConfig = Constants.expoConfig?.extra?.google;
+    const webClientId =
+      googleConfig?.webClientId || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    const iosClientId =
+      googleConfig?.iosClientId || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
     console.log("[GoogleAuth] configure", {
       platform: Platform.OS,
       webClientId,
       iosClientId,
-      androidClientId,
       hasWebClientId: !!webClientId,
       hasIosClientId: !!iosClientId,
-      hasAndroidClientId: !!androidClientId,
     });
+
+    if (!webClientId) {
+      throw new Error("Google Sign-In is not configured: missing web client ID");
+    }
+
     GoogleSignin.configure({
       webClientId,
       iosClientId,
-      androidClientId,
     });
     return GoogleSignin;
   };
@@ -44,7 +49,7 @@ export const useGoogleAuth = () => {
 
       if (Platform.OS === "android") {
         console.log("[GoogleAuth] hasPlayServices check");
-        await GoogleSignin.hasPlayServices();
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
         console.log("[GoogleAuth] hasPlayServices ok");
       }
 

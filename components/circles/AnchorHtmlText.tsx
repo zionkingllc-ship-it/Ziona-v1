@@ -58,7 +58,7 @@ export default function AnchorHtmlText({
       baseStyle={{ ...baseTextStyle, ...baseStyle }}
       tagsStyles={tagsStyle}
       enableExperimentalBRCollapsing
-      numberOfLines={numberOfLines}
+      defaultTextProps={{ numberOfLines }}
     />
   );
 }

@@ -170,9 +170,9 @@ export default function ActivityScreen() {
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
-      const path = resolveDestinationFromNotification(item);
-      if (path !== "/notifications") {
-        router.push(path as any);
+      const href = resolveDestinationFromNotification(item);
+      if (href) {
+        router.push(href as any);
       }
     },
     [markAsRead, router],

@@ -52,6 +52,7 @@ async function setupAndroidChannel() {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: "#742092",
+    sound: "default",
   });
 }
 
@@ -118,12 +119,13 @@ async function syncBadgeFromServer() {
 let lastNavPath = "";
 let lastNavTime = 0;
 
-function pushOnce(path: string) {
+function pushOnce(href: { pathname: string; params?: Record<string, string> }) {
+  const key = JSON.stringify(href);
   const now = Date.now();
-  if (path === lastNavPath && now - lastNavTime < 2000) return;
-  lastNavPath = path;
+  if (key === lastNavPath && now - lastNavTime < 2000) return;
+  lastNavPath = key;
   lastNavTime = now;
-  router.push(path as any);
+  router.push(href as any);
 }
 
 // Atomic storage helper: read, compare, write in one async operation
@@ -155,7 +157,8 @@ async function tryMarkHandled(id: string): Promise<boolean> {
 // Clear stored ID after successful navigation (prevents stale re-trigger)
 async function clearHandled() {
   try {
-    await storage.delete(LAST_HANDLED_NOTIF_KEY);
+    await Notifications.clearLastNotificationResponseAsync();
+    await storage.remove(LAST_HANDLED_NOTIF_KEY);
     handledNotificationIds.clear();
     console.log("[Notifications] cleared handled ID");
   } catch { /* ignore */ }
@@ -241,7 +244,8 @@ export default function NotificationProvider({ children }: { children: React.Rea
     if (!navReady || !isAuthenticated) return;
 
     const handleData = (data: Record<string, unknown>) => {
-      pushOnce(resolveNotificationDestination(data));
+      const href = resolveNotificationDestination(data);
+      if (href) pushOnce(href);
       // Clear stored ID after successful navigation so next launch doesn't re-trigger
       clearHandled();
     };

@@ -69,7 +69,7 @@ export async function getBibleBooks(): Promise<BibleBook[]> {
 ========================= */
 
 export async function getBibleChapters(book: BibleBook): Promise<number[]> {
-  return Array.from({ length: book.chapters }, (_, i) => i + 1);
+  return Array.from({ length: book.chapters ?? 0 }, (_, i) => i + 1);
 }
 
 /* =========================

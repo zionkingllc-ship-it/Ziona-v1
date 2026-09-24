@@ -89,7 +89,7 @@ const CircleFeedAnchorSection = ({ circle, anchorFilter, onFilterChange }: Circl
           ))}
         </View>
       )}
-      <AnchorCard anchor={null} isEmpty={true} />
+      <AnchorCard isEmpty={true} />
     </YStack>
   );
 };

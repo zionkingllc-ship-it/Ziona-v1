@@ -33,6 +33,7 @@ type AnchorFooterProps = {
   anchorColors?: string;
   anchorImage?: string;
   anchorVideo?: string;
+  anchorBackgroundImage?: string;
 };
 
 export default function AnchorFooter({
@@ -49,6 +50,7 @@ export default function AnchorFooter({
   anchorColors,
   anchorImage,
   anchorVideo,
+  anchorBackgroundImage,
   initialLiked = false,
   initialCount = 0,
 }: AnchorFooterProps) {
@@ -202,6 +204,7 @@ export default function AnchorFooter({
         anchorId={anchorId}
         anchorImage={anchorImage}
         anchorVideo={anchorVideo}
+        anchorBackgroundImage={anchorBackgroundImage}
         anchorColors={anchorColors}
         expiresAt={expiresAt}
         source={source}

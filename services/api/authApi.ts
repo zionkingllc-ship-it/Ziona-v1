@@ -1,5 +1,6 @@
 import { User } from "@/types";
 import { api } from "./client";
+import axios from "axios";
 import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 /* ---------------- DEBUG HELPERS ---------------- */
@@ -262,11 +263,14 @@ export const authApi = {
     }
   },
 
-  signOut: async () => {
+  signOut: async (accessToken: string) => {
     try {
       log("signOut called");
 
-      const response = await api.post("/auth/logout");
+      const response = await axios.post(`${api.defaults.baseURL}/auth/logout`, undefined, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000,
+      });
 
       log("signOut response:", response?.data);
     } catch (err: any) {

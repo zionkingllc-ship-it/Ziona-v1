@@ -12,8 +12,19 @@ import { normalizePost } from "@/utils/feed/normalizePost";
 export async function runPostUpload(queryClient: QueryClient) {
   const store = useUploadStore.getState();
 
-  store.reset();
-  store.setStatus("uploading");
+  if (store.status === "uploading" || store.status === "publishing") return;
+  const uploadId = store.startUpload();
+  const isCurrent = () => useUploadStore.getState().uploadId === uploadId;
+  const assertActive = () => {
+    if (!isCurrent() || useUploadStore.getState().cancelRequested) {
+      throw new Error("Upload cancelled");
+    }
+  };
+  const beforePublish = () => {
+    assertActive();
+    // Once the create request starts, the server may commit it even if we disconnect.
+    useUploadStore.getState().setStatus("publishing");
+  };
 
   const draft = useCreatePostStore.getState().draft;
 
@@ -29,13 +40,14 @@ export async function runPostUpload(queryClient: QueryClient) {
   let progressTimer: ReturnType<typeof setInterval> | null = null;
 
   const onProgress = (percent: number) => {
-    if (useUploadStore.getState().cancelRequested) return;
+    if (!isCurrent() || useUploadStore.getState().cancelRequested) return;
     useUploadStore.getState().setProgress(percent);
   };
 
   // Non-media posts publish without a progress callback, so simulate one.
   if (draft.type !== "MEDIA") {
     progressTimer = setInterval(() => {
+      if (!isCurrent()) return;
       const current = useUploadStore.getState().progress;
       if (current < 90) useUploadStore.getState().setProgress(current + 5);
     }, 300);
@@ -46,36 +58,19 @@ export async function runPostUpload(queryClient: QueryClient) {
   };
 
   try {
+    if (draft.type !== "MEDIA") beforePublish();
     const result =
       draft.type === "MEDIA"
-        ? await publishMediaPost(draft, queryClient, onProgress)
+        ? await publishMediaPost(draft, queryClient, onProgress, undefined, { assertActive, beforePublish })
         : await publishDraftPost(draft, queryClient);
 
     stopProgress();
 
+    if (!isCurrent()) return;
+
     if (useUploadStore.getState().cancelRequested) {
       useUploadStore.getState().setStatus("cancelled");
       return;
-    }
-
-    useUploadStore.getState().setProgress(100);
-
-    if (result?.post?.id) {
-      useUploadStore.getState().setPostId(result.post.id);
-
-      const normalized = normalizePost(result.post);
-      if (normalized) {
-        queryClient.setQueryData(["post", result.post.id], normalized);
-      }
-
-      movePostToFeedTop(queryClient, result.post.id, result.post);
-    }
-
-    useUploadStore.getState().setStatus("completed");
-
-    if (useUploadStore.getState().exited) {
-      useCreatePostStore.getState().resetDraft();
-      notifyUploadComplete();
     }
 
     const refreshFeed = async () => {
@@ -92,9 +87,31 @@ export async function runPostUpload(queryClient: QueryClient) {
       }
     };
 
-    void refreshFeed();
+    useUploadStore.getState().setProgress(100);
+
+    if (result?.post?.id) {
+      useUploadStore.getState().setPostId(result.post.id);
+
+      const normalized = normalizePost(result.post);
+      if (normalized) {
+        queryClient.setQueryData(["post", result.post.id], normalized);
+      }
+
+      movePostToFeedTop(queryClient, result.post.id, result.post);
+    }
+
+    await refreshFeed();
+
+    useUploadStore.getState().setStatus("completed");
+
+    if (useUploadStore.getState().exited) {
+      useCreatePostStore.getState().resetDraft();
+      notifyUploadComplete();
+    }
   } catch (error: any) {
     stopProgress();
+
+    if (!isCurrent()) return;
 
     if (useUploadStore.getState().cancelRequested) {
       useUploadStore.getState().setStatus("cancelled");

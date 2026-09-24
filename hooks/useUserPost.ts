@@ -19,7 +19,7 @@ type UserPostsResponse = {
    HOOK
 ========================= */
 
-export function useUserPosts(overrideUserId?: string) {
+export function useUserPosts(overrideUserId?: string, options: { enabled?: boolean } = {}) {
   const authUser = useAuthStore((state) => state.user);
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
 
@@ -32,7 +32,7 @@ export function useUserPosts(overrideUserId?: string) {
     string | undefined
   >({
     queryKey: ["userPosts", userId],
-    enabled: !!userId && !isBootstrapping,
+    enabled: !!userId && !isBootstrapping && options.enabled !== false,
 
     queryFn: async ({ pageParam }) => {
       if (!userId) {

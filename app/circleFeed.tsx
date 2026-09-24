@@ -260,7 +260,7 @@ export default function CircleFeedScreen() {
     useLocalSearchParams<{ id: string; source?: string; _name?: string; _desc?: string; _image?: string; _members?: string; _avatars?: string }>();
 
   const router = useRouter();
-  const circleId = id || "1";
+  const circleId = id || "";
 
   const [filterSort, setFilterSort] = useState<"Trending" | "New">("New");
   const [filterView, setFilterView] = useState<"All" | "My post">("All");
@@ -295,20 +295,22 @@ export default function CircleFeedScreen() {
       bannerImage: feed.bannerImage || _image || "",
       profileImage: feed.profileImage || _image || "",
       memberCount: feed.memberCount || Number(_members) || 0,
-      memberAvatars: feed.memberAvatars.length > 0 ? feed.memberAvatars : fallbackAvatars,
+      memberAvatars: feed.memberAvatars?.length ? feed.memberAvatars : fallbackAvatars,
     };
   }, [data, _name, _desc, _image, _members, fallbackAvatars]);
 
   const posts: CirclePost[] = circle.posts;
 
   const hasRecentAnchors = useMemo(() => {
-    return hasAnchorInLast6Days(circle.pastAnchors, circle.activeAnchor);
+    return hasAnchorInLast6Days(circle.pastAnchors ?? [], circle.activeAnchor);
   }, [circle.pastAnchors, circle.activeAnchor]);
+
+  const [anchorFilter, setAnchorFilter] = useState("Today");
 
   const availableOptions = useMemo(() => {
     return anchorFilterOptions.filter((opt) => {
       const daysAgo = getAnchorDaysAgo(opt);
-      return doesAnchorExistForDaysAgo(circle.pastAnchors, daysAgo);
+      return doesAnchorExistForDaysAgo(circle.pastAnchors ?? [], daysAgo);
     });
   }, [circle.pastAnchors]);
 
@@ -355,7 +357,7 @@ export default function CircleFeedScreen() {
   const [showFixedAnchor, setShowFixedAnchor] = useState(false);
   const anchorStickyThreshold = useRef(0);
   const [anchorSectionHeight, setAnchorSectionHeight] = useState(0);
-  const [anchorFilter, setAnchorFilter] = useState("Today");
+
   const [showAnchorDropdown, setShowAnchorDropdown] = useState(false);
   const [anchorCardVisible, setAnchorCardVisible] = useState(false);
   const lastAnchorRef = useRef<{
@@ -428,7 +430,7 @@ export default function CircleFeedScreen() {
     try {
       const result = await joinMutation.mutateAsync(circleId);
       const payload = result?.joinCircle ?? result;
-      if (payload?.success === false) {
+      if (payload?.success === false && !payload?.circle?.isSubscribed) {
         setJoinErrorTitle("Unable to join");
         setJoinErrorMessage(getErrorMessage(payload?.error) || "Something went wrong. Please try again.");
         setJoinErrorVisible(true);
@@ -548,6 +550,18 @@ export default function CircleFeedScreen() {
       </Text>
     </YStack>
   );
+
+  if (!circleId) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
+          <Text fontFamily="$body" fontSize={16} color={colors.gray} textAlign="center">
+            This circle is no longer available.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -820,7 +834,7 @@ export default function CircleFeedScreen() {
             </Text>
 
             <Text fontFamily="$body" fontSize={13} fontWeight="400" color="#4E4252" lineHeight={18} marginBottom={24} textAlign="center">
-              Leaving means you'll no longer see daily anchors, shared reflections, and discussions from this faith community. You're always welcome back anytime.
+              Leaving means you&apos;ll no longer see daily anchors, shared reflections, and discussions from this faith community. You&apos;re always welcome back anytime.
             </Text>
 
             <YStack gap={16} alignItems="center">

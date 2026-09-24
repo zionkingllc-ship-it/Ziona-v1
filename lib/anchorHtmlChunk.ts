@@ -19,25 +19,26 @@ const BLOCK_TAGS = new Set([
   "hr",
 ]);
 
+const CHARS_PER_LINE = 18;
+const MAX_LINES = 15;
+const MAX_CHARS = CHARS_PER_LINE * MAX_LINES;
+
 export function isHtml(text?: string): boolean {
   return !!text && /<[a-zA-Z][^>]*>/.test(text);
 }
 
-function calculateChunkSize(textLength: number): number {
-  if (textLength <= 400) return 400;
-  if (textLength <= 600) return 500;
-  if (textLength <= 900) return 700;
-  return 800;
+/** Estimates rendered line count for a plain text string. */
+function estimateLines(characterCount: number): number {
+  return Math.ceil(characterCount / CHARS_PER_LINE);
 }
 
-/** Splits plain text into character-bounded chunks (legacy behavior). */
+/** Splits plain text into line-bounded chunks. */
 export function chunkText(text: string): string[] {
-  const chunkSize = calculateChunkSize(text.length);
   const chunks: string[] = [];
   let remaining = text;
-  while (remaining.length > chunkSize) {
-    chunks.push(remaining.slice(0, chunkSize));
-    remaining = remaining.slice(chunkSize);
+  while (remaining.length > MAX_CHARS) {
+    chunks.push(remaining.slice(0, MAX_CHARS));
+    remaining = remaining.slice(MAX_CHARS);
   }
   if (remaining.length > 0) chunks.push(remaining);
   return chunks;
@@ -47,12 +48,17 @@ function plainLength(html: string): number {
   return html.replace(/<[^>]*>/g, "").length;
 }
 
+/** Strips <img> and <video> tags from HTML so media doesn't duplicate when a dedicated image/video slide exists. */
+export function stripMediaFromHtml(html: string): string {
+  return html.replace(/<img\b[^>]*\/?>/gi, "").replace(/<video\b[^>]*>[\s\S]*?<\/video>/gi, "");
+}
+
 /**
  * Splits an HTML fragment into slide-sized chunks at top-level block
  * boundaries, keeping tags intact. Consecutive blocks are merged until the
- * accumulated plain-text length exceeds `maxChunkChars`.
+ * estimated rendered line count exceeds MAX_LINES.
  */
-export function chunkHtmlByBlocks(html: string, maxChunkChars = 700): string[] {
+export function chunkHtmlByBlocks(html: string): string[] {
   if (!isHtml(html)) return [html];
 
   const n = html.length;
@@ -103,17 +109,19 @@ export function chunkHtmlByBlocks(html: string, maxChunkChars = 700): string[] {
 
   const chunks: string[] = [];
   let acc = "";
-  let accLen = 0;
+  let accLines = 0;
 
   for (const block of rawBlocks) {
-    const len = plainLength(block);
-    if (accLen > 0 && accLen + len > maxChunkChars) {
+    const blockLines = estimateLines(plainLength(block));
+    const spacingLines = acc.length > 0 ? 0.5 : 0;
+
+    if (acc.length > 0 && accLines + spacingLines + blockLines > MAX_LINES) {
       chunks.push(acc);
       acc = block;
-      accLen = len;
+      accLines = blockLines;
     } else {
       acc += block;
-      accLen += len;
+      accLines += spacingLines + blockLines;
     }
   }
 

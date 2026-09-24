@@ -10,7 +10,7 @@ import { useUploadStore } from "@/store/uploadStore";
 import { shortenBookName } from "@/utils/bibleNames";
 
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView } from "react-native";
 import { Image } from "expo-image";
 import { AlertCircle, Play } from "@tamagui/lucide-icons";
@@ -57,6 +57,7 @@ export default function UploadProgressScreen() {
   const postId = useUploadStore((s) => s.postId);
 
   const [videoThumb, setVideoThumb] = useState<string | null>(null);
+  const uploadStartedRef = useRef(false);
 
   const firstItem =
     draft?.type === "MEDIA" ? draft.media.items[0] : undefined;
@@ -81,7 +82,8 @@ export default function UploadProgressScreen() {
 
   const cardColor = draft?.category?.bgColor ?? "#E6E2C5";
 
-  const uploading = status === "uploading";
+  const publishing = status === "publishing";
+  const uploading = status === "uploading" || publishing;
   const completed = status === "completed";
   const failed = status === "failed";
 
@@ -90,6 +92,7 @@ export default function UploadProgressScreen() {
   ========================= */
 
   useEffect(() => {
+    uploadStartedRef.current = true;
     useUploadStore.getState().setExited(false);
 
     if (firstItem?.type === "VIDEO") {
@@ -100,7 +103,7 @@ export default function UploadProgressScreen() {
 
     return () => {
       const s = useUploadStore.getState();
-      if (s.status === "uploading") s.setExited(true);
+      if (s.status === "uploading" || s.status === "publishing") s.setExited(true);
     };
   }, []);
 
@@ -109,6 +112,8 @@ export default function UploadProgressScreen() {
   ========================= */
 
   useEffect(() => {
+    if (!uploadStartedRef.current) return;
+
     if (status === "completed") {
       resetDraft();
       emitAppEvent({
@@ -136,7 +141,6 @@ export default function UploadProgressScreen() {
 
   function handleCancel() {
     useUploadStore.getState().requestCancel();
-    useUploadStore.getState().setStatus("cancelled");
   }
 
   function handleRetry() {
@@ -161,7 +165,7 @@ export default function UploadProgressScreen() {
           }}
         >
           <Text color={colors.white} fontSize={fs(15)} fontFamily="$body">
-            Uploading...
+            {publishing ? "Publishing..." : "Uploading..."}
           </Text>
           <Text
             color={colors.white}
@@ -364,12 +368,12 @@ export default function UploadProgressScreen() {
 
               <Pressable
                 onPress={handleCancel}
-                disabled={failed}
+                disabled={status !== "uploading"}
                 style={{
                   marginTop: hp(2),
                   paddingVertical: hp(1),
                   alignItems: "center",
-                  opacity: failed ? 0.6 : 1,
+                  opacity: status !== "uploading" ? 0.6 : 1,
                 }}
               >
                 <Text
@@ -402,12 +406,12 @@ export default function UploadProgressScreen() {
 
           <Pressable
             onPress={handleCancel}
-            disabled={failed}
+            disabled={status !== "uploading"}
             style={{
               marginTop: hp(2),
               paddingVertical: hp(1),
               alignItems: "center",
-              opacity: failed ? 0.6 : 1,
+              opacity: status !== "uploading" ? 0.6 : 1,
             }}
           >
             <Text

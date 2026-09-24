@@ -13,6 +13,7 @@ export type AnchorRefData = {
   anchorImage?: string;
   anchorVideo?: string;
   backgroundColors?: string;
+  backgroundImage?: string;
 };
 
 const ANCHOR_REF_PREFIX = "anchorRef_";

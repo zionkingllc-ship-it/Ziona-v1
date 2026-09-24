@@ -59,6 +59,7 @@ const VerseRow = memo(
     );
   },
 );
+VerseRow.displayName = "VerseRow";
 
 interface Props {
   visible: boolean;
@@ -394,7 +395,7 @@ export default function BibleSelectorModal({
         {!book && (
           <FlatList
             data={filteredBooks}
-            keyExtractor={(item) => item.slug}
+            keyExtractor={(item) => item.slug ?? item.id ?? item.name}
             renderItem={({ item }) => (
               <Pressable style={styles.row} onPress={() => { setSearch(""); setBook(item); }}>
                 <Text>{shortenBookName(item.name)}</Text>

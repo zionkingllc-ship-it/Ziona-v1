@@ -159,7 +159,7 @@ export async function searchUsers(query: string): Promise<SearchUsersResponse> {
   try {
     data = await graphqlRequest(gql, { search: query });
   } catch (err) {
-    console.error("[searchUsers] graphqlRequest threw:", err?.message ?? err, "stack:", err?.stack);
+    console.error("[searchUsers] graphqlRequest threw:", err instanceof Error ? err.message : err, "stack:", err instanceof Error ? err.stack : undefined);
     throw err;
   }
 

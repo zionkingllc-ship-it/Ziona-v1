@@ -37,7 +37,7 @@ export function useRequireCircleMembership(circleId: string, isJoined: boolean) 
 
   const handleLogin = () => {
     setShowAuthModal(false);
-    router.push("/(auth)/login/");
+    router.push("/(auth)/login");
   };
 
   const handleJoin = async () => {
@@ -46,7 +46,7 @@ export function useRequireCircleMembership(circleId: string, isJoined: boolean) 
     try {
       const result = await joinMutation.mutateAsync(circleId);
       const payload = result?.joinCircle ?? result;
-      if (payload?.success === false) {
+      if (payload?.success === false && !payload?.circle?.isSubscribed) {
         setShowJoinModal(false);
         return;
       }

@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function useCreateComment() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
 
   return useMutation({
     mutationFn: ({
@@ -23,14 +22,19 @@ export function useCreateComment() {
 
       const previousComments = queryClient.getQueryData(["postComments", postId]);
 
-      if (!user) return { previousComments };
+      const user = useAuthStore.getState().user;
+      if (!user) {
+        console.log("[useCreateComment] no user in store, skipping optimistic");
+        return { previousComments };
+      }
 
-      const tempId = `temp-${crypto.randomUUID()}`;
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       patchCommentCountAcrossQueries(queryClient, { postId, delta: 1 });
 
       const optimisticComment = {
         id: tempId,
+        postId,
         text,
         createdAt: new Date().toISOString(),
         parentCommentId,
@@ -51,7 +55,7 @@ export function useCreateComment() {
 
       if (parentCommentId) {
         queryClient.setQueryData(["postComments", postId], (old: any) => {
-          if (!old) return old;
+          if (!old || !Array.isArray(old.pages) || old.pages.length === 0) return old;
           return {
             ...old,
             pages: old.pages.map((page: any) => ({
@@ -73,7 +77,19 @@ export function useCreateComment() {
         });
       } else {
         queryClient.setQueryData(["postComments", postId], (old: any) => {
-          if (!old) return old;
+          if (!old || !Array.isArray(old.pages) || old.pages.length === 0) {
+            return {
+              pages: [
+                {
+                  comments: [optimisticComment],
+                  totalCount: 1,
+                  hasMore: false,
+                  nextCursor: undefined,
+                },
+              ],
+              pageParams: [undefined],
+            };
+          }
           return {
             ...old,
             pages: old.pages.map((page: any, index: number) =>
@@ -85,38 +101,77 @@ export function useCreateComment() {
         });
       }
 
-      return { previousComments, tempId };
+      return { previousComments, tempId, parentCommentId };
     },
 
     onSuccess: (response: any, { postId, parentCommentId }, context) => {
       const hasId = !!response?.id;
       const hasTempId = !!context?.tempId;
+      const effectiveParentId = parentCommentId ?? context?.parentCommentId;
 
       if (hasId && hasTempId) {
         const tempId = context.tempId;
-        queryClient.setQueryData(["postComments", postId], (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page: any) => ({
-              ...page,
-              comments: page.comments.map((c: any) =>
-                c.id === tempId ? { ...c, ...response, id: response.id, tempId } : c
-              ),
-            })),
-          };
-        });
-      } else if (!hasId && hasTempId) {
-      } else if (hasId && !hasTempId) {
-        queryClient.setQueryData(["postComments", postId], (old: any) => {
-          if (!old) return old;
-          if (parentCommentId) {
+        if (effectiveParentId) {
+          queryClient.setQueryData(["postComments", postId], (old: any) => {
+            if (!old || !Array.isArray(old.pages)) return old;
             return {
               ...old,
               pages: old.pages.map((page: any) => ({
                 ...page,
-                comments: page.comments.map((comment: Comment) =>
-                  comment.id === parentCommentId
+                comments: (page.comments ?? []).map((c: any) =>
+                  c.id === effectiveParentId
+                    ? {
+                        ...c,
+                        replies: (c.replies || []).map((r: any) =>
+                          r.id === tempId ? { ...r, ...response, id: response.id } : r
+                        ),
+                      }
+                    : c
+                ),
+              })),
+            };
+          });
+        } else {
+          queryClient.setQueryData(["postComments", postId], (old: any) => {
+            if (!old || !Array.isArray(old.pages)) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: any) => ({
+                ...page,
+                comments: (page.comments ?? []).map((c: any) =>
+                  c.id === tempId ? { ...c, ...response, id: response.id } : c
+                ),
+              })),
+            };
+          });
+        }
+      } else if (!hasId && hasTempId) {
+        // keep optimistic, will be replaced on invalidate if needed
+      } else if (hasId && !hasTempId) {
+        queryClient.setQueryData(["postComments", postId], (old: any) => {
+          if (!old || !Array.isArray(old.pages) || old.pages.length === 0) {
+            if (effectiveParentId) {
+              return old;
+            }
+            return {
+              pages: [
+                {
+                  comments: [response],
+                  totalCount: 1,
+                  hasMore: false,
+                  nextCursor: undefined,
+                },
+              ],
+              pageParams: [undefined],
+            };
+          }
+          if (effectiveParentId) {
+            return {
+              ...old,
+              pages: old.pages.map((page: any) => ({
+                ...page,
+                comments: (page.comments ?? []).map((comment: Comment) =>
+                  comment.id === effectiveParentId
                     ? {
                         ...comment,
                         replies: [...(comment.replies || []), { ...response, tempId: context?.tempId }],
@@ -134,7 +189,7 @@ export function useCreateComment() {
             ...old,
             pages: old.pages.map((page: any, index: number) =>
               index === 0
-                ? { ...page, comments: [response, ...page.comments] }
+                ? { ...page, comments: [response, ...(page.comments ?? [])] }
                 : page
             ),
           };

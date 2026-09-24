@@ -203,8 +203,9 @@ export default function DiscoverCategoryScreen() {
                     size={width / 3 - 9}
                     onPress={() => {
                       router.push({
-                        pathname: `/viewer/${item.id}`,
+                        pathname: "/viewer/[postId]",
                         params: {
+                          postId: item.id,
                           categoryId,
                           slug,
                           filter,

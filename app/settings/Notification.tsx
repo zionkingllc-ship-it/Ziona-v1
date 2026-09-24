@@ -170,7 +170,7 @@ export default function NotificationScreen() {
                 onChange={(v: boolean) => toggle("interactionNewFollower", v)}
               />
               <Text fontFamily="$body" fontSize={11} fontWeight="400" color={colors.gray} marginTop={8} lineHeight={16}>
-                Get notified when your friends (people you follow who follow you back) comment on a friend's post that you've liked or commented on.
+                Get notified when your friends (people you follow who follow you back) comment on a friend&apos;s post that you&apos;ve liked or commented on.
               </Text>
             </View>
           </YStack>

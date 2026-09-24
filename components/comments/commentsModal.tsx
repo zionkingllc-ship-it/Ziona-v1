@@ -21,7 +21,6 @@ import OtherReportModal from "@/components/ui/modals/OtherReportModal";
 import SuccessModal from "@/components/ui/modals/successModal";
 import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
@@ -30,17 +29,11 @@ import {
   InteractionManager,
   Keyboard,
   LayoutChangeEvent,
-  Platform,
   Pressable,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 
 const { height } = Dimensions.get("window");
@@ -70,7 +63,6 @@ type MenuTarget =
   | null;
 
 export function CommentsSheet({ visible, onClose, postId }: Props) {
-  const insets = useSafeAreaInsets();
   const { requireAuth, AuthModal } = useRequireAuth();
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const goToProfile = useCallback((userId: string) => {
@@ -91,12 +83,31 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [reportSuccessVisible, setReportSuccessVisible] = useState(false);
   const [reportFailedVisible, setReportFailedVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MenuTarget>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const queryClient = useQueryClient();
 
   const inputRef = useRef<TextInput>(null);
 
-  const keyboardHeight = useSharedValue(0);
+  useEffect(() => {
+    const showEvents = [
+      Keyboard.addListener("keyboardDidShow", (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      }),
+      Keyboard.addListener("keyboardWillShow", (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      }),
+    ];
+    const hideEvents = [
+      Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0)),
+      Keyboard.addListener("keyboardWillHide", () => setKeyboardHeight(0)),
+    ];
+
+    return () => {
+      showEvents.forEach((subscription) => subscription.remove());
+      hideEvents.forEach((subscription) => subscription.remove());
+    };
+  }, []);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePostComments(postId, visible);
   const createCommentMutation = useCreateComment();
@@ -173,26 +184,6 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     });
   }, [inputValue]);
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      keyboardHeight.value = withTiming(e.endCoordinates.height, { duration: 250 });
-    });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      keyboardHeight.value = withTiming(0, { duration: 250 });
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom:
-      Platform.OS === "android"
-        ? keyboardHeight.value
-        : Math.max(0, keyboardHeight.value - insets.bottom),
-  }));
-
   const toggleLike = (commentId: string, isLiked?: boolean) => {
     if (toggleLikeMutation.isPending) return;
     let liked = isLiked;
@@ -225,23 +216,36 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     setInputValue("");
   };
 
-  const addComment = () => {
-    if (!inputValue.trim()) return;
-
+  const addComment = useCallback(() => {
     const text = inputValue.trim();
+    if (!text) return;
+
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+
+    const parentId = replyingTo.commentId;
+    const prevReplying = { ...replyingTo };
     setInputValue("");
     setReplyingTo({ commentId: null, username: null });
-    // Keep focus for continued typing
+    setMentionSearch(null);
 
     createCommentMutation.mutate(
-      { postId, text, parentCommentId: replyingTo.commentId || undefined },
+      { postId, text, parentCommentId: parentId || undefined },
       {
-        onError: () => {
+        onSuccess: (res) => {
+          console.log("[CommentsSheet] createComment success", res);
+        },
+        onError: (err: any) => {
+          console.log("[CommentsSheet] createComment error", err?.message, err);
           setInputValue(text);
+          setReplyingTo(prevReplying);
+          requestAnimationFrame(() => {
+            inputRef.current?.focus();
+          });
         },
       },
     );
-  };
+  }, [inputValue, replyingTo, postId, createCommentMutation]);
 
   const onBottomLayout = (e: LayoutChangeEvent) => {
     setBottomHeight(e.nativeEvent.layout.height);
@@ -288,49 +292,67 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
 
   return (
     <BaseModal visible={visible} onClose={onClose} alignBottom>
-      <Animated.View
-        style={[
-          { height: height * 0.7, backgroundColor: "white", borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: "hidden" },
-          sheetAnimatedStyle,
-        ]}
+      <View
+        onTouchStart={(event) => event.stopPropagation()}
+        style={{
+          height: height * 0.7,
+          backgroundColor: "white",
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+          overflow: "visible",
+          zIndex: 100000,
+          elevation: 100000,
+        }}
       >
-        <YStack padding="$4" borderBottomWidth={1} borderColor="#eee" alignItems="center">
-          <Text fontFamily={"$body"} fontWeight="600" fontSize="$4">
-            Comments
-          </Text>
-        </YStack>
-
         <View style={{ flex: 1 }}>
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, paddingBottom: bottomHeight }}
-            renderItem={({ item }) => (
-              <CommentItem
-                comment={item}
-                mentionMap={mentionMap}
-                expandedComments={expandedComments}
-                setExpandedComments={setExpandedComments}
-                expandedReplies={expandedReplies}
-                toggleReplies={toggleReplies}
-                failedAvatarUrls={failedAvatarUrls}
-                setFailedAvatarUrls={setFailedAvatarUrls}
-                toggleLike={toggleLike}
-                toggleReplyLike={toggleReplyLike}
-                startReply={startReply}
-                toggleLikeMutation={toggleLikeMutation}
-                onViewProfile={goToProfile}
-                onOpenMenu={openMenu}
-              />
-            )}
-            onEndReached={() => hasNextPage && fetchNextPage()}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ padding: 10 }} /> : null}
-          />
+          <YStack padding="$4" borderBottomWidth={1} borderColor="#eee" alignItems="center">
+            <Text fontFamily={"$body"} fontWeight="600" fontSize="$4">
+              Comments
+            </Text>
+          </YStack>
+
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              keyboardDismissMode="none"
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={{ padding: 16, paddingBottom: bottomHeight }}
+              renderItem={({ item }) => (
+                <CommentItem
+                  comment={item}
+                  mentionMap={mentionMap}
+                  expandedComments={expandedComments}
+                  setExpandedComments={setExpandedComments}
+                  expandedReplies={expandedReplies}
+                  toggleReplies={toggleReplies}
+                  failedAvatarUrls={failedAvatarUrls}
+                  setFailedAvatarUrls={setFailedAvatarUrls}
+                  toggleLike={toggleLike}
+                  toggleReplyLike={toggleReplyLike}
+                  startReply={startReply}
+                  toggleLikeMutation={toggleLikeMutation}
+                  onViewProfile={goToProfile}
+                  onOpenMenu={openMenu}
+                />
+              )}
+              onEndReached={() => hasNextPage && fetchNextPage()}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ padding: 10 }} /> : null}
+            />
+          </View>
         </View>
 
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: keyboardHeight - 27,
+            zIndex: 10,
+            elevation: 10,
+          }}
+        >
         <YStack borderTopWidth={1} borderColor="#eee" onLayout={onBottomLayout}>
           {replyingTo.username && (
             <XStack paddingHorizontal="$3" paddingVertical="$2" backgroundColor="#f5f5f5" gap="$2" alignItems="center">
@@ -349,44 +371,50 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
             />
           )}
 
-          <XStack
-            padding="$1"
-            gap="$2"
-            alignItems="center"
-            backgroundColor="#FAF9FA"
-            borderWidth={1}
-            borderColor="#EEEBEF"
-            marginHorizontal={10}
-            paddingHorizontal={14}
-            borderRadius={8}
-            marginTop={10}
-            marginBottom={isFocused ? 10 : 20}
-            minHeight={43}
-          >
-            <TextInput
-              ref={inputRef}
-              multiline
-              placeholder={replyingTo.username ? `Reply to @${replyingTo.username}...` : "Join the conversation..."}
-              placeholderTextColor="#836F8B"
-              value={inputValue}
-              onChangeText={handleTextChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              maxLength={500}
-              blurOnSubmit={false}
-              style={{ flex: 1, fontFamily: "$body" }}
-            />
-            <TouchableOpacity onPress={addComment} disabled={createCommentMutation.isPending || !inputValue.trim()}>
-              <Image
-                source={require("@/assets/images/sendIcon.png")}
-                width={30}
-                height={30}
-                opacity={createCommentMutation.isPending || !inputValue.trim() ? 0.5 : 1}
+          <View style={{ marginHorizontal: 10, marginTop: 10, marginBottom: isFocused ? 10 : 20 }}>
+            <XStack
+              padding="$1"
+              gap="$2"
+              alignItems="center"
+              backgroundColor="#FAF9FA"
+              borderWidth={1}
+              borderColor="#EEEBEF"
+              paddingHorizontal={14}
+              borderRadius={8}
+              minHeight={43}
+            >
+              <TextInput
+                ref={inputRef}
+                multiline
+                placeholder={replyingTo.username ? `Reply to @${replyingTo.username}...` : "Join the conversation..."}
+                placeholderTextColor="#836F8B"
+                value={inputValue}
+                onChangeText={handleTextChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                maxLength={500}
+                blurOnSubmit={false}
+                style={{ flex: 1, fontFamily: "$body" }}
               />
-            </TouchableOpacity>
-          </XStack>
+              <Pressable
+                onPress={addComment}
+                disabled={createCommentMutation.isPending || !inputValue.trim()}
+                style={{ padding: 4 }}
+                hitSlop={8}
+              >
+                <Image
+                  source={require("@/assets/images/sendIcon.png")}
+                  width={30}
+                  height={30}
+                  opacity={createCommentMutation.isPending || !inputValue.trim() ? 0.5 : 1}
+                />
+              </Pressable>
+            </XStack>
+          </View>
+
         </YStack>
-      </Animated.View>
+        </View>
+      </View>
 
       {viewingUserId && (
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, backgroundColor: colors.white }}>

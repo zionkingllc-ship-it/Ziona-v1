@@ -15,7 +15,7 @@ import {
   Lock,
   User,
 } from "@tamagui/lucide-icons";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
@@ -105,7 +105,7 @@ export default function SettingsScreen() {
   const searchQuery = search.trim().toLowerCase();
 
   const settingsSections = useMemo(() => {
-    const all = [
+    const all: { title: string; rows: { label: string; route: Href; icon: React.ReactNode }[] }[] = [
       {
         title: "Account settings",
         rows: [

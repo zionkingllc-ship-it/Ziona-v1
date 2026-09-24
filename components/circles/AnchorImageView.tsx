@@ -16,7 +16,7 @@ export default function AnchorImageView({ image }: AnchorImageViewProps) {
           <Image
             source={{ uri: image }}
             style={styles.image}
-            contentFit="cover"
+            contentFit="contain"
           />
         )}
       </View>

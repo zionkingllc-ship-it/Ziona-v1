@@ -56,7 +56,7 @@ export default function BookmarkFolderScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={{ flex: 1 }}
-              onPress={() => router.push(`/post/${item.id}`)}
+              onPress={() => router.push({ pathname: "/viewer/[postId]", params: { postId: String(item.id) } })}
             >
               {item.type === "image" ? (
                 <Image

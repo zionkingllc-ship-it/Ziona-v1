@@ -48,7 +48,7 @@ export default function DiscoverScreen() {
     categorySlug?: string,
   ) => {
     router.push({
-      pathname: "/[categoryId]",
+      pathname: "/(tabs)/discover/[categoryId]",
       params: { categoryId, label: categoryLabel, slug: categorySlug },
     });
   };

@@ -457,6 +457,33 @@ export const GET_ANCHOR_BY_DATE = `
   }
 `;
 
+export const GET_ANCHOR_BY_ID = `
+  query GetAnchor($id: String!) {
+    anchor(id: $id) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
 export const GET_ANCHOR_RESPONSES = `
   query GetAnchorResponses($anchorId: String!) {
     anchorResponses(anchorId: $anchorId) {
@@ -668,6 +695,11 @@ export async function fetchAnchor(id: string) {
 export async function fetchAnchorByDate(circleId: string, date: string) {
   const res = await graphqlRequest(GET_ANCHOR_BY_DATE, { circleId, date });
   return mapActiveAnchor(res?.anchorByDate ?? null);
+}
+
+export async function fetchAnchorById(anchorId: string) {
+  const res = await graphqlRequest(GET_ANCHOR_BY_ID, { id: anchorId });
+  return res?.anchor ?? null;
 }
 
 export async function fetchCirclePost(id: string) {

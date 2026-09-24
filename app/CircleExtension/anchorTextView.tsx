@@ -18,7 +18,7 @@ import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
-import { chunkHtmlByBlocks, chunkText, isHtml } from "@/lib/anchorHtmlChunk";
+import { chunkHtmlByBlocks, chunkText, isHtml, stripMediaFromHtml } from "@/lib/anchorHtmlChunk";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
@@ -46,15 +46,6 @@ function createSlides(
 ): SlideItem[] {
   const slides: SlideItem[] = [];
 
-  if (mediaUrl) {
-    slides.push({
-      id: "image",
-      type: "image",
-      image: mediaUrl,
-      label: "Anchor Image",
-    });
-  }
-
   if (bibleReference) {
     slides.push({
       id: "verse",
@@ -66,7 +57,8 @@ function createSlides(
   }
 
   if (text) {
-    const chunks = isHtml(text) ? chunkHtmlByBlocks(text) : chunkText(text);
+    const cleanText = mediaUrl ? stripMediaFromHtml(text) : text;
+    const chunks = isHtml(cleanText) ? chunkHtmlByBlocks(cleanText) : chunkText(cleanText);
 
     chunks.forEach((chunk, index) => {
       slides.push({
@@ -75,6 +67,15 @@ function createSlides(
         text: chunk,
         label: "Word",
       });
+    });
+  }
+
+  if (mediaUrl) {
+    slides.push({
+      id: "image",
+      type: "image",
+      image: mediaUrl,
+      label: "Anchor Image",
     });
   }
 

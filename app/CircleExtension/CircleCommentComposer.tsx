@@ -43,6 +43,14 @@ import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 const FALLBACK_IMAGE = require("@/assets/images/anchorBgImage.jpg");
 
 type Props = {
+  circleId?: string;
+  anchorId?: string;
+  source?: string;
+  anchorImage?: string;
+  anchorVideo?: string;
+  anchorBackgroundImage?: string;
+  anchorColors?: string;
+  expiresAt?: string;
   mode?: "action" | "comment";
   anchorPreview?: string;
   anchorText?: string;
@@ -56,6 +64,14 @@ type Props = {
 };
 
 export default function CircleCommentComposer({
+  circleId: propCircleId,
+  anchorId: propAnchorId,
+  source: propSource,
+  anchorImage,
+  anchorVideo,
+  anchorBackgroundImage,
+  anchorColors,
+  expiresAt,
   mode: propMode,
   anchorPreview: propAnchorPreview,
   anchorText: propAnchorText,
@@ -86,7 +102,11 @@ export default function CircleCommentComposer({
   const userAvatar = user?.avatarUrl || null;
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { circleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source, anchorId, anchorText: routeAnchorText, bibleReference: routeBibleRef, bibleText: routeBibleTxt } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string; anchorId?: string; anchorText?: string; bibleReference?: string; bibleText?: string }>();
+  const { circleId: routeCircleId, fromScreen, mode: routeMode, anchorPreview: routeAnchorPreview, prompt: routePrompt, anchorRefId, source: routeSource, anchorId: routeAnchorId, anchorText: routeAnchorText, bibleReference: routeBibleRef, bibleText: routeBibleTxt } = useLocalSearchParams<{ circleId?: string; fromScreen?: string; mode?: string; anchorPreview?: string; prompt?: string; anchorRefId?: string; source?: string; anchorId?: string; anchorText?: string; bibleReference?: string; bibleText?: string }>();
+
+  const circleId = propCircleId ?? routeCircleId;
+  const source = propSource ?? routeSource;
+  const anchorId = propAnchorId ?? routeAnchorId;
 
   const mode = propMode || (routeMode as "action" | "comment") || "comment";
   const anchorPreview = propAnchorPreview || routeAnchorPreview || buildAnchorPreview();
@@ -125,7 +145,7 @@ export default function CircleCommentComposer({
     if (isModal && onClose) {
       onClose();
     } else if (!isModal) {
-      if (source === "feed" && circleId) {
+      if (circleId) {
         router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
       } else {
         router.dismissTo("/(tabs)/circle");
@@ -236,9 +256,38 @@ export default function CircleCommentComposer({
         }
       }
 
+      if (propAnchorId && newPostId) {
+        await saveAnchorRef(newPostId, {
+          type: anchorVideo ? "video" : anchorImage ? "image" : "text",
+          title: "Anchor",
+          anchorId, circleId, expiresAt, anchorImage, anchorVideo,
+          content: propAnchorText ?? "",
+          bibleReference: propBibleReference,
+          bibleText: propBibleText,
+          backgroundColors: anchorColors,
+          backgroundImage: anchorBackgroundImage,
+        });
+        await saveAnchorText(newPostId, propAnchorText ?? "");
+      }
+
       setShowSuccess(true);
       if (circleId) {
-        queryClient.invalidateQueries({ queryKey: ["circleFeedData", circleId] });
+        const feedQueryKey = ["circleFeedData", circleId];
+        for (let attempt = 0; attempt < 5; attempt++) {
+          await queryClient.refetchQueries({
+            queryKey: feedQueryKey,
+            type: "all",
+          });
+
+          const postVisibleInFeed = queryClient
+            .getQueriesData<{ posts?: Array<{ id?: string }> }>({ queryKey: feedQueryKey })
+            .some(([, feedData]) =>
+              feedData?.posts?.some((feedPost) => feedPost.id === newPostId),
+            );
+
+          if (postVisibleInFeed || !newPostId) break;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
       }
       
       setTimeout(() => {
@@ -308,7 +357,7 @@ export default function CircleCommentComposer({
           autoFocus={!blocked && isModal}
           onFocus={() => {}}
         />
-        {anchorPreview && (
+        {(anchorPreview?.trim() || anchorImage || anchorVideo) && (
           <Pressable
             onPress={() => {}}
             style={{
@@ -316,21 +365,46 @@ export default function CircleCommentComposer({
               marginLeft: 30,
               borderRadius: 12, 
               overflow: "hidden",
-              minHeight: 120,
+              height: 150,
+              maxHeight: 150,
               position: "relative",
+              justifyContent: "center",
             }}
           >
-            <Image
-              source={FALLBACK_IMAGE}
-              style={{ ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" }}
-              resizeMode="cover"
-            />
-            <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
-            <AnchorHtmlText
-              html={anchorPreview}
-              contentWidth={width - 90}
-              baseStyle={{ fontSize: 14, color: "#FFF", lineHeight: 20, marginTop: 8, marginBottom: 8, paddingHorizontal: 12 }}
-            />
+            {anchorPreview.trim() ? (
+              <>
+                <Image
+                  source={FALLBACK_IMAGE}
+                  style={StyleSheet.absoluteFillObject}
+                  resizeMode="cover"
+                />
+                <View style={StyleSheet.absoluteFillObject} backgroundColor="rgba(0,0,0,0.4)" />
+                <AnchorHtmlText
+                  html={anchorPreview}
+                  contentWidth={width - 90}
+                  numberOfLines={2}
+                  baseStyle={{
+                    fontSize: 14,
+                    color: "#FFF",
+                    lineHeight: 20,
+                    marginTop: 8,
+                    marginBottom: 8,
+                    paddingHorizontal: 12,
+                  }}
+                />
+              </>
+            ) : anchorImage ? (
+              <Image
+                source={{ uri: anchorImage }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            ) : anchorVideo ? (
+              <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#211A2A" }}>
+                <Ionicons name="play-circle-outline" size={42} color="#FFF" />
+                <Text style={{ color: "#FFF", fontSize: 13, marginTop: 6 }}>Video anchor</Text>
+              </View>
+            ) : null}
           </Pressable>
         )}
 

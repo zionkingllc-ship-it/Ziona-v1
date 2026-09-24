@@ -38,5 +38,5 @@ export async function getViewedStatus(anchorIds: string[]): Promise<Record<strin
 
 export function onAnchorViewed(cb: (id: string) => void) {
   listeners.add(cb);
-  return () => listeners.delete(cb);
+  return () => { listeners.delete(cb); };
 }

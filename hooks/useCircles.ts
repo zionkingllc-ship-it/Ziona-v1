@@ -4,6 +4,7 @@ import {
   fetchCircleDetail,
   fetchActiveAnchor,
   fetchAnchorByDate,
+  fetchAnchorById,
   fetchAllCircles,
   fetchMyCircles,
   fetchSuggestedCircles,
@@ -28,6 +29,7 @@ export function useCircleFeedData(
   return useQuery({
     queryKey: ["circleFeedData", circleId, sortBy, authorId],
     queryFn: () => fetchCircleFeedData(circleId, historyLimit, page, pageSize, sortBy, authorId),
+    enabled: !!circleId,
     staleTime: 1000 * 60,
     retry: 2,
   });
@@ -64,6 +66,16 @@ export function useAnchorByDate(circleId: string, date: string) {
     queryFn: () => fetchAnchorByDate(circleId, date),
     staleTime: 1000 * 60,
     enabled: !!date,
+    retry: 2,
+  });
+}
+
+export function useAnchorById(anchorId: string) {
+  return useQuery({
+    queryKey: ["anchor", anchorId],
+    queryFn: () => fetchAnchorById(anchorId),
+    enabled: !!anchorId,
+    staleTime: 1000 * 60,
     retry: 2,
   });
 }

@@ -1,92 +1,79 @@
+import type { useAuthStore } from "@/store/useAuthStore";
 import { refreshTokenProactively, refreshWithRetry } from "@/services/auth/refresh";
-import { AppError, isAuthError, getErrorMessage } from "@/utils/error";
+import { getSessionVersion } from "@/services/auth/session";
+import { AppError, isAuthError } from "@/utils/error";
 
 const GRAPHQL_URL = process.env.EXPO_PUBLIC_GRAPHQL_URL || "https://ziona-api-staging.onrender.com/graphql/";
 
-let _getAuthStore: any = null;
-function getAuthStore(): any {
-  if (!_getAuthStore) {
-    _getAuthStore = require("@/store/useAuthStore").useAuthStore;
-  }
-  return _getAuthStore;
+function getAuthStore(): typeof useAuthStore {
+  return require("@/store/useAuthStore").useAuthStore;
 }
 
-export async function graphqlRequest(
-  query: string,
-  variables?: any,
-  retries = 1
-) {
-  const store = getAuthStore().getState();
+type GraphQLError = { message?: string; extensions?: { code?: string } };
 
-  // Proactive refresh before making the request
-  let token = store.tokens?.accessToken;
-  if (token) {
-    const ok = await refreshTokenProactively();
-    if (!ok) {
-      token = undefined;
-    } else {
-      const updated = getAuthStore().getState();
-      token = updated.tokens?.accessToken;
+function isAuthenticationFailure(status: number, errors?: GraphQLError[]) {
+  if (status === 401) return true;
+  return errors?.some((error) => {
+    const code = error.extensions?.code;
+    if (code === "FORBIDDEN") return false;
+    return code === "UNAUTHENTICATED" || isAuthError(error.message);
+  }) ?? false;
+}
+
+export async function graphqlRequest(query: string, variables?: any, retries = 1) {
+  const version = getSessionVersion();
+  const assertSession = () => {
+    if (getSessionVersion() !== version) {
+      throw new AppError("Session changed", { code: "SESSION_CHANGED", retryable: false });
     }
+  };
+  const expireSession = async () => {
+    assertSession();
+    await getAuthStore().getState().clearSession();
+    throw new AppError("Session expired", { code: "SESSION_EXPIRED", status: 401, retryable: false });
+  };
+
+  let token = getAuthStore().getState().tokens?.accessToken;
+  if (token) {
+    const refreshed = await refreshTokenProactively();
+    assertSession();
+    if (!refreshed) return expireSession();
+    token = getAuthStore().getState().tokens?.accessToken;
   }
 
   const makeRequest = async (accessToken?: string) => {
-    return fetch(GRAPHQL_URL, {
+    const response = await fetch(GRAPHQL_URL, {
       method: "POST",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        ...(accessToken
-          ? { Authorization: `Bearer ${accessToken}` }
-          : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: JSON.stringify({
-        query: String(query),
-        variables: variables ?? {},
-      }),
+      body: JSON.stringify({ query: String(query), variables: variables ?? {} }),
     });
+    assertSession();
+    // Authentication failures may have an empty/non-JSON response body.
+    const json = await response.json().catch(() => null);
+    assertSession();
+    return { response, json };
   };
 
-  let res = await makeRequest(token);
-  let json: any = await res.json();
-
-  const hasAuthError =
-    res.status === 401 ||
-    json?.errors?.some(
-      (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
-                    err?.extensions?.code === "FORBIDDEN" ||
-                    isAuthError(err?.message)
-    );
-
-  if (hasAuthError) {
-    const newAccessToken = await refreshWithRetry(3);
-
-    if (newAccessToken) {
-      res = await makeRequest(newAccessToken);
-      json = await res.json();
-
-      const stillHasAuthError = res.status === 401 ||
-        json?.errors?.some(
-          (err: any) => err?.extensions?.code === "UNAUTHENTICATED" ||
-                        err?.extensions?.code === "FORBIDDEN" ||
-                        isAuthError(err?.message)
-        );
-
-      if (stillHasAuthError) {
-        await getAuthStore().getState().clearSession?.();
-        throw new AppError("Session expired", { code: "SESSION_EXPIRED" });
-      }
-    } else {
-      await getAuthStore().getState().clearSession?.();
-      return null;
-    }
+  let { response, json } = await makeRequest(token);
+  if (isAuthenticationFailure(response.status, json?.errors)) {
+    if (!token) throw new AppError("Sign in to continue", { code: "UNAUTHENTICATED", status: 401, retryable: false });
+    const newToken = await refreshWithRetry(Math.max(1, retries));
+    assertSession();
+    if (!newToken) return expireSession();
+    ({ response, json } = await makeRequest(newToken));
+    if (isAuthenticationFailure(response.status, json?.errors)) return expireSession();
   }
 
   if (json?.errors?.length) {
-    const errorMessage = json.errors[0]?.message || "Request failed";
-    console.error("🔍 [graphql] Request errors:", JSON.stringify(json.errors));
-    throw new AppError(errorMessage);
+    const error: GraphQLError = json.errors[0];
+    throw new AppError(error.message || "Request failed", { code: error.extensions?.code, status: response.status });
   }
-
-  return json?.data;
+  if (!response.ok || !json || !("data" in json)) {
+    throw new AppError("Request failed", { status: response.status, retryable: response.status >= 500 });
+  }
+  return json.data;
 }

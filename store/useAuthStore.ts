@@ -1,30 +1,22 @@
 import { queryClient } from "@/lib/queryClient";
 import { authApi } from "@/services/api/authApi";
 import { clearAuthTokens, setAuthTokens } from "@/services/api/client";
-import { refreshWithRetry } from "@/services/auth/refresh";
-import { graphqlRequest } from "@/services/graphQL/graphqlClient";
-import { GET_USER_POSTS } from "@/services/graphQL/queries/actions/userPosts";
+import { advanceSession, getSessionVersion } from "@/services/auth/session";
 import { AuthState, AuthTokens, User } from "@/types";
+import { isAuthError } from "@/utils/error";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 function clearAuthQueries() {
-  queryClient.removeQueries({ queryKey: ["userProfile"] });
-  queryClient.removeQueries({ queryKey: ["userPosts"] });
-  queryClient.removeQueries({ queryKey: ["likedPosts"] });
-  queryClient.removeQueries({ queryKey: ["userSavedPosts"] });
-  queryClient.removeQueries({ queryKey: ["savedPosts"] });
-  queryClient.removeQueries({ queryKey: ["bookmarkFolders"] });
-  queryClient.removeQueries({ queryKey: ["notifications"] });
-  // forYouFeed, followingFeed, discoverFeed — preserved
+  void queryClient.cancelQueries();
+  queryClient.clear();
 }
 
 type AuthStore = AuthState & {
   isBootstrapping: boolean;
   isInitializing: boolean;
   _hasHydrated: boolean;
-
   setAuth: (user: User, tokens: AuthTokens) => void;
   setTokens: (tokens: AuthTokens) => void;
   logout: () => Promise<void>;
@@ -47,244 +39,96 @@ export const useAuthStore = create<AuthStore>()(
       isInitializing: false,
       onLogoutNavigate: undefined,
 
-      /* -------- LOGIN SUCCESS -------- */
-
       setAuth: (user, tokens) => {
-        setAuthTokens({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        });
-
-        set({
-          user,
-          tokens,
-          isAuthenticated: true,
-          mode: "authenticated",
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        advanceSession();
+        clearAuthQueries();
+        setAuthTokens(tokens);
+        set({ user, tokens, isAuthenticated: true, mode: "authenticated", isBootstrapping: false, isInitializing: false, _forceLogout: undefined });
       },
 
-      /* -------- TOKEN UPDATE -------- */
-
       setTokens: (tokens) => {
-        setAuthTokens({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        });
-
+        setAuthTokens(tokens);
         set({ tokens });
       },
 
-      /* -------- LOGOUT -------- */
-
-        clearSession: async () => {
+      clearSession: async () => {
+        advanceSession();
         clearAuthTokens();
-
-        set({
-          user: null,
-          tokens: null,
-          isAuthenticated: false,
-          mode: "unauthenticated",
-        });
-
-        try {
-          await AsyncStorage.removeItem("auth-storage");
-        } catch { console.warn("[useAuthStore] failed to clear auth storage on session clear"); }
         clearAuthQueries();
+        // Persist the cleared state. A delayed removeItem could delete a newer login.
+        set({ user: null, tokens: null, isAuthenticated: false, mode: "unauthenticated", isBootstrapping: false, isInitializing: false, _forceLogout: undefined });
       },
 
       logout: async () => {
-        // Mark logout time for conflict resolution during rehydration
-        const logoutTime = Date.now();
-
-        // Clear store IMMEDIATELY - don't wait for signOut
-        clearAuthTokens();
-        set({
-          user: null,
-          tokens: null,
-          isAuthenticated: false,
-          mode: "unauthenticated",
-          _hasHydrated: false,
-          _forceLogout: logoutTime,
-        });
-        clearAuthQueries();
-
-        // Try signOut but don't block - it's ok if it fails
-        try {
-          await authApi.signOut();
-        } catch {
-          console.warn("[useAuthStore] signOut failed (non-blocking)");
-        }
-
-        // Clear all cached data
-        queryClient.clear();
-
-        // Clean up persisted storage
-        try {
-          await AsyncStorage.removeItem("auth-storage");
-        } catch { console.warn("[useAuthStore] failed to clear auth storage on logout"); }
-
-        // Navigate to login
+        const accessToken = get().tokens?.accessToken;
+        await get().clearSession();
         get().onLogoutNavigate?.();
+        // Revocation uses captured credentials and cannot refresh or clear a new session.
+        if (accessToken) await authApi.signOut(accessToken);
       },
-
-      /* -------- INIT AUTH -------- */
 
       initializeAuth: async () => {
         const state = get();
-
-        if (state.isInitializing) return;
-
-        set({ isInitializing: true });
-
+        if (!state._hasHydrated || state.isInitializing) return;
+        const version = getSessionVersion();
         const tokens = state.tokens;
-
-        //  set tokens IMMEDIATELY
-        if (tokens?.accessToken) {
-          setAuthTokens({
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-          });
-        }
-
         if (!tokens?.accessToken) {
-          set({
-            isBootstrapping: false,
-            isInitializing: false,
-          });
+          set({ isBootstrapping: false, isInitializing: false });
           return;
         }
 
-        // Store user in memory immediately (even if getMe fails)
-        const storedUser = state.user;
-        if (storedUser?.id) {
-          set({
-            user: storedUser,
-            isAuthenticated: true,
-            mode: "authenticated",
-          });
-        }
-
-        const bootstrap = async () => {
-          // Silently retry getMe with token refresh
-          const maxAttempts = 5;
-          let lastError: any = null;
-
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        setAuthTokens(tokens);
+        set({ isInitializing: true, isBootstrapping: false });
+        try {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (getSessionVersion() !== version) return;
             try {
-              // Refresh token first if needed
-              if (attempt > 0) {
-                const newToken = await refreshWithRetry(2);
-                if (!newToken) {
-                  // Refresh failed, wait and retry
-                  await new Promise(resolve => setTimeout(resolve, 2000));
-                  continue;
-                }
-              }
-
               const user = await authApi.getMe();
-
+              if (getSessionVersion() !== version) return;
               if (user?.id) {
-                set({
-                  user,
-                  isAuthenticated: true,
-                  mode: "authenticated",
-                });
-
-                await Promise.all([
-                  queryClient.prefetchQuery({
-                    queryKey: ["userProfile", user.id],
-                    queryFn: () => authApi.getMe(),
-                  }),
-                  queryClient.prefetchInfiniteQuery({
-                    queryKey: ["userPosts", user.id],
-                    queryFn: async ({ pageParam }) => {
-                      const data = await graphqlRequest(GET_USER_POSTS, {
-                        userId: user.id,
-                        cursor: pageParam,
-                        limit: 20,
-                      });
-                      const res = data?.userPosts;
-                      return {
-                        posts: res?.posts ?? [],
-                        nextCursor: res?.nextCursor,
-                        hasMore: res?.hasMore ?? false,
-                      };
-                    },
-                    initialPageParam: undefined,
-                  }),
-                ]);
-                return; // Success
+                set({ user, isAuthenticated: true, mode: "authenticated" });
+                // The profile hook owns its GraphQL cache and normalization.
+                return;
               }
-            } catch (err) {
-              lastError = err;
-              if (attempt < maxAttempts - 1) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+              if (getSessionVersion() !== version) return;
+              if (isAuthError(error)) {
+                await get().clearSession();
+                return;
               }
             }
+            if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 2000));
           }
-
-          get().clearSession();
-        };
-
-        bootstrap(); // Don't await - let it run silently
-
-        set({
-          isBootstrapping: false,
-          isInitializing: false,
-        });
+          // Connectivity failures do not revoke the user's stored session.
+        } finally {
+          if (getSessionVersion() === version) set({ isInitializing: false });
+        }
       },
 
-      setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
+      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
     }),
-
     {
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
-
-      partialize: (state) => ({
-        user: state.user,
-        tokens: state.tokens,
-        isAuthenticated: state.isAuthenticated,
-        mode: state.mode,
-        _forceLogout: state._forceLogout,
-      }),
-
+      partialize: (state) => ({ user: state.user, tokens: state.tokens, isAuthenticated: state.isAuthenticated, mode: state.mode }),
+      // A login/logout that happened during the asynchronous read takes precedence.
+      merge: (persisted, current) => getSessionVersion() > 0 ? current : { ...current, ...(persisted as Partial<AuthStore>) },
       onRehydrateStorage: () => (state) => {
-        if (!state) return;
-
-        // Check if logout was triggered after this rehydration started
-        const storedForceLogout = state._forceLogout;
-        if (storedForceLogout && storedForceLogout > 0) {
-          // Ignore stale forceLogout flags older than 30 seconds
-          // (app may have crashed mid-logout before AsyncStorage was cleaned up)
-          if (Date.now() - storedForceLogout < 30_000) {
-            state.user = null;
-            state.tokens = null;
-            state.isAuthenticated = false;
-            state.mode = "unauthenticated";
-          }
-          state._forceLogout = undefined;
-          clearAuthTokens();
-          clearAuthQueries();
+        if (!state) {
+          queueMicrotask(() => useAuthStore.getState().setHasHydrated(true));
           return;
         }
-
-        //  unwrap wrongly stored user
-        if (state.user && (state.user as any).data) {
-          const raw = state.user as any;
-          state.user = raw.data;
+        // Migrate the old interrupted-logout marker without trapping the splash screen.
+        if (state._forceLogout && Date.now() - state._forceLogout < 30_000) {
+          state.user = null;
+          state.tokens = null;
+          state.isAuthenticated = false;
+          state.mode = "unauthenticated";
         }
-
-        //  restore tokens immediately
-        if (state.tokens?.accessToken) {
-          setAuthTokens({
-            accessToken: state.tokens.accessToken,
-            refreshToken: state.tokens.refreshToken,
-          });
-        }
-
+        state._forceLogout = undefined;
+        if (state.user && "data" in state.user) state.user = (state.user as { data: User }).data;
+        if (state.tokens?.accessToken) setAuthTokens(state.tokens);
+        else clearAuthTokens();
         state.setHasHydrated(true);
       },
     },

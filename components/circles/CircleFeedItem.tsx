@@ -3,7 +3,7 @@ import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 import React, { memo, useState } from "react";
 import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { Pressable, View } from "react-native";
+import { Dimensions, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
@@ -19,6 +19,9 @@ import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
 import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
 import OtherReportModal from "@/components/ui/modals/OtherReportModal";
 import SuccessModal from "../ui/modals/successModal";
+
+const FALLBACK_ANCHOR_IMAGE = require("@/assets/images/anchorBgImage.jpg");
+const ANCHOR_RETENTION_MS = 5 * 24 * 60 * 60 * 1000;
 
 const formatTimeAgo = (dateString: string): string => {
   if (!dateString) return "";
@@ -167,11 +170,17 @@ const CircleFeedItem = memo(function CircleFeedItem({
 
   const resolved = anchorRef;
 
-  const isExpired = resolved?.expiresAt ? new Date(resolved.expiresAt).getTime() <= Date.now() : false;
+  const isAnchorUnavailable =
+    !!resolved?.expiresAt &&
+    Date.now() - new Date(resolved.expiresAt).getTime() > ANCHOR_RETENTION_MS;
 
-  const displayAnchorContent = resolved?.content || resolved?.title || anchorTextFallback || "";
+  const displayAnchorContent =
+    (resolved?.content || anchorTextFallback || (resolved?.type === "text" ? resolved.title : "") || "").trim();
   const hasAnchorContent = !!displayAnchorContent;
   const hasFullRef = !!resolved;
+  const anchorImage = resolved?.mediaUrl || resolved?.anchorImage;
+  const hasAnchorImage = !hasAnchorContent && resolved?.type === "image" && !!anchorImage;
+  const hasAnchorVideo = !hasAnchorContent && resolved?.type === "video";
 
   const handlePostPress = () => {
     router.push({
@@ -194,6 +203,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
           anchorTitle: resolved.title,
           anchorContent: resolved.content || "",
           anchorMediaUrl: resolved.mediaUrl || "",
+          anchorBackgroundImage: resolved.backgroundImage || "",
         } : {}),
       },
     });
@@ -202,8 +212,7 @@ const CircleFeedItem = memo(function CircleFeedItem({
   const handleAnchorMediaTap = () => {
     if (!resolved) return;
 
-    const isExpired = resolved.expiresAt ? new Date(resolved.expiresAt).getTime() <= Date.now() : false;
-    if (isExpired) {
+    if (isAnchorUnavailable) {
       setAnchorExpiredVisible(true);
       return;
     }
@@ -323,37 +332,55 @@ const CircleFeedItem = memo(function CircleFeedItem({
           })}
 
           {/* ANCHOR QUOTE */}
-          {hasAnchorContent && (
+          {hasAnchorContent ? (
             <Pressable onPress={hasFullRef ? handleAnchorMediaTap : undefined} disabled={!hasFullRef}>
-              <View style={{ borderRadius: 12, marginTop: 6, padding: 12, backgroundColor: "#0B0F2F" }}>
+              <View style={{ width: "100%", alignSelf: "stretch", height: 100, maxHeight: 100, borderRadius: 12, marginTop: 6, padding: 12, justifyContent: "center", overflow: "hidden" }}>
+                <ExpoImage
+                  source={resolved?.backgroundImage ? { uri: resolved.backgroundImage } : FALLBACK_ANCHOR_IMAGE}
+                  style={{ position: "absolute", inset: 0 }}
+                  contentFit="cover"
+                />
+                <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)" }} />
                 <AnchorHtmlText
                   html={displayAnchorContent}
-                  contentWidth={300}
+                  contentWidth={Dimensions.get("window").width - 48}
+                  numberOfLines={2}
+                  baseStyle={{ color: "#F2EDF4" }}
                 />
               </View>
             </Pressable>
-          )}
-          {hasFullRef && !hasAnchorContent && resolved?.type === "image" && resolved.mediaUrl && !anchorImageError ? (
-              <Pressable onPress={() => handleAnchorMediaTap()}>
-                <View style={{ height: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
-                  <ExpoImage source={{ uri: resolved.mediaUrl }} style={{ width: "100%", height: 100, borderRadius: 12 }} contentFit="cover" onError={() => setAnchorImageError(true)} />
-                </View>
-              </Pressable>
-            ) : resolved && resolved.type === "image" && resolved.mediaUrl && anchorImageError ? (
-              <Pressable onPress={() => handleAnchorMediaTap()}>
-                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
-                  <Ionicons name="image-outline" size={24} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={10} marginTop={2}>Image unavailable</Text>
-                </View>
-              </Pressable>
-            ) : resolved && resolved.type === "video" ? (
-              <Pressable onPress={() => handleAnchorMediaTap()}>
-                <View style={{ height: 100, borderRadius: 12, marginTop: 6, backgroundColor: "#000", justifyContent: "center", alignItems: "center", gap: 6 }}>
-                  <Ionicons name="videocam" size={24} color="#FFF" />
-                  <Text fontFamily="$body" color="#FFF" fontSize={11}>Tap to view video</Text>
-                </View>
-              </Pressable>
-            ) : null}
+          ) : hasAnchorImage ? (
+            <Pressable onPress={handleAnchorMediaTap}>
+              <View style={{ height: 100, maxHeight: 100, borderRadius: 12, overflow: "hidden", marginTop: 6 }}>
+                {!anchorImageError ? (
+                  <ExpoImage
+                    source={{ uri: anchorImage }}
+                    style={{ width: "100%", height: "100%" }}
+                    contentFit="cover"
+                    onError={() => setAnchorImageError(true)}
+                  />
+                ) : (
+                  <View style={{ flex: 1, backgroundColor: "#0B0F2F", justifyContent: "center", alignItems: "center" }}>
+                    <Ionicons name="image-outline" size={24} color="#FFF" />
+                    <Text fontFamily="$body" color="#FFF" fontSize={10} marginTop={2}>Image unavailable</Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          ) : hasAnchorVideo ? (
+            <Pressable onPress={handleAnchorMediaTap}>
+              <View style={{ height: 100, maxHeight: 100, borderRadius: 12, marginTop: 6, overflow: "hidden", justifyContent: "center", alignItems: "center", gap: 6 }}>
+                <ExpoImage
+                  source={resolved?.backgroundImage ? { uri: resolved.backgroundImage } : FALLBACK_ANCHOR_IMAGE}
+                  style={{ position: "absolute", inset: 0 }}
+                  contentFit="cover"
+                />
+                <View style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.55)" }} />
+                <Ionicons name="videocam" size={24} color="#FFF" />
+                <Text fontFamily="$body" color="#FFF" fontSize={11}>Tap to view video</Text>
+              </View>
+            </Pressable>
+          ) : null}
 
            {/* ACTIONS */}
           <XStack gap="$4" marginTop="$1">

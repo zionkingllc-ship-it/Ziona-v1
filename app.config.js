@@ -1,37 +1,38 @@
 const variants = {
-  development: {
-    appName: "Ziona Dev",
-    bundleIdentifier: "com.zionking.ziona.dev",
-    package: "com.zionking.ziona.dev",
-    scheme: "zionadev",
-    googleServicesFileIos: "./GoogleService-Info.dev.plist",
-    googleServicesFileAndroid: "./google-services.dev.json",
-    googleIosClientId: "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
-    googleIosReversedClientId: "com.googleusercontent.apps.511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9",
-  },
   staging: {
     appName: "Ziona Staging",
+    slug: "ziona-staging",
     bundleIdentifier: "com.zionking.ziona.staging",
     package: "com.zionking.ziona.staging",
     scheme: "zionastaging",
+    projectId: "c8393003-78c7-4225-81d6-96807a7afa04",
     googleServicesFileIos: "./GoogleService-Info.staging.plist",
     googleServicesFileAndroid: "./google-services.staging.json",
+    googleAndroidClientId: "511999112847-lqtrejs5hik2avpgmkdhs90pdn6o1vfg.apps.googleusercontent.com",
     googleIosClientId: "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
+    googleWebClientId: "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com",
     googleIosReversedClientId: "com.googleusercontent.apps.511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9",
   },
   production: {
     appName: "Ziona",
+    slug: "ziona",
     bundleIdentifier: "com.zionking.ziona",
     package: "com.zionking.ziona",
     scheme: "ziona",
+    projectId: "ae56ecb7-5133-4048-849f-b5f191d82d6a",
     googleServicesFileIos: "./GoogleService-Info.plist",
     googleServicesFileAndroid: "./google-services.json",
+    googleAndroidClientId: "433767985127-g78pqsa8bhtaqmh98n9khka2hdvti17d.apps.googleusercontent.com",
     googleIosClientId: "433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv.apps.googleusercontent.com",
+    googleWebClientId: "433767985127-j7ruvcarb1fk4191gbi8v44vkunjppqk.apps.googleusercontent.com",
     googleIosReversedClientId: "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
   },
 };
 
-const variant = variants[process.env.APP_VARIANT ?? "production"];
+const requestedVariant = process.env.APP_VARIANT ?? "production";
+// Development intentionally uses the same native app and Firebase registration as staging.
+const variant = variants[requestedVariant === "development" ? "staging" : requestedVariant];
+if (!variant) throw new Error(`Unknown APP_VARIANT: ${requestedVariant}`);
 
 // Helper: attempt variant file(s); fall back to production if missing
 const fs = require("fs");
@@ -43,8 +44,8 @@ const resolveGoogleServicesFile = (...candidates) => {
 module.exports = {
   expo: {
     name: variant.appName,
-    slug: "ziona",
-    version: "1.0.3",
+    slug: variant.slug,
+    version: "1.0.4",
     scheme: variant.scheme,
     // Carried from app.json (deduplicated & cleaned)
     icon: "./assets/images/icon.png",
@@ -59,7 +60,9 @@ module.exports = {
       entitlements: {
         "com.apple.developer.applesignin": ["Default"],
       },
-      associatedDomains: ["applinks:ziona.app", "applinks:api.ziona.app"],
+      associatedDomains: variant.scheme === "ziona"
+        ? ["applinks:ziona.app", "applinks:api.ziona.app"]
+        : ["applinks:staging.ziona.app", "applinks:api.staging.ziona.app"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription:
@@ -69,7 +72,7 @@ module.exports = {
         LSApplicationQueriesSchemes: ["whatsapp", "sms", "mailto", "ziona"],
         CFBundleURLTypes: [
           {
-            CFBundleURLSchemes: variant.googleIosReversedClientId,
+            CFBundleURLSchemes: [variant.googleIosReversedClientId],
           },
         ],
         UIBackgroundModes: ["remote-notification"],
@@ -118,6 +121,7 @@ module.exports = {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
+      "./plugins/withAndroidAllowBackup",
       "./plugins/withFirebaseNotificationColor",
       "expo-router",
       ["@react-native-google-signin/google-signin", { iosUrlScheme: variant.googleIosReversedClientId }],
@@ -136,19 +140,22 @@ module.exports = {
     ],
     extra: {
       router: {},
+      google: {
+        androidClientId: variant.googleAndroidClientId,
+        iosClientId: variant.googleIosClientId,
+        webClientId: variant.googleWebClientId,
+      },
       eas: {
-        projectId: "ae56ecb7-5133-4048-849f-b5f191d82d6a",
+        projectId: variant.projectId,
       },
     },
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
     },
-    runtimeVersion: {
-      policy: "appVersion",
-    },
+    runtimeVersion: "1.0.4",
     updates: {
-      url: "https://u.expo.dev/ae56ecb7-5133-4048-849f-b5f191d82d6a",
+      url: `https://u.expo.dev/${variant.projectId}`,
     },
   },
 };

@@ -18,20 +18,11 @@ export function isAppError(error: unknown): error is AppError {
 
 export function isAuthError(error: unknown): boolean {
   if (isAppError(error)) {
-    return (
-      error.code === "UNAUTHENTICATED" ||
-      error.code === "FORBIDDEN" ||
-      /unauthorized|not authenticated|authentication required|token expired|invalid token|jwt|bearer/i.test(error.message)
-    );
+    if (error.code === "FORBIDDEN" || error.status === 403) return false;
+    if (error.code === "UNAUTHENTICATED" || error.code === "SESSION_EXPIRED" || error.status === 401) return true;
   }
-  if (error instanceof Error) {
-    return (
-      error.code === "UNAUTHENTICATED" ||
-      error.code === "FORBIDDEN" ||
-      /unauthorized|not authenticated|authentication required|token expired|invalid token|jwt|bearer/i.test(error.message)
-    );
-  }
-  return false;
+  const message = typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  return /unauthorized|not authenticated|authentication required|token expired|invalid token|jwt|bearer/i.test(message);
 }
 
 export function isNetworkError(error: unknown): boolean {
@@ -66,9 +57,6 @@ export function getErrorTitle(error: unknown): string {
 
 export function shouldRetry(error: unknown): boolean {
   if (isAppError(error)) {
-    return error.retryable ?? true;
-  }
-  if (error instanceof Error) {
     return error.retryable ?? true;
   }
   return true;

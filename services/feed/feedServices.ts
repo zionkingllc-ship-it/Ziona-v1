@@ -55,6 +55,7 @@ export async function fetchForYouFeed({
   posts: any[];
   nextCursor?: string;
   hasMore: boolean;
+  emptyState?: { message: string; suggestions: { id: string; username: string; bio?: string; followersCount: number }[] };
 }> {
   try {
     const data = await graphqlRequest(GET_FOR_YOU_FEED, {

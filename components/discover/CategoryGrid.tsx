@@ -13,7 +13,7 @@ type Props = {
 export default function CategoryGrid({ categories, onCategoryPress, refreshing, onRefresh }: Props) {
   return (
     <FlatList
-      data={categories}
+      data={categories.filter((category): category is DiscoverCategory & { id: string } => !!category.id)}
       keyExtractor={(item) => item.id}
       numColumns={2}
       windowSize={5}

@@ -172,6 +172,7 @@ export function CircleCommentItem({ comment, circleId, onLike, onDelete, onReply
   const [reportSuccessVisible, setReportSuccessVisible] = useState(false);
   const [reportFailedVisible, setReportFailedVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MenuTarget>(null);
+  const [reportTarget, setReportTarget] = useState<MenuTarget>(null);
   const hasReplies = (comment.replies?.length || 0) > 0;
   const { requireAuth, AuthModal } = useRequireAuth();
   const currentUserId = useAuthStore((s) => s.user?.id);
@@ -199,10 +200,10 @@ export function CircleCommentItem({ comment, circleId, onLike, onDelete, onReply
 
   const submitReport = (reason: ReportReason, description?: string) => {
     const commentId =
-      menuTarget?.type === "comment"
-        ? menuTarget.id
-        : menuTarget?.type === "reply"
-          ? menuTarget.replyId
+      reportTarget?.type === "comment"
+        ? reportTarget.id
+        : reportTarget?.type === "reply"
+          ? reportTarget.replyId
           : undefined;
     reportCircleContent(reason, circleId, commentId || "", "CIRCLE_COMMENT")
       .then(() => {
@@ -317,10 +318,12 @@ export function CircleCommentItem({ comment, circleId, onLike, onDelete, onReply
         visible={!!menuTarget}
         onClose={() => setMenuTarget(null)}
         onReportPost={() => {
+          setReportTarget(menuTarget);
           setMenuTarget(null);
           setConfirmVisible(true);
         }}
         onReportComment={() => {
+          setReportTarget(menuTarget);
           setMenuTarget(null);
           setConfirmVisible(true);
         }}

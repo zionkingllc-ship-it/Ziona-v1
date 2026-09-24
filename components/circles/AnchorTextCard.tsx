@@ -78,6 +78,7 @@ const styles = StyleSheet.create({
     maxHeight: CARD_MAX_HEIGHT,
     width: "100%",
     zIndex: 999,
+    overflow: "hidden",
   },
   labelBadge: {
     borderWidth: 1,

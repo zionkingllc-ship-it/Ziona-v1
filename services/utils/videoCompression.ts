@@ -13,7 +13,7 @@ async function getFileSize(uri: string): Promise<number> {
 
 export async function compressVideo(
   uri: string,
-  quality: number = 0.5,
+  _quality: number = 0.5,
   onProgress?: (progress: number) => void,
 ): Promise<string> {
   const beforeSize = await getFileSize(uri);
@@ -27,8 +27,8 @@ export async function compressVideo(
       uri,
       {
         compressionMethod: "auto",
-        quality,
-        minimumFileSizeForCompress: MIN_SIZE_FOR_COMPRESS,
+        // Automatic compression chooses its own bitrate.
+        minimumFileSizeForCompress: MIN_SIZE_FOR_COMPRESS / (1024 * 1024),
         progressDivider: 10,
       },
       onProgress,

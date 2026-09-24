@@ -2,6 +2,7 @@ import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import { AppError } from "@/utils/error";
 
 export async function createMediaPost(variables: {
+  category: string;
   caption?: string | null;
   mediaIds?: string[];
   mediaUrls?: string[];
@@ -10,6 +11,7 @@ export async function createMediaPost(variables: {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
+      $category: String!
       $caption: String
       $mediaIds: [String!]
       $mediaUrls: [String!]
@@ -17,6 +19,7 @@ export async function createMediaPost(variables: {
     ) {
       createPost(
         postType: $postType
+        category: $category
         caption: $caption
         mediaIds: $mediaIds
         mediaUrls: $mediaUrls

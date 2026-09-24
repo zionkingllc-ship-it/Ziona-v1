@@ -22,7 +22,7 @@ export default function AuthPrompt({
     if (onPress) {
       onPress();
     } else {
-      router.push("/(auth)/login/");
+      router.push("/(auth)/login");
     }
   };
 

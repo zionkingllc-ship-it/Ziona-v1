@@ -114,6 +114,8 @@ export default function CreateBiblePostScreen() {
 
           <TextPostCardInput
             showInput={false}
+            value=""
+            onChangeText={() => {}}
             category={bibleDraft.category?.label}
             scripture={reference}
             translation={translation}

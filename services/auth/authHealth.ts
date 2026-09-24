@@ -35,14 +35,13 @@ async function runHealthCheck() {
       forceLogout();
       return;
     }
-    // Token exists in store but module's expiry is stale — re-check by decoding
-    return;
+    // Let the API interceptor refresh an expired token before deciding to log out.
   }
 
   try {
     await authApi.getMe();
   } catch (err: any) {
-    const status = err?._status ?? err?.response?.status;
+    const status = err?.status ?? err?.response?.status;
     if (status === 401) {
       navigator?.replace("/(auth)");
     }

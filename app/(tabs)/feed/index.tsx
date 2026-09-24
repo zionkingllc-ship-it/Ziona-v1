@@ -142,7 +142,7 @@ export default function Feed() {
     const uniquePosts: FeedPost[] = [];
 
     pages
-      .flatMap((page) => page.posts ?? [])
+      .flatMap((page) => page?.posts ?? [])
       .map((p) => normalizePost(p))
       .filter((p): p is FeedPost => {
         if (!p) return false;
@@ -293,7 +293,7 @@ export default function Feed() {
   const handleBellPress = () => {
     const isAuth = useAuthStore.getState().isAuthenticated;
     if (!isAuth) {
-      router.push("/(auth)/login/");
+      router.push("/(auth)/login");
       return;
     }
     router.push("/notifications");
@@ -354,7 +354,7 @@ export default function Feed() {
             refreshing={refreshingFeed}
             onRefresh={onRefreshFeed}
             scrollToTopSignal={scrollToTopSignal}
-            scrollToPostId={pendingScrollPostId}
+            scrollToPostId={pendingScrollPostId ?? undefined}
           />
         )}
       </View>
