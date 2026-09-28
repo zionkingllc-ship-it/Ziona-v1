@@ -26,6 +26,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore";
 import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "react-native";
+import type { ServerAnchorReference } from "@/utils/anchorRef";
 
 import {
   ActivityIndicator,
@@ -39,6 +40,7 @@ import {
 } from "react-native";
 
 import { AppError, getErrorMessage } from "@/utils/error";
+import { shouldShowJoinError } from "@/utils/circleJoin";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isIOS } from "@/constants/platform";
@@ -125,6 +127,7 @@ type CirclePost = {
     name: string;
     avatar: string;
   };
+  anchorReference?: ServerAnchorReference | null;
 };
 
 function mapCircleFeedData(data: any): CircleFeedData {
@@ -222,6 +225,7 @@ function mapCircleFeedData(data: any): CircleFeedData {
           anchorLikedCount: p.anchorLikedCount,
           prayedCount: p.prayedCount,
           viewerState: p.viewerState || undefined,
+          anchorReference: p.anchorReference ?? undefined,
           userId: p.user?.id,
           user: {
             id: p.user.id || "",
@@ -430,7 +434,8 @@ export default function CircleFeedScreen() {
     try {
       const result = await joinMutation.mutateAsync(circleId);
       const payload = result?.joinCircle ?? result;
-      if (payload?.success === false && !payload?.circle?.isSubscribed) {
+      // Idempotent re-join (already a member) presents as joined, not an error.
+      if (shouldShowJoinError(payload)) {
         setJoinErrorTitle("Unable to join");
         setJoinErrorMessage(getErrorMessage(payload?.error) || "Something went wrong. Please try again.");
         setJoinErrorVisible(true);

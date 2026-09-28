@@ -15,6 +15,10 @@
             "comment": "Open shared post URLs in the Ziona app"
           },
           {
+            "/": "/profile/*",
+            "comment": "Open shared profile URLs in the Ziona app"
+          },
+          {
             "/": "/viewer/*",
             "comment": "Open viewer URLs in the Ziona app"
           }

@@ -6,9 +6,10 @@ import { View } from "tamagui";
 
 type Props = {
   onBack?: () => void;
+  size?: number;
 };
 
-export default function BackButton({ onBack }: Props) {
+export default function BackButton({ onBack, size = 25 }: Props) {
   return (
     <Pressable
       hitSlop={12}
@@ -17,15 +18,15 @@ export default function BackButton({ onBack }: Props) {
     >
       <View
         style={{
-          width: 25,
-          height: 25,
+          width: size,
+          height: size,
           borderRadius: 99,
           backgroundColor: "#0000006c",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <ChevronLeft color={colors.white} size={20} />
+        <ChevronLeft color={colors.white} size={Math.round(size * 0.8)} />
       </View>
     </Pressable>
   );

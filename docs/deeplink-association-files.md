@@ -40,6 +40,25 @@ Content:
 
 > The first fingerprint is the **Play App Signing key** (Play Console → Setup → App integrity → App signing key certificate → SHA-256) and signs Play-installed apps. The second is the **EAS/upload keystore** and signs directly-installed EAS builds (`eas build` APK via adb / internal distribution). Android verifies if ANY listed fingerprint matches the installed app's cert, so listing both makes App Links work for Play-installed AND sideloaded builds. If more signing certs are added later (e.g. staged rollout), append them as separate array entries.
 
+## Staging: `/.well-known/assetlinks.json`
+
+Serve `public/.well-known/assetlinks.staging.json` (as `assetlinks.json`, no suffix) at:
+
+- `https://staging.ziona.app/.well-known/assetlinks.json`
+- `https://api.staging.ziona.app/.well-known/assetlinks.json`
+
+(Both hosts are in the staging intent filters with `autoVerify: true`, so both must serve the file.)
+
+Fingerprint mapping (`com.zionking.ziona.staging`):
+
+| SHA-256 (prefix) | What it is |
+|---|---|
+| `B8:01:…:2C` | Served live; confirm in Play Console → App integrity (expected: Play app signing key) |
+| `5B:5B:…:8B` | EAS staging keystore (SHA-1 `DF:B6:…:30`) — signs sideloaded/internal-distribution builds. Verified from the staging AAB signature. **Must stay listed** or direct-installed builds won't auto-verify |
+| `F2:4B…`, `CB:8F…`, `83:1C…` | Prior/retired certs (as supplied) — harmless, prune when sure they're dead |
+
+> If verification ever fails after a keystore rotation, the fix is appending the new SHA-256 here — never deleting the file or swapping the package name.
+
 ## iOS: `/.well-known/apple-app-site-association`
 
 Serve at:

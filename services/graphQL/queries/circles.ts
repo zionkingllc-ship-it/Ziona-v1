@@ -176,6 +176,17 @@ export const GET_CIRCLE_FEED = `
         commentsCount
         prayedCount
         anchorLikedCount
+        anchorReference {
+          anchorId
+          anchorType
+          title
+          content
+          mediaUrl
+          backgroundImage
+          backgroundColors
+          bibleReference
+          bibleText
+        }
         savedCount
         sharedCount
         user {
@@ -281,6 +292,17 @@ export const GET_CIRCLE_FEED_DATA = `
         commentsCount
         prayedCount
         anchorLikedCount
+        anchorReference {
+          anchorId
+          anchorType
+          title
+          content
+          mediaUrl
+          backgroundImage
+          backgroundColors
+          bibleReference
+          bibleText
+        }
         savedCount
         sharedCount
         user {
@@ -582,6 +604,17 @@ export const GET_CIRCLE_POST = `
       comments
       commentsCount
       prayedCount
+      anchorReference {
+        anchorId
+        anchorType
+        title
+        content
+        mediaUrl
+        backgroundImage
+        backgroundColors
+        bibleReference
+        bibleText
+      }
       savedCount
       sharedCount
       user {

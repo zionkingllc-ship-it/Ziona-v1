@@ -1,14 +1,18 @@
 [
   {
     "relation": [
-      "delegate_permission/common.handle_all_urls"
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
     ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.zionking.ziona.staging",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_STAGING_KEYSTORE_SHA256_1",
-        "REPLACE_WITH_STAGING_KEYSTORE_SHA256_2"
+        "B8:01:9A:D4:37:0C:D5:F4:4F:4F:AF:29:CA:65:2F:54:84:BE:47:9C:24:3E:B1:10:D7:76:FE:10:82:75:97:2C",
+        "F2:4B:BA:DA:FA:45:1A:87:F6:E6:E3:87:D7:49:E1:A1:02:62:C6:94:B9:AA:77:F4:39:20:7E:64:CB:F2:54:6D",
+        "CB:8F:7C:0F:2C:C5:43:81:79:A6:46:E7:AD:0A:D6:66:B8:BB:40:3E:92:EA:99:46:4F:66:B5:DA:10:14:BE:43",
+        "83:1C:A3:01:BF:EE:3F:F6:20:63:1C:FB:8E:1B:30:43:04:DB:F4:0C:B6:EB:A1:4C:7C:A2:DA:18:00:A9:81:56",
+        "5B:5B:FF:30:C5:08:93:C0:23:A1:DE:BF:5E:08:DA:7A:B5:A4:45:81:14:4D:97:91:81:BD:E9:87:0D:5D:C8:8B"
       ]
     }
   }

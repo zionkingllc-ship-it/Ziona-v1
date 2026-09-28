@@ -1,3 +1,4 @@
+import AnchorBibleVerseCard from "@/components/circles/AnchorBibleVerseCard";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import AnchorImageView from "@/components/circles/AnchorImageView";
@@ -20,7 +21,7 @@ import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width;
 
-type SlideType = "text" | "video" | "image" | "action";
+type SlideType = "verse" | "text" | "video" | "image" | "action";
 
 type SlideItem = {
   id: string;
@@ -49,14 +50,14 @@ function createSlides(
   if (bibleReference) {
     slides.push({
       id: "verse",
-      type: "text",
+      type: "verse",
       bibleReference,
       bibleText,
       label: "Bible Verse",
     });
   }
 
-  if (text) {
+  if (text?.trim()) {
     const cleanText = (image || video) ? stripMediaFromHtml(text) : text;
     const chunks = isHtml(cleanText) ? chunkHtmlByBlocks(cleanText) : chunkText(cleanText);
     chunks.forEach((chunk, index) => {
@@ -266,14 +267,13 @@ export default function AnchorUnifiedView() {
       >
         {slides.map((item, index) => (
           <View key={item.id} style={styles.slide}>
-            {item.type === "text" ? (
+            {item.type === "verse" ? (
               <View style={styles.textWrapper}>
-                <AnchorTextCard
-                  text={item.text}
-                  bibleReference={item.bibleReference}
-                  bibleText={item.bibleText}
-                  label={item.label}
-                />
+                <AnchorBibleVerseCard bibleReference={item.bibleReference} bibleText={item.bibleText} />
+              </View>
+            ) : item.type === "text" ? (
+              <View style={styles.textWrapper}>
+                <AnchorTextCard text={item.text} label={item.label} />
               </View>
             ) : item.type === "video" ? (
               <AnchorVideoPlayer

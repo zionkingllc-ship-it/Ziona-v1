@@ -741,6 +741,19 @@ export type CircleMembersPaginatedType = {
   totalPages: Scalars['Int']['output'];
 };
 
+export type CirclePostAnchorReferenceType = {
+  __typename: 'CirclePostAnchorReferenceType';
+  anchorId: Maybe<Scalars['ID']['output']>;
+  anchorType: Scalars['String']['output'];
+  backgroundColors: Array<Scalars['String']['output']>;
+  backgroundImage: Maybe<Scalars['String']['output']>;
+  bibleReference: Maybe<Scalars['String']['output']>;
+  bibleText: Maybe<Scalars['String']['output']>;
+  content: Maybe<Scalars['String']['output']>;
+  mediaUrl: Maybe<Scalars['String']['output']>;
+  title: Maybe<Scalars['String']['output']>;
+};
+
 export type CirclePostAuthorType = {
   __typename: 'CirclePostAuthorType';
   avatar: Maybe<Scalars['String']['output']>;
@@ -804,6 +817,7 @@ export enum CirclePostFilterEnum {
 export type CirclePostType = {
   __typename: 'CirclePostType';
   anchorLikedCount: Scalars['Int']['output'];
+  anchorReference: Maybe<CirclePostAnchorReferenceType>;
   comments: Scalars['Int']['output'];
   commentsCount: Scalars['Int']['output'];
   createdAt: Scalars['DateTime']['output'];
@@ -1884,6 +1898,7 @@ export type MutationCreateBookmarkFolderArgs = {
 
 
 export type MutationCreateCirclePostArgs = {
+  anchorId?: InputMaybe<Scalars['String']['input']>;
   circleId: Scalars['String']['input'];
   duration?: InputMaybe<Scalars['Int']['input']>;
   height?: InputMaybe<Scalars['Int']['input']>;
@@ -2360,6 +2375,7 @@ export type NotificationConnection = {
 
 export type NotificationDestinationType = {
   __typename: 'NotificationDestinationType';
+  circleId: Maybe<Scalars['ID']['output']>;
   deepLink: Maybe<Scalars['String']['output']>;
   entityId: Maybe<Scalars['ID']['output']>;
   entityType: Scalars['String']['output'];
@@ -2700,7 +2716,7 @@ export type Query = {
   /** Generate 4 available username suggestions based on email and optional date of birth. Returns unique, available usernames. */
   suggestUsernames: Array<Scalars['String']['output']>;
   suggestedCircles: Array<CircleType>;
-  /** Get highly validated creators algorithmically dynamically curated for the authenticating user. */
+  /** Creators to follow. Personalised for a signed-in user; guests get a shared list ranked on engagement, with slots held for newer creators. */
   suggestedCreators: Array<SuggestedCreatorType>;
   /** Returns the currently active Terms of Service. */
   termsOfService: LegalDocumentType;

@@ -1,3 +1,4 @@
+import AnchorBibleVerseCard from "@/components/circles/AnchorBibleVerseCard";
 import AnchorActionContent from "@/components/circles/AnchorActionContent";
 import AnchorFooter from "@/components/circles/AnchorFooter";
 import CountdownTimer from "@/components/ui/CountdownTimer";
@@ -13,11 +14,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image, Text, YStack } from "tamagui";
+import { Image, Text } from "tamagui";
 import { saveAnchorRef, saveAnchorText } from "@/utils/anchorRef";
 import { useCircleMembership } from "@/hooks/useCircles";
 import { useRequireCircleMembership } from "@/hooks/useRequireCircleMembership";
-import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
+import AnchorTextCard from "@/components/circles/AnchorTextCard";
 import { chunkHtmlByBlocks, chunkText, isHtml, stripMediaFromHtml } from "@/lib/anchorHtmlChunk";
 
 const { width, height } = Dimensions.get("window");
@@ -26,7 +27,7 @@ const ITEM_WIDTH = SLIDE_WIDTH + 16;
 
 type SlideItem = {
   id: string;
-  type: "text" | "image" | "action";
+  type: "verse" | "text" | "image" | "action";
   text?: string;
   image?: string;
   bibleReference?: string;
@@ -49,14 +50,14 @@ function createSlides(
   if (bibleReference) {
     slides.push({
       id: "verse",
-      type: "text",
+      type: "verse",
       bibleReference,
       bibleText,
       label: "Bible Verse",
     });
   }
 
-  if (text) {
+  if (text?.trim()) {
     const cleanText = mediaUrl ? stripMediaFromHtml(text) : text;
     const chunks = isHtml(cleanText) ? chunkHtmlByBlocks(cleanText) : chunkText(cleanText);
 
@@ -230,55 +231,10 @@ export default function AnchorTextView() {
                   isExpired={expired === "1"}
                 />
               </View>
+            ) : item.type === "verse" ? (
+              <AnchorBibleVerseCard bibleReference={item.bibleReference} bibleText={item.bibleText} />
             ) : (
-              <View style={styles.textSlide}>
-                <View style={styles.slideCard}>
-                  <View style={styles.labelBadge}>
-                    <Text style={styles.labelText}>{item.label}</Text>
-                  </View>
-                  {item.bibleReference && (
-                    <YStack alignItems="center" marginTop={30} gap={6}>
-                      {item.bibleText && (
-                        <Text style={styles.referenceText}>
-                          {item.bibleText}
-                        </Text>
-                      )}
-                      <Text
-                        style={[
-                          styles.referenceText,
-                          { fontSize: 13, fontWeight: "500", top: 60 },
-                        ]}
-                      >
-                        {item.bibleReference}
-                      </Text>
-                    </YStack>
-                  )}
-                  {item.text && (
-                    <AnchorHtmlText
-                      html={item.text}
-                      contentWidth={SLIDE_WIDTH - 32}
-                    />
-                  )}
-                </View>
-                <YStack
-                  style={{
-                    marginTop: -30,
-                    width: SLIDE_WIDTH - 18,
-                    height: 50,
-                    borderRadius: 24,
-                    backgroundColor: "rgb(255, 255, 255)",
-                  }}
-                />
-                <YStack
-                  style={{
-                    marginTop: -40,
-                    width: SLIDE_WIDTH - 30,
-                    height: 50,
-                    borderRadius: 24,
-                    backgroundColor: "rgb(255, 255, 255)",
-                  }}
-                />
-              </View>
+              <AnchorTextCard text={item.text} label={item.label} />
             )}
           </View>
         ))}

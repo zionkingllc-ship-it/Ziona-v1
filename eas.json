@@ -91,7 +91,7 @@
     },
     "staging": {
       "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "serviceAccountKeyPath": "./ziona-stagin-1dffb27beb7b.json",
         "track": "internal"
       },
       "ios": {

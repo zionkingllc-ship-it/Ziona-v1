@@ -89,7 +89,7 @@ module.exports = {
       intentFilters: [
         {
           action: "VIEW",
-          autoVerify: variant.scheme === "ziona", // only production verifies
+          autoVerify: true, // staging + production verify (assetlinks.json served on all hosts)
           data: [
             {
               scheme: "https",

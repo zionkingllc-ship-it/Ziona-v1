@@ -1,7 +1,7 @@
 import { Image as ExpoImage } from "expo-image";
 import { Text, View } from "tamagui";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
@@ -15,7 +15,7 @@ import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useNotificationMuteStore } from "@/store/useNotificationMuteStore";
 import { useToggleFollow } from "@/hooks/useFollow";
-import { resolveDestinationFromNotification } from "@/src/services/notifications/notificationNavigation";
+import { resolveDestinationFromNotification, resolveFollowRowHref } from "@/src/services/notifications/notificationNavigation";
 import { updateNotificationPreferences } from "@/services/graphQL/queries/actions/notifications";
 
 const filters: { label: string; category?: NotificationCategory }[] = [
@@ -165,10 +165,26 @@ export default function ActivityScreen() {
     updateNotificationPreferences({ mutedUserIds: newMuted } as any).catch(() => {});
   }, [mutedUserIds, muteUserLocal]);
 
+  // Nested action buttons (follow/menu) live inside the row Pressable. RN can
+  // still bubble the press to the row, so actions stamp the time and the row
+  // handler skips navigation when an action just fired.
+  const lastActionPressRef = useRef(0);
+  const markActionPress = useCallback(() => {
+    lastActionPressRef.current = Date.now();
+  }, []);
+
   const handleNotificationPress = useCallback(
     (item: NotificationItem) => {
+      if (Date.now() - lastActionPressRef.current < 750) return;
       if (!item.isRead) {
         markAsRead.mutate(item.id);
+      }
+      // Follow/suggestion rows open the actor's profile when the row
+      // (avatar/name/message side) is pressed.
+      const followHref = resolveFollowRowHref(item);
+      if (followHref) {
+        router.push(followHref as any);
+        return;
       }
       const href = resolveDestinationFromNotification(item);
       if (href) {
@@ -181,13 +197,14 @@ export default function ActivityScreen() {
   const handleFollowPress = useCallback(
     (e: any, item: NotificationItem) => {
       e.stopPropagation?.();
+      markActionPress();
       if (!item.user?.id || item.user.id === currentUserId) return;
       const viewerState = item.user.viewerState;
       if (!viewerState) return;
       setFollowingIds((prev) => new Set(prev).add(item.user!.id!));
       toggleFollow({ userId: item.user.id, currentFollowing: viewerState.isFollowing });
     },
-    [currentUserId, toggleFollow],
+    [currentUserId, toggleFollow, markActionPress],
   );
 
   const renderNotification = useCallback(
@@ -231,7 +248,7 @@ export default function ActivityScreen() {
               </Pressable>
             )}
             {showMenuButton && (
-              <Pressable style={styles.menuButton} hitSlop={10} onPress={() => setMenuItem(item)}>
+              <Pressable style={styles.menuButton} hitSlop={10} onPress={(e) => { e.stopPropagation?.(); markActionPress(); setMenuItem(item); }}>
                 <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
               </Pressable>
             )}
@@ -240,7 +257,7 @@ export default function ActivityScreen() {
         </Pressable>
       );
     },
-    [formatTime, handleNotificationPress, handleFollowPress, currentUserId],
+    [formatTime, handleNotificationPress, handleFollowPress, markActionPress, currentUserId],
   );
 
   if (!isAuthenticated) {

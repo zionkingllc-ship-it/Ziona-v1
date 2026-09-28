@@ -613,7 +613,7 @@ function CommentItem({
           </YStack>
         </XStack>
 
-        <Pressable onPress={() => toggleLike(comment.id, !!comment.viewerState?.liked)} disabled={toggleLikeMutation.isPending}>
+        <Pressable style={{ alignSelf: "flex-start" }} onPress={() => toggleLike(comment.id, !!comment.viewerState?.liked)} disabled={toggleLikeMutation.isPending}>
           {comment.viewerState?.liked ? (
             <Image source={likeIconActive} width={20} height={20} />
           ) : (

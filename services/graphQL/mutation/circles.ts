@@ -41,8 +41,8 @@ export const LEAVE_CIRCLE = `
 `;
 
 export const CREATE_CIRCLE_POST = `
-  mutation CreateCirclePost($circleId: String!, $text: String, $mediaIds: [String!], $mediaType: MediaType) {
-    createCirclePost(circleId: $circleId, text: $text, mediaIds: $mediaIds, mediaType: $mediaType) {
+  mutation CreateCirclePost($circleId: String!, $text: String, $mediaIds: [String!], $mediaType: MediaType, $anchorId: String) {
+    createCirclePost(circleId: $circleId, text: $text, mediaIds: $mediaIds, mediaType: $mediaType, anchorId: $anchorId) {
       success
       error {
         code
@@ -119,12 +119,14 @@ export async function createCirclePost(
   text: string,
   mediaIds: string[],
   mediaType?: string,
+  anchorId?: string,
 ) {
   const res = await graphqlRequest(CREATE_CIRCLE_POST, {
     circleId,
     text,
     mediaIds,
     mediaType,
+    anchorId,
   });
   return res?.createCirclePost;
 }

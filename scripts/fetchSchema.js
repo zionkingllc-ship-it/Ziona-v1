@@ -64,7 +64,7 @@ const postData = JSON.stringify({ query });
 const rootDir = path.resolve(__dirname, '..');
 
 const options = {
-  hostname: 'ziona-api-staging.onrender.com',
+  hostname: 'api.staging.ziona.app',
   path: '/graphql/',
   method: 'POST',
   headers: { 'Content-Type': 'application/json' }

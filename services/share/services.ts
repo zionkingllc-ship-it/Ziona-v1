@@ -3,7 +3,12 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import * as Haptics from "expo-haptics";
 import { Post } from "@/types/post"; 
 import { SharePayload } from "./adapter";
-const DOMAIN = process.env.EXPO_PUBLIC_SHARE_DOMAIN || "https://ziona.app";
+const configuredDomain = (process.env.EXPO_PUBLIC_SHARE_DOMAIN?.trim() || "https://ziona.app")
+  .replace(/\/+$/, "");
+// Build profiles may supply a bare hostname; shared links need an absolute URL.
+const DOMAIN = /^https?:\/\//i.test(configuredDomain)
+  ? configuredDomain
+  : `https://${configuredDomain.replace(/^\/+/, "")}`;
 const DEEP_LINK_SCHEME = process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME || "ziona";
 
 export function buildPostUrl(postId: string) {

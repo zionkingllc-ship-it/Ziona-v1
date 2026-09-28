@@ -1,29 +1,39 @@
 import React from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, View } from "react-native";
 import { Text, YStack } from "tamagui";
-import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
 
 const { width, height } = Dimensions.get("window");
 const SLIDE_WIDTH = width - 32;
 const CARD_MAX_HEIGHT = 512;
 
-type AnchorTextCardProps = {
-  text?: string;
-  label: string;
+type AnchorBibleVerseCardProps = {
+  bibleReference?: string;
+  bibleText?: string;
 };
 
-export default function AnchorTextCard({
-  text,
-  label,
-}: AnchorTextCardProps) {
+export default function AnchorBibleVerseCard({
+  bibleReference,
+  bibleText,
+}: AnchorBibleVerseCardProps) {
   return (
     <View style={styles.textSlide}>
       <View style={styles.slideCard}>
         <View style={styles.labelBadge}>
-          <Text style={styles.labelText}>{label}</Text>
+          <Text style={styles.labelText}>Bible Verse</Text>
         </View>
-        {text && (
-          <AnchorHtmlText html={text} contentWidth={SLIDE_WIDTH - 32} />
+        {(bibleText || bibleReference) && (
+          <ScrollView
+            style={{ width: "100%", flexShrink: 1 }}
+            contentContainerStyle={{ alignItems: "center", paddingTop: 30, paddingBottom: 16 }}
+            nestedScrollEnabled
+          >
+            {bibleText && (
+              <Text style={styles.referenceText}>{bibleText}</Text>
+            )}
+            <Text style={[styles.referenceText, { fontSize: 13, fontWeight: "500" }]}>
+              {bibleReference}
+            </Text>
+          </ScrollView>
         )}
       </View>
       <YStack

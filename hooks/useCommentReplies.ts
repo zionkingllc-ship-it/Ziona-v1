@@ -11,21 +11,30 @@ function isTempId(id: string): boolean {
   return id.startsWith(TEMP_ID_PREFIX);
 }
 
-function findRealId(queryClient: ReturnType<typeof useQueryClient>, tempId: string): string | null {
-  const queries = queryClient.getQueriesData({ queryKey: ["postComments"], exact: false });
-  for (const [, data] of queries as any[]) {
-    if (!data) continue;
-    const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
-    for (const page of pages) {
-      for (const c of page.comments ?? []) {
-        if (c.tempId === tempId) return c.id;
-        if (c.replies) {
-          for (const r of c.replies) if (r.tempId === tempId) return r.id;
-        }
-      }
-    }
-  }
-  return null;
+type ReplyLikeVariables = {
+  postId: string;
+  commentId: string;
+  replyId: string;
+  isLiked: boolean;
+};
+
+function resolveReplyId(queryClient: ReturnType<typeof useQueryClient>, vars: ReplyLikeVariables): string {
+  const { postId, commentId, replyId } = vars;
+  if (replyId === commentId) throw new Error("A reply like must target a reply, not its parent");
+  if (!isTempId(replyId)) return replyId;
+
+  const postData = queryClient.getQueryData(["postComments", postId]) as any;
+  const replyData = queryClient.getQueryData(["commentReplies", commentId]) as any;
+  const replies = [
+    ...(postData?.pages ?? []).flatMap((page: any) =>
+      (page.comments ?? []).filter((comment: any) => comment.id === commentId)
+        .flatMap((comment: any) => comment.replies ?? [])),
+    ...(replyData?.pages ?? []).flatMap((page: any) => page.comments ?? []),
+  ];
+  const savedReply = replies.find((reply: any) =>
+    reply.tempId === replyId && reply.id !== commentId && !isTempId(reply.id));
+  if (!savedReply) throw new Error("Wait for the reply to finish posting before liking it");
+  return savedReply.id;
 }
 
 export function useCommentReplies(commentId: string) {
@@ -42,21 +51,14 @@ export function useReplyLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (_vars: any, context?: any) => {
-      const wasLiked = context?.preOptimisticWasLiked ?? false;
-      let replyId = _vars.replyId;
-
-      if (isTempId(replyId)) {
-        const realId = findRealId(queryClient, replyId);
-        if (realId) {
-          replyId = realId;
-        }
-      }
-
-      return wasLiked ? unlikeComment(replyId) : likeComment(replyId);
+    mutationFn: async (vars: ReplyLikeVariables) => {
+      const replyId = resolveReplyId(queryClient, vars);
+      return vars.isLiked ? unlikeComment(replyId) : likeComment(replyId);
     },
 
-    onMutate: async ({ postId, commentId, replyId, isLiked }) => {
+    onMutate: async (vars: ReplyLikeVariables) => {
+      const { postId, commentId, isLiked } = vars;
+      const replyId = resolveReplyId(queryClient, vars);
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ["postComments", postId] }),
         queryClient.cancelQueries({ queryKey: ["commentReplies", commentId] }),
@@ -71,35 +73,9 @@ export function useReplyLike() {
         commentId,
       ]);
 
-      let foundInPostComments = false;
-      let preOptimisticWasLiked = isLiked;
-
-      if (preOptimisticWasLiked === undefined) {
-        const postData = queryClient.getQueryData(["postComments", postId]) as any;
-        if (postData?.pages) {
-          for (const page of postData.pages) {
-            for (const c of page.comments ?? []) {
-              if (c.id === commentId) {
-                const r = (c.replies ?? []).find((x: any) => x.id === replyId);
-                if (r) preOptimisticWasLiked = r.viewerState?.liked ?? false;
-              }
-            }
-          }
-        }
-        if (preOptimisticWasLiked === undefined) {
-          const replyData = queryClient.getQueryData(["commentReplies", commentId]) as any;
-          if (replyData?.pages) {
-            for (const page of replyData.pages) {
-              const r = (page.comments ?? []).find((x: any) => x.id === replyId);
-              if (r) preOptimisticWasLiked = r.viewerState?.liked ?? false;
-            }
-          }
-        }
-      }
-
       const toggleReply = (reply: any) => {
         if (reply.id !== replyId) return reply;
-        const wasLiked = reply.viewerState?.liked ?? false;
+        const wasLiked = isLiked;
         return {
           ...reply,
           viewerState: {
@@ -125,7 +101,6 @@ export function useReplyLike() {
               ...page,
               comments: (page.comments ?? []).map((comment: any) => {
                 if (comment.id !== commentId) return comment;
-                foundInPostComments = true;
                 return {
                   ...comment,
                   replies: (comment.replies ?? []).map(toggleReply),
@@ -153,12 +128,12 @@ export function useReplyLike() {
       return {
         previousPostComments,
         previousReplies,
-        foundInPostComments,
-        preOptimisticWasLiked,
+        replyId,
       };
     },
 
-    onSuccess: (response, { postId, commentId, replyId }) => {
+    onSuccess: (response, { postId, commentId }, context) => {
+      const replyId = context?.replyId;
       if (!response) return;
 
       const syncReply = (reply: any) => {

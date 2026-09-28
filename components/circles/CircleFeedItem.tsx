@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AnchorHtmlText from "@/components/circles/AnchorHtmlText";
+import { stripMediaFromHtml } from "@/lib/anchorHtmlChunk";
 import React, { memo, useState } from "react";
 import { Image as ExpoImage } from "expo-image";
 import { Image, Text, XStack, YStack } from "tamagui";
@@ -11,7 +12,8 @@ import { useCirclePostLike } from "@/hooks/useCirclePostLike";
 import { useMutation } from "@tanstack/react-query";
 import { reportCircleContent } from "@/services/graphQL/mutation/actions/reportCircleContent";
 import { useEffect } from "react";
-import { getAnchorRef, getAnchorText, AnchorRefData } from "@/utils/anchorRef";
+import { getAnchorRef, getAnchorText, mapServerAnchorReference, AnchorRefData } from "@/utils/anchorRef";
+import type { ServerAnchorReference } from "@/utils/anchorRef";
 import { markAnchorViewed } from "@/utils/viewedAnchors";
 import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import OptionsModal from "@/components/ui/modals/OptionsModal";
@@ -76,6 +78,7 @@ type CirclePost = {
     username?: string;
     avatar: string;
   };
+  anchorReference?: ServerAnchorReference | null;
 };
 
 type Props = {
@@ -155,32 +158,45 @@ const CircleFeedItem = memo(function CircleFeedItem({
     getAnchorRef(post.id).then(setAnchorRef).catch(() => {});
   }, [post.id]);
 
+  // Server snapshot wins over device storage (survives reinstall/uninstall).
+  const serverRef = mapServerAnchorReference(post.anchorReference);
+
   const [anchorTextFallback, setAnchorTextFallback] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!anchorRef) {
+    if (!anchorRef && !serverRef?.content) {
       getAnchorText(post.id).then(setAnchorTextFallback).catch(() => {});
     }
-  }, [post.id, anchorRef]);
+  }, [post.id, anchorRef, serverRef?.content]);
 
   const handleLike = (e: any) => {
     e.stopPropagation?.();
     runAction(() => handleToggleLike());
   };
 
-  const resolved = anchorRef;
+  const resolved = serverRef ?? anchorRef;
 
   const isAnchorUnavailable =
     !!resolved?.expiresAt &&
     Date.now() - new Date(resolved.expiresAt).getTime() > ANCHOR_RETENTION_MS;
 
-  const displayAnchorContent =
-    (resolved?.content || anchorTextFallback || (resolved?.type === "text" ? resolved.title : "") || "").trim();
+  // Show exactly one anchor preview: text first, then image, then video.
+  const displayAnchorContent = [
+    resolved?.content,
+    anchorTextFallback,
+    resolved?.bibleText,
+    resolved?.bibleReference,
+  ]
+    .map((text) => stripMediaFromHtml(text || "").trim())
+    .find((text) => text.replace(/<[^>]*>/g, "").replace(/&nbsp;|&#160;|&#xA0;/gi, " ").trim()) || "";
   const hasAnchorContent = !!displayAnchorContent;
   const hasFullRef = !!resolved;
-  const anchorImage = resolved?.mediaUrl || resolved?.anchorImage;
-  const hasAnchorImage = !hasAnchorContent && resolved?.type === "image" && !!anchorImage;
-  const hasAnchorVideo = !hasAnchorContent && resolved?.type === "video";
+  const anchorImage = resolved?.anchorImage?.trim() ||
+    (resolved?.type === "image" ? resolved.mediaUrl?.trim() : undefined);
+  const anchorVideo = resolved?.anchorVideo?.trim() ||
+    (resolved?.type === "video" ? resolved.mediaUrl?.trim() : undefined);
+  const hasAnchorImage = !hasAnchorContent && !!anchorImage;
+  const hasAnchorVideo = !hasAnchorContent && !hasAnchorImage && !!anchorVideo;
 
   const handlePostPress = () => {
     router.push({

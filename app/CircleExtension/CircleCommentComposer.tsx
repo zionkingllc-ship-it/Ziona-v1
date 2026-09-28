@@ -213,7 +213,11 @@ export default function CircleCommentComposer({
         }
 
         for (let attempt = 0; attempt < 3; attempt++) {
-          result = await createCirclePost(circleId, text, mediaIds, mediaType);
+          // Persist the anchor link server-side so the anchor card survives
+          // reinstall (backend snapshots the anchor). Skip temp (unsaved) ids.
+          const snapshotAnchorId =
+            anchorId && !anchorId.startsWith("tempAnchor_") ? anchorId : undefined;
+          result = await createCirclePost(circleId, text, mediaIds, mediaType, snapshotAnchorId);
 
           if (result?.error?.code === "VALIDATION_ERROR" && result?.error?.message?.includes("still processing")) {
             const delay = Math.min(2000 * Math.pow(2, attempt), 8000);

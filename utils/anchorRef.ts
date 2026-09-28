@@ -16,6 +16,51 @@ export type AnchorRefData = {
   backgroundImage?: string;
 };
 
+/** Immutable anchor snapshot served by the backend (CirclePost.anchorReference). */
+export type ServerAnchorReference = {
+  anchorId?: string | null;
+  anchorType: string;
+  title?: string | null;
+  content?: string | null;
+  mediaUrl?: string | null;
+  backgroundImage?: string | null;
+  backgroundColors?: string[] | null;
+  bibleReference?: string | null;
+  bibleText?: string | null;
+};
+
+/**
+ * Map the backend snapshot to the local AnchorRefData shape.
+ * Server data wins over device storage (survives reinstall/uninstall).
+ * Returns null when the snapshot carries nothing renderable.
+ */
+export function mapServerAnchorReference(
+  ref: ServerAnchorReference | null | undefined
+): AnchorRefData | null {
+  if (!ref) return null;
+  const rawType = (ref.anchorType || "").toLowerCase();
+  const type: AnchorRefData["type"] =
+    rawType === "image" || rawType === "video" ? rawType : "text";
+  const content = ref.content?.trim() ? ref.content : undefined;
+  const mediaUrl = ref.mediaUrl?.trim() ? ref.mediaUrl : undefined;
+  const backgroundImage = ref.backgroundImage?.trim() ? ref.backgroundImage : undefined;
+  const bibleText = ref.bibleText?.trim() ? ref.bibleText : undefined;
+  const bibleReference = ref.bibleReference?.trim() ? ref.bibleReference : undefined;
+  const backgroundColors = ref.backgroundColors?.filter(Boolean).join(",") || undefined;
+  if (!content && !mediaUrl && !backgroundImage && !bibleText && !bibleReference) return null;
+  return {
+    type,
+    title: ref.title?.trim() ? ref.title : "Anchor",
+    content,
+    mediaUrl,
+    anchorId: ref.anchorId || undefined,
+    bibleReference,
+    bibleText,
+    backgroundImage,
+    backgroundColors,
+  };
+}
+
 const ANCHOR_REF_PREFIX = "anchorRef_";
 const MAX_SAVE_RETRIES = 3;
 const RETRY_DELAY_MS = 100;

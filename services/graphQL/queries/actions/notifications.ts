@@ -31,6 +31,7 @@ export async function getNotifications(limit: number = 50, cursor?: string, cate
             entityType
             entityId
             secondaryEntityId
+            circleId
           }
           createdAt
           user {
