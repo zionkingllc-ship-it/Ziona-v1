@@ -36,6 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { onAppEvent } from "@/src/data/eventBus";
+import { useAppTrackingTransparency } from "@/hooks/useAppTrackingTransparency";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -58,6 +59,18 @@ export default function Feed() {
   const followingQuery = useFollowingFeed();
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
   const isFocused = useIsFocused();
+
+  /* -------- APP TRACKING TRANSPARENCY --------
+   * Prompted once the user has actually seen feed content, not on first
+   * launch, per Apple's guidance. */
+  const [readyForTrackingPrompt, setReadyForTrackingPrompt] = useState(false);
+  useEffect(() => {
+    if (!forYouQuery.isSuccess) return;
+    const timer = setTimeout(() => setReadyForTrackingPrompt(true), 2500);
+    return () => clearTimeout(timer);
+  }, [forYouQuery.isSuccess]);
+  useAppTrackingTransparency(readyForTrackingPrompt);
+
   const [refreshingFeed, setRefreshingFeed] = useState(false);
   const { data: unreadCount } = useUnreadCount();
   const [scrollToTopSignal, setScrollToTopSignal] = useState(0);

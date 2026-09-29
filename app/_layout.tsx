@@ -7,6 +7,7 @@ import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
 import { OfflineProvider } from "@/providers/OfflineProvider";
 import { startAuthHealthMonitor, stopAuthHealthMonitor } from "@/services/auth/authHealth";
+import { initMetaSDK } from "@/services/analytics/metaEvents";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
@@ -51,6 +52,7 @@ export default function RootLayout() {
   useEffect(() => {
     loadCategories();
     initializeNotificationStore();
+    initMetaSDK();
     return () => {
       cleanupNotificationStore();
     };
