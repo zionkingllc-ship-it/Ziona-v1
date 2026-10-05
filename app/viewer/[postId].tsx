@@ -1,50 +1,74 @@
 import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
-import { useUserPosts } from "@/hooks/useUserPost";
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useUserSavedPosts } from "@/hooks/useUserSavedPosts";
 import { useDiscoverFeed } from "@/hooks/useDiscover";
+import { usePostById } from "@/hooks/usePostById";
+import { useUserPosts } from "@/hooks/useUserPost";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { useIsFocused } from "@react-navigation/native";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { View } from "tamagui";
+import { ActivityIndicator, TouchableOpacity, StyleSheet } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Text, View, XStack } from "tamagui";
+import { ChevronLeft } from "@tamagui/lucide-icons";
+
+const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    left: 12,
+    zIndex: 9999,
+    padding: 6,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 20,
+  },
+});
 
 export default function PostViewerScreen() {
-  const { source, index, postId, categoryId, filter } = useLocalSearchParams<{
+  const { source, index, postId, categoryId, slug, filter, userId: userIdParam, openComments } = useLocalSearchParams<{
     source?: string;
     index?: string;
     postId: string;
     categoryId?: string;
+    slug?: string;
     filter?: string;
+    userId?: string;
+    openComments?: string;
   }>();
 
   const isLiked = source === "liked";
   const isBookmarks = source === "bookmarks";
   const isSaved = source === "saved";
   const isDiscover = !!categoryId;
+  const isUserPosts = source === "user";
 
   /* ================= DATA ================= */
+
+  const {
+    data: singlePost,
+    isLoading: isSingleLoading,
+    isError: isSingleError,
+    error: singleError,
+    refetch: refetchSinglePost,
+  } = usePostById(postId);
 
   const {
     posts: userPosts,
     isLoading: isUserLoading,
     isError: isUserError,
-    error: userError,
     refetch: refetchUserPosts,
-  } = useUserPosts();
+  } = useUserPosts(userIdParam, { enabled: isUserPosts });
 
   const {
     posts: discoverPosts,
     isLoading: isDiscoverLoading,
     isError: isDiscoverError,
-  } = useDiscoverFeed(categoryId);
+  } = useDiscoverFeed(categoryId, slug);
 
   const {
     data: likedData,
@@ -52,21 +76,21 @@ export default function PostViewerScreen() {
     isError: isLikedError,
     error: likedError,
     refetch: refetchLikedPosts,
-  } = useLikedPosts();
+  } = useLikedPosts({ enabled: isLiked });
 
   const {
     data: bookmarkData,
     isLoading: isBookmarkLoading,
     isError: isBookmarkError,
     refetch: refetchBookmarks,
-  } = useBookmarkFolders();
+  } = useBookmarkFolders({ enabled: isBookmarks });
 
   const {
     data: savedData,
     isLoading: isSavedLoading,
     isError: isSavedError,
     refetch: refetchSavedPosts,
-  } = useUserSavedPosts();
+  } = useUserSavedPosts({ enabled: isSaved });
 
   /*  NORMALIZE LIKED POSTS */
   const likedPosts: FeedPost[] = useMemo(() => {
@@ -164,6 +188,11 @@ export default function PostViewerScreen() {
     isLoading = isSavedLoading;
     isError = isSavedError;
     refetch = refetchSavedPosts;
+  } else if (isUserPosts) {
+    posts = userPosts;
+    isLoading = isUserLoading;
+    isError = isUserError;
+    refetch = refetchUserPosts;
   } else if (isDiscover) {
     // Discover/category feed
     posts = filteredDiscoverPosts;
@@ -171,12 +200,18 @@ export default function PostViewerScreen() {
     isError = isDiscoverError;
     refetch = () => {}; // No refetch for discover
   } else {
-    // Default: user posts
-    posts = userPosts;
-    isLoading = isUserLoading;
-    isError = isUserError;
-    error = userError;
-    refetch = refetchUserPosts;
+    // Default: fetch post by ID (deep link from share)
+    posts = singlePost ? [singlePost] : [];
+    isLoading = isSingleLoading;
+    isError = isSingleError;
+    error = singleError;
+    refetch = refetchSinglePost;
+  }
+
+  // fallback to singlePost when the paginated source list doesn't contain the target post
+  if (!!source && singlePost && !posts.find((p) => p.id === postId)) {
+    posts = [singlePost, ...posts];
+    isLoading = isSingleLoading;
   }
 
   const [containerHeight, setContainerHeight] = useState(0);
@@ -189,11 +224,11 @@ export default function PostViewerScreen() {
 
   const targetIndex = useMemo(() => {
     const idx = posts.findIndex((p) => p.id === postId);
-    console.log("[Viewer] Finding post:", { postId, postsCount: posts.length, targetIndex: idx });
     return idx;
   }, [postId, posts]);
 
   const isReady = !isLoading && posts.length > 0 && targetIndex >= 0;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!isError) return;
@@ -209,9 +244,13 @@ export default function PostViewerScreen() {
     setModalVisible(true);
   }, [isError, error]);
 
+  // A notification can reference a removed post or an interaction ID. Treat
+  // an empty terminal response as a completed lookup instead of spinning.
+  const postNotFound = !isLoading && (posts.length === 0 || targetIndex === -1);
+
   /* ================= LOADING ================= */
 
-  if (isLoading || !isReady) {
+  if (isLoading) {
     return (
       <View flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size={40} color={colors.primary} />
@@ -219,7 +258,56 @@ export default function PostViewerScreen() {
     );
   }
 
+  if (postNotFound) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <View flex={1} justifyContent="center" alignItems="center" paddingHorizontal={24}>
+          <Text fontSize={20} fontWeight="600" color={colors.black} marginBottom={8}>
+            Post not found
+          </Text>
+          <Text fontSize={14} color={colors.gray} textAlign="center" marginBottom={24}>
+            This post could not be found in your feed. It may have been removed.
+          </Text>
+          <XStack gap={12}>
+            <TouchableOpacity
+              onPress={() => refetch()}
+              style={{
+                backgroundColor: colors.primary,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 8,
+              }}
+            >
+              <Text color="white" fontWeight="600">Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{
+                backgroundColor: colors.gray,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 8,
+              }}
+            >
+              <Text color="white" fontWeight="600">Go Back</Text>
+            </TouchableOpacity>
+          </XStack>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   /* ================= MAIN ================= */
+
+  const handleBackPress = () => {
+    try {
+      router.back();
+    } catch (err) {
+      // fallback: if userId provided, navigate to guest profile
+      if (userIdParam) router.push({ pathname: "/guest", params: { userId: userIdParam } });
+      else router.back();
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -240,7 +328,20 @@ export default function PostViewerScreen() {
             containerWidth={containerWidth}
             tabBarHeight={0}
             isScreenFocused={isFocused}
+            autoOpenComments={openComments === "1"}
           />
+        )}
+
+        {/* Back button */}
+        {(!source || isUserPosts || isDiscover || isLiked || isBookmarks || isSaved) && (
+          <TouchableOpacity
+            accessibilityLabel="Go back"
+            onPress={handleBackPress}
+            hitSlop={8}
+            style={[styles.backBtn, { top: insets.top + 8 }]}
+          >
+            <ChevronLeft size={28} color={colors.white} />
+          </TouchableOpacity>
         )}
       </View>
 

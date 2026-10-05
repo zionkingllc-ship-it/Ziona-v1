@@ -1,6 +1,4 @@
 import {
-  invalidateLikeQueries,
-  patchLikeAcrossQueries,
   removePostFromLikedQueries,
 } from "@/services/graphQL/queries/actions/likeCache";
 import { usePostActionsStore } from "@/store/usePostActionStore";
@@ -29,22 +27,12 @@ export function useToggleLike() {
 
       setLikePending(postId, true);
       toggleLikeStore(postId, next);
-      patchLikeAcrossQueries(queryClient, {
-        postId,
-        liked: next,
-      });
 
       return { postId, previous: currentLiked };
     },
 
-    onSuccess: (result, variables) => {
+    onSuccess: (_result, variables) => {
       const nextLiked = !variables.currentLiked;
-
-      patchLikeAcrossQueries(queryClient, {
-        postId: variables.postId,
-        liked: nextLiked,
-        likesCount: Number(result?.stats?.likesCount ?? 0),
-      });
 
       if (!nextLiked) {
         removePostFromLikedQueries(queryClient, variables.postId);
@@ -55,15 +43,10 @@ export function useToggleLike() {
       if (!ctx) return;
 
       toggleLikeStore(ctx.postId, ctx.previous);
-      patchLikeAcrossQueries(queryClient, {
-        postId: ctx.postId,
-        liked: ctx.previous,
-      });
     },
 
-    onSettled: async (_data, _error, variables) => {
+    onSettled: (_data, _error, variables) => {
       setLikePending(variables.postId, false);
-      await invalidateLikeQueries(queryClient);
     },
   });
 }

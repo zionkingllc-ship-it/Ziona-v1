@@ -7,10 +7,10 @@ export function normalizeMedia(p: any, base: any) {
   if (p.image?.items?.length) {
     const media = p.image.items
       .map((i: any) => buildMediaItem({ ...i, type: "image" }))
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
     if (!media.length) {
-      console.log("[normalizeMedia] ❌ Image items empty, returning null");
       return null;
     }
 
@@ -28,7 +28,6 @@ export function normalizeMedia(p: any, base: any) {
     const rawThumbnail = fixMediaUrl(p.video.thumbnailUrl);
 
     if (!url) {
-      console.log("[normalizeMedia] ❌ Video URL invalid after fixMediaUrl, returning null");
       return null;
     }
 
@@ -36,12 +35,6 @@ export function normalizeMedia(p: any, base: any) {
       rawThumbnail &&
       !rawThumbnail.endsWith(".mp4") &&
       !rawThumbnail.includes(".mp4?");
-
-    console.log("[normalizeMedia] ✅ Video processed:", {
-      url,
-      thumbnail: isValidThumbnail ? rawThumbnail : "INVALID/NONE",
-      hasThumbnail: !!isValidThumbnail
-    });
 
     return {
       ...base,
@@ -59,10 +52,9 @@ export function normalizeMedia(p: any, base: any) {
   }
 
   if (Array.isArray(p.media) && p.media.length > 0) {
-    const media = p.media.map(buildMediaItem).filter(Boolean);
+    const media = p.media.map(buildMediaItem).filter(Boolean).sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
     if (!media.length) {
-      console.log("[normalizeMedia] ❌ Media array empty, returning null");
       return null;
     }
 
@@ -77,6 +69,5 @@ export function normalizeMedia(p: any, base: any) {
     };
   }
 
-  console.log("[normalizeMedia] ❌ No media found, returning null. Post ID:", p.id, "Type:", p.type);
   return null;
 }

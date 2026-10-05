@@ -14,11 +14,10 @@ export function mergePostState(
   const savedMap = overrides?.savedPosts ?? {};
   const followMap = overrides?.followedUsers ?? {};
 
-  const baseLiked = post.viewerState.liked;
-  const baseSaved = post.viewerState.saved;
-  const baseFollowing = post.viewerState.followingAuthor;
-  const baseFollowedBy = post.viewerState.followedByAuthor;
-  const baseOwner = post.viewerState.isOwner;
+  const baseLiked = post.viewerState?.liked ?? false;
+  const baseSaved = post.viewerState?.saved ?? false;
+  const baseFollowing = post.viewerState?.followingAuthor ?? false;
+  const baseOwner = post.viewerState?.isOwner ?? false;
 
   // 🔥 LOCK override ONCE
   const hasLikedOverride = likedMap[post.id] !== undefined;
@@ -37,16 +36,22 @@ export function mergePostState(
       ? followMap[post.author.id]
       : baseFollowing;
 
-  const baseLikesCount = post.stats.likesCount;
-  const baseComments = post.stats.commentsCount;
-  const baseShares = post.stats.sharesCount;
-  const baseSaves = post.stats.savesCount;
+  const baseLikesCount = post.stats?.likesCount ?? 0;
+  const baseComments = post.stats?.commentsCount ?? 0;
+  const baseShares = post.stats?.sharesCount ?? 0;
+  const baseSaves = post.stats?.savesCount ?? 0;
 
   let likesCount = baseLikesCount;
+  let savesCount = baseSaves;
  
   if (hasLikedOverride) {
     if (liked && !baseLiked) likesCount += 1;
     if (!liked && baseLiked) likesCount -= 1;
+  }
+
+  if (hasSavedOverride) {
+    if (saved && !baseSaved) savesCount += 1;
+    if (!saved && baseSaved) savesCount -= 1;
   }
 
   return {
@@ -56,7 +61,6 @@ export function mergePostState(
       liked,
       saved,
       followingAuthor: isFollowing,
-      followedByAuthor: baseFollowedBy,
       isOwner: baseOwner,
     },
 
@@ -64,7 +68,7 @@ export function mergePostState(
       likesCount,
       commentsCount: baseComments,
       sharesCount: baseShares,
-      savesCount: baseSaves,
+      savesCount,
     },
   };
 }

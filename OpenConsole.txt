@@ -1,54 +1,136 @@
-Implementing Silent Refresh
-1. The Strategy
-Instead of sending a user to the Login screen when a token expires, the app should be "smart" enough to fix the problem itself in the background.
 
-2. The Step-by-Step Logic
-App sends a request (e.g., Get Feed) with the Access Token.
-Server returns 401 Unauthorized (because the 1-hour token expired).
-App intercepts that error before it reaches the UI.
-App calls the Refresh Endpoint using the saved refreshToken.
-App saves the new tokens returned by the server.
-App retries the original request (the Get Feed call) with the new Access Token.
-The user sees nothing. The feed just loads half a second later.
+### Current Architecture
 
-3. The Code Example (React Native / Javascript)
-If he is using Axios (most common), he should add this to his API client setup. He can copy-paste and adapt this:
+| Layer | Component | What it does |
+|-------|-----------|-------------|
+| Frontend | `providers/notificationProvider.tsx:39` | Calls `getExpoPushTokenAsync()` → gets `ExponentPushToken[xxx]` |
+| Frontend | `notifications.ts:131-140` | Sends token + platform to backend via `registerDeviceToken` GraphQL mutation |
+| Backend | `registerDeviceToken` mutation | Stores the token |
+| Backend | Internal push service | Sends Firebase push notification using the stored token |
+| Backend | Internal notification service | Creates in-app notification records (shown in notification list) |
 
-javascript
-import axios from 'axios';
-// 1. Create the API instance
-const api = axios.create({
-  baseURL: 'https://ziona-api-staging.onrender.com',
-});
-// 2. Add an Interceptor to handle "401 Expired" errors automatically
-api.interceptors.response.use(
-  (response) => response, // Standard success — just return the data
-  async (error) => {
-    const originalRequest = error.config;
-    // Check if the error is 401 (Expired) and hasn't been retried yet
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // Mark to prevent infinite loops
-      try {
-        // CALL THE REFRESH ENDPOINT
-        const refreshToken = await getStoredRefreshToken(); // Get from phone storage
-        const response = await axios.post('https://ziona-api-staging.onrender.com/api/auth/refresh', {
-          refresh_token: refreshToken
-        });
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
-        // SAVE NEW TOKENS
-        await saveTokens(accessToken, newRefreshToken);
-        // RETRY THE ORIGINAL REQUEST WITH NEW ACCESS TOKEN
-        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails too, then (and ONLY then) log the user out
-        redirectToLogin();
-        return Promise.reject(refreshError);
-      }
-    }
-    return Promise.reject(error);
+### Root Cause — Token Type Mismatch
+
+The frontend registers an **Expo push token** (`ExponentPushToken[xxx]`), but the backend sends pushes via **Firebase**, which expects a raw FCM token. The Expo token is not a valid FCM token → Firebase rejects it → no push is ever delivered to the device.
+
+### Proof
+
+- **Frontend works**: `registerDeviceToken` succeeds (confirmed in `notificationProvider.tsx:41-42`)
+- **In-app notifications work**: The notification list (`app/notifications/index.tsx`) shows data — backend creates in-app records correctly
+- **Push fails silently**: Backend tries to send via Firebase with an Expo token, Firebase rejects it
+
+### GraphQL Schema Confirmation
+
+Schema introspection of `https://ziona-api-staging.onrender.com/graphql/` shows no `sendPushNotification` mutation exists. Push sending is handled entirely server-side.
+
+Available notification-related mutations:
+- `registerDeviceToken(token, platform)` → currently used by frontend
+- `markNotificationAsRead(notificationId)`
+- `markAllNotificationsAsRead`
+- `deleteNotification(notificationId)`
+- `updateNotificationPreferences(preferences)`
+
+### Fix — Option A (Recommended): Backend uses Expo Push API
+
+**Frontend: no changes required.** Backend replaces Firebase calls with:
+
+```http
+POST https://exp.host/--/api/v2/push/send
+Content-Type: application/json
+{
+  "to": "ExponentPushToken[xxx]",
+  "title": "New like",
+  "body": "Alice liked your post",
+  "data": {
+    "referenceType": "post",
+    "referenceId": "123"
   }
-);
-4. The Result
-Without this code: He gets logged out every 60 minutes.
-With this code: He stays logged in for 30 days even if the server Access Token expires every hour.
+}
+```
+
+Expo forwards to APNs (iOS) / FCM (Android) automatically using their configured credentials. This is the standard Expo push flow.
+
+### Fix — Option B: Frontend sends native device tokens (backend keeps Firebase)
+
+Modify `providers/notificationProvider.tsx`:
+
+```typescript
+// Line 39 — change this:
+const expoPushToken = await Notifications.getExpoPushTokenAsync();
+// To this:
+const devicePushToken = await Notifications.getDevicePushTokenAsync();
+const token = devicePushToken.data;
+// ...pass token and Platform.OS to registerDeviceToken
+```
+
+**iOS caveat:** `getDevicePushTokenAsync()` returns a raw **APNs token**, not an FCM token. The backend's Firebase Admin SDK needs to handle APNs tokens for iOS (possible but requires configuration). For Android, it returns a native FCM token directly.
+
+
+## Issue 4: Apple Sign-In — `APPLE_NONCE_MISMATCH`
+
+### What the frontend does
+
+1. Generates a random 32-char nonce (`generateNonce()`)
+2. Passes it to `AppleAuthentication.signInAsync({ nonce })` 
+3. Decodes the returned JWT to extract the actual `nonce` claim
+4. Sends to `POST /auth/apple` with both `nonce` and `rawNonce` set to that extracted value
+
+### What we know
+
+- The JWT's `nonce` claim **always contains the raw nonce** (not SHA256 hashed):
+
+  | Test | Generated nonce | JWT `nonce` claim | Sent as `nonce` | Result |
+  |------|----------------|-------------------|-----------------|--------|
+  | 1 | `yXbisEpDn5KOSmLWqJY4e1X5k8orizRF` | `yXbisEpDn5KOSmLWqJY4e1X5k8orizRF` | SHA256 of raw | ❌ MISMATCH |
+  | 2 | `DZvLuiy6LTUwexNsHS1wcJldOzOcScqf` | `DZvLuiy6LTUwexNsHS1wcJldOzOcScqf` | raw (same as JWT) | ❌ MISMATCH |
+  | 3 | `7f1hgRYJL66sqZoZeun7QeyZ6TomWs1C` | `7f1hgRYJL66sqZoZeun7QeyZ6TomWs1C` | extracted from JWT | ❌ MISMATCH |
+
+- Apple's documented behavior says the JWT should contain `SHA256(nonce)`, but the actual JWT contains the raw nonce as-is. This means either:
+  - Apple changed their behavior
+  - `expo-apple-authentication` hashes the nonce before passing to Apple's native API (making the JWT's nonce = SHA256(raw), but then it would NOT match the raw value)
+
+- The `aud` claim in the JWT is `com.zionking.ziona` (the bundle identifier from `app.json`)
+
+### Files changed
+
+- `services/auth/useAppleAuth.ts` — Added `decodeJwtPayload()`, extracts nonce from JWT before sending
+- `services/api/authApi.ts` — Added `email`, `givenName`, `familyName` params, builds `user` object in payload
+
+### What we need from backend
+
+Backend error is `APPLE_NONCE_MISMATCH` despite sending the exact value Apple put in the JWT. Need the backend team to clarify:
+
+1. **Nonce validation logic**: What exactly is the comparison?
+   - Does the backend hash `rawNonce` and compare against `nonce` (e.g., `SHA256(rawNonce) === nonce`)?
+   - Does it compare `nonce` against the JWT's `nonce` claim?
+   - Does it hash values before comparison?
+   - Does it validate `rawNonce` separately?
+
+2. **Expected relationship**: What is the expected relationship between `nonce` and `rawNonce`?
+   - Based on the field names, it seems `nonce` should be `SHA256(rawNonce)` — is this correct?
+   - If so, the JWT does NOT contain the SHA256 hash (it contains the raw value), so the backend validation might be hashing `rawNonce` and failing to match the JWT
+
+3. **`aud` claim check**: What Service ID does the backend check against?
+   - JWT has `aud: "com.zionking.ziona"` (bundle ID)
+   - `AGENTS.md` mentions Service ID like `com.zionking.ziona.service` — which one is correct?
+
+### Current frontend state
+
+The frontend now sends:
+```json
+{
+  "identityToken": "...",
+  "nonce": "<extracted from JWT>",
+  "rawNonce": "<extracted from JWT>",
+  "user": {
+    "email": "user@example.com",
+    "name": { "firstName": "...", "lastName": "..." }
+  }
+}
+```
+
+Both `nonce` and `rawNonce` are set to the same value (what Apple put in the JWT). If the backend needs different values (e.g., `nonce = SHA256(rawNonce)`), the frontend can adjust once the expected relationship is confirmed.
+
+
+
+targetType for circlepost flow, should be -----

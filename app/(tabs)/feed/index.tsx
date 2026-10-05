@@ -4,13 +4,14 @@ import { PostViewerEngine } from "@/components/post/PostViewerEngine";
 import FollowSuggestions from "@/components/following/FollowingSuggestions";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
+import { PROMOTED_CIRCLE_BATCH_SIZE, PROMOTED_CIRCLE_INTERVAL } from "@/constants/promotedContent";
 import { preloadPostMedia } from "@/helpers/preloadMedia";
 import { useFollowingFeed, useForYouFeed } from "@/hooks/useFeed";
-import { usePostActionsStore } from "@/store/usePostActionStore";
-import { FeedPost } from "@/types/feedTypes";
+import { useAllCircles } from "@/hooks/useCircles";
+import { useUnreadCount } from "@/hooks/useNotifications";
+import { FeedItem, FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { mergePostState } from "@/utils/post/postState/mergePostState";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -26,10 +27,16 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
+  StyleSheet,
   Text,
   ViewToken,
 } from "react-native";
 import { View } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuthStore } from "@/store/useAuthStore";
+import { usePostActionsStore } from "@/store/usePostActionStore";
+import { onAppEvent } from "@/src/data/eventBus";
+import { useAppTrackingTransparency } from "@/hooks/useAppTrackingTransparency";
 
 export default function Feed() {
   const tabBarHeight = useBottomTabBarHeight();
@@ -41,6 +48,8 @@ export default function Feed() {
   const [containerHeight, setContainerHeight] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
+  const followedUsers = usePostActionsStore((s) => s.followedUsers);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"warning" | "failed">("warning");
   const [modalTitle, setModalTitle] = useState("");
@@ -51,20 +60,54 @@ export default function Feed() {
   const query = feedType === "forYou" ? forYouQuery : followingQuery;
   const isFocused = useIsFocused();
 
-  const likedMap = usePostActionsStore((s) => s.likedPosts);
-  const savedMap = usePostActionsStore((s) => s.savedPosts);
-  const followedMap = usePostActionsStore((s) => s.followedUsers);
+  /* -------- APP TRACKING TRANSPARENCY --------
+   * Prompted once the user has actually seen feed content, not on first
+   * launch, per Apple's guidance. */
+  const [readyForTrackingPrompt, setReadyForTrackingPrompt] = useState(false);
+  useEffect(() => {
+    if (!forYouQuery.isSuccess) return;
+    const timer = setTimeout(() => setReadyForTrackingPrompt(true), 2500);
+    return () => clearTimeout(timer);
+  }, [forYouQuery.isSuccess]);
+  useAppTrackingTransparency(readyForTrackingPrompt);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!query.data && !query.isLoading) {
-        queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
-        queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
-      }
-
-      setActivePostId(null);
-    }, [queryClient, query.data, query.isLoading]),
+  const [refreshingFeed, setRefreshingFeed] = useState(false);
+  const { data: unreadCount } = useUnreadCount();
+  const [scrollToTopSignal, setScrollToTopSignal] = useState(0);
+  const [pendingScrollPostId, setPendingScrollPostId] = useState<string | null>(
+    null,
   );
+
+  useEffect(() => {
+    let clearTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = onAppEvent("feed_scroll_to_top", (event) => {
+      setScrollToTopSignal((prev) => prev + 1);
+      const postId = event.data?.postId;
+      if (typeof postId === "string" && postId) {
+        setPendingScrollPostId(postId);
+        if (clearTimer) clearTimeout(clearTimer);
+        clearTimer = setTimeout(() => setPendingScrollPostId(null), 4000);
+      }
+    });
+    return () => {
+      if (clearTimer) clearTimeout(clearTimer);
+      unsubscribe();
+    };
+  }, []);
+
+  const onRefreshFeed = useCallback(async () => {
+    setRefreshingFeed(true);
+    try {
+      setPromotedCirclesInitialized(false);
+      setPromotedCirclesPool([]);
+      const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
+      await queryClient.refetchQueries({ queryKey: [key] });
+    } catch (err) {
+      console.error("Feed refresh failed:", err);
+    } finally {
+      setRefreshingFeed(false);
+    }
+  }, [feedType, queryClient]);
 
   useFocusEffect(
     useCallback(() => {
@@ -99,13 +142,20 @@ export default function Feed() {
     setModalVisible(true);
   }, [query.isError, query.error]);
 
-  const pages =
-    (query.data as InfiniteData<{ posts: any[] }> | undefined)?.pages ?? [];
+  const pages = useMemo(
+    () =>
+      (query.data as InfiniteData<{ posts: any[] } | undefined> | undefined)?.pages ?? [],
+    [query.data],
+  );
   const data: FeedPost[] = useMemo(() => {
     if (!pages.length) return [];
 
-    return pages
-      .flatMap((page) => page.posts ?? [])
+    // Deduplicate posts by ID to prevent duplicate key error
+    const seenIds = new Set<string>();
+    const uniquePosts: FeedPost[] = [];
+
+    pages
+      .flatMap((page) => page?.posts ?? [])
       .map((p) => normalizePost(p))
       .filter((p): p is FeedPost => {
         if (!p) return false;
@@ -116,14 +166,99 @@ export default function Feed() {
 
         return true;
       })
-      .map((post) =>
-        mergePostState(post, {
-          likedPosts: likedMap,
-          savedPosts: savedMap,
-          followedUsers: followedMap,
-        }),
-      );
-  }, [pages, likedMap, savedMap, followedMap]);
+      .forEach((post) => {
+        if (!seenIds.has(post.id)) {
+          seenIds.add(post.id);
+          uniquePosts.push(post);
+        }
+      });
+
+    if (pendingScrollPostId) {
+      const index = uniquePosts.findIndex((p) => p.id === pendingScrollPostId);
+      if (index > 0) {
+        const [pending] = uniquePosts.splice(index, 1);
+        uniquePosts.unshift(pending);
+      }
+    }
+
+    return uniquePosts;
+  }, [pages, pendingScrollPostId]);
+
+  const { data: allCircles } = useAllCircles();
+
+  const [promotedCirclesPool, setPromotedCirclesPool] = useState<any[]>([]);
+  const [promotedCirclesInitialized, setPromotedCirclesInitialized] = useState(false);
+
+  const promotedCircles = useMemo(() => {
+    if (!Array.isArray(allCircles)) return [];
+    return (allCircles as any[]).filter((c) => !c?.isJoined && !c?.isSubscribed);
+  }, [allCircles]);
+
+  useEffect(() => {
+    if (promotedCirclesInitialized) return;
+    if (!promotedCircles.length) return;
+    setPromotedCirclesPool(promotedCircles);
+    setPromotedCirclesInitialized(true);
+  }, [promotedCircles, promotedCirclesInitialized]);
+
+  useEffect(() => {
+    if (!promotedCirclesInitialized) return;
+    if (!promotedCircles.length) {
+      setPromotedCirclesPool([]);
+      return;
+    }
+    setPromotedCirclesPool(
+      (prev) =>
+        prev.filter((p) => promotedCircles.some((c) => c?.id === p?.id)) ?? [],
+    );
+  }, [promotedCircles, promotedCirclesInitialized]);
+
+  const feedItems: FeedItem[] = useMemo(() => {
+    if (!data.length || !promotedCirclesPool.length) return data;
+
+    const pool = promotedCirclesPool;
+    const items: FeedItem[] = [];
+    let batchStart = 0;
+    data.forEach((post, i) => {
+      items.push(post);
+      if ((i + 1) % PROMOTED_CIRCLE_INTERVAL === 0) {
+        if (batchStart >= pool.length) batchStart = 0;
+        const batch = pool.slice(batchStart, batchStart + PROMOTED_CIRCLE_BATCH_SIZE);
+        batchStart += batch.length;
+        if (!batch.length) return;
+        items.push({
+          type: "circlePromo",
+          id: `circle-promo-batch-${batchStart}-${i}`,
+          circles: batch.map((circle) => ({
+            id: circle.id,
+            name: circle.name ?? "",
+            description: circle.description ?? "",
+            coverImage: circle.coverImage ?? "",
+            memberCount: circle.memberCount ?? 0,
+            isJoined: !!circle.isJoined || !!circle.isSubscribed,
+            avatars: Array.isArray(circle.avatars) ? circle.avatars : [],
+            members: Array.isArray(circle.memberPreviews)
+              ? circle.memberPreviews.map((member: any) => ({
+                  id: member?.id ?? "",
+                  name: member?.fullName ?? member?.username ?? "",
+                  avatarUrl: member?.avatarUrl ?? "",
+                }))
+              : (Array.isArray(circle.avatars) ? circle.avatars : []).map((avatar: any) => ({
+                  id: "",
+                  name: "",
+                  avatarUrl: avatar ?? "",
+                })),
+          })),
+        });
+      }
+    });
+    return items;
+  }, [data, promotedCirclesPool]);
+
+  const suggestions = useMemo(() => {
+    const firstPage = (query.data as InfiniteData<{ emptyState?: { suggestions?: any[] } } | undefined> | undefined)?.pages?.[0];
+    return firstPage?.emptyState?.suggestions;
+  }, [query.data]);
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 80,
@@ -168,47 +303,60 @@ export default function Feed() {
     [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight],
   );
 
-  if (query.isLoading) {
-    return (
-      <View flex={1} justifyContent="center" alignItems="center">
-        <ActivityIndicator size={40} color={colors.primary} />
-      </View>
-    );
-  }
-
   const handleBellPress = () => {
+    const isAuth = useAuthStore.getState().isAuthenticated;
+    if (!isAuth) {
+      router.push("/(auth)/login");
+      return;
+    }
     router.push("/notifications");
   };
 
   return (
-    <View flex={1}>
-      <View width="100%" marginTop={35}>
-        <FeedHeader
-          feedType={feedType}
-          onChangeFeedType={setFeedType}
-          emptyFollowing={data.length === 0}
-          onBellPress={handleBellPress}
-        />
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "black" }} edges={["top"]}>
+      <View flex={1} backgroundColor="black">
+        {data.length === 0 && (
+          <View style={StyleSheet.absoluteFill} backgroundColor="rgba(0,0,0,0.2)" pointerEvents="none" />
+        )}
+        <View width="100%">
+          <FeedHeader
+            feedType={feedType}
+            onChangeFeedType={setFeedType}
+            emptyFeed={data.length === 0}
+            onBellPress={handleBellPress}
+            unreadCount={unreadCount ?? 0}
+          />
+        </View>
 
-      <View
-        style={{ flex: 1 }}
-        onLayout={(e) => {
-          const { height, width } = e.nativeEvent.layout;
-          if (height !== containerHeight) setContainerHeight(height);
-          if (width !== containerWidth) setContainerWidth(width);
-        }}
-      >
-        {feedType === "following" && data.length === 0 && !query.isLoading ? (
-          <FollowSuggestions onDone={() => setFeedType("forYou")} />
-        ) : data.length === 0 ? (
-          <View flex={1} justifyContent="center" alignItems="center">
-            <Text style={{ color: colors.text }}>No posts yet</Text>
-          </View>
-        ) : (
+        <View
+          style={{ flex: 1, backgroundColor: "black" }}
+          onLayout={(e) => {
+            const { height, width } = e.nativeEvent.layout;
+            if (height !== containerHeight) setContainerHeight(height);
+            if (width !== containerWidth) setContainerWidth(width);
+          }}
+        >
+          {query.isLoading ? (
+            <View flex={1} justifyContent="center" alignItems="center">
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : data.length === 0 ? (
+            <FollowSuggestions
+              onDone={() => {
+                if (Object.keys(followedUsers).length >= 1) {
+                  queryClient.invalidateQueries({ queryKey: ["followingFeed"] });
+                  setFeedType("following");
+                } else {
+                  queryClient.invalidateQueries({ queryKey: ["forYouFeed"] });
+                  setFeedType("forYou");
+                }
+              }}
+              suggestions={suggestions}
+            />
+          ) : (
           <PostViewerEngine
             key={feedType}
-            posts={data}
+            posts={feedItems}
             containerHeight={containerHeight}
             containerWidth={containerWidth}
             tabBarHeight={tabBarHeight}
@@ -216,6 +364,10 @@ export default function Feed() {
             fetchNextPage={query.fetchNextPage}
             hasNextPage={query.hasNextPage}
             isFetchingNextPage={query.isFetchingNextPage}
+            refreshing={refreshingFeed}
+            onRefresh={onRefreshFeed}
+            scrollToTopSignal={scrollToTopSignal}
+            scrollToPostId={pendingScrollPostId ?? undefined}
           />
         )}
       </View>
@@ -234,6 +386,6 @@ export default function Feed() {
           query.refetch();
         }}
       />
-    </View>
+    </View></SafeAreaView>
   );
 }

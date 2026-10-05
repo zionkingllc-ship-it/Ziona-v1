@@ -6,8 +6,10 @@ import { useUpdateBio } from "@/hooks/useUpdateBio";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { useEffect, useState } from "react";
-import { TextArea, XStack, YStack,Text } from "tamagui";
+import { TextArea, XStack, YStack, Text, Input } from "tamagui";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditBioScreen() {
   const userId = useAuthStore((s) => s.user?.id);
@@ -19,6 +21,7 @@ export default function EditBioScreen() {
   const mutation = useUpdateBio();
 
   const [bio, setBio] = useState("");
+  const [bioLink, setBioLink] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<"success" | "failed" | "warning">(
     "success",
@@ -30,20 +33,27 @@ export default function EditBioScreen() {
     if (user?.bio !== undefined) {
       setBio(user.bio);
     }
-  }, [user?.bio]);
+    if (user?.bioLink !== undefined) {
+      setBioLink(user.bioLink ?? "");
+    }
+  }, [user?.bio, user?.bioLink]);
 
   const handleSave = async () => {
-    if (!bio.trim()) return;
+    if (mutation.isPending) return;
+    if (!bio.trim() && !bioLink.trim()) return;
 
     try {
-      await mutation.mutateAsync(bio);
+      await mutation.mutateAsync({
+        bio: bio.trim(),
+        bioLink: bioLink.trim() || undefined,
+      });
 
       setModalType("success");
-      setModalTitle("Bio Updated");
-      setModalMessage("Your bio has been updated successfully.");
+      setModalTitle("Updated");
+      setModalMessage("Your changes have been saved successfully.");
       setModalVisible(true);
     } catch (e: any) {
-      const feedback = getNetworkModalCopy(e, e?.message || "Failed to update bio");
+      const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to update bio");
       setModalType(feedback.type);
       setModalTitle(feedback.title);
       setModalMessage(feedback.message);
@@ -54,67 +64,94 @@ export default function EditBioScreen() {
   const charCount = bio.length;
 
   return (
-    <YStack flex={1} backgroundColor={colors.white} padding="$4">
-      <XStack paddingLeft={5} marginTop={25} marginBottom={20}>
-        <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
-      </XStack>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+      <Header heading="Bio" headerFontFamily="$body" headingWeight="500" />
 
-      <YStack gap="$2">
-        <YStack>
-          <Text
-            fontFamily="$body"
-            fontSize={13}
-            fontWeight="400"
-          >
-            You can update your bio at any time.
-          </Text>
-        </YStack>
-
-        <TextArea
-          value={bio}
-          onChangeText={setBio}
-          height={120}
-          fontFamily="$body"
-          fontSize={13}
-          fontWeight="400"
-          borderWidth={0.5}
-          borderColor={colors.border}
-          backgroundColor={colors.borderBackground}
-          padding="$2"
-        />
-
-        <XStack justifyContent="flex-end">
+      <YStack flex={1} padding="$4">
+        <YStack gap="$2">
           <YStack>
             <Text
               fontFamily="$body"
               fontSize={13}
               fontWeight="400"
-              color={colors.termsText}
             >
-              {charCount}/100
+              You can update your bio at any time.
             </Text>
           </YStack>
-        </XStack>
-      </YStack>
 
-      <YStack marginTop="$4">
-        <SimpleButton
-          disabled={bio.length < 3 || mutation.isPending}
+          <TextArea
+            value={bio}
+            onChangeText={setBio}
+            height={120}
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="400"
+            borderWidth={0.5}
+            borderColor="#EEEBEF"
+            backgroundColor="#FAF9FA"
+            borderRadius={8}
+            padding="$2"
+            maxLength={100}
+          />
+
+          <XStack justifyContent="flex-end">
+            <YStack>
+              <Text
+                fontFamily="$body"
+                fontSize={13}
+                fontWeight="400"
+                color={colors.placeHolderText}
+              >
+                {charCount}/100
+              </Text>
+            </YStack>
+          </XStack>
+        </YStack>
+
+        <YStack marginTop="$4" gap="$2">
+          <Text
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="500"
+          >
+            Add link <Text color={colors.placeHolderText}>(optional)</Text>
+          </Text>
+          <Input
+            value={bioLink}
+            onChangeText={setBioLink}
+            placeholder="https://instagram.com/yourhandle"
+            fontFamily="$body"
+            fontSize={13}
+            fontWeight="400"
+            borderWidth={0.5}
+            borderColor="#EEEBEF"
+            backgroundColor="#FAF9FA"
+            borderRadius={8}
+            padding="$2"
+            marginTop={8}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </YStack>
+
+<SimpleButton
+          disabled={mutation.isPending || (!bio.trim() && !bioLink.trim())}
           onPress={handleSave}
           color={colors.primary}
           textColor={colors.white}
           text={mutation.isPending ? "Saving..." : "Save"}
+          style={{ marginTop: 20 }}
+        />
+
+        <SuccessModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+          autoClose={modalType === "success"}
         />
       </YStack>
-
-      <SuccessModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={modalTitle}
-        message={modalMessage}
-        type={modalType}
-        autoClose={modalType === "success"}
-      />
-    </YStack>
+    </SafeAreaView>
   );
 }

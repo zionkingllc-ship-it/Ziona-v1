@@ -1,4 +1,5 @@
 import Header from "@/components/layout/header";
+import EditableFieldRow from "@/components/ui/EditableFieldRow";
 import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useUpdateAvatar } from "@/hooks/useProfileMutations";
@@ -11,7 +12,26 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Avatar, Text, XStack, YStack } from "tamagui";
+import { Avatar, Text, XStack, YStack, View } from "tamagui";
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 
 export default function EditProfileScreen() {
   const avatarMutation = useUpdateAvatar();
@@ -31,12 +51,16 @@ export default function EditProfileScreen() {
     setAvatarLoadFailed(false);
   }, [localAvatar, user?.avatarUrl]);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [permissionVisible, setPermissionVisible] = useState(false);
 
   const handlePickImage = async () => {
     if (avatarMutation.isPending) return;
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      setPermissionVisible(true);
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -61,8 +85,6 @@ export default function EditProfileScreen() {
       setLocalAvatar(null);
       setSuccessVisible(true);
     } catch (e) {
-      console.log("Avatar update failed", e);
-
       setLocalAvatar(null);
       setErrorVisible(true);
     }
@@ -70,7 +92,8 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.white, paddingTop: 20 }}
+      style={{ flex: 1, backgroundColor: colors.white }}
+      edges={["top"]}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -79,7 +102,7 @@ export default function EditProfileScreen() {
         }
       >
         {/* Header */}
-        <XStack paddingLeft={15}>
+        <XStack>
           <Header
             heading="Edit profile"
             headerFontFamily="$body"
@@ -90,26 +113,33 @@ export default function EditProfileScreen() {
 
         {/* Avatar */}
         <YStack alignItems="center" gap="$3" paddingVertical={19}>
-          <Pressable onPress={handlePickImage}>
-            <Avatar circular size="$8">
-              <Avatar.Image
-                source={
-                  localAvatar
-                    ? { uri: localAvatar }
-                    : user?.avatarUrl && !avatarLoadFailed
-                      ? { uri: user.avatarUrl }
-                      : require("@/assets/images/emptyDP.png")
-                }
-                onError={() => {
-                  setAvatarLoadFailed(true);
-                }}
-              />
-              <Avatar.Fallback backgroundColor={colors.black} />
+          <Pressable
+            onPress={handlePickImage}
+            style={{ alignItems: "center", justifyContent: "center" }}
+          >
+            <Avatar circular width={70} height={70}>
+              {localAvatar || (user?.avatarUrl && !avatarLoadFailed) ? (
+                <Avatar.Image
+                  source={{ uri: localAvatar || user?.avatarUrl || "" }}
+                  onError={() => setAvatarLoadFailed(true)}
+                />
+              ) : (
+                <Avatar.Fallback
+                  backgroundColor={getColorFromName(user?.username)}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Text color="white" fontSize={20} fontWeight="600">
+                    {getInitials(user?.username)}
+                  </Text>
+                </Avatar.Fallback>
+              )}
             </Avatar>
 
             <Text
               fontFamily="$body"
               fontWeight="400"
+              fontSize={13}
               color={colors.primary}
               marginTop={6}
             >
@@ -119,35 +149,62 @@ export default function EditProfileScreen() {
         </YStack>
 
         {/* Info Section */}
-        <YStack flex={1} gap="$4" padding={20}>
-          <Pressable onPress={() => router.push("/profile/edit/name")}>
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text fontSize={16}>Name</Text>
-              <Text fontSize={16}>
-                {isLoading ? "fetching..." : user?.fullName || ""}
-              </Text>
-              <ChevronRight size={22} color="#444" />
-            </XStack>
-          </Pressable>
+        <YStack flex={1} gap={0} padding={20}>
+          <YStack
+            backgroundColor="#FAF9FA"
+            borderRadius={16}
+            overflow="hidden"
+          >
+            <EditableFieldRow
+              label="Name"
+              value={isLoading ? "fetching..." : user?.fullName || ""}
+              onPress={() => router.push("/profile/edit/name")}
+            />
 
-          <Pressable onPress={() => router.push("/profile/edit/username")}>
-            <XStack justifyContent="space-between" alignItems="center">
-              <Text fontSize={16}>Username</Text>
-              <Text fontSize={16}>
-                {isLoading ? "fetching..." : user?.username || ""}
-              </Text>
-              <ChevronRight size={22} color="#444" />
-            </XStack>
-          </Pressable>
+            <EditableFieldRow
+              label="Username"
+              value={isLoading ? "fetching..." : user?.username || ""}
+              onPress={() => router.push("/profile/edit/username")}
+              marginTop={8}
+            />
+          </YStack>
 
-          <Text marginTop={10}>More info</Text>
+          <Text
+            fontFamily="$body"
+            marginTop={10}
+            fontSize={16}
+            fontWeight="500"
+          >
+            More info
+          </Text>
 
-          <YStack>
-            <Text marginBottom={4}>Bio</Text>
-
-            <Pressable onPress={() => router.push("/profile/edit/bio")}>
-              <XStack justifyContent="space-between" alignItems="center">
-                <Text flex={1}>
+          <YStack 
+            backgroundColor={"#FAF9FA"}
+            justifyContent="flex-start"
+            marginTop={12}
+            paddingVertical={12}
+            paddingHorizontal={16}
+            borderRadius={16}
+          >
+            <Text fontFamily="$body" fontSize={16} fontWeight="400" width="30%">
+              Bio
+            </Text>
+            <Pressable
+              onPress={() => router.push("/profile/edit/bio")}
+              style={{ marginTop: 8 }}
+            >
+              <XStack
+                alignItems="center"
+                paddingVertical={12}
+              >
+                <Text
+                  fontFamily="$body"
+                  fontSize={16}
+                  fontWeight="500"
+                  color="$gray"
+                  flex={1}
+                  numberOfLines={1}
+                >
                   {isLoading
                     ? "fetching..."
                     : user?.bio || "Add a short description about you"}
@@ -156,6 +213,7 @@ export default function EditProfileScreen() {
               </XStack>
             </Pressable>
           </YStack>
+
         </YStack>
       </ScrollView>
 
@@ -175,6 +233,19 @@ export default function EditProfileScreen() {
         title="Failed"
         message="Could not update profile photo"
         type="failed"
+      />
+
+      {/* PERMISSION MODAL */}
+      <SuccessModal
+        visible={permissionVisible}
+        onClose={() => setPermissionVisible(false)}
+        title="Permission required"
+        message="Please grant media library access in Settings to change your profile picture."
+        type="warning"
+        autoClose={false}
+        withButton
+        buttonText="OK"
+        onButtonPress={() => setPermissionVisible(false)}
       />
     </SafeAreaView>
   );

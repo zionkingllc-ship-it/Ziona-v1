@@ -66,6 +66,7 @@ const monaSansFont = createFont({
   size: fontSizes,
 
   weight: {
+    3: "300",
     4: "400",
     5: "500",
     6: "600",
@@ -73,6 +74,7 @@ const monaSansFont = createFont({
   },
 
   face: {
+    300: { italic: "MonaSans_300_Italic" },
     400: { normal: "MonaSans_400" },
     500: { normal: "MonaSans_500" },
     600: { normal: "MonaSans_600" },

@@ -24,17 +24,14 @@ export type FriendsListResponse = {
   avatarUrl?: string | null;
 }[];
 
-export type SuggestedCreatorsResponse = {
+export type SuggestedCreator = {
   id: string;
   username: string;
   avatarUrl?: string | null;
   bio?: string;
-  stats?: {
-    followersCount: number;
-    postsCount: number;
-    followingCount: number;
-  };
-}[];
+};
+
+export type SuggestedCreatorsResponse = SuggestedCreator[];
 
 export type SearchUsersResponse = {
   id: string;
@@ -139,11 +136,6 @@ export async function getSuggestedCreators(limit: number = 10): Promise<Suggeste
         username
         avatarUrl
         bio
-        stats {
-          followersCount
-          postsCount
-          followingCount
-        }
       }
     }
   `;
@@ -154,8 +146,8 @@ export async function getSuggestedCreators(limit: number = 10): Promise<Suggeste
 
 export async function searchUsers(query: string): Promise<SearchUsersResponse> {
   const gql = `
-    query SearchUser($query: String!) {
-      searchUser(query: $query) {
+    query SearchUsers($search: String!) {
+      friendsList(search: $search) {
         id
         username
         avatarUrl
@@ -163,6 +155,15 @@ export async function searchUsers(query: string): Promise<SearchUsersResponse> {
     }
   `;
 
-  const data = await graphqlRequest(gql, { query });
-  return data?.searchUser ?? [];
+  let data: any;
+  try {
+    data = await graphqlRequest(gql, { search: query });
+  } catch (err) {
+    console.error("[searchUsers] graphqlRequest threw:", err instanceof Error ? err.message : err, "stack:", err instanceof Error ? err.stack : undefined);
+    throw err;
+  }
+
+  const results = data?.friendsList ?? [];
+
+  return results;
 }

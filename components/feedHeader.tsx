@@ -1,6 +1,6 @@
 // components/feedHeader.tsx
 import colorsDefault from "@/constants/colors";
-import { Bell } from "@tamagui/lucide-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "react-native";
 import { XStack, Text } from "tamagui";
 import TwoButtonSwitch from "./ui/twoButtonSwitch";
@@ -9,7 +9,7 @@ import { TouchableOpacity } from "react-native";
 type FeedHeaderProps = {
   feedType: "forYou" | "following";
   onChangeFeedType: (type: "forYou" | "following") => void;
-  emptyFollowing?: boolean;
+  emptyFeed?: boolean;
   onBellPress?: () => void;
   unreadCount?: number;
 };
@@ -17,11 +17,11 @@ type FeedHeaderProps = {
 export default function FeedHeader({
   feedType,
   onChangeFeedType,
-  emptyFollowing = false,
+  emptyFeed = false,
   onBellPress,
   unreadCount = 0,
 }: FeedHeaderProps) {
-  const logoSource = emptyFollowing
+  const logoSource = emptyFeed
     ? require("@/assets/images/logoColored.png")
     : require("@/assets/images/logowhite.png");
 
@@ -41,34 +41,30 @@ export default function FeedHeader({
       <TwoButtonSwitch
         value={feedType}
         onChange={onChangeFeedType}
-        width="65%"
-        emptyFollowing={emptyFollowing}
+        emptyFeed={emptyFeed}
       />
 
       <TouchableOpacity
         onPress={onBellPress}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(255, 255, 255, 0.24)",
+          backgroundColor: "#00000033",
+          borderRadius: 12,
+          padding: 4,
         }}
       >
-        <Bell
+        <Ionicons
+          name="notifications"
           size={24}
-          stroke={colorsDefault.black}
-          color={colorsDefault.white} 
-          strokeOpacity={1}
-          strokeWidth={2}
+          color={colorsDefault.white}
         />
         {unreadCount > 0 && (
           <XStack
             position="absolute"
-            top={4}
-            right={4}
-            backgroundColor={colorsDefault.primary}
+            top={-2}
+            right={-4}
+            backgroundColor={colorsDefault.DEBIT_RED}
             borderRadius={10}
             minWidth={18}
             height={18}

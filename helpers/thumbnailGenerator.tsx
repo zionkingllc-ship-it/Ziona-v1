@@ -8,7 +8,7 @@ import { Asset } from "expo-asset";
 function fixMediaUrl(url?: string): string | undefined {
   if (!url) return undefined;
 
-  const base = "https://storage.googleapis.com/";
+  const base = (process.env.EXPO_PUBLIC_STORAGE_BASE_URL || "https://storage.googleapis.com") + "/";
   const parts = url.split(base);
 
   // handle duplicated prefix issue
@@ -43,13 +43,11 @@ export async function generateVideoThumbnail(
 
     /* ================= SAFETY ================= */
     if (!uri || typeof uri !== "string") {
-      console.warn("Invalid video URI for thumbnail:", uri);
       return null;
     }
 
     // extra guard: must look like a valid video URL
     if (!uri.startsWith("http") && !uri.startsWith("file")) {
-      console.warn("Unsupported URI format:", uri);
       return null;
     }
 
@@ -60,7 +58,6 @@ export async function generateVideoThumbnail(
       });
 
     if (!thumbnailUri) {
-      console.warn("Thumbnail generation returned empty URI");
       return null;
     }
 

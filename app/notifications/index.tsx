@@ -1,128 +1,589 @@
-import { Image, Text, XStack, YStack, View } from "tamagui";
-import { ActivityIndicator, FlatList, Pressable } from "react-native";
-import { useState } from "react";
+import { Image as ExpoImage } from "expo-image";
+import { Text, View } from "tamagui";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import colors from "@/constants/colors";
-import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useNotifications";
+import { useNotifications, useMarkNotificationAsRead, useDeleteNotification } from "@/hooks/useNotifications";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { NotificationItem } from "@/src/types/__generated__/graphql";
+import type { NotificationItem } from "@/services/graphQL/queries/actions/notifications";
+import { NotificationCategory } from "@/src/types/__generated__/graphql";
+import type { UserMiniViewerState } from "@/src/types/__generated__/graphql";
+import Header from "@/components/layout/header";
+import AuthPrompt from "@/components/ui/AuthPrompt";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useNotificationMuteStore } from "@/store/useNotificationMuteStore";
+import { useToggleFollow } from "@/hooks/useFollow";
+import { isFollowNotification, resolveDestinationFromNotification, resolveFollowRowHref } from "@/src/services/notifications/notificationNavigation";
+import { updateNotificationPreferences } from "@/services/graphQL/queries/actions/notifications";
 
-const TABS = ["All", "Follows", "Mentions", "Replies", "Circles"];
+const filters: { label: string; category?: NotificationCategory }[] = [
+  { label: "All" },
+  { label: "Follows" },
+  { label: "Mentions" },
+  { label: "Replies" },
+  { label: "Circles", category: NotificationCategory.Circles },
+] as const;
+type Filter = (typeof filters)[number];
+
+function matchesFilter(item: NotificationItem, label: string): boolean {
+  switch (label) {
+    case "Follows":
+      return isFollowNotification(item);
+    case "Mentions":
+      return item.referenceType === "mention" || item.type === "mention";
+    case "Replies":
+      return item.referenceType === "comment" || item.type === "comment";
+    case "Circles":
+      return item.referenceType === "circle" || item.referenceType === "circle_post";
+    case "All":
+    default:
+      return true;
+  }
+}
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const palette = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return palette[Math.abs(hash) % palette.length];
+}
+
+function getFollowButtonLabel(viewerState?: UserMiniViewerState | null, isFollowNotification = false): string {
+  if (isFollowNotification) return viewerState?.isFollowing ? "Friends" : "Follow back";
+  if (!viewerState) return "Follow";
+  const { isFollowing, isFollowedBy } = viewerState;
+  if (isFollowing && isFollowedBy) return "Friends";
+  if (!isFollowing && isFollowedBy) return "Follow back";
+  if (isFollowing && !isFollowedBy) return "Unfollow";
+  return "Follow";
+}
+
+function NotificationAvatar({ avatarUrl, username, size = 31 }: { avatarUrl?: string | null; username?: string; size?: number }) {
+  const [erred, setErred] = useState(false);
+  const hasValidUrl = !!avatarUrl && !erred;
+
+  if (!hasValidUrl) {
+    return (
+      <View
+        width={size}
+        height={size}
+        borderRadius={size / 2}
+        backgroundColor={getColorFromName(username)}
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Text color="white" fontSize={size * 0.36} fontWeight="600">
+          {getInitials(username)}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <ExpoImage
+      source={{ uri: avatarUrl }}
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: "#E5E1E6" }}
+      onError={() => setErred(true)}
+    />
+  );
+}
 
 export default function ActivityScreen() {
-  const [activeTab, setActiveTab] = useState("All");
-  const { data: notificationsData, isLoading } = useNotifications(50);
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<Filter>(filters[0]);
+  const selectedCategory = selectedFilter.category;
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useNotifications(50, selectedCategory);
   const markAsRead = useMarkNotificationAsRead();
+  const deleteNotif = useDeleteNotification();
+  const [menuItem, setMenuItem] = useState<NotificationItem | null>(null);
+  const [pendingFollowIds, setPendingFollowIds] = useState<Set<string>>(new Set());
+  const pendingFollowIdsRef = useRef(new Set<string>());
+  const mutedUserIds = useNotificationMuteStore((s) => s.mutedUserIds);
+  const muteUserLocal = useNotificationMuteStore((s) => s.muteUser);
+  const { mutateAsync: toggleFollow } = useToggleFollow();
 
-  const notifications = notificationsData?.items ?? [];
-  
-  const filtered = notifications.filter((item: NotificationItem) => {
-    if (activeTab === "All") return true;
-    if (activeTab === "Follows") return item.type === "follow" || item.type === "follow_request";
-    if (activeTab === "Mentions") return item.type === "mention";
-    if (activeTab === "Replies") return item.type === "comment" || item.type === "reply";
-    if (activeTab === "Circles") return item.type === "circle";
-    return true;
-  });
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days > 0) return `${days}d`;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    if (hours > 0) return `${hours}h`;
-    const mins = Math.floor(diff / (1000 * 60));
-    if (mins > 0) return `${mins}m`;
-    return "Just now";
-  };
-
-  const Tab = ({ label }: { label: string }) => {
-    const active = label === activeTab;
-
-    return (
-      <Pressable onPress={() => setActiveTab(label)}>
-        <XStack
-          paddingHorizontal={14}
-          paddingVertical={6}
-          borderRadius={20}
-          backgroundColor={active ? colors.black : colors.lightGrayBg}
-        >
-          <Text color={active ? colors.white : colors.black} fontSize={13}>
-            {label}
-          </Text>
-        </XStack>
-      </Pressable>
+  const notifications = useMemo(() => {
+    const all: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
+    return all.filter(
+      (n) => matchesFilter(n, selectedFilter.label) && !mutedUserIds.includes(n.user?.id ?? ""),
     );
-  };
+  }, [data, selectedFilter, mutedUserIds]);
 
-  const renderNotification = ({ item }: { item: NotificationItem }) => {
-    const handlePress = () => {
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  const formatTime = useCallback((dateString: string) => {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "";
+
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return `${diffSecs}s`;
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+
+    // Older than a week: DD/MM/YYYY
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${d.getFullYear()}`;
+  }, []);
+
+  const handleMuteUser = useCallback((userId: string) => {
+    const newMuted = mutedUserIds.includes(userId)
+      ? mutedUserIds.filter((id) => id !== userId)
+      : [...mutedUserIds, userId];
+    muteUserLocal(userId);
+    updateNotificationPreferences({ mutedUserIds: newMuted } as any).catch(() => {});
+  }, [mutedUserIds, muteUserLocal]);
+
+  // Nested action buttons (follow/menu) live inside the row Pressable. RN can
+  // still bubble the press to the row, so actions stamp the time and the row
+  // handler skips navigation when an action just fired.
+  const lastActionPressRef = useRef(0);
+  const markActionPress = useCallback(() => {
+    lastActionPressRef.current = Date.now();
+  }, []);
+
+  const handleNotificationPress = useCallback(
+    (item: NotificationItem) => {
+      if (Date.now() - lastActionPressRef.current < 750) return;
       if (!item.isRead) {
         markAsRead.mutate(item.id);
       }
-    };
+      // Follow/suggestion rows open the actor's profile when the row
+      // (avatar/name/message side) is pressed.
+      const followHref = resolveFollowRowHref(item);
+      if (followHref) {
+        router.push(followHref as any);
+        return;
+      }
+      const href = resolveDestinationFromNotification(item);
+      if (href) {
+        router.push(href as any);
+      }
+    },
+    [markAsRead, router],
+  );
 
-    return (
-      <Pressable onPress={handlePress} style={{ opacity: item.isRead ? 0.6 : 1 }}>
-        <XStack justifyContent="space-between" alignItems="flex-start" paddingVertical={12}>
-          <XStack gap="$3" flex={1}>
-            <Image
-              source={require("@/assets/images/emptyDP.png")}
-              width={40}
-              height={40}
-              borderRadius={20}
-            />
-            <YStack flex={1}>
-              <Text fontWeight="600" fontSize={14}>
-                <Text>{item.message}</Text>{" "}
-                <Text fontWeight="400" color={colors.gray}>
-                  {formatTime(item.createdAt)}
-                </Text>
+  const handleFollowPress = useCallback(
+    async (e: any, item: NotificationItem) => {
+      e.stopPropagation?.();
+      markActionPress();
+      const userId = item.user?.id;
+      if (!userId || userId === currentUserId || pendingFollowIdsRef.current.has(userId)) return;
+      // Friends is a completed state; following back never toggles into an unfollow.
+      if (item.user?.viewerState?.isFollowing) return;
+      pendingFollowIdsRef.current.add(userId);
+      setPendingFollowIds(new Set(pendingFollowIdsRef.current));
+      try {
+        await toggleFollow({ userId, currentFollowing: false });
+      } catch {
+        Alert.alert("Couldn't follow", "Please try again.");
+      } finally {
+        pendingFollowIdsRef.current.delete(userId);
+        setPendingFollowIds(new Set(pendingFollowIdsRef.current));
+      }
+    },
+    [currentUserId, toggleFollow, markActionPress],
+  );
+
+  const renderNotification = useCallback(
+    ({ item }: { item: NotificationItem }) => {
+      const viewerState = item.user?.viewerState;
+      const isFollowNotif = isFollowNotification(item);
+      const isSuggestion = item.type === "suggest";
+      const isFollowing = !!viewerState?.isFollowing;
+      const isPending = pendingFollowIds.has(item.user?.id ?? "");
+      const showFollowBtn = (isFollowNotif || isSuggestion) && item.user?.id && item.user.id !== currentUserId;
+      const displayLabel = isSuggestion ? (isFollowing ? "Following" : "Follow") : getFollowButtonLabel(viewerState, isFollowNotif);
+
+      return (
+        <Pressable
+          style={[styles.activityRow, showFollowBtn && styles.activityRowWithFollow]}
+          onPress={() => handleNotificationPress(item)}
+        >
+          <NotificationAvatar avatarUrl={item.user?.avatarUrl} username={item.user?.username} />
+
+          <View style={styles.activityContent}>
+            <View style={styles.nameRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.user?.username || "Ziona"}
               </Text>
-            </YStack>
-          </XStack>
+              <Text style={styles.date}>{formatTime(item.createdAt)}</Text>
+            </View>
 
-          {!item.isRead && (
-            <View width={8} height={8} borderRadius={4} backgroundColor={colors.primary} />
-          )}
-        </XStack>
-        <View height={0.5} backgroundColor={colors.lightGrayBg} />
-      </Pressable>
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {item.title}
+            </Text>
+
+            {!!item.message && (
+              <Text style={styles.message} numberOfLines={4}>
+                {item.message}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.rightActions}>
+            <Pressable style={styles.menuButton} hitSlop={10} onPress={(e) => { e.stopPropagation?.(); markActionPress(); setMenuItem(item); }}>
+              <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
+            </Pressable>
+            {showFollowBtn && (
+              <Pressable accessibilityRole="button" accessibilityLabel={displayLabel} accessibilityState={{ disabled: isPending || isFollowing, busy: isPending }} disabled={isPending || isFollowing} onPress={(e) => { void handleFollowPress(e, item); }} style={[styles.followBtn, isFollowing && styles.followingBtn]}>
+                {isPending ? <ActivityIndicator size="small" color="white" /> : <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>{displayLabel}</Text>}
+              </Pressable>
+            )}
+            {!item.isRead && <View style={styles.notificationDot} />}
+          </View>
+        </Pressable>
+      );
+    },
+    [formatTime, handleNotificationPress, handleFollowPress, markActionPress, currentUserId, pendingFollowIds],
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <AuthPrompt
+          message="Login to access this feature"
+          buttonText="Login"
+          buttonColor={colors.primary}
+        />
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
-      <YStack flex={1} paddingTop={50}>
-        <Text textAlign="center" fontSize={18} fontWeight="600" marginBottom={12}>
-          Activity
-        </Text>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <View style={styles.screen}>
+        <Header
+          heading="Activity"
+        />
 
-        <XStack padding={12} gap="$2">
-          {TABS.map((t) => (
-            <Tab key={t} label={t} />
-          ))}
-        </XStack>
-
-        {isLoading ? (
-          <YStack flex={1} justifyContent="center" alignItems="center">
-            <ActivityIndicator size="large" color={colors.primary} />
-          </YStack>
-        ) : filtered.length === 0 ? (
-          <YStack flex={1} justifyContent="center" alignItems="center">
-            <Text color={colors.gray}>No notifications yet</Text>
-          </YStack>
-        ) : (
+        {/* Filter tabs */}
+        <View style={styles.filterWrapper}>
           <FlatList
-            data={filtered}
-            keyExtractor={(item) => item.id}
-            renderItem={renderNotification}
-            contentContainerStyle={{ paddingHorizontal: 12 }}
-            showsVerticalScrollIndicator={false}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={filters}
+            keyExtractor={(item) => item.label}
+            contentContainerStyle={styles.filterContent}
+            renderItem={({ item }) => {
+              const selected = selectedFilter.label === item.label;
+              return (
+                <Pressable
+                  onPress={() => setSelectedFilter(item)}
+                  style={[styles.filterButton, selected && styles.filterButtonSelected]}
+                >
+                  <Text style={[styles.filterText, selected && styles.filterTextSelected]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
-        )}
-      </YStack>
+        </View>
+
+        {/* Activity feed */}
+        <View style={{ flex: 1 }}>
+          {isLoading ? (
+            <View style={styles.centerFill}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={styles.centerFill}>
+              <Text color={colors.gray}>No notifications yet</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={notifications}
+              keyExtractor={(item) => item.id}
+              renderItem={renderNotification}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.feedContent}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
+              }
+              ListFooterComponent={
+                isFetchingNextPage ? (
+                  <View style={styles.footerSpinner}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                ) : null
+              }
+            />
+          )}
+        </View>
+      </View>
+
+      {/* Row menu */}
+      {menuItem && (
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuItem(null)}>
+          <Pressable style={styles.menuCard} onPress={(e) => e.stopPropagation()}>
+            <Pressable
+              style={styles.menuRow}
+              onPress={() => {
+                deleteNotif.mutate(menuItem.id);
+                setMenuItem(null);
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#17131A" />
+              <Text style={styles.menuText}>Delete notification</Text>
+            </Pressable>
+            <Pressable
+              style={styles.menuRow}
+              onPress={() => {
+                handleMuteUser(menuItem.user?.id ?? "");
+                setMenuItem(null);
+              }}
+            >
+              <Ionicons name="thumbs-down-outline" size={18} color="#17131A" />
+              <Text style={styles.menuText}>Show fewer notification like this</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
+  screen: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
+  centerFill: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  /* ---------------- Filters ---------------- */
+
+  filterWrapper: {
+    height: 42,
+    width: "100%",
+  },
+
+  filterContent: {
+    paddingHorizontal: 20,
+    gap: 7,
+    alignItems: "center",
+  },
+
+  filterButton: {
+    height: 26,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#EEE9EF",
+    backgroundColor: "#FAF9FA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  filterButtonSelected: {
+    backgroundColor: "#17131A",
+    borderColor: "#17131A",
+  },
+
+  filterText: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#5F5362",
+  },
+
+  filterTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  /* ---------------- Feed ---------------- */
+
+  feedContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+
+  activityRow: {
+    minHeight: 73,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    position: "relative",
+    paddingRight: 44,
+  },
+
+  activityRowWithFollow: {
+    minHeight: 110,
+    paddingBottom: 16,
+  },
+
+  activityContent: {
+    flex: 1,
+    marginLeft: 9,
+    paddingRight: 80,
+  },
+
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 15,
+  },
+
+  name: {
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: "600",
+    color: "#201B22",
+    maxWidth: 130,
+  },
+
+  date: {
+    fontSize: 13,
+    lineHeight: 17,
+    color: "#8B7191",
+    fontWeight: "400",
+    marginLeft: 20,
+  },
+
+  followBtn: {
+    width: 104,
+    height: 35,
+    borderRadius: 4,
+    backgroundColor: "#742092",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  followingBtn: {
+    backgroundColor: "#EEEBEF",
+  },
+
+  followBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+
+  followingBtnText: {
+    color: "#17131A",
+  },
+
+  subtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 17,
+    color: "#8B7191",
+  },
+
+  message: {
+    marginTop: 5,
+    fontSize: 13,
+    lineHeight: 17,
+    color: "#282329",
+    paddingRight: 3,
+  },
+
+  rightActions: {
+    position: "absolute",
+    right: 0,
+    top: 10,
+    alignItems: "flex-end",
+    gap: 12,
+  },
+
+  menuButton: {
+    width: 23,
+    height: 23,
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+  },
+
+  notificationDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#17131A",
+    alignSelf: "flex-end",
+  },
+
+  separator: {
+    height: 1,
+    backgroundColor: "#F0EDF1",
+  },
+
+  footerSpinner: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+
+  /* ---------------- Row menu ---------------- */
+
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+    zIndex: 10,
+  },
+
+  menuCard: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingVertical: 8,
+    paddingBottom: 24,
+  },
+
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+
+  menuText: {
+    fontSize: 13,
+    color: "#17131A",
+    fontWeight: "500",
+  },
+});

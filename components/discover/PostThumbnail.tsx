@@ -3,16 +3,27 @@ import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
 import { FeedPost } from "@/types/feedTypes";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
+import { Text, TouchableOpacity, View } from "react-native";
+import {
+  getCachedThumbnail,
+  cacheThumbnail,
+} from "@/utils/textThumbnailCache";
+import TextThumbnailCapture from "@/components/TextThumbnailCapture";
 
 interface Props {
   post: FeedPost;
   size: number;
   onPress: () => void;
+  onLongPress?: () => void;
+  pressable?: boolean;
+  selected?: boolean;
 }
 
-export default function PostThumbnail({ post, size, onPress }: Props) {
+export default function PostThumbnail({ post, size, onPress, onLongPress, pressable = true, selected = false }: Props) {
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+  const [cachedTextUri, setCachedTextUri] = useState<string | null>(null);
+  const [needsCapture, setNeedsCapture] = useState(false);
 
   const isMedia = post.type === "media";
   const firstMedia = isMedia ? post.media?.[0] : undefined;
@@ -30,8 +41,6 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
     async function loadThumbnail() {
       if (!isMedia || firstMedia?.type !== "video") return;
 
-      console.log("[THUMB] 🎬 Processing", mediaUrl);
-
       const backendThumb = firstMedia.thumbnailUrl;
 
       const isValidBackend =
@@ -40,20 +49,16 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
         !backendThumb.includes(".mp4?");
 
       if (isValidBackend) {
-        console.log("[THUMB] ✅ Using backend thumbnail", backendThumb);
         setThumbnailUri(backendThumb);
         return;
       }
 
       try {
-        console.log("[THUMB] ⚙️ Generating thumbnail...");
         const generated = await generateVideoThumbnail(mediaUrl ?? "");
 
         if (generated && isMounted) {
-          console.log("[THUMB] ✅ Generated thumbnail", generated);
           setThumbnailUri(generated);
         } else {
-          console.warn("[THUMB] ❌ Generation returned null");
         }
       } catch (e) {
         console.error("[THUMB] ❌ Generation failed", e);
@@ -67,6 +72,32 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
     };
   }, [mediaUrl]);
 
+  /* ================= TEXT THUMBNAIL CACHE ================= */
+
+  useEffect(() => {
+    if (post.type !== "text" && post.type !== "bible") return;
+    let isMounted = true;
+
+    getCachedThumbnail(post.id).then((uri) => {
+      if (!isMounted) return;
+      if (uri) {
+        setCachedTextUri(uri);
+      } else {
+        setNeedsCapture(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [post.id, post.type]);
+
+  const handleTextCaptured = (uri: string) => {
+    setCachedTextUri(uri);
+    setNeedsCapture(false);
+    cacheThumbnail(post.id, uri);
+  };
+
   /* ================= RENDER MEDIA ================= */
 
   const renderMedia = () => {
@@ -76,7 +107,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
         <Image
           source={{ uri: firstMedia.url }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          contentFit="cover"
         />
       );
     }
@@ -102,7 +133,7 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
         <Image
           source={{ uri: thumbnailUri }}
           style={{ width: "100%", height: "100%" }}
-          resizeMode="cover"
+          contentFit="cover"
         />
       );
     }
@@ -136,12 +167,9 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
     /* TEXT / BIBLE */
     if (post.type === "text" || post.type === "bible") {
-      // For TEXT posts: show textMessage, or scripture.text if available
-      // For BIBLE posts: show scripture.text (already joined from verses in normalize)
       let cardText = "";
 
       if (post.type === "text") {
-        // TEXT + scripture posts
         if (post.textMessage?.trim()) {
           cardText = post.textMessage;
         } else if (post.scripture?.text?.trim()) {
@@ -150,32 +178,54 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
       }
 
       if (post.type === "bible") {
-        // BIBLE posts - scripture.text is set in normalizeBible
         cardText = post.scripture?.text ?? post.textMessage ?? "";
       }
 
+      const bgColor = post.category?.bgColor ?? "#181419";
+
+      if (cachedTextUri) {
+        return (
+          <Image
+            source={{ uri: cachedTextUri }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+          />
+        );
+      }
+
       return (
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: post.category?.bgColor ?? "#181419",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 10,
-          }}
-        >
-          <Text
-            numberOfLines={3}
+        <>
+          <View
             style={{
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: "600",
-              textAlign: "center",
+              flex: 1,
+              backgroundColor: bgColor,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 10,
             }}
           >
-            {cardText || "Text Post"}
-          </Text>
-        </View>
+            <Text
+              numberOfLines={3}
+              style={{
+                color: colors.black,
+                fontSize: 12,
+                fontWeight: "600",
+                textAlign: "center",
+              }}
+            >
+              {cardText || "Text Post"}
+            </Text>
+          </View>
+          {needsCapture && (
+            <TextThumbnailCapture
+              bgColor={bgColor}
+              text={cardText}
+              postId={post.id}
+              onCaptured={handleTextCaptured}
+              size={size}
+            />
+          )}
+        </>
       );
     }
 
@@ -184,19 +234,17 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
 
   /* ================= RENDER ================= */
 
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={{
-        width: size,
-        height: size,
-        margin: 2,
-        borderRadius: 2,
-        overflow: "hidden",
-        backgroundColor: colors.gray,
-      }}
-    >
+  const containerStyle = {
+    width: size,
+    height: size,
+    margin: 2,
+    borderRadius: 2,
+    overflow: "hidden" as const,
+    backgroundColor: colors.gray,
+  };
+
+  const content = (
+    <>
       {renderMedia()}
 
       {/* VIDEO ICON */}
@@ -218,6 +266,42 @@ export default function PostThumbnail({ post, size, onPress }: Props) {
           style={{ position: "absolute", top: 6, left: 6 }}
         />
       )}
+
+      {/* SELECTION CHECKMARK */}
+      {selected && (
+        <View
+          style={{
+            position: "absolute",
+            top: 4,
+            right: 4,
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            backgroundColor: colors.primary,
+            justifyContent: "center",
+            alignItems: "center",
+            borderWidth: 2,
+            borderColor: "white",
+          }}
+        >
+          <Ionicons name="checkmark" size={14} color="white" />
+        </View>
+      )}
+    </>
+  );
+
+  if (!pressable) {
+    return <View style={containerStyle}>{content}</View>;
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.85}
+      style={containerStyle}
+    >
+      {content}
     </TouchableOpacity>
   );
 }

@@ -13,8 +13,8 @@ export const apiBibleRepository: BibleRepository = {
     return res.data
   },
 
-  async getChapters(book: string) {
-    const res = await axios.get(`/bible/chapters?book=${book}`)
+  async getChapters(book) {
+    const res = await axios.get('/bible/chapters', { params: { book: book.slug ?? book.name } })
     return res.data
   },
 

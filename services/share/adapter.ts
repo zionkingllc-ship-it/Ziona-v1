@@ -1,13 +1,15 @@
 import { FeedPost, FeedMediaPost, FeedTextPost, FeedBiblePost } from "@/types/feedTypes";
+import { buildPostUrl } from "./services";
 
 export type SharePayload = {
   id: string;
   text?: string;
   mediaUrl?: string;
+  postUrl?: string;
 };
 
 export function mapFeedPostToShare(post: FeedPost): SharePayload {
-  const base = { id: post.id };
+  const base = { id: post.id, postUrl: buildPostUrl(post.id) };
 
   if (post.type === "media") {
     const mediaPost = post as FeedMediaPost;
@@ -29,8 +31,9 @@ export function mapFeedPostToShare(post: FeedPost): SharePayload {
 
   if (post.type === "bible") {
     const biblePost = post as FeedBiblePost;
-    const verses = biblePost.scripture?.verses;
-    const text = verses?.map(v => v.text).join(" ") ?? biblePost.scripture?.reference;
+    const text = biblePost.scripture?.text ??
+      biblePost.scripture?.verses?.map(v => `(${v.number}) ${v.text}`).join(" ") ??
+      biblePost.scripture?.reference;
     return {
       ...base,
       text,

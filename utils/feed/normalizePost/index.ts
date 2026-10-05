@@ -6,7 +6,6 @@ import { normalizeBible } from "./normalizeBible";
 
 export function normalizePost(p: any): FeedPost | null {
   if (!p?.id || !p?.type) {
-    console.log("[normalizePost] ❌ Missing id or type:", { id: p?.id, type: p?.type });
     return null;
   }
 
@@ -15,7 +14,6 @@ export function normalizePost(p: any): FeedPost | null {
   const rawType = typeof p.type === "string" ? p.type.toUpperCase() : p.type;
 
   const type = rawType === "IMAGE" || rawType === "VIDEO" ? "MEDIA" : rawType;
-  console.log("[normalizePost] Processing post:", p.id, "Type:", p.type, "-> Normalized:", type);
 
   if (type === "MEDIA") {
     return normalizeMedia(p, base);
@@ -29,6 +27,5 @@ export function normalizePost(p: any): FeedPost | null {
     return normalizeBible(p, base);
   }
 
-  console.log("[normalizePost] ❌ Unknown type:", type, "Post ID:", p.id);
   return null;
 }

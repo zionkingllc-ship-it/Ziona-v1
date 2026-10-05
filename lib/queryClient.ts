@@ -39,4 +39,9 @@ persistQueryClient({
   queryClient,
   persister: asyncStoragePersister,
   maxAge: 1000 * 60 * 60 * 24,
+  buster: "v4",
 });
+
+// Force-clear any malformed notification data that may have survived
+// hydration (old regular-query format clashes with infinite-query shape)
+queryClient.removeQueries({ queryKey: ["notifications"] });

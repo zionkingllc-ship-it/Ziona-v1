@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from "react";
+import { Image } from "expo-image";
 import {
-  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { isIOS } from "@/constants/platform";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { Text, View, XStack } from "tamagui";
 import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
 import { FeedPost } from "@/types/feedTypes";
 import { generateVideoThumbnail } from "@/helpers/thumbnailGenerator";
+import colors from "@/constants/colors";
 
 interface Props {
   visible: boolean;
   post: FeedPost;
   onClose: () => void;
-  onSave: (name: string, cover?: string) => void;
+  onSave: (name: string, thumbnailUri?: string | null) => void;
 }
 
 export default function CreateFolderModal({
@@ -28,6 +30,7 @@ export default function CreateFolderModal({
   const [name, setName] = useState("");
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
   const [loadingThumbnail, setLoadingThumbnail] = useState(false);
+  const [textPreview, setTextPreview] = useState<{ text: string; bgColor: string } | null>(null);
 
   const sheetAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: 0 }] }));
 
@@ -35,6 +38,7 @@ export default function CreateFolderModal({
     if (!visible || !post) {
       setName("");
       setThumbnailUri(null);
+      setTextPreview(null);
       return;
     }
 
@@ -67,6 +71,24 @@ export default function CreateFolderModal({
         }
       }
 
+      if (post.type === "text" || post.type === "bible") {
+        const cardText = post.type === "text"
+          ? (post.textMessage?.trim() || post.scripture?.text?.trim() || "")
+          : (post.scripture?.text ?? post.textMessage ?? "");
+        const bgColor = post.category?.bgColor || "#181419";
+        if (cardText) {
+          const postData = JSON.stringify({
+            postType: post.type,
+            textMessage: post.textMessage || undefined,
+            scriptureText: post.scripture?.text || undefined,
+            bgColor,
+          });
+          setThumbnailUri(`__post__:${postData}`);
+          setTextPreview({ text: cardText, bgColor });
+          return;
+        }
+      }
+
       setThumbnailUri(null);
     };
 
@@ -75,12 +97,13 @@ export default function CreateFolderModal({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave(name.trim(), thumbnailUri || undefined);
+    onSave(name.trim(), thumbnailUri);
     setName("");
+    setThumbnailUri(null);
   };
 
   return (
-    <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.6}>
+    <KeyboardBottomSheetModal visible={visible} onClose={onClose} maxHeightPercent={0.85}>
       <Animated.View style={[styles.container, sheetAnimatedStyle]}>
         <XStack justifyContent="space-between" alignItems="center">
           <TouchableOpacity onPress={handleSave}>
@@ -98,6 +121,12 @@ export default function CreateFolderModal({
           <View style={styles.coverPlaceholder}>
             <ActivityIndicator size="small" color="#999" />
           </View>
+        ) : textPreview ? (
+          <View style={[styles.cover, { backgroundColor: textPreview.bgColor, justifyContent: "center", alignItems: "center" }]}>
+            <Text fontFamily="$body" fontSize={12} fontWeight="600" color={colors.black} textAlign="center" numberOfLines={3}>
+              {textPreview.text}
+            </Text>
+          </View>
         ) : thumbnailUri ? (
           <Image source={{ uri: thumbnailUri }} style={styles.cover} />
         ) : (
@@ -108,7 +137,7 @@ export default function CreateFolderModal({
           placeholder="Create Folder Name"
           value={name}
           onChangeText={setName}
-          style={styles.input}
+          style={[styles.input, isIOS && { marginTop: 10 }]}
           placeholderTextColor="#aaa"
         />
       </Animated.View>

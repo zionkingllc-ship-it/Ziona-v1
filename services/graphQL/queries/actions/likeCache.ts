@@ -48,7 +48,6 @@ function patchPostLikeState(post: any, input: LikePatchInput) {
       liked: input.liked,
       saved: Boolean(post?.viewerState?.saved ?? false),
       followingAuthor: Boolean(post?.viewerState?.followingAuthor ?? false),
-      followedByAuthor: Boolean(post?.viewerState?.followedByAuthor ?? false),
       isOwner: Boolean(post?.viewerState?.isOwner ?? false),
     },
   };

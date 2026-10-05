@@ -5,11 +5,13 @@ import OtpDigit from "./OtpDigit";
 
 interface Props {
   length?: number;
-  onComplete: (code: string) => void;
+  value: string[];
+  onChange: (otp: string[]) => void;
 }
 
-export default function OtpContainer({ length = 6, onComplete }: Props) {
-  const [otp, setOtp] = useState<string[]>(Array(length).fill(""));
+export default function OtpContainer({ length = 6, value, onChange }: Props) {
+  const otp = value;
+  const setOtp = onChange;
   const inputsRef = useRef<TextInput[]>([]);
 
   const focusNext = (index: number) => {
@@ -30,7 +32,7 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
     /* -------- Handle paste -------- */
 
     if (text.length > 1) {
-      const pasted = text.slice(0, length).split("");
+      const pasted = text.trim().slice(0, length).split("");
 
       const newOtp = [...otp];
 
@@ -39,11 +41,6 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
       });
 
       setOtp(newOtp);
-
-      if (pasted.length === length) {
-        onComplete(newOtp.join(""));
-      }
-
       return;
     }
 
@@ -55,10 +52,6 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
     if (text) {
       focusNext(index);
     }
-
-    if (newOtp.every((digit) => digit !== "")) {
-      onComplete(newOtp.join(""));
-    }
   };
 
   const handleKeyPress = (key: string, index: number) => {
@@ -69,20 +62,19 @@ export default function OtpContainer({ length = 6, onComplete }: Props) {
     if (newOtp[index]) {
       newOtp[index] = "";
       setOtp(newOtp);
+      focusPrev(index);
       return;
     }
 
-    focusPrev(index);
-
     if (index > 0) {
       newOtp[index - 1] = "";
+      setOtp(newOtp);
+      focusPrev(index);
     }
-
-    setOtp(newOtp);
   };
 
   return (
-    <XStack justifyContent="space-between" marginTop="$4">
+    <XStack gap={4} alignItems="center" justifyContent="center" marginTop="$4">
       {otp.map((digit, index) => (
         <OtpDigit
           key={index}

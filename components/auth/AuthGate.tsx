@@ -1,21 +1,10 @@
-import { useAuthStore } from "@/store/useAuthStore";
-import { useEffect } from "react";
+import { ReactNode } from "react";
 
 type Props = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export default function AuthGate({ children }: Props) {
-  const initializeAuth = useAuthStore((s) => s.initializeAuth);
-  const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
-
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  if (isBootstrapping) {
-    return null;
-  }
-
+  // Auth is initialized in app/_layout.tsx — no duplicate call needed.
   return <>{children}</>;
 }

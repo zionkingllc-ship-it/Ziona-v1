@@ -43,7 +43,7 @@ export default function ConfirmReportModal({
         <Pressable style={styles.button} onPress={onConfirm}>
           <Text
             fontFamily={"$body"}
-            style={{ color: colors.primary, fontWeight: "600", marginBottom: 20 }}
+            style={{ color: colors.white, fontWeight: "600" }}
           >
             Report
           </Text>
@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 26,
     paddingTop: 24,
+    paddingBottom: 24,
     paddingHorizontal: 32,
     margin: 40,
   },
@@ -83,9 +84,14 @@ const styles = StyleSheet.create({
     color: "#777",
   },
   button: {
-    paddingVertical: 12,
+    backgroundColor: "#531769",
+    height: 48,
+    minWidth: 240,
     alignItems: "center",
+    justifyContent: "center",
     alignSelf: "center",
     marginTop: 10,
+    borderRadius: 999,
+    paddingHorizontal: 32,
   },
 });

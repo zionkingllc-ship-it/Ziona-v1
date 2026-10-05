@@ -1,25 +1,32 @@
 import AuthGate from "@/components/auth/AuthGate";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ScreenDimensionsProvider } from "@/context/ScreenDimensionsContext";
-import { debugAuthStorage } from "@/helpers/asyncDataLog";
 import { useSyncSavedPosts } from "@/hooks/useSyncSavedPosts";
+import { useLocationFirstTime } from "@/hooks/useLocationFirstTime";
 import { queryClient } from "@/lib/queryClient";
 import NotificationProvider from "@/providers/notificationProvider";
+import { OfflineProvider } from "@/providers/OfflineProvider";
+import { startAuthHealthMonitor, stopAuthHealthMonitor } from "@/services/auth/authHealth";
+import { initMetaSDK } from "@/services/analytics/metaEvents";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import config from "@/tamagui.config";
+import { initializeNotificationStore, cleanupNotificationStore } from "@/src/store/notificationStore";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
+import { NotificationBanner } from "@/src/components/NotificationBanner";
+import { toHref } from "@/src/services/notifications/notificationNavigation";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as NavigationBar from "expo-navigation-bar";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { Linking, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TamaguiProvider } from "tamagui";
-import { NetworkStatusBanner } from "@/components/ui/NetworkStatusBanner";
-import { DismissKeyboard } from "@/components/ui/DismissKeyboard";
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,22 +35,39 @@ function SyncHooks() {
   return null;
 }
 
+function LocationFirstTimeInitializer() {
+  useLocationFirstTime();
+  return null;
+}
+
+let lastDeepLinkPath = "";
+let lastDeepLinkTime = 0;
+
 export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
 
-  const scheme = useColorScheme() ?? "light";
   const loadCategories = useCategoryStore((s) => s.loadCategories);
 
   useEffect(() => {
     loadCategories();
-    initializeAuth();
+    initializeNotificationStore();
+    initMetaSDK();
+    return () => {
+      cleanupNotificationStore();
+    };
   }, []);
+
+  useEffect(() => {
+    if (hasHydrated) void initializeAuth();
+  }, [hasHydrated, initializeAuth]);
 
   const [fontsLoaded] = useFonts({
     MonaSans_400: require("../assets/fonts/MonaSans-Regular.ttf"),
     MonaSans_500: require("../assets/fonts/MonaSans-Medium.ttf"),
     MonaSans_600: require("../assets/fonts/MonaSans-SemiBold.ttf"),
     MonaSans_700: require("../assets/fonts/MonaSans-Bold.ttf"),
+    MonaSans_300_Italic: require("../assets/fonts/MonaSans-LightItalic.ttf"),
     EBGaramond_400: require("../assets/fonts/EBGaramond-Regular.ttf"),
     EBGaramond_500: require("../assets/fonts/EBGaramond-Medium.ttf"),
     EBGaramond_600: require("../assets/fonts/EBGaramond-SemiBold.ttf"),
@@ -56,8 +80,10 @@ export default function RootLayout() {
   /* -------- FORCE BLACK ANDROID NAVIGATION BAR -------- */
 
   useEffect(() => {
-    // NavigationBar.setBackgroundColorAsync("#ffffff");
-    NavigationBar.setButtonStyleAsync("dark");
+    if (Platform.OS === "android") {
+      NavigationBar.setButtonStyleAsync("dark");
+      NavigationBar.setBackgroundColorAsync("#ffffff");
+    }
   }, []);
 
   /* -------- HIDE SPLASH AFTER FONTS -------- */
@@ -65,14 +91,60 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
-      debugAuthStorage();
     }
   }, [fontsLoaded]);
 
+  /* -------- DEEP LINK HANDLER -------- */
+
+const navReady = useRootNavigationReady();
+
+  useEffect(() => {
+    if (!navReady) return;
+
+    function handleDeepLink(event: { url: string }) {
+      let url = event.url;
+      // Strip scheme if present (Android adds 'ziona://' or 'http://' prefix)
+      // but only parse if it's a valid URL format
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        try {
+          const parsed = new URL(url);
+          url = parsed.pathname + (parsed.search ? parsed.search : "");
+        } catch {
+          // Keep original url if parsing fails
+        }
+      }
+      const match = url.match(/\/post\/([^/?\s]+)/) || url.match(/\/viewer\/([^/?\s]+)/);
+      if (!match?.[1]) return;
+      const path = `/viewer/${match[1]}`;
+      const now = Date.now();
+      if (path === lastDeepLinkPath && now - lastDeepLinkTime < 2000) return;
+      lastDeepLinkPath = path;
+      lastDeepLinkTime = now;
+      const href = toHref(path);
+      if (href) router.push(href as any);
+    }
+
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    }).catch(() => {});
+
+    return () => {
+      subscription.remove();
+    };
+  }, [navReady]);
+
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
-  if (isBootstrapping) {
-    return null;
-  }
+
+  /* -------- AUTH HEALTH MONITOR -------- */
+
+  useEffect(() => {
+    if (!isBootstrapping && fontsLoaded && navReady) {
+      startAuthHealthMonitor(router);
+      return () => stopAuthHealthMonitor();
+    }
+  }, [isBootstrapping, fontsLoaded, navReady]);
 
   if (!fontsLoaded) {
     return null;
@@ -80,29 +152,39 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <NotificationBanner />
       <ScreenDimensionsProvider>
-        <TamaguiProvider config={config} defaultTheme={scheme} disableInjectCSS>
+        <TamaguiProvider config={config} defaultTheme="light" disableInjectCSS>
           <StatusBar style="dark" />
 
           <NotificationProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <QueryClientProvider client={queryClient}>
                 <SyncHooks />
+                <LocationFirstTimeInitializer />
+                <OfflineProvider>
                 <AuthGate>
-                  <DismissKeyboard>
-                    <NetworkStatusBanner />
-                    <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="(auth)" />
-                    <Stack.Screen name="viewer" />
-                    <Stack.Screen name="guest" />
-                    <Stack.Screen name="notifications" />
-                    <Stack.Screen name="create" />
-                    <Stack.Screen name="followers" />
-                    <Stack.Screen name="following" />
-                  </Stack>
-                  </DismissKeyboard>
+                  <ErrorBoundary>
+                  <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="viewer" />
+                  <Stack.Screen name="guest/index" />
+                  <Stack.Screen name="notifications/index" />
+                  <Stack.Screen name="followers/index" />
+                  <Stack.Screen name="following/index" />
+                  <Stack.Screen name="circleRules" />
+                  <Stack.Screen name="circleFeed" />
+                  <Stack.Screen name="postVideoViewer" />
+                  <Stack.Screen name="circleVideoViewer" />
+                  <Stack.Screen name="circleImageViewer" />
+                  <Stack.Screen name="posts" />
+                  <Stack.Screen name="circlePostComposer" />
+                </Stack>
+                  </ErrorBoundary>
                 </AuthGate>
+                </OfflineProvider>
               </QueryClientProvider>
             </GestureHandlerRootView>
           </NotificationProvider>

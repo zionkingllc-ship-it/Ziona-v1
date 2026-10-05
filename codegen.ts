@@ -2,13 +2,7 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: {
-    "https://ziona-api-staging.onrender.com/graphql/": {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
-  },
+  schema: "./schema.clean.json",
   documents: ["services/graphQL/**/*.ts", "hooks/**/*.ts", "repository/**/*.ts"],
   ignoreNoDocuments: true,
   generates: {
@@ -26,5 +20,4 @@ const config: CodegenConfig = {
     },
   },
 };
-
 export default config;

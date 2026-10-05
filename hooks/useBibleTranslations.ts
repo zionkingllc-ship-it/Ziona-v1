@@ -10,6 +10,8 @@ export function useBibleTranslations() {
     bibleRepository.getTranslations().then((res: BibleTranslation[] | undefined) => {
       setData(res ?? [])
       setLoading(false)
+    }).catch(() => {
+      setLoading(false)
     })
   }, [])
 

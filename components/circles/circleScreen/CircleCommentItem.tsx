@@ -1,4 +1,5 @@
 import React from "react";
+import { Image as ExpoImage } from "expo-image";
 import { YStack, XStack, Text, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -23,11 +24,9 @@ export default function CircleCommentItem({
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$2">
-          <Image
+          <ExpoImage
             source={{ uri: user.avatar }}
-            width={32}
-            height={32}
-            borderRadius={16}
+            style={{ width: 32, height: 32, borderRadius: 16 }}
           />
 
           <XStack gap="$2" alignItems="center">

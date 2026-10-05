@@ -17,6 +17,8 @@ type prop = {
   headingSize?: any;
   headingWeight?: any;
   headerFontFamily?: any;
+  onBackPress?: () => void;
+  onIconAfterPress?: () => void;
 };
 
 export default function Header({
@@ -30,45 +32,48 @@ export default function Header({
   imageAfter2Press,
   headingWeight = "500",
   headerFontFamily = "$body",
+  onBackPress,
+  onIconAfterPress,
 }: prop) {
   return (
-    <XStack width={"100%"} justifyContent="space-between" alignItems="center">
-      <ChevronLeft
-        size={24} 
-        marginTop={5}
-        color={iconBeforeColor ? iconBeforeColor : colors.black}
-        onPress={() => router.back()}
-      />
-      <Text
-        fontFamily={headerFontFamily}
-        fontSize={headingSize ? headingSize : "$4"}
-        fontWeight={headingWeight}
+    <XStack width={"100%"} alignItems="center" paddingLeft={20} minHeight={48}>
+      <Pressable
+        hitSlop={12}
+        accessibilityLabel="Go back"
+        onPress={onBackPress || (() => router.back())}
       >
-        {heading}
-      </Text>
+        <ChevronLeft
+          size={24}
+          color={iconBeforeColor ? iconBeforeColor : colors.black}
+        />
+      </Pressable>
+      <XStack flex={1} justifyContent="center" alignItems="center" marginRight={44}>
+        <Text
+          fontFamily={headerFontFamily}
+          fontSize={headingSize ? headingSize : "$4"}
+          fontWeight={headingWeight}
+          textAlign="center"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ flexShrink: 1 }}
+        >
+          {heading}
+        </Text>
+      </XStack>
 
-      {iconAfter ? (
-        <XStack gap={5}>
-          <Ionicons type={iconAfter} size={24} />
-          {iconAfter2 && <Ionicons type={iconAfter2} size={24} />}
-        </XStack>
-      ) : (
-        <XStack gap={5}>
-          {imageAfter && (
-            <Image source={imageAfter} width={24} height={24} marginRight={10} />
-          )}
-          {imageAfter2 && (
-            <Pressable onPress={imageAfter2Press}>
-              <Image
-                source={imageAfter2}
-                width={24}
-                height={24}
-                marginRight={10}
-              />
-            </Pressable>
-          )}
-        </XStack>
-      )}
+      <XStack gap={5} position="absolute" right={10}>
+        {iconAfter ? (
+          <Pressable onPress={onIconAfterPress}>
+            <Ionicons name={iconAfter} size={24} color={colors.black} />
+          </Pressable>
+        ) : imageAfter2 ? (
+          <Pressable onPress={imageAfter2Press}>
+            <Image source={imageAfter2} width={24} height={24} marginRight={10} />
+          </Pressable>
+        ) : imageAfter ? (
+          <Image source={imageAfter} width={24} height={24} marginRight={10} />
+        ) : null}
+      </XStack>
     </XStack>
   );
 }

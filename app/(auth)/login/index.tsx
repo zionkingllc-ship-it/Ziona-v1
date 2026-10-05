@@ -1,9 +1,14 @@
 import { InlineUnderlineText } from "@/components/ui/InlineUnderlineText";
 import { MarqueeCarousel } from "@/components/ui/marquee";
+import SuccessModal from "@/components/ui/modals/successModal";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
+import { isIOS } from "@/constants/platform";
 import { useResponsive } from "@/hooks/useResponsive";
+import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { useSignupStore } from "@/store/useSignupStore";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable } from "react-native";
@@ -31,20 +36,79 @@ export default function LoginIndex() {
   const { wp, hp, fs } = useResponsive();
 
   const { signInWithGoogle } = useGoogleAuth();
+  const { signInWithApple } = useAppleAuth();
+  const setFlow = useSignupStore((s) => s.setFlow);
+  const setSuggestions = useSignupStore((s) => s.setSuggestions);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleAppleSignIn = async () => {
+    try {
+      setIsAppleLoading(true);
+
+      const res = await signInWithApple();
+
+      if (res.error) {
+        setIsAppleLoading(false);
+        return;
+      }
+
+      if (!res?.user?.username) {
+        setIsAppleLoading(false);
+        setFlow("apple");
+        setSuggestions(res.suggestedUsernames ?? []);
+        router.replace("/(auth)/username");
+        return;
+      }
+
+      router.replace("/(tabs)/feed");
+    } catch (err) {
+      setIsAppleLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      console.log("Google login pressed");
 
-      await signInWithGoogle();
+      const res = await signInWithGoogle();
+
+      if (res.cancelled) {
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      if (res.error) {
+        setIsGoogleLoading(false);
+        setModalVisible(true);
+        setMessageTitle("Authentication Failed");
+        setMessage(
+          res.error ||
+            "Google login failed, please try again or sign in with email instead",
+        );
+        return;
+      }
+
+      if (!res?.user?.username) {
+        setIsGoogleLoading(false);
+        setFlow("google");
+        setSuggestions(res.suggestedUsernames ?? []);
+        router.replace("/(auth)/username");
+        return;
+      }
 
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
-      console.log("Google login failed", err);
+      setModalVisible(true);
+      setMessageTitle("Authentication Failed");
+      setMessage(
+        "Google Sign-In could not be completed. Please try again or use email sign-in.",
+      );
     }
   };
 
@@ -121,6 +185,25 @@ export default function LoginIndex() {
             }}
           />
 
+          {isIOS && (
+            <PrimaryButton
+              text="Continue with Apple"
+              color={colors.white}
+              textSize={fs(14)}
+              textWeight="400"
+              onPress={handleAppleSignIn}
+              loading={isAppleLoading}
+              disabled={isAppleLoading}
+              iconSize={wp(6)}
+              startIcon={
+                <Ionicons name="logo-apple" size={wp(6)} color={colors.text} />
+              }
+              style={{
+                height: hp(6.5),
+              }}
+            />
+          )}
+
           <PrimaryButton
             text="Continue with Google"
             textSize={fs(14)}
@@ -135,7 +218,7 @@ export default function LoginIndex() {
             }}
           />
 
-          <PrimaryButton
+          {/* <PrimaryButton
             text="Continue with Facebook"
             textSize={fs(14)}
             textWeight="400"
@@ -145,7 +228,7 @@ export default function LoginIndex() {
             style={{
               height: hp(6.5),
             }}
-          />
+          /> */}
         </YStack>
 
         {/* Footer */}
@@ -158,11 +241,13 @@ export default function LoginIndex() {
           <XStack
             alignItems="center"
             justifyContent="center"
-            left={0}
-            right={0}
             padding={0}
-            width={"100%"}
+            width="auto"
+            maxWidth={Math.min(wp(92), 420)}
+            alignSelf="center"
             flexWrap="wrap"
+            columnGap={4}
+            rowGap={2}
           >
             <Text
               fontSize={fs(13)}
@@ -175,16 +260,22 @@ export default function LoginIndex() {
               By continuing, you agree to Ziona’s{" "}
             </Text>
 
-            <InlineUnderlineText
-              color={colors.termsButton}
-              fontFamily={"$body"}
-              weight="500"
-              fontSize={fs(13)}
-              thickness={1}
-              offset={-1}
+            <Pressable
+              onPress={() => {
+                router.push("/settings/terms/use");
+              }}
             >
-              Terms of use
-            </InlineUnderlineText>
+              <InlineUnderlineText
+                color={colors.termsButton}
+                fontFamily={"$body"}
+                weight="500"
+                fontSize={fs(13)}
+                thickness={1}
+                offset={-1}
+              >
+                Terms of use
+              </InlineUnderlineText>
+            </Pressable>
             <Text
               fontSize={fs(13)}
               textAlign="center"
@@ -194,14 +285,12 @@ export default function LoginIndex() {
               lineHeight={fs(18)}
             >
               {" "}
-              and confirm that you have read Ziona’s{" "}
+              and confirm that you have read Ziona&apos;s{" "}
             </Text>
             <Pressable
-              onPress={() =>
-                router.push(
-                  "https://www.privacypolicies.com/live/db459a7c-78ec-4d12-8d82-cf20f7e716a6",
-                )
-              }
+              onPress={() => {
+                router.push("/settings/terms/privacy");
+              }}
             >
               <InlineUnderlineText
                 color={colors.termsButton}
@@ -214,10 +303,27 @@ export default function LoginIndex() {
                 Privacy Policy
               </InlineUnderlineText>
             </Pressable>
+            <Text>and</Text>
+            <Pressable
+              onPress={() => {
+                router.push("/settings/terms/community");
+              }}
+            >
+              <InlineUnderlineText
+                color={colors.termsButton}
+                fontFamily={"$body"}
+                weight="500"
+                thickness={1}
+                fontSize={fs(13)}
+                offset={-1}
+              >
+                Community guidelines
+              </InlineUnderlineText>
+            </Pressable>
           </XStack>
 
           <XStack alignItems="center" justifyContent="center">
-            <Text fontSize={fs(14)}>Don't have an account? </Text>
+            <Text fontSize={fs(14)}>Don&apos;t have an account? </Text>
             <Pressable onPress={() => router.replace("/(auth)")}>
               <Text
                 color={colors.primary}
@@ -230,6 +336,15 @@ export default function LoginIndex() {
           </XStack>
         </YStack>
       </YStack>
+      <SuccessModal
+        visible={modalVisible}
+        autoClose
+        title={messageTitle}
+        duration={4000}
+        message={message}
+        type="failed"
+        onClose={() => setModalVisible(false)}
+      />
     </YStack>
   );
 }

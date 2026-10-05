@@ -17,7 +17,7 @@ export class GraphqlBibleRepository implements BibleRepository {
   }
 
   async getChapters(book: BibleBook): Promise<number[]> {
-    return Array.from({ length: book.chapters }, (_, i) => i + 1);
+    return Array.from({ length: book.chapters ?? 0 }, (_, i) => i + 1);
   }
 
   /* =========================
@@ -54,7 +54,6 @@ query GetFullChapter($book: String!, $chapter: Int!, $translation: String!) {
     const data = await graphqlRequest(QUERY, variables);
 
     if (!data?.scripture) {
-      console.warn("No scripture returned from backend");
       return null;
     }
 

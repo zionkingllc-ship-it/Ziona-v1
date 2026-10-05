@@ -43,7 +43,6 @@ export const POST_FEED_FIELDS = `
     liked
     saved
     followingAuthor
-    followedByAuthor
     isOwner
   }
 `;

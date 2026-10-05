@@ -1,11 +1,4 @@
 export function normalizeText(p: any, base: any) {
-  console.log("🔍 normalizeText INPUT:", JSON.stringify({
-    id: p.id,
-    type: p.type,
-    textMessage: p.textMessage,
-    scripture: p.scripture,
-  }, null, 2));
-
   const message =
     typeof p.textMessage === "string" && p.textMessage.trim()
       ? p.textMessage
@@ -20,7 +13,7 @@ export function normalizeText(p: any, base: any) {
   // Handle both single `text` and `verses[]` array from API
   const verseText =
     p.scripture?.text ??
-    (p.scripture?.verses?.map((v: any) => v.text).join(" ") ?? "");
+    (p.scripture?.verses?.map((v: any) => `(${v.number}) ${v.text}`).join(" ") ?? "");
 
   const result = {
     ...base,
@@ -39,6 +32,5 @@ export function normalizeText(p: any, base: any) {
       : undefined,
   };
 
-  console.log("🔍 normalizeText OUTPUT:", JSON.stringify(result, null, 2));
   return result;
 }

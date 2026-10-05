@@ -9,6 +9,7 @@ const GET_TRANSLATIONS = `
 query {
   bibleVersions {
     name
+    abbreviation
   }
 }
 `;
@@ -18,6 +19,7 @@ export async function getBibleTranslations(): Promise<BibleTranslation[]> {
 
   return (data?.bibleVersions ?? []).map((v: any) => ({
     name: v.name,
+    abbreviation: v.abbreviation,
   }));
 }
 
@@ -58,7 +60,6 @@ export async function getBibleBooks(): Promise<BibleBook[]> {
 
     return [...oldBooks, ...newBooks];
   } catch (err) {
-    console.log("Failed to load books", err);
     return [];
   }
 }
@@ -68,7 +69,7 @@ export async function getBibleBooks(): Promise<BibleBook[]> {
 ========================= */
 
 export async function getBibleChapters(book: BibleBook): Promise<number[]> {
-  return Array.from({ length: book.chapters }, (_, i) => i + 1);
+  return Array.from({ length: book.chapters ?? 0 }, (_, i) => i + 1);
 }
 
 /* =========================

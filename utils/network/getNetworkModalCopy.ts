@@ -4,42 +4,28 @@ export type NetworkModalCopy = {
   message: string;
 };
 
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") return error;
-
-  if (error && typeof error === "object") {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === "string") return maybeMessage;
-  }
-
-  return "";
-}
+import { getErrorMessage as getCentralizedErrorMessage } from "@/utils/error";
 
 export function getNetworkModalCopy(
   error: unknown,
   fallbackMessage: string,
 ): NetworkModalCopy {
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getCentralizedErrorMessage(error).toLowerCase();
 
   const isOfflineError =
     message.includes("network request failed") ||
     message.includes("network error") ||
     message.includes("failed to fetch") ||
     message.includes("fetch error") ||
-    message.includes("internet") ||
-    message.includes("offline") ||
     message.includes("enotfound") ||
     message.includes("eai_again") ||
     message.includes("socket hang up") ||
     message.includes("aborted") ||
-    message.includes("timeout") ||
     message.includes("connection refused") ||
     message.includes("no connection") ||
     message.includes("connection lost") ||
     message.includes("not connected") ||
-    message.includes("request failed") ||
-    message.includes("connection") ||
-    message.includes("network") ||
+    message.includes("internet") ||
     (error instanceof TypeError && message.includes("undefined")) ||
     (error instanceof TypeError && message.includes("null"));
 
@@ -78,6 +64,32 @@ export function getNetworkModalCopy(
       title: "Server Busy",
       message:
         "The server is experiencing high demand. Please try again in a few moments.",
+    };
+  }
+
+  const isValidationError =
+    message.includes("video duration") ||
+    message.includes("duration exceeds") ||
+    message.includes("90-second") ||
+    message.includes("150-second") ||
+    message.includes("2 minutes") ||
+    message.includes("exceeds the limit") ||
+    message.includes("validation_error") ||
+    message.includes("validation error") ||
+    message.includes("file type") ||
+    message.includes("image type") ||
+    message.includes("unsupported") ||
+    message.includes("invalid format") ||
+    message.includes("invalid image") ||
+    message.includes("invalid file") ||
+    message.includes("not supported") ||
+    message.includes("not allowed");
+
+  if (isValidationError) {
+    return {
+      type: "failed",
+      title: "Unable to Upload",
+      message: fallbackMessage,
     };
   }
 

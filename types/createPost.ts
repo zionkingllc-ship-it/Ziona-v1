@@ -10,6 +10,8 @@ export interface MediaItem {
   id: string;
   uri: string;
   type: MediaType;
+  fileSize?: number;
+  duration?: number;
 }
 
 /* =========================

@@ -3,6 +3,7 @@ import React from "react";
 import { YStack } from "tamagui";
 
 import { useResponsive } from "@/hooks/useResponsive";
+
 import { Category } from "@/types/category";
 import TextPostCardOutput from "./TextPostCardOutput";
 
@@ -18,9 +19,10 @@ import colors from "@/constants/colors";
 type Props = {
   post: FeedTextPost | FeedBiblePost;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
 };
 
-export default function TextPostCard({ post, onLike }: Props) {
+export default function TextPostCard({ post, onLike, onDoubleTapLike }: Props) {
   const { wp, hp } = useResponsive();
 
   /* ================= SAFE DATA ================= */
@@ -36,7 +38,7 @@ if (post.scripture) {
     const s = post.scripture;
     scriptureText = s.reference;
     translation = s.translation;
-    verseText = s.text ?? s.verses?.map(v => v.text).join(" ") ?? "";
+    verseText = s.text ?? s.verses?.map(v => `(${v.number}) ${v.text}`).join(" ") ?? "";
   }
 
   if (post.type === "text") {
@@ -73,10 +75,9 @@ if (post.scripture) {
 
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
-    .maxDelay(250)
     .onEnd((_, success) => {
       if (success) {
-        if (onLike) runOnJS(onLike)();
+        if (onDoubleTapLike) runOnJS(onDoubleTapLike)();
         runOnJS(triggerHeart)();
       }
     });
@@ -92,8 +93,8 @@ if (post.scripture) {
           flex={1}
           justifyContent="center"
           alignItems="center"
-          paddingHorizontal={wp(6)}
-          paddingVertical={hp(16)}
+          paddingHorizontal={Math.max(5, wp(6) - 5)}
+          paddingVertical={hp(16) + 10}
         >
           <TextPostCardOutput
             category={category as Category}

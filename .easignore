@@ -13,10 +13,23 @@ expo-env.d.ts
 # Native
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# Local-only / generated files (not needed by EAS Build)
+# (service-account keys intentionally NOT listed here: EAS needs them for auto-submit)
+credentials.json
+/android
+/ios
+temp.json
+GoogleService-Info.dev.plist
+GoogleService-Info (1).plist
+google-services (2).json
+.opencode
+.worktrees
 
 # Metro
 .metro-health-check*
@@ -31,6 +44,10 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env*.local
+.env.staging
+.env.production
 .env*.local
 
 # typescript
@@ -73,6 +90,10 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env*.local
+.env.staging
+.env.production
 .env*.local
 
 # typescript

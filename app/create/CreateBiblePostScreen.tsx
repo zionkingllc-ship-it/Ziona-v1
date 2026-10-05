@@ -4,18 +4,15 @@ import TextPostCardInput from "@/components/post/TextPostCardInput";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
-import SuccessModal from "@/components/ui/modals/successModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 import colors from "@/constants/colors";
-import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
-import { queryClient } from "@/lib/queryClient";
-import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { useRef, useState } from "react";
+import { shortenBookName } from "@/utils/bibleNames";
+import { TEXT_MAX_LENGTH, effectiveLength } from "@/utils/textMeasure";
+import { useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { router } from "expo-router";
+import { Image, Text, View, XStack, YStack } from "tamagui";
 
 /* =========================
    HELPER
@@ -26,8 +23,10 @@ function buildReference(book: string, chapter: number, verses: number[]) {
 
   if (!sorted.length) return "";
 
+  const shortBook = shortenBookName(book);
+
   if (sorted.length === 1) {
-    return `${book} ${chapter}:${sorted[0]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}`;
   }
 
   const isContinuous = sorted.every(
@@ -35,21 +34,22 @@ function buildReference(book: string, chapter: number, verses: number[]) {
   );
 
   if (isContinuous) {
-    return `${book} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
   }
 
-  return `${book} ${chapter}:${sorted.join(", ")}`;
+  return `${shortBook} ${chapter}:${sorted.join(", ")}`;
 }
 
 export default function CreateBiblePostScreen() {
   const { wp, hp, fs } = useResponsive();
 
-  const { draft, setCategory, setBibleVerse } = useCreatePostStore();
+  const draft = useCreatePostStore((s) => s.draft);
+  const setCategory = useCreatePostStore((s) => s.setCategory);
+  const setBibleVerse = useCreatePostStore((s) => s.setBibleVerse);
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(true); // auto open
-  const [uploading, setUploading] = useState(false);
-  const [showProgress, setShowProgress] = useState(false); 
+
   /* =========================
      TYPE SAFETY
   ========================= */
@@ -84,51 +84,30 @@ export default function CreateBiblePostScreen() {
      LIMIT
   ========================= */
 
-  const verseLength = verseText?.length ?? 0;
-  const remaining = Math.max(500 - verseLength, 0);
+  const verseLength = effectiveLength(verseText);
+  const remaining = Math.max(TEXT_MAX_LENGTH - verseLength, 0);
 
   /* =========================
      VALIDATION
   ========================= */
 
-  const canUpload = !!bibleDraft.category && !!bibleDraft.bibleVerse;
+  const canUpload = !!bibleDraft.category?.id && !!bibleDraft.bibleVerse;
 
   /* =========================
      SUBMIT
   ========================= */
 
-  const feedback = usePostFeedback("/(tabs)/create");
-
-  async function handleUpload() {
+  function handleUpload() {
     if (!canUpload) return;
 
-    try {
-      setUploading(true);
-      await publishDraftPost(bibleDraft, queryClient);
-      setShowProgress(true);
-    } catch (error: any) {
-      const networkFeedback = getNetworkModalCopy(
-        error,
-        error?.message || "We couldn't create your post.",
-      );
-      feedback.showError(networkFeedback.message, networkFeedback.type);
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function handleProgressComplete() {
-    setShowProgress(false);
-    feedback.showSuccess();
+    router.push("/create/uploadProgress");
   }
 
   return (
     <YStack
       style={{ flex: 1, backgroundColor: colors.white, paddingTop: hp(5) }}
     >
-      <XStack marginLeft={wp(4)}>
-        <Header heading="Create Post" />
-      </XStack>
+      <Header heading="Create Post" />
 
       <ScrollView style={{ flex: 1 }}>
         <YStack flex={1} paddingHorizontal={wp(6)} paddingTop={hp(2)}>
@@ -136,15 +115,14 @@ export default function CreateBiblePostScreen() {
 
           <TextPostCardInput
             showInput={false}
+            value=""
+            onChangeText={() => {}}
             category={bibleDraft.category?.label}
             scripture={reference}
             translation={translation}
             verseText={verseText}
-            value={""}
-            onChangeText={() => {}}
             backgroundColor={cardColor}
             maxLength={500}
-            
           />
 
           {/* ACTIONS */}
@@ -187,10 +165,10 @@ export default function CreateBiblePostScreen() {
           {/* POST */}
 
           <SimpleButton
-            text={uploading ? "Posting..." : "Post"}
+            text="Next"
             textColor={colors.buttonText}
             color={colors.primary}
-            disabled={uploading || !canUpload}
+            disabled={!canUpload}
             onPress={handleUpload}
           />
 
@@ -207,35 +185,17 @@ export default function CreateBiblePostScreen() {
 
           {/* BIBLE */}
 
-          <BibleSelectorModal
-            visible={bibleVisible}
-            onClose={() => setBibleVisible(false)}
-            onDone={(data) => {
-              setBibleVerse(data);
-              setBibleVisible(false);
-            }}
-          />
+          {bibleVisible && (
+            <BibleSelectorModal
+              visible={bibleVisible}
+              onClose={() => setBibleVisible(false)}
+              onDone={(data) => {
+                setBibleVerse(data);
+              }}
+            />
+          )}
         </YStack>
       </ScrollView>
-
-      <SuccessModal
-        visible={feedback.visible}
-        onClose={feedback.handleClose}
-        title={
-          feedback.type === "success"
-            ? "Success"
-            : feedback.type === "warning"
-              ? "Network issue"
-              : "Failed"
-        }
-        message={feedback.message}
-        type={feedback.type}
-        autoClose
-      />
-      <PostProgressModal
-        visible={showProgress}
-        onComplete={handleProgressComplete}
-      />
     </YStack>
   );
 }

@@ -1,12 +1,12 @@
 import React from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 export default function TapOutside({ onClose, children }: any) {
   return (
     <Pressable style={styles.overlay} onPress={onClose}>
-      <Pressable style={styles.content} onPress={() => {}}>
+      <View style={styles.content} onStartShouldSetResponder={() => true}>
         {children}
-      </Pressable>
+      </View>
     </Pressable>
   );
 }

@@ -8,21 +8,12 @@ import { authApi } from "@/services/api/authApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Keyboard } from "react-native";
 import { Image, Text, YStack, XStack } from "tamagui";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 const OTP_LENGTH = 6;
-
-/* ---------------- DEBUG HELPERS ---------------- */
-
-const log = (...args: any[]) => {
-  console.log("OTP FLOW:", ...args);
-};
-
-const line = () => {
-  console.log("--------------------------------------------------");
-};
 
 export default function VerifyOtp() {
   const { email, flow } = useLocalSearchParams<{
@@ -38,35 +29,32 @@ export default function VerifyOtp() {
   const [errorMessage, setErrorMessage] = useState("Please check the code and try again");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
-
-  /* ---------------- SCREEN MOUNT ---------------- */
-
-  useEffect(() => {
-    line();
-    log("OTP screen mounted");
-    log("Flow:", flow);
-    log("Email:", email);
-    line();
-  }, []);
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
 
   /* ---------------- TIMER ---------------- */
 
-  useEffect(() => {
-    const interval = setInterval(() => {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = (seconds: number) => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setTimer(seconds);
+    intervalRef.current = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
-          log("Resend available");
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
           return 0;
         }
-
-        const next = prev - 1;
-        log("Timer:", next);
-        return next;
+        return prev - 1;
       });
     }, 1000);
+  };
 
-    return () => clearInterval(interval);
+  useEffect(() => {
+    startTimer(50);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   /* ---------------- SUBMIT OTP ---------------- */
@@ -77,13 +65,6 @@ export default function VerifyOtp() {
     setIsSubmitting(true);
     Keyboard.dismiss();
 
-    line();
-    log("Submitting OTP");
-    log("Code:", code);
-    log("Email:", email);
-    log("Flow:", flow);
-    line();
-
     try {
       /* ---------------- SIGNUP / SIGNIN VERIFY ---------------- */
 
@@ -93,24 +74,19 @@ export default function VerifyOtp() {
           code,
         });
 
-        log("OTP verification success");
-        log("Backend response:", response);
-
-        if (response.user && response.tokens) {
-          log("Saving auth tokens");
-          setAuth(response.user, response.tokens);
+        if (!response.user || !response.tokens) {
+          throw new Error("Invalid response from server");
         }
 
-        log("Routing to feed");
+        setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
+        setIsSubmitting(false);
         return;
       }
 
       /* ---------------- PASSWORD RESET ---------------- */
 
       if (flow === "reset-password") {
-        log("OTP verified for password reset");
-
         router.replace({
           pathname: "/(auth)/forgotPassword/newPassword",
           params: {
@@ -119,11 +95,16 @@ export default function VerifyOtp() {
           },
         });
 
+        setIsSubmitting(false);
         return;
       }
-    } catch (error: any) {
-      console.error("OTP verification failed:", error?.response?.data || error);
 
+      setIsSubmitting(false);
+    } catch (error: any) {
+      console.error("OTP verification failed:", error);
+
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
       setErrorVisible(true);
       setIsSubmitting(false);
     }
@@ -134,14 +115,17 @@ export default function VerifyOtp() {
   const resendCode = async () => {
     if (!email || isResending) return;
 
+    setErrorVisible(false);
     setIsResending(true);
-    setTimer(50);
+    startTimer(50);
 
     try {
-      const response = await authApi.resendOtp(email);
-      log("Resend success:", response);
+      await authApi.resendOtp(email);
     } catch (error: any) {
-      console.error("Resend OTP failed:", error?.response?.data || error);
+      console.error("Resend OTP failed:", error);
+
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
       setErrorVisible(true);
     } finally {
       setIsResending(false);
@@ -152,9 +136,7 @@ export default function VerifyOtp() {
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack padding={15}><Header /></XStack>
-      
-
+      <Header />
       <YStack flex={1} padding="$4" gap="$4" marginTop="$10">
         <Image
           source={require("@/assets/images/messageIcon.png")}
@@ -182,7 +164,21 @@ export default function VerifyOtp() {
             <Text
               fontFamily="$body"
               color={colors.primary}
-              onPress={() => router.back()}
+              onPress={() => {
+                if (flow === "signup") {
+                  // Email signup stack is: email → birthday → password → username → verifyOtp.
+                  // router.back() would land on username — jump straight back to the email entry screen.
+                  // Passing `edit=1` keeps signup data and lets the user skip ahead to OTP again.
+                  router.replace({
+                    pathname: "/(auth)/email",
+                    params: { edit: "1" },
+                  });
+                } else {
+                  // signin / reset-password: verifyOtp is pushed directly from the
+                  // email entry screen, so back returns there correctly.
+                  router.back();
+                }
+              }}
             >
               Edit
             </Text>
@@ -193,10 +189,8 @@ export default function VerifyOtp() {
 
         <OtpContainer
           length={OTP_LENGTH}
-          onComplete={(code: string) => {
-            log("OTP complete — triggering submit");
-            submitOtp(code);
-          }}
+          value={otpDigits}
+          onChange={setOtpDigits}
         />
 
         {/* RESEND */}
@@ -217,17 +211,34 @@ export default function VerifyOtp() {
               {timer.toString().padStart(2, "0")}s
             </Text>
           ) : (
-            <PrimaryButton
+            <Text
               onPress={resendCode}
-              disabled={isResending}
-              loading={isResending}
               style={{ marginTop: 10 }}
-              text="Resend code"
-              textColor={colors.white}
-              color={colors.primary}
-            />
+              fontFamily="$body"
+              fontSize={16}
+              color={colors.black}
+              textDecorationLine="underline"
+            >
+              {isResending ? "Resending..." : "Resend code"}
+            </Text>
           )}
         </YStack>
+
+        {/* SUBMIT */}
+
+        <PrimaryButton
+          onPress={() => {
+            if (otpDigits.every((digit) => digit !== "")) {
+              submitOtp(otpDigits.join(""));
+            }
+          }}
+          disabled={!otpDigits.every((digit) => digit !== "") || isSubmitting}
+          loading={isSubmitting}
+          style={{ marginTop: 8 }}
+          text="Submit OTP"
+          textColor={colors.white}
+          color={colors.primary}
+        />
       </YStack>
 
       {/* ERROR MODAL */}
@@ -238,8 +249,8 @@ export default function VerifyOtp() {
         autoClose
         duration={3000}
         onClose={() => setErrorVisible(false)}
-        title="Incorrect code entered"
-        message="Please check the code and try again"
+        title={errorTitle}
+        message={errorMessage}
       />
     </KeyboardAvoidingWrapper>
   );

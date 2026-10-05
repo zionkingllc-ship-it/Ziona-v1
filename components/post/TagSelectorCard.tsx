@@ -34,6 +34,7 @@ export default function TagSelectorCard({ category, onPress, disabled }: Props) 
     >
       <Image
         source={icon}
+        resizeMode="contain"
         style={{
           width: wp(6),
           height: wp(6),

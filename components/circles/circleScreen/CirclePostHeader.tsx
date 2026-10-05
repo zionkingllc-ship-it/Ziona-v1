@@ -1,4 +1,5 @@
 import React from "react";
+import { Image as ExpoImage } from "expo-image";
 import { YStack, XStack, Text, Image } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,11 +13,9 @@ export default function CirclePostHeader({ post }: Props) {
       {/* Header */}
       <XStack justifyContent="space-between" alignItems="center">
         <XStack alignItems="center" gap="$2">
-          <Image
+          <ExpoImage
             source={{ uri: post.user.avatar }}
-            width={36}
-            height={36}
-            borderRadius={18}
+            style={{ width: 36, height: 36, borderRadius: 18 }}
           />
 
           <XStack gap="$2" alignItems="center">

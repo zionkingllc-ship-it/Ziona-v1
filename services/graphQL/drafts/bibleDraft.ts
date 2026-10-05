@@ -2,9 +2,6 @@ import { BibleDraft } from "@/types/createPost";
 import { createBiblePost } from "../mutation/createPost";
 
 export async function publishBiblePost(draft: BibleDraft) {
-  console.log("━━━━━━━━ PUBLISH BIBLE START ━━━━━━━━");
-  console.log("Draft received:", draft);
-
   if (!draft.category?.id) {
     throw new Error("Category is required");
   }
@@ -34,13 +31,8 @@ export async function publishBiblePost(draft: BibleDraft) {
     input.scriptureVerseEnd = verse.verses[verse.verses.length - 1];
   }
 
-  console.log("FINAL INPUT TO createBiblePost:", input);
-
   try {
     const response = await createBiblePost(input);
-
-    console.log("Bible post created successfully:", response);
-    console.log("━━━━━━━━ PUBLISH BIBLE END ━━━━━━━━");
 
     return response;
   } catch (err) {

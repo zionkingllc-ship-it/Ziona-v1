@@ -16,5 +16,10 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "src/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".worktrees",
+    "dist"
   ]
 }

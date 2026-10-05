@@ -5,13 +5,23 @@ import {
   deleteBookmarkFolder,
   bulkRemoveBookmarks,
 } from "@/services/graphQL/queries/actions/bookmarkFolders";
+import { usePostActionsStore } from "@/store/usePostActionStore";
 
 export { type BookmarkFolder, type BookmarkPost } from "@/services/graphQL/queries/actions/bookmarkFolders";
 
-export function useBookmarkFolders() {
+export function useBookmarkFolders(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["bookmarkFolders"],
-    queryFn: getBookmarkFolders,
+    enabled: options.enabled !== false,
+    queryFn: async () => {
+      try {
+        const result = await getBookmarkFolders();
+        return result;
+      } catch (err) {
+        console.error("🔍 [useBookmarkFolders] Query failed:", err);
+        throw err;
+      }
+    },
   });
 }
 
@@ -39,11 +49,19 @@ export function useDeleteBookmarkFolder() {
 
 export function useBulkRemoveBookmarks() {
   const queryClient = useQueryClient();
+  const toggleSave = usePostActionsStore((s) => s.toggleSave);
 
   return useMutation({
     mutationFn: bulkRemoveBookmarks,
+    onMutate: async (postIds) => {
+      postIds.forEach((postId) => toggleSave(postId, false));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmarkFolders"] });
+      queryClient.invalidateQueries({ queryKey: ["userSavedPosts"] });
+    },
+    onError: (_err, postIds) => {
+      postIds.forEach((postId) => toggleSave(postId, true));
     },
   });
 }

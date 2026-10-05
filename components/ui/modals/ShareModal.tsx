@@ -7,6 +7,7 @@ import {
   shareToWhatsApp,
   withHaptic,
 } from "@/services/share/services";
+import { mapFeedPostToShare } from "@/services/share/adapter";
 import { FeedPost } from "@/types/feedTypes";
 import React, { useMemo } from "react";
 import { FlatList, Modal, Pressable, StyleSheet } from "react-native";
@@ -22,6 +23,7 @@ type Props = {
 export default function ShareModal({ visible, onClose, post }: Props) {
   const insets = useSafeAreaInsets();
   const url = buildPostUrl(post.id);
+  const payload = useMemo(() => mapFeedPostToShare(post), [post]);
 
   const shareTargets = useMemo(
     () => [
@@ -53,10 +55,10 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         id: "more",
         label: "More",
         icon: require("@/assets/images/moreIcon.png"),
-        action: () => openNativeShare(post),
+        action: () => openNativeShare(payload),
       },
     ],
-    [url]
+    [url, payload]
   );
 
     return (
@@ -78,7 +80,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
         ]}
         pointerEvents="box-none"
       >
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <YStack
             backgroundColor="white"
             borderTopLeftRadius={24}
@@ -94,6 +96,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item.id}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
               renderItem={({ item }) => (
                 <Pressable
                   style={{ alignItems: "center", marginRight: 20 }}
@@ -112,7 +115,7 @@ export default function ShareModal({ visible, onClose, post }: Props) {
               )}
             />
           </YStack>
-        </Pressable>
+        </View>
       </View>
     </View>
   </Modal>

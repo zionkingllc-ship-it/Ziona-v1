@@ -1,7 +1,6 @@
+import CirclePromoCard from "@/components/circles/CirclePromoCard";
 import { PostCard } from "@/components/post/PostCard";
-import { usePostActionsStore } from "@/store/usePostActionStore";
-import { FeedPost } from "@/types/feedTypes";
-import { mergePostState } from "@/utils/post/postState/mergePostState";
+import { FeedItem } from "@/types/feedTypes";
 import React, {
   memo,
   useCallback,
@@ -10,11 +9,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ActivityIndicator, AppState, FlatList, ViewToken } from "react-native";
-import { YStack } from "tamagui";
+import { ActivityIndicator, AppState, FlatList, View, ViewToken } from "react-native";
+import colors from "@/constants/colors";
 
 type Props = {
-  posts: FeedPost[];
+  posts: FeedItem[];
   initialIndex?: number;
   containerHeight: number;
   containerWidth: number;
@@ -23,6 +22,11 @@ type Props = {
   fetchNextPage?: () => void;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  autoOpenComments?: boolean;
+  scrollToTopSignal?: number;
+  scrollToPostId?: string;
 };
 
 function PostViewerEngineComponent({
@@ -35,58 +39,96 @@ function PostViewerEngineComponent({
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
+  refreshing,
+  onRefresh,
+  autoOpenComments = false,
+  scrollToTopSignal,
+  scrollToPostId,
 }: Props) {
-  const flatListRef = useRef<FlatList<FeedPost>>(null);
-  const lastScrollTime = useRef(0);
-  const lastScrollOffset = useRef(0);
+  const flatListRef = useRef<FlatList<FeedItem>>(null);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [pausedPostId, setPausedPostId] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const [isScrollingFast, setIsScrollingFast] = useState(false);
 
-  const likedMap = usePostActionsStore((s) => s.likedPosts);
-  const savedMap = usePostActionsStore((s) => s.savedPosts);
-  const followedMap = usePostActionsStore((s) => s.followedUsers);
+  const origLength = posts?.length || 0;
 
   const mergedPosts = useMemo(() => {
     if (!posts?.length) return [];
-    return posts.map((p) =>
-      mergePostState(p, {
-        likedPosts: likedMap,
-        savedPosts: savedMap,
-        followedUsers: followedMap,
-      }),
-    );
+    // Triple the array for endless looping
+    const tripled = [...posts, ...posts, ...posts];
+    // Safety: deduplicate when all items are the same post (e.g. single-post sources)
+    const uniqueIds = new Set(tripled.map((p) => p.id));
+    if (uniqueIds.size === 1 && tripled.length > 1) {
+      return posts;
+    }
+    return tripled;
   }, [posts]);
+
+  // Start at the actual first copy when opening from the top (initialIndex 0),
+  // so no mid-array scroll/jump is needed → avoids the black flicker on feed
+  // load/switch. Only jump into the middle copy when targeting a specific post
+  // (viewer opening a post mid-feed); onMomentumScrollEnd normalizes position
+  // into the middle copy after the first scroll.
+  const startIndex =
+    mergedPosts.length <= 1
+      ? 0
+      : (initialIndex ?? 0) > 0
+        ? origLength + (initialIndex ?? 0)
+        : 0;
 
   const extraData = useMemo(() => ({
     activePostId,
     pausedPostId,
-  }), [activePostId, pausedPostId]);
+    isScreenFocused,
+  }), [activePostId, pausedPostId, isScreenFocused]);
 
-  useEffect(() => {
-    if (mergedPosts.length > 0 && initialIndex >= 0) {
-      setActivePostId(mergedPosts[initialIndex]?.id ?? null);
-      setIsReady(true);
+  // Scroll to correct position when FlatList first mounts (onLayout fires after layout).
+  const hasScrolled = useRef(false);
+  const safeIndex = Math.min(startIndex, mergedPosts.length - 1);
+  const [initialApplied, setInitialApplied] = useState(false);
+  // Only hide the list during the initial jump when the target is NOT the first
+  // post (e.g. opening a discover post mid-feed). When starting at index 0 the
+  // list already renders the correct content, so hiding would cause an avoidable
+  // black flash (and is what broke the iOS feed with initialScrollIndex).
+  const needsInitialHide = (initialIndex ?? 0) > 0 && origLength > 1;
+  const handleInitialScroll = useCallback(() => {
+    if (hasScrolled.current) return;
+    hasScrolled.current = true;
+    if (safeIndex >= 0 && safeIndex < mergedPosts.length) {
+      flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
     }
-  }, [mergedPosts, initialIndex]);
+    setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
+    setInitialApplied(true);
+  }, [safeIndex, mergedPosts]);
 
+  // Re-scroll when initialIndex changes (viewer navigating between posts).
   useEffect(() => {
-    if (!mergedPosts.length || !containerHeight || initialIndex <= 0) return;
-    if (initialIndex === undefined || initialIndex < 0) return;
+    if (!containerHeight) return;
+    if (safeIndex >= 0 && safeIndex < mergedPosts.length) {
+      flatListRef.current?.scrollToIndex({ index: safeIndex, animated: false });
+    }
+    setActivePostId(mergedPosts[safeIndex] ? `${mergedPosts[safeIndex].id}-${safeIndex}` : null);
+  }, [initialIndex, containerHeight]);
 
-    const targetId = mergedPosts[initialIndex]?.id;
-    if (!targetId) return;
+  // External signal (e.g. "feed_scroll_to_top" after upload) → jump to the top.
+  const lastScrollSignal = useRef<number>(0);
+  useEffect(() => {
+    if (!scrollToTopSignal || scrollToTopSignal === lastScrollSignal.current) return;
+    lastScrollSignal.current = scrollToTopSignal;
+    if (!containerHeight || !mergedPosts.length) return;
 
-    const timeout = setTimeout(() => {
-      flatListRef.current?.scrollToOffset({
-        offset: initialIndex * containerHeight,
-        animated: false,
-      });
-    }, 50);
-    return () => clearTimeout(timeout);
-  }, [mergedPosts, initialIndex, containerHeight]);
+    let targetIndex = 0;
+    if (scrollToPostId) {
+      const index = posts.findIndex((p) => p.id === scrollToPostId);
+      if (index >= 0) targetIndex = index;
+    }
+
+    flatListRef.current?.scrollToIndex({ index: targetIndex, animated: false });
+    setActivePostId(
+      mergedPosts[targetIndex] ? `${mergedPosts[targetIndex].id}-${targetIndex}` : null,
+    );
+    setPausedPostId(null);
+  }, [scrollToTopSignal, containerHeight, mergedPosts, posts, scrollToPostId]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -98,6 +140,12 @@ function PostViewerEngineComponent({
     return () => sub.remove();
   }, []);
 
+  useEffect(() => {
+    if (!isScreenFocused) {
+      setActivePostId(null);
+    }
+  }, [isScreenFocused]);
+
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 150,
@@ -105,83 +153,96 @@ function PostViewerEngineComponent({
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (!viewableItems?.length) return;
-      const now = Date.now();
-      if (now - lastScrollTime.current < 100) return;
-
+      if (!viewableItems?.length) {
+        setActivePostId(null);
+        return;
+      }
       const current = viewableItems[0]?.item;
-      if (!current?.id) return;
-
-      lastScrollTime.current = now;
-      setActivePostId(current.id);
+      const currentIndex = viewableItems[0]?.index;
+      if (!current?.id || currentIndex == null) {
+        setActivePostId(null);
+        return;
+      }
+      setActivePostId(`${current.id}-${currentIndex}`);
       setPausedPostId(null);
     },
     [],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: FeedPost }) => {
-      const itemId = item?.id ?? "";
-      const isActive = itemId === (activePostId ?? "");
-      const isPaused = itemId === (pausedPostId ?? "");
+    ({ item, index }: { item: FeedItem; index: number }) => {
+      const itemKey = `${item?.id ?? ""}-${index}`;
+      const isActive = itemKey === (activePostId ?? "");
+      const isPaused = itemKey === (pausedPostId ?? "");
       const shouldPlay = !!(isScreenFocused && isActive && !isPaused);
+
+      if (item.type === "circlePromo") {
+        return (
+          <CirclePromoCard
+            key={itemKey}
+            item={item}
+            screenHeight={containerHeight}
+            screenWidth={containerWidth}
+            tabBarHeight={tabBarHeight}
+          />
+        );
+      }
 
       return (
         <PostCard
-          key={itemId}
+          key={itemKey}
           post={item}
           isPlaying={shouldPlay}
           isActive={isActive ?? false}
           onTogglePlay={() => {
-            setPausedPostId((prev) => (prev === itemId ? null : itemId));
+            setPausedPostId((prev) => (prev === itemKey ? null : itemKey));
           }}
           screenHeight={containerHeight}
           screenWidth={containerWidth}
           tabBarHeight={tabBarHeight}
+          autoOpenComments={autoOpenComments && isActive}
         />
       );
     },
-    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight, isScreenFocused],
+    [activePostId, pausedPostId, containerHeight, containerWidth, tabBarHeight, isScreenFocused, autoOpenComments],
   );
 
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
-      length: containerHeight,
-      offset: containerHeight * index,
+      length: containerHeight || 1,
+      offset: (containerHeight || 1) * index,
       index,
     }),
     [containerHeight],
   );
 
-  const onEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const onMomentumScrollEnd = useCallback((e: any) => {
+    if (!origLength) return;
+    const offsetY = e.nativeEvent.contentOffset.y;
+    const currentIndex = Math.round(offsetY / containerHeight);
 
-  const keyExtractor = useCallback((item: FeedPost) => item.id, []);
-
-  const onScrollBeginDrag = useCallback(() => {
-    lastScrollOffset.current = 0;
-  }, []);
-
-  const onScroll = useCallback(
-    (e: any) => {
-      const currentOffset = e.nativeEvent.contentOffset.y;
-      const delta = Math.abs(currentOffset - lastScrollOffset.current);
-      if (delta > containerHeight * 0.5) {
-        setIsScrollingFast(true);
+    if (currentIndex >= origLength * 2) {
+      // Past the end of the middle copy → jump back to middle
+      const target = currentIndex - origLength;
+      if (target >= 0 && target < mergedPosts.length) {
+        flatListRef.current?.scrollToIndex({ index: target, animated: false });
       }
-      lastScrollOffset.current = currentOffset;
-    },
-    [containerHeight],
-  );
+      // Fetch next page on loop
+      if (hasNextPage && !isFetchingNextPage && fetchNextPage) {
+        fetchNextPage();
+      }
+    } else if (currentIndex < origLength) {
+      // Past the beginning of the middle copy → jump forward to middle
+      const target = currentIndex + origLength;
+      if (target >= 0 && target < mergedPosts.length) {
+        flatListRef.current?.scrollToIndex({ index: target, animated: false });
+      }
+    }
+  }, [origLength, containerHeight, hasNextPage, isFetchingNextPage, fetchNextPage, mergedPosts]);
 
-  const onMomentumScrollEnd = useCallback(() => {
-    setIsScrollingFast(false);
-  }, []);
+  const keyExtractor = useCallback((item: FeedItem, index: number) => `${item.id}-${index}`, []);
 
-  if (!containerHeight || !isReady) {
+  if (!containerHeight || !mergedPosts.length) {
     return null;
   }
 
@@ -191,39 +252,52 @@ function PostViewerEngineComponent({
         ref={flatListRef}
         data={mergedPosts}
         extraData={extraData}
+        onLayout={handleInitialScroll}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        pagingEnabled
         snapToInterval={containerHeight}
+        snapToAlignment="start"
         decelerationRate="fast"
         windowSize={5}
         initialNumToRender={3}
         maxToRenderPerBatch={3}
         updateCellsBatchingPeriod={100}
-        removeClippedSubviews
         getItemLayout={getItemLayout}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
+        onMomentumScrollEnd={onMomentumScrollEnd}
         showsVerticalScrollIndicator={false}
         scrollsToTop={false}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onScroll={onScroll}
-        onMomentumScrollEnd={onMomentumScrollEnd}
         scrollEventThrottle={16}
+        removeClippedSubviews={false}
+        style={{ backgroundColor: "black" }}
+        onScrollToIndexFailed={(info) => {
+          flatListRef.current?.scrollToOffset({
+            offset: containerHeight * info.index,
+            animated: false,
+          });
+        }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListFooterComponent={isFetchingNextPage ? (
+          <View style={{ height: 60, justifyContent: "center", alignItems: "center" }}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : null}
       />
-      {isScrollingFast && (
-        <YStack
-          position="absolute"
-          top={containerHeight / 2 - 20}
-          left={0}
-          right={0}
-          alignItems="center"
-          zIndex={200}
-        >
-          <ActivityIndicator size="large" color="#FFF" />
-        </YStack>
+
+      {needsInitialHide && !initialApplied && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "black",
+            zIndex: 10,
+          }}
+        />
       )}
     </>
   );

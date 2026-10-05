@@ -1,15 +1,11 @@
-import { Keyboard, View, StyleSheet } from "react-native";
+import { Keyboard, TouchableWithoutFeedback, View } from "react-native";
 
 export function DismissKeyboard({ children }: { children: React.ReactNode }) {
   return (
-    <View style={styles.container} onTouchStart={() => Keyboard.dismiss}>
-      {children}
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{ flex: 1 }}>
+        {children}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

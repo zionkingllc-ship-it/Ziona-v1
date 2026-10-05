@@ -3,55 +3,78 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import * as Haptics from "expo-haptics";
 import { Post } from "@/types/post"; 
 import { SharePayload } from "./adapter";
-const DOMAIN = "https://dev.ziona.app";
+const configuredDomain = (process.env.EXPO_PUBLIC_SHARE_DOMAIN?.trim() || "https://ziona.app")
+  .replace(/\/+$/, "");
+// Build profiles may supply a bare hostname; shared links need an absolute URL.
+const DOMAIN = /^https?:\/\//i.test(configuredDomain)
+  ? configuredDomain
+  : `https://${configuredDomain.replace(/^\/+/, "")}`;
+const DEEP_LINK_SCHEME = process.env.EXPO_PUBLIC_DEEP_LINK_SCHEME || "ziona";
 
 export function buildPostUrl(postId: string) {
   return `${DOMAIN}/post/${postId}`;
 }
+
+export function buildDeepLink(postId: string) {
+  return `${DEEP_LINK_SCHEME}://viewer/${postId}`;
+}
  
 export async function shareToApp(url: string, scheme: string) {
-  const supported = await Linking.canOpenURL(scheme);
-
-  if (supported) {
+  try {
     await Linking.openURL(scheme);
+  } catch {
+    try {
+      await Share.share({ message: url });
+    } catch { console.warn("[share] shareToApp fallback failed"); }
   }
 }
 
 export async function shareToWhatsApp(url: string) {
-  await shareToApp(
-    url,
-    `whatsapp://send?text=${encodeURIComponent(url)}`
-  );
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `whatsapp://send?text=${text}`);
+  } catch { console.warn("[share] shareToWhatsApp failed"); }
 }
 
 export async function shareToMessages(url: string) {
-  await shareToApp(
-    url,
-    `sms:&body=${encodeURIComponent(url)}`
-  );
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `sms:&body=${text}`);
+  } catch { console.warn("[share] shareToMessages failed"); }
 }
 
 export async function shareToMail(url: string) {
-  await shareToApp(
-    url,
-    `mailto:?subject=Shared from Ziona&body=${encodeURIComponent(url)}`
-  );
+  try {
+    const text = encodeURIComponent(`Shared from Ziona\n${url}`);
+    await shareToApp(url, `mailto:?subject=Shared from Ziona&body=${text}`);
+  } catch { console.warn("[share] shareToMail failed"); }
 }
 
 export function copyLink(url: string) {
-  Clipboard.setString(url);
+  try {
+    Clipboard.setString(url);
+  } catch { console.warn("[share] copyLink failed"); }
 }
 
 export async function openNativeShare(post: SharePayload) {
-  const message =
-    post.text || post.mediaUrl || "Check this out";
+  try {
+    const content = post.text || post.mediaUrl || "";
+    const parts = [
+      content,
+      "",
+      "Shared from Ziona",
+      post.postUrl,
+    ].filter(Boolean);
 
-  await Share.share({
-    message,
-  });
+    await Share.share({
+      message: parts.join("\n"),
+    });
+  } catch { console.warn("[share] openNativeShare failed"); }
 }
 
 export async function withHaptic(action: () => Promise<void> | void) {
-  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  try {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  } catch { console.warn("[share] haptic feedback failed"); }
   await action();
 }

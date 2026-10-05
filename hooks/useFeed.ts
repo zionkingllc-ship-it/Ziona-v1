@@ -8,10 +8,22 @@ import {
    TYPES
 ========================= */
 
+export type UserSuggestion = {
+  id: string;
+  username: string;
+  avatarUrl?: string | null;
+  bio?: string;
+  followersCount: number;
+};
+
 type FeedResponse = {
   posts: any[];
   nextCursor?: string;
   hasMore: boolean;
+  emptyState?: {
+    message?: string;
+    suggestions?: UserSuggestion[];
+  };
 };
 
 /* =========================

@@ -1,4 +1,5 @@
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 export type CommentUser = {
   id?: string;
@@ -8,6 +9,7 @@ export type CommentUser = {
 
 export type CommentReply = {
   id: string;
+  postId?: string;
   text: string;
   createdAt: string;
   user: CommentUser;
@@ -22,6 +24,7 @@ export type CommentReply = {
 
 export type Comment = {
   id: string;
+  postId?: string;
   text: string;
   createdAt: string;
   user: CommentUser;
@@ -58,6 +61,7 @@ export async function getPostComments(
         nextCursor
         comments {
           id
+          postId
           text
           createdAt
           user {
@@ -75,6 +79,7 @@ export async function getPostComments(
           }
           replies {
             id
+            postId
             text
             createdAt
             user {
@@ -85,6 +90,10 @@ export async function getPostComments(
             stats {
               likesCount
               repliesCount
+            }
+            viewerState {
+              isOwner
+              liked
             }
           }
         }
@@ -115,14 +124,20 @@ export async function getCommentReplies(
         nextCursor
         comments {
           id
+          postId
           text
           createdAt
           user {
+            id
             username
             avatarUrl
           }
           stats {
             likesCount
+          }
+          viewerState {
+            isOwner
+            liked
           }
         }
       }
@@ -156,6 +171,7 @@ export async function createComment(
         message
         comment {
           id
+          postId
           text
           parentCommentId
           createdAt
@@ -197,7 +213,7 @@ export async function createComment(
 
   const res = data?.createComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to create comment");
+    throw new AppError(res?.error?.message || "Failed to create comment", { code: res?.error?.code });
   }
 
   return {
@@ -206,13 +222,39 @@ export async function createComment(
   };
 }
 
+/* DELETE COMMENT */
+export async function deleteComment(commentId: string) {
+  const mutation = `
+    mutation DeleteComment($commentId: String!) {
+      deleteComment(commentId: $commentId) {
+        success
+        error {
+          code
+          message
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest(mutation, { commentId });
+  const res = data?.deleteComment;
+  if (!res?.success) {
+    throw new AppError(res?.error?.message || "Failed to delete comment", { code: res?.error?.code });
+  }
+  return res;
+}
+
 /* LIKE COMMENT */
 export async function likeComment(commentId: string) {
   const query = `
     mutation LikeComment($commentId: String!) {
       likeComment(commentId: $commentId) {
         success
+        liked
         stats {
+          likesCount
+        }
+        commentStats {
           likesCount
         }
         error {
@@ -227,7 +269,7 @@ export async function likeComment(commentId: string) {
 
   const res = data?.likeComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to like comment");
+    throw new AppError(res?.error?.message || "Failed to like comment", { code: res?.error?.code });
   }
 
   return res;
@@ -239,7 +281,11 @@ export async function unlikeComment(commentId: string) {
     mutation UnlikeComment($commentId: String!) {
       unlikeComment(commentId: $commentId) {
         success
+        liked
         stats {
+          likesCount
+        }
+        commentStats {
           likesCount
         }
         error {
@@ -254,8 +300,9 @@ export async function unlikeComment(commentId: string) {
 
   const res = data?.unlikeComment;
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to unlike comment");
+    throw new AppError(res?.error?.message || "Failed to unlike comment", { code: res?.error?.code });
   }
 
   return res;
 }
+

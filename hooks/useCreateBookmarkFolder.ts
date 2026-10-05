@@ -5,8 +5,8 @@ export function useCreateBookmarkFolder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ name, cover }: { name: string; cover?: string }) =>
-      createBookmarkFolder(name, cover),
+    mutationFn: ({ name }: { name: string }) =>
+      createBookmarkFolder(name),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

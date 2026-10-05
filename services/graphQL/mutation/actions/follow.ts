@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 export async function followUser(userId: string) {
   const query = `
@@ -22,7 +23,7 @@ export async function followUser(userId: string) {
   const res = data?.followUser;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Follow failed");
+    throw new AppError(res?.error?.message || "Follow failed", { code: res?.error?.code });
   }
 
   return {
@@ -57,7 +58,7 @@ export async function unfollowUser(userId: string) {
   const res = data?.unfollowUser;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Unfollow failed");
+    throw new AppError(res?.error?.message || "Unfollow failed", { code: res?.error?.code });
   }
 
   return {

@@ -1,7 +1,9 @@
 import { View, Text, YStack, XStack } from "tamagui";
-import { Image, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
+import { StyleSheet, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import colors from "@/constants/colors";
+import React, { memo, useMemo } from "react";
 
 interface Props {
   id: string;
@@ -9,25 +11,39 @@ interface Props {
   description: string;
   image: string;
   members: number;
+  isJoined?: boolean;
   avatars?: string[];
   onPress?: () => void;
 }
 
-export default function CircleCard({
+const CircleCard = memo(function CircleCard({
   title,
   description,
   image,
   members,
+  isJoined,
   avatars = [],
   onPress,
 }: Props) {
+  const avatarCount = Math.min(3, Math.max(0, members));
+  const randomAvatars = useMemo(() => {
+    const pool = [...avatars].filter(Boolean);
+    if (pool.length <= avatarCount) return pool;
+    const copy = [...pool];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, avatarCount);
+  }, [avatars, avatarCount]);
+
   return (
     <Pressable onPress={onPress}>
       <YStack style={styles.container}>
 
         {/* IMAGE */}
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: image }} style={styles.image} />
+          <Image source={{ uri: image }} style={styles.image} contentFit="cover" />
 
           {/* GRADIENT OVERLAY */}
           <LinearGradient
@@ -39,30 +55,43 @@ export default function CircleCard({
           <Text style={styles.title}>{title}</Text>
         </View>
 
-        {/* DESCRIPTION */}
-        <Text style={styles.description}>{description}</Text>
+        {!isJoined && (
+          <>
+            <Text style={styles.description} numberOfLines={2}>{description}</Text>
 
-        {/* MEMBERS */}
-        <XStack alignItems="center" marginTop={6}>
-          <View style={styles.avatarStack}>
-            {avatars.slice(0, 3).map((uri, index) => (
-              <Image
-                key={index}
-                source={{ uri }}
-                style={[styles.avatar, { left: index * 12 }]}
-              />
-            ))}
-          </View>
+            <XStack alignItems="center" marginTop={6} justifyContent="flex-start">
+              {randomAvatars.length > 0 && (
+                <View style={[styles.avatarStack, { width: randomAvatars.length * 28 }]}>
+                  {randomAvatars.map((uri, index) => (
+                    uri ? (
+                      <Image
+                        key={index}
+                        source={{ uri }}
+                        style={[styles.avatar, { left: index * 20 }]}
+                      />
+                    ) : (
+                      <View
+                        key={index}
+                        style={[styles.avatar, { left: index * 20, backgroundColor: '#7A2E8A' }]}
+                      />
+                    )
+                  ))}
+                </View>
+              )}
 
-          <Text style={styles.membersText}>
-            +{members} members
-          </Text>
-        </XStack>
+              <Text style={styles.membersText}>
+                {members > 0 ? `+${members} members` : `${members} members`}
+              </Text>
+            </XStack>
+          </>
+        )}
 
       </YStack>
     </Pressable>
   );
-}
+});
+
+export default CircleCard;
 
 const styles = StyleSheet.create({
   container: {

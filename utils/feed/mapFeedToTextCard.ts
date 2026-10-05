@@ -29,7 +29,7 @@ export function mapFeedToTextCard(
 
       translation: post.scripture.translation,
 
-      verseText: post.scripture.verses?.map(v => v.text).join(" ") ?? undefined,
+      verseText: post.scripture.text ?? post.scripture.verses?.map(v => `(${v.number}) ${v.text}`).join(" ") ?? undefined,
 
       testimonyText: post.caption || undefined,
     };

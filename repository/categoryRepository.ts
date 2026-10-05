@@ -30,8 +30,6 @@ function normalizeIcon(icon: any) {
 }
 
 export async function getCategories(): Promise<DiscoverCategory[]> {
-  console.log("━━━━━━━━ CATEGORY FETCH ━━━━━━━━");
-
   const data = await graphqlRequest(GET_DISCOVER_CATEGORIES);
 
   const categories = data?.discoverCategories ?? [];
@@ -50,8 +48,6 @@ export async function getCategories(): Promise<DiscoverCategory[]> {
       order: cat.order ?? index,
     })
   );
-
-  console.log("Mapped categories for UI:", mapped);
 
   return mapped;
 }
