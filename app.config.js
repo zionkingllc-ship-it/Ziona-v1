@@ -93,7 +93,7 @@ module.exports = {
   expo: {
     name: variant.appName,
     slug: variant.slug,
-    version: "1.0.4",
+    version: "1.0.5",
     scheme: variant.scheme,
     // Carried from app.json (deduplicated & cleaned)
     icon: "./assets/images/icon.png",
@@ -245,7 +245,7 @@ module.exports = {
       typedRoutes: true,
       reactCompiler: true,
     },
-    runtimeVersion: "1.0.4",
+    runtimeVersion: "1.0.5",
     updates: {
       url: `https://u.expo.dev/${variant.projectId}`,
     },
