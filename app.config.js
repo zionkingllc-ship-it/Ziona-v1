@@ -8,10 +8,14 @@ const variants = {
     projectId: "c8393003-78c7-4225-81d6-96807a7afa04",
     googleServicesFileIos: "./GoogleService-Info.staging.plist",
     googleServicesFileAndroid: "./google-services.staging.json",
-    googleAndroidClientId: "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
-    googleIosClientId: "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
-    googleWebClientId: "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com",
-    googleIosReversedClientId: "com.googleusercontent.apps.273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89",
+    googleAndroidClientId:
+      "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
+    googleIosClientId:
+      "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
+    googleWebClientId:
+      "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com",
+    googleIosReversedClientId:
+      "com.googleusercontent.apps.273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89",
   },
   production: {
     appName: "Ziona",
@@ -22,27 +26,68 @@ const variants = {
     projectId: "ae56ecb7-5133-4048-849f-b5f191d82d6a",
     googleServicesFileIos: "./GoogleService-Info.plist",
     googleServicesFileAndroid: "./google-services.json",
-    googleAndroidClientId: "433767985127-g78pqsa8bhtaqmh98n9khka2hdvti17d.apps.googleusercontent.com",
-    googleIosClientId: "433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv.apps.googleusercontent.com",
-    googleWebClientId: "433767985127-j7ruvcarb1fk4191gbi8v44vkunjppqk.apps.googleusercontent.com",
-    googleIosReversedClientId: "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
+    googleAndroidClientId:
+      "433767985127-g78pqsa8bhtaqmh98n9khka2hdvti17d.apps.googleusercontent.com",
+    googleIosClientId:
+      "433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv.apps.googleusercontent.com",
+    googleWebClientId:
+      "433767985127-j7ruvcarb1fk4191gbi8v44vkunjppqk.apps.googleusercontent.com",
+    googleIosReversedClientId:
+      "com.googleusercontent.apps.433767985127-af63p5o4ahgk4voiqv4u7mj0a7fm3gfv",
   },
 };
 
 const requestedVariant = process.env.APP_VARIANT ?? "production";
 // Development intentionally uses the same native app and Firebase registration as staging.
-const variant = variants[requestedVariant === "development" ? "staging" : requestedVariant];
+const variant =
+  variants[requestedVariant === "development" ? "staging" : requestedVariant];
 if (!variant) throw new Error(`Unknown APP_VARIANT: ${requestedVariant}`);
 
 const META_APP_ID = "4373332852958136";
 const META_CLIENT_TOKEN = process.env.EXPO_PUBLIC_META_CLIENT_TOKEN ?? "";
 
-// Helper: attempt variant file(s); fall back to production if missing
 const fs = require("fs");
 const resolveGoogleServicesFile = (...candidates) => {
   for (const f of candidates) if (f && fs.existsSync(f)) return f;
-  return candidates[candidates.length - 1];
+  throw new Error(
+    `Missing Firebase config for ${variant.scheme}: ${candidates.join(", ")}`,
+  );
 };
+const googleServicesFileIos = resolveGoogleServicesFile(
+  variant.googleServicesFileIos,
+  ...(variant.scheme === "ziona"
+    ? []
+    : [`./GoogleService-Info.${variant.scheme}.plist`]),
+);
+const googleServicesFileAndroid = resolveGoogleServicesFile(
+  variant.googleServicesFileAndroid,
+  ...(variant.scheme === "ziona"
+    ? []
+    : [`./google-services.${variant.scheme}.json`]),
+);
+const androidFirebaseConfig = JSON.parse(
+  fs.readFileSync(googleServicesFileAndroid, "utf8"),
+);
+const androidFirebaseApp = androidFirebaseConfig.client?.find(
+  (client) =>
+    client.client_info?.android_client_info?.package_name === variant.package,
+);
+if (!androidFirebaseApp) {
+  throw new Error(
+    `Firebase config ${googleServicesFileAndroid} has no Android app registered for ${variant.package}`,
+  );
+}
+if (
+  !androidFirebaseApp.oauth_client?.some((client) => client.client_type === 1)
+) {
+  const signingGuidance =
+    variant.scheme === "zionastaging"
+      ? "Play App Signing SHA-1 and EAS staging keystore SHA-1 for direct installs"
+      : "the Android package's distributed signing SHA-1";
+  console.warn(
+    `[config] Firebase config for ${variant.package} has no Android OAuth client. Register this package and ${signingGuidance} in Firebase/Google Cloud, then download the updated config.`,
+  );
+}
 
 module.exports = {
   expo: {
@@ -55,17 +100,14 @@ module.exports = {
     userInterfaceStyle: "light",
     ios: {
       bundleIdentifier: variant.bundleIdentifier,
-      googleServicesFile: resolveGoogleServicesFile(
-        variant.googleServicesFileIos,
-        "./GoogleService-Info." + variant.scheme + ".plist",
-        "./GoogleService-Info.plist"
-      ),
+      googleServicesFile: googleServicesFileIos,
       entitlements: {
         "com.apple.developer.applesignin": ["Default"],
       },
-      associatedDomains: variant.scheme === "ziona"
-        ? ["applinks:ziona.app", "applinks:api.ziona.app"]
-        : ["applinks:staging.ziona.app", "applinks:api.staging.ziona.app"],
+      associatedDomains:
+        variant.scheme === "ziona"
+          ? ["applinks:ziona.app", "applinks:api.ziona.app"]
+          : ["applinks:staging.ziona.app", "applinks:api.staging.ziona.app"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription:
@@ -82,11 +124,7 @@ module.exports = {
       },
     },
     android: {
-      googleServicesFile: resolveGoogleServicesFile(
-        variant.googleServicesFileAndroid,
-        "./google-services." + variant.scheme + ".json",
-        "./google-services.json"
-      ),
+      googleServicesFile: googleServicesFileAndroid,
       softwareKeyboardLayoutMode: "resize",
       package: variant.package,
       intentFilters: [
@@ -96,18 +134,25 @@ module.exports = {
           data: [
             {
               scheme: "https",
-              host: variant.scheme === "ziona" ? "ziona.app" : "staging.ziona.app",
+              host:
+                variant.scheme === "ziona" ? "ziona.app" : "staging.ziona.app",
               pathPrefix: "/post",
             },
             {
               scheme: "https",
-              host: variant.scheme === "ziona" ? "api.ziona.app" : "api.staging.ziona.app",
+              host:
+                variant.scheme === "ziona"
+                  ? "api.ziona.app"
+                  : "api.staging.ziona.app",
               pathPrefix: "/post",
             },
             {
+              // Custom-scheme links look like ziona://viewer/{postId}
+              // (host = "viewer", path = "/{postId}"), so match the host
+              // with no pathPrefix. The old host "*" + pathPrefix "/viewer"
+              // never matched, because the path is "/{postId}", not "/viewer...".
               scheme: variant.scheme,
-              host: "*",
-              pathPrefix: "/viewer",
+              host: "viewer",
             },
           ],
           category: ["BROWSABLE", "DEFAULT"],
@@ -127,9 +172,34 @@ module.exports = {
       "./plugins/withAndroidAllowBackup",
       "./plugins/withFirebaseNotificationColor",
       "expo-router",
-      ["@react-native-google-signin/google-signin", { iosUrlScheme: variant.googleIosReversedClientId }],
-      ["expo-build-properties", { ios: { useFrameworks: "static", forceStaticLinking: ["RNFBApp", "RNFBMessaging"] }, android: { enableProguardInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true, edgeToEdge: true, enableMinifyInReleaseBuilds: true } }],
-      ["expo-splash-screen", { image: "./assets/images/splash-icon.png", backgroundColor: "#ffffff", resizeMode: "contain", imageWidth: 200 }],
+      [
+        "@react-native-google-signin/google-signin",
+        { iosUrlScheme: variant.googleIosReversedClientId },
+      ],
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            useFrameworks: "static",
+            forceStaticLinking: ["RNFBApp", "RNFBMessaging"],
+          },
+          android: {
+            enableProguardInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+            edgeToEdge: true,
+            enableMinifyInReleaseBuilds: true,
+          },
+        },
+      ],
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/splash-icon.png",
+          backgroundColor: "#ffffff",
+          resizeMode: "contain",
+          imageWidth: 200,
+        },
+      ],
       "expo-asset",
       "expo-font",
       "expo-web-browser",

@@ -4,6 +4,15 @@ const VIEWER_ROUTES = ["/viewer/", "/viewer"];
 const CIRCLE_FEED_ROUTES = ["/circleFeed?id=", "/circleFeed"];
 const GUEST_ROUTES = ["/guest?userId=", "/guest"];
 
+export function isFollowNotification(notification: Record<string, unknown> | undefined | null): boolean {
+  if (!notification) return false;
+  const normalize = (value: unknown) =>
+    typeof value === "string" ? value.toLowerCase().replace(/[^a-z0-9]/g, "") : "";
+  const types = [normalize(notification.type), normalize(notification.referenceType)];
+  return types.some((type) => type === "follow" || type === "newfollower") ||
+    normalize(notification.title) === "newfollower";
+}
+
 function toHrefFromParts(
   route: string,
   entityId: string | undefined,
@@ -210,10 +219,7 @@ export function resolveDestinationFromNotification(notification: Record<string, 
  */
 export function resolveFollowRowHref(notification: Record<string, unknown> | undefined | null): NotificationHref | null {
   if (!notification) return null;
-  const referenceType = notification.referenceType;
-  const type = notification.type;
-  const isFollowRow =
-    referenceType === "follow" || type === "follow" || type === "suggest";
+  const isFollowRow = isFollowNotification(notification) || notification.type === "suggest";
   if (!isFollowRow) return null;
   const user = notification.user as Record<string, unknown> | undefined;
   const userId = user && typeof user.id === "string" ? user.id : undefined;

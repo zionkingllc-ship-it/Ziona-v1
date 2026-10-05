@@ -12,6 +12,7 @@ import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { shortenBookName } from "@/utils/bibleNames";
+import { TEXT_MAX_LENGTH, effectiveLength, isWithinLimit } from "@/utils/textMeasure";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
@@ -55,7 +56,7 @@ export default function CreateTextScreen() {
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(false);
 
-  const MAX_LENGTH = 500;
+  const MAX_LENGTH = TEXT_MAX_LENGTH;
 
   /* =========================
      ENSURE TEXT DRAFT
@@ -123,7 +124,8 @@ export default function CreateTextScreen() {
      CHARACTER LIMIT
   ========================= */
 
-  const combinedLength = (textValue?.length ?? 0) + (verseText?.length ?? 0);
+  const combinedLength =
+    effectiveLength(textValue) + effectiveLength(verseText);
 
   const remaining = MAX_LENGTH - combinedLength;
 
@@ -149,9 +151,7 @@ export default function CreateTextScreen() {
             verseText={verseText}
             value={textValue}
             onChangeText={(text) => {
-              const verseLen = verseText?.length ?? 0;
-
-              if (text.length + verseLen <= MAX_LENGTH) {
+              if (isWithinLimit(text, verseText, MAX_LENGTH)) {
                 setText(text);
               }
             }}
@@ -216,10 +216,10 @@ export default function CreateTextScreen() {
           visible={bibleVisible}
           onClose={() => setBibleVisible(false)}
           onDone={(data) => {
-            const newVerseLength = data.text.length;
-            const currentTextLength = textValue.length;
-
-            if (newVerseLength + currentTextLength > MAX_LENGTH) {
+            if (
+              effectiveLength(data.text) + effectiveLength(textValue) >
+              MAX_LENGTH
+            ) {
               feedback.showError(
                 "Selected bible verse too long, Please select fewer verses to stay under 500 characters",
               );

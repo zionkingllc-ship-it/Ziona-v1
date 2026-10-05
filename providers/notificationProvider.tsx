@@ -1,17 +1,25 @@
-import React, { useEffect, useRef } from "react";
-import { AppState, AppStateStatus, Linking, NativeModules, Platform } from "react-native";
-import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
-import {
-  getUnreadNotificationCount,
-  registerDeviceToken,
-} from "@/services/graphQL/queries/actions/notifications";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { isIOS } from "@/constants/platform";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
+import {
+    getUnreadNotificationCount,
+    registerDeviceToken,
+} from "@/services/graphQL/queries/actions/notifications";
+import { createDeviceRegistration } from "@/src/services/notifications/deviceRegistration";
 import { resolveNotificationDestination } from "@/src/services/notifications/notificationNavigation";
 import { emitNotificationReceived } from "@/src/services/notifications/notificationService";
+import { useAuthStore } from "@/store/useAuthStore";
 import { storage } from "@/utils/storage";
+import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import {
+    Alert,
+    AppState,
+    AppStateStatus,
+    Linking,
+    NativeModules,
+    Platform,
+} from "react-native";
 
 const LAST_HANDLED_NOTIF_KEY = "lastHandledNotificationId";
 
@@ -56,51 +64,49 @@ async function setupAndroidChannel() {
   });
 }
 
-let registrationInFlight: Promise<void> | null = null;
-let registeredToken: string | null = null;
-
-async function serializeRegistration(run: () => Promise<void>): Promise<void> {
-  if (registrationInFlight) return registrationInFlight;
-  registrationInFlight = (async () => {
-    try {
-      await run();
-    } finally {
-      registrationInFlight = null;
-    }
-  })();
-  return registrationInFlight;
-}
-
-async function registerTokenOnce(token: string): Promise<void> {
-  if (!token || token === registeredToken) return;
-
-  await serializeRegistration(async () => {
-    if (token === registeredToken) return;
-    console.log("[Notifications] device token:", token);
-    const registered = await registerDeviceToken(token, Platform.OS);
-    if (registered) registeredToken = token;
-  });
-}
-
-async function requestPermissionsAndRegister() {
+async function requestPermissionsAndRegister(
+  registerToken: (token: string) => Promise<void>,
+  isCurrentSession: () => boolean,
+  permissionPromptAttempted: { current: boolean },
+) {
   try {
+    await setupAndroidChannel();
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== "granted") {
-      const { status: newStatus } = await Notifications.requestPermissionsAsync({
+      if (permissionPromptAttempted.current) return;
+      permissionPromptAttempted.current = true;
+      const permission = await Notifications.requestPermissionsAsync({
         ios: { allowAlert: true, allowSound: true, allowBadge: true },
       });
-      if (newStatus !== "granted") {
+      if (permission.status !== "granted") {
+        if (!permission.canAskAgain) {
+          Alert.alert(
+            "Notifications are off",
+            "Allow notifications in your device settings to receive updates from Ziona.",
+            [
+              { text: "Not now", style: "cancel" },
+              {
+                text: "Open settings",
+                onPress: () => {
+                  void Linking.openSettings().catch(() => {});
+                },
+              },
+            ],
+          );
+        }
         return;
       }
     }
     try {
       if (!messaging) {
-        console.warn("[Notifications] Firebase Messaging unavailable — skipping token registration");
+        console.warn(
+          "[Notifications] Firebase Messaging unavailable — skipping token registration",
+        );
         return;
       }
+      if (!isCurrentSession()) return;
       const fcmToken = await messaging.getToken();
-      console.log("🔔 FCM token sent to backend:", fcmToken);
-      await registerTokenOnce(fcmToken);
+      await registerToken(fcmToken);
     } catch (err) {
       console.warn("🔔 Push token registration failed:", err);
     }
@@ -113,7 +119,9 @@ async function syncBadgeFromServer() {
   try {
     const count = await getUnreadNotificationCount();
     await Notifications.setBadgeCountAsync(count);
-  } catch { console.warn("[notificationProvider] syncBadgeFromServer failed"); }
+  } catch {
+    console.warn("[notificationProvider] syncBadgeFromServer failed");
+  }
 }
 
 let lastNavPath = "";
@@ -161,10 +169,16 @@ async function clearHandled() {
     await storage.remove(LAST_HANDLED_NOTIF_KEY);
     handledNotificationIds.clear();
     console.log("[Notifications] cleared handled ID");
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
-export default function NotificationProvider({ children }: { children: React.ReactNode }) {
+export default function NotificationProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const userId = useAuthStore((s) => s.user?.id);
   const navReady = useRootNavigationReady();
@@ -179,60 +193,87 @@ export default function NotificationProvider({ children }: { children: React.Rea
   }, [isAuthenticated, userId]);
 
   useEffect(() => {
-    setupAndroidChannel();
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated || !messaging) return;
-
-    const unsubscribe = messaging.onTokenRefresh(async (token: string) => {
+    if (!isAuthenticated || !userId) return;
+    let active = true;
+    const isCurrentSession = () => {
+      const auth = useAuthStore.getState();
+      return active && auth.isAuthenticated && auth.user?.id === userId;
+    };
+    const registerToken = createDeviceRegistration(
+      (token) => registerDeviceToken(token, Platform.OS),
+      isCurrentSession,
+      () =>
+        console.log("[Notifications] FCM device token registration confirmed", {
+          userId,
+          platform: Platform.OS,
+        }),
+    );
+    const unsubscribe = messaging?.onTokenRefresh(async (token: string) => {
       try {
-        await registerTokenOnce(token);
+        await registerToken(token);
       } catch (err) {
-        console.warn("🔔 Token refresh registration failed:", err);
+        console.warn("[Notifications] Token refresh registration failed:", err);
       }
     });
-
-    return unsubscribe;
-  }, [isAuthenticated]);
+    const permissionPromptAttempted = { current: false };
+    const registerAndSync = () => {
+      if (!isCurrentSession()) return;
+      void requestPermissionsAndRegister(
+        registerToken,
+        isCurrentSession,
+        permissionPromptAttempted,
+      );
+      void syncBadgeFromServer();
+    };
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        if (
+          appState.current.match(/inactive|background/) &&
+          nextState === "active"
+        ) {
+          registerAndSync();
+        }
+        appState.current = nextState;
+      },
+    );
+    registerAndSync();
+    return () => {
+      active = false;
+      unsubscribe?.();
+      subscription.remove();
+    };
+  }, [isAuthenticated, userId]);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
-        if (isAuthenticated) {
-          requestPermissionsAndRegister();
-          syncBadgeFromServer();
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log(
+          "[Notifications] notification ID opened:",
+          response.notification.request.identifier,
+        );
+        const data = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        if (!data) return;
+        pendingResponseRef.current = data;
+      });
+
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log(
+          "[Notifications] notification ID received:",
+          notification.request.identifier,
+        );
+        emitNotificationReceived(notification);
+        if (isIOS) {
+          const badge = notification.request.content.badge;
+          if (badge != null) {
+            Notifications.setBadgeCountAsync(Number(badge)).catch(() => {});
+          }
         }
-      }
-      appState.current = nextState;
-    });
-
-    if (isAuthenticated) {
-      requestPermissionsAndRegister();
-      syncBadgeFromServer();
-    }
-
-    return () => subscription.remove();
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log("[Notifications] notification ID opened:", response.notification.request.identifier);
-      const data = response.notification.request.content.data as Record<string, unknown> | undefined;
-      if (!data) return;
-      pendingResponseRef.current = data;
-    });
-
-    const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log("[Notifications] notification ID received:", notification.request.identifier);
-      emitNotificationReceived(notification);
-      if (isIOS) {
-        const badge = notification.request.content.badge;
-        if (badge != null) {
-          Notifications.setBadgeCountAsync(Number(badge)).catch(() => {});
-        }
-      }
-    });
+      },
+    );
 
     return () => {
       responseSubscription.remove();
@@ -263,15 +304,20 @@ export default function NotificationProvider({ children }: { children: React.Rea
         if (!response) return;
         const id = response.notification.request.identifier;
         console.log("[Notifications] cold start last response:", id);
-        
+
         // Only navigate if this is a new unhandled notification
         const shouldHandle = await tryMarkHandled(id);
         if (!shouldHandle) {
-          console.log("[Notifications] skipping already-handled notification:", id);
+          console.log(
+            "[Notifications] skipping already-handled notification:",
+            id,
+          );
           return;
         }
-        
-        const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+
+        const data = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
         if (data) handleData(data);
       })
       .catch(() => {});
