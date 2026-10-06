@@ -176,6 +176,7 @@ module.exports = {
         "@react-native-google-signin/google-signin",
         { iosUrlScheme: variant.googleIosReversedClientId },
       ],
+      "@react-native-firebase/app",
       [
         "expo-build-properties",
         {

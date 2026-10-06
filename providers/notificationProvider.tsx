@@ -42,7 +42,9 @@ try {
         rnfbOnTokenRefresh(messagingApi, handler),
     };
   }
-} catch {}
+} catch (error) {
+  console.error("[Notifications] Firebase Messaging initialization failed:", error);
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

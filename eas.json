@@ -96,18 +96,18 @@
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
+        "ascAppId": "6815465114",
         "appleTeamId": "RLL2NX9J5Z"
       }
     },
     "preview": {
       "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "serviceAccountKeyPath": "./ziona-stagin-1dffb27beb7b.json",
         "track": "internal"
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
+        "ascAppId": "6815465114",
         "appleTeamId": "RLL2NX9J5Z"
       }
     }
