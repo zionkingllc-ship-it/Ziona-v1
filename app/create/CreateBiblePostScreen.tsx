@@ -8,6 +8,7 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { shortenBookName } from "@/utils/bibleNames";
+import { TEXT_MAX_LENGTH, effectiveLength } from "@/utils/textMeasure";
 import { useState } from "react";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
@@ -83,8 +84,8 @@ export default function CreateBiblePostScreen() {
      LIMIT
   ========================= */
 
-  const verseLength = verseText?.length ?? 0;
-  const remaining = Math.max(500 - verseLength, 0);
+  const verseLength = effectiveLength(verseText);
+  const remaining = Math.max(TEXT_MAX_LENGTH - verseLength, 0);
 
   /* =========================
      VALIDATION

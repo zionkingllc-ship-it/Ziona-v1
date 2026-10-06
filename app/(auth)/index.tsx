@@ -3,18 +3,18 @@ import { MarqueeCarousel } from "@/components/ui/marquee";
 import SuccessModal from "@/components/ui/modals/successModal";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
+import { isIOS } from "@/constants/platform";
 import { useResponsive } from "@/hooks/useResponsive";
-import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
+import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
+import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSignupStore } from "@/store/useSignupStore";
-import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable } from "react-native";
-import { isIOS } from "@/constants/platform";
 import { Image, Text, View, XStack, YStack } from "tamagui";
-import { Ionicons } from "@expo/vector-icons";
 
 const cards = [
   {
@@ -60,14 +60,17 @@ export default function AuthIndex() {
 
       const res = await signInWithGoogle();
 
+      if (res.cancelled) {
+        setIsGoogleLoading(false);
+        return;
+      }
+
       if (res.error) {
         setIsGoogleLoading(false);
         setModalVisible(true);
         setMessageType("failed");
         setMessageTitle("Authentication Failed");
-        setMessage(
-          "Something went wrong, please try again, or signin with email instead",
-        );
+        setMessage(res.error);
 
         return;
       }
@@ -84,6 +87,12 @@ export default function AuthIndex() {
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
+      setModalVisible(true);
+      setMessageType("failed");
+      setMessageTitle("Authentication Failed");
+      setMessage(
+        "Google Sign-In could not be completed. Please try again or use email sign-in.",
+      );
     }
   };
 
@@ -135,7 +144,9 @@ export default function AuthIndex() {
 
   return (
     <View flex={1}>
-      {isGoogleLoading && <ActivityIndicator color={colors.primary} size={40} />}
+      {isGoogleLoading && (
+        <ActivityIndicator color={colors.primary} size={40} />
+      )}
       <YStack flex={1} opacity={isGoogleLoading || modalVisible ? 0.5 : 1}>
         {/* ================= CAROUSEL ================= */}
         <MarqueeCarousel cards={cards} heightRatio={30} animationType="loop" />
@@ -192,17 +203,23 @@ export default function AuthIndex() {
             />
 
             {isIOS && (
-            <PrimaryButton
-              text="Continue with Apple"
-              color={colors.white}
-              textSize={fs(15)}
-              textWeight="400"
-              onPress={handleAppleSignIn}
-              loading={isAppleLoading}
-              disabled={isAppleLoading}
-              iconSize={wp(6)}
-              startIcon={<Ionicons name="logo-apple" size={wp(6)} color={colors.text} />}
-            />
+              <PrimaryButton
+                text="Continue with Apple"
+                color={colors.white}
+                textSize={fs(15)}
+                textWeight="400"
+                onPress={handleAppleSignIn}
+                loading={isAppleLoading}
+                disabled={isAppleLoading}
+                iconSize={wp(6)}
+                startIcon={
+                  <Ionicons
+                    name="logo-apple"
+                    size={wp(6)}
+                    color={colors.text}
+                  />
+                }
+              />
             )}
 
             <PrimaryButton
@@ -258,9 +275,11 @@ export default function AuthIndex() {
                 By continuing, you agree to Ziona’s{" "}
               </Text>
 
-              <Pressable onPress={() => {
-                router.push("/settings/terms/use");
-              }}>
+              <Pressable
+                onPress={() => {
+                  router.push("/settings/terms/use");
+                }}
+              >
                 <InlineUnderlineText
                   color={colors.termsButton}
                   fontFamily={"$body"}
@@ -298,22 +317,24 @@ export default function AuthIndex() {
                 >
                   Privacy Policy
                 </InlineUnderlineText>
-</Pressable>
+              </Pressable>
               <Text>and</Text>
-              <Pressable onPress={() => {
-                router.push("/settings/terms/community");
-              }}>
-              <InlineUnderlineText
-                color={colors.termsButton}
-                fontFamily={"$body"}
-                weight="500"
-                fontSize={fs(13)}
-                thickness={1}
-                offset={-1}
+              <Pressable
+                onPress={() => {
+                  router.push("/settings/terms/community");
+                }}
               >
-                Community guidelines
-              </InlineUnderlineText>
-            </Pressable>
+                <InlineUnderlineText
+                  color={colors.termsButton}
+                  fontFamily={"$body"}
+                  weight="500"
+                  fontSize={fs(13)}
+                  thickness={1}
+                  offset={-1}
+                >
+                  Community guidelines
+                </InlineUnderlineText>
+              </Pressable>
             </XStack>
 
             <YStack alignItems="center">

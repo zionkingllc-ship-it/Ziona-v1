@@ -204,11 +204,18 @@ test('circle-nested comment routes to its circle', () => {
 });
 
 test('follow rows resolve to the actor profile', () => {
-  const { resolveFollowRowHref } = loadNavigation();
+  const { isFollowNotification, resolveFollowRowHref } = loadNavigation();
   const clean = (v) => (v === null || v === undefined ? null : JSON.parse(JSON.stringify(v)));
+  assert.equal(isFollowNotification({ type: 'new_follower' }), true);
+  assert.equal(isFollowNotification({ title: 'New Follower' }), true);
+  assert.equal(isFollowNotification({ type: 'comment', title: 'New comment' }), false);
   assert.deepEqual(
     clean(resolveFollowRowHref({ referenceType: 'follow', type: 'follow', user: { id: 'user-7' } })),
     { pathname: '/guest', params: { userId: 'user-7' } }
+  );
+  assert.deepEqual(
+    clean(resolveFollowRowHref({ type: 'new_follower', title: 'New Follower', user: { id: 'user-9' } })),
+    { pathname: '/guest', params: { userId: 'user-9' } }
   );
   assert.deepEqual(
     clean(resolveFollowRowHref({ type: 'suggest', user: { id: 'user-8' } })),

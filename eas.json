@@ -15,9 +15,9 @@
         "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql",
         "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionastaging",
         "EXPO_PUBLIC_SHARE_DOMAIN": "staging.ziona.app",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "511999112847-lqtrejs5hik2avpgmkdhs90pdn6o1vfg.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com"
       },
       "environment": "preview"
     },
@@ -32,9 +32,9 @@
         "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql",
         "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionastaging",
         "EXPO_PUBLIC_SHARE_DOMAIN": "staging.ziona.app",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "511999112847-lqtrejs5hik2avpgmkdhs90pdn6o1vfg.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com"
       },
       "android": {
         "buildType": "apk"
@@ -49,9 +49,9 @@
         "EXPO_PUBLIC_GRAPHQL_URL": "https://api.staging.ziona.app/graphql",
         "EXPO_PUBLIC_DEEP_LINK_SCHEME": "zionastaging",
         "EXPO_PUBLIC_SHARE_DOMAIN": "staging.ziona.app",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "511999112847-lqtrejs5hik2avpgmkdhs90pdn6o1vfg.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "511999112847-r44sgjgqbgmnl5s83v9iiiqsgfbg05a9.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -96,18 +96,18 @@
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
+        "ascAppId": "6815465114",
         "appleTeamId": "RLL2NX9J5Z"
       }
     },
     "preview": {
       "android": {
-        "serviceAccountKeyPath": "./serviceAccountZiona.json",
+        "serviceAccountKeyPath": "./ziona-stagin-1dffb27beb7b.json",
         "track": "internal"
       },
       "ios": {
         "appleId": "onyeama.a.k@gmail.com",
-        "ascAppId": "6768301878",
+        "ascAppId": "6815465114",
         "appleTeamId": "RLL2NX9J5Z"
       }
     }
