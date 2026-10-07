@@ -11,7 +11,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { storage } from "@/utils/storage";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Alert,
     AppState,
@@ -185,8 +185,7 @@ export default function NotificationProvider({
   const userId = useAuthStore((s) => s.user?.id);
   const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
-  const pendingResponseRef = useRef<Record<string, unknown> | null>(null);
-  const isMountedRef = useRef(true);
+  const [pendingResponse, setPendingResponse] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -258,7 +257,7 @@ export default function NotificationProvider({
           | Record<string, unknown>
           | undefined;
         if (!data) return;
-        pendingResponseRef.current = data;
+        setPendingResponse(data);
       });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(
@@ -294,15 +293,20 @@ export default function NotificationProvider({
     };
 
     // Handle pending response from when app was backgrounded
-    if (pendingResponseRef.current) {
-      handleData(pendingResponseRef.current);
-      pendingResponseRef.current = null;
+    if (pendingResponse) {
+      handleData(pendingResponse);
+      setPendingResponse(null);
     }
 
+  }, [navReady, isAuthenticated, pendingResponse]);
+
+  useEffect(() => {
+    if (!navReady || !isAuthenticated) return;
+    let active = true;
     // On cold start, check for a genuinely new notification response
     Notifications.getLastNotificationResponseAsync()
       .then(async (response) => {
-        if (!isMountedRef.current) return;
+        if (!active) return;
         if (!response) return;
         const id = response.notification.request.identifier;
         console.log("[Notifications] cold start last response:", id);
@@ -320,12 +324,12 @@ export default function NotificationProvider({
         const data = response.notification.request.content.data as
           | Record<string, unknown>
           | undefined;
-        if (data) handleData(data);
+        if (active && data) setPendingResponse(data);
       })
       .catch(() => {});
 
     return () => {
-      isMountedRef.current = false;
+      active = false;
     };
   }, [navReady, isAuthenticated]);
 

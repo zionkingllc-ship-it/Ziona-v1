@@ -14,7 +14,7 @@ import config from "@/tamagui.config";
 import { initializeNotificationStore, cleanupNotificationStore } from "@/src/store/notificationStore";
 import { useRootNavigationReady } from "@/hooks/useRootNavigationReady";
 import { NotificationBanner } from "@/src/components/NotificationBanner";
-import { toHref } from "@/src/services/notifications/notificationNavigation";
+
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as NavigationBar from "expo-navigation-bar";
@@ -22,7 +22,7 @@ import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { Linking, Platform } from "react-native";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { TamaguiProvider } from "tamagui";
@@ -40,8 +40,7 @@ function LocationFirstTimeInitializer() {
   return null;
 }
 
-let lastDeepLinkPath = "";
-let lastDeepLinkTime = 0;
+
 
 export default function RootLayout() {
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
@@ -94,46 +93,8 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  /* -------- DEEP LINK HANDLER -------- */
-
-const navReady = useRootNavigationReady();
-
-  useEffect(() => {
-    if (!navReady) return;
-
-    function handleDeepLink(event: { url: string }) {
-      let url = event.url;
-      // Strip scheme if present (Android adds 'ziona://' or 'http://' prefix)
-      // but only parse if it's a valid URL format
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        try {
-          const parsed = new URL(url);
-          url = parsed.pathname + (parsed.search ? parsed.search : "");
-        } catch {
-          // Keep original url if parsing fails
-        }
-      }
-      const match = url.match(/\/post\/([^/?\s]+)/) || url.match(/\/viewer\/([^/?\s]+)/);
-      if (!match?.[1]) return;
-      const path = `/viewer/${match[1]}`;
-      const now = Date.now();
-      if (path === lastDeepLinkPath && now - lastDeepLinkTime < 2000) return;
-      lastDeepLinkPath = path;
-      lastDeepLinkTime = now;
-      const href = toHref(path);
-      if (href) router.push(href as any);
-    }
-
-    const subscription = Linking.addEventListener("url", handleDeepLink);
-
-    Linking.getInitialURL().then((url) => {
-      if (url) handleDeepLink({ url });
-    }).catch(() => {});
-
-    return () => {
-      subscription.remove();
-    };
-  }, [navReady]);
+  // Incoming URLs are normalized once by app/+native-intent.tsx.
+  const navReady = useRootNavigationReady();
 
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
 

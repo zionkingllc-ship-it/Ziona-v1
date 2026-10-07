@@ -128,33 +128,16 @@ module.exports = {
       softwareKeyboardLayoutMode: "resize",
       package: variant.package,
       intentFilters: [
+        ...[variant.scheme === "ziona" ? "ziona.app" : "staging.ziona.app",
+            variant.scheme === "ziona" ? "api.ziona.app" : "api.staging.ziona.app"].map((host) => ({
+          action: "VIEW",
+          autoVerify: true,
+          data: ["/post/", "/profile/", "/viewer/"].map((pathPrefix) => ({ scheme: "https", host, pathPrefix })),
+          category: ["BROWSABLE", "DEFAULT"],
+        })),
         {
           action: "VIEW",
-          autoVerify: true, // staging + production verify (assetlinks.json served on all hosts)
-          data: [
-            {
-              scheme: "https",
-              host:
-                variant.scheme === "ziona" ? "ziona.app" : "staging.ziona.app",
-              pathPrefix: "/post",
-            },
-            {
-              scheme: "https",
-              host:
-                variant.scheme === "ziona"
-                  ? "api.ziona.app"
-                  : "api.staging.ziona.app",
-              pathPrefix: "/post",
-            },
-            {
-              // Custom-scheme links look like ziona://viewer/{postId}
-              // (host = "viewer", path = "/{postId}"), so match the host
-              // with no pathPrefix. The old host "*" + pathPrefix "/viewer"
-              // never matched, because the path is "/{postId}", not "/viewer...".
-              scheme: variant.scheme,
-              host: "viewer",
-            },
-          ],
+          data: [{ scheme: variant.scheme }],
           category: ["BROWSABLE", "DEFAULT"],
         },
       ],
