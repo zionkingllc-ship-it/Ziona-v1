@@ -168,20 +168,6 @@ export default function AnchorUnifiedView() {
     if (id) markAnchorViewed(id);
   }, [id]);
 
-  if (id && isAnchorLoading && !text && !anchorImage && !video && !bibleReference) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#742092" />
-      </View>
-    );
-  }
-
-  const handleActionSelected = (action: string, anchorText?: string) => {
-    requireMembership(() => {
-      void doActionSelected(action, anchorText);
-    });
-  };
-
   const handleClose = useCallback(() => {
     if ((source === "feed" || source === "notification") && circleId) {
       router.dismissTo({ pathname: "/circleFeed", params: { id: circleId } });
@@ -189,6 +175,31 @@ export default function AnchorUnifiedView() {
       router.dismissTo("/(tabs)/circle");
     }
   }, [source, circleId, router]);
+
+  const handleActionSelected = (action: string, anchorText?: string) => {
+    requireMembership(() => {
+      void doActionSelected(action, anchorText);
+    });
+  };
+
+  const handleScroll = useCallback(
+    (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / SLIDE_WIDTH);
+      if (index >= 0 && index < slides.length && index !== currentIndex) {
+        setCurrentIndex(index);
+      }
+    },
+    [currentIndex, slides.length],
+  );
+
+  if (id && isAnchorLoading && !text && !anchorImage && !video && !bibleReference) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#742092" />
+      </View>
+    );
+  }
 
   const doActionSelected = async (action: string, anchorText?: string) => {
     const tempId = `tempAnchor_${Date.now()}`;
@@ -222,17 +233,6 @@ export default function AnchorUnifiedView() {
     const path = `/(tabs)/circle/anchorResponse?${qs.toString()}`;
     router.push(path as any);
   };
-
-  const handleScroll = useCallback(
-    (event: any) => {
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const index = Math.round(offsetX / SLIDE_WIDTH);
-      if (index >= 0 && index < slides.length && index !== currentIndex) {
-        setCurrentIndex(index);
-      }
-    },
-    [currentIndex, slides.length],
-  );
 
   return (
     <SafeAreaView style={styles.container}>

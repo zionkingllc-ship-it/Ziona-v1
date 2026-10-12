@@ -1,8 +1,9 @@
 import { InlineUnderlineText } from "@/components/ui/InlineUnderlineText";
 import { MarqueeCarousel } from "@/components/ui/marquee";
-import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import SuccessModal from "@/components/ui/modals/successModal";
+import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import colors from "@/constants/colors";
+import { isIOS } from "@/constants/platform";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useAppleAuth } from "@/services/auth/useAppleAuth";
 import { useGoogleAuth } from "@/services/auth/useGoogleAuth";
@@ -12,7 +13,6 @@ import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { isIOS } from "@/constants/platform";
 
 const cards = [
   {
@@ -77,12 +77,18 @@ export default function LoginIndex() {
 
       const res = await signInWithGoogle();
 
+      if (res.cancelled) {
+        setIsGoogleLoading(false);
+        return;
+      }
+
       if (res.error) {
         setIsGoogleLoading(false);
         setModalVisible(true);
         setMessageTitle("Authentication Failed");
         setMessage(
-          res.error || "Google login failed, please try again or sign in with email instead",
+          res.error ||
+            "Google login failed, please try again or sign in with email instead",
         );
         return;
       }
@@ -98,6 +104,11 @@ export default function LoginIndex() {
       router.replace("/(tabs)/feed");
     } catch (err) {
       setIsGoogleLoading(false);
+      setModalVisible(true);
+      setMessageTitle("Authentication Failed");
+      setMessage(
+        "Google Sign-In could not be completed. Please try again or use email sign-in.",
+      );
     }
   };
 
@@ -249,9 +260,11 @@ export default function LoginIndex() {
               By continuing, you agree to Ziona’s{" "}
             </Text>
 
-            <Pressable onPress={() => {
-              router.push("/settings/terms/use");
-            }}>
+            <Pressable
+              onPress={() => {
+                router.push("/settings/terms/use");
+              }}
+            >
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}
@@ -274,9 +287,11 @@ export default function LoginIndex() {
               {" "}
               and confirm that you have read Ziona&apos;s{" "}
             </Text>
-            <Pressable onPress={() => {
-              router.push("/settings/terms/privacy");
-            }}>
+            <Pressable
+              onPress={() => {
+                router.push("/settings/terms/privacy");
+              }}
+            >
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}
@@ -289,9 +304,11 @@ export default function LoginIndex() {
               </InlineUnderlineText>
             </Pressable>
             <Text>and</Text>
-            <Pressable onPress={() => {
-              router.push("/settings/terms/community");
-            }}>
+            <Pressable
+              onPress={() => {
+                router.push("/settings/terms/community");
+              }}
+            >
               <InlineUnderlineText
                 color={colors.termsButton}
                 fontFamily={"$body"}

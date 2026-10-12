@@ -34,7 +34,7 @@ export default function EditNameScreen() {
   const [nextChangeDate, setNextChangeDate] = useState<string | null>(null);
   const [nextChangeTimestamp, setNextChangeTimestamp] = useState<number | null>(null);
 
-  const dateKey = userId ? `name-change-next-date:${userId}` : null;
+  const dateKey = userId ? `name-change-next-date-v2:${userId}` : null;
 
   const formatDate = (timestamp: number) =>
     new Intl.DateTimeFormat("en-US", {
@@ -49,15 +49,7 @@ export default function EditNameScreen() {
     if (!dateKey) return;
 
     storage.get<{ timestamp: number }>(dateKey).then((saved) => {
-      if (!saved?.timestamp) {
-        const initialTimestamp = Date.now() + NAME_CHANGE_INTERVAL_MS;
-        setNextChangeTimestamp(initialTimestamp);
-        setNextChangeDate(formatDate(initialTimestamp));
-        storage.set(dateKey, { timestamp: initialTimestamp });
-        return;
-      }
-
-      if (saved.timestamp > Date.now()) {
+      if (saved?.timestamp && saved.timestamp > Date.now()) {
         setNextChangeTimestamp(saved.timestamp);
         setNextChangeDate(formatDate(saved.timestamp));
       } else {

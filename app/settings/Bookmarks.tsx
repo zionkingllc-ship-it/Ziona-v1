@@ -32,13 +32,11 @@ export default function BookmarksScreen() {
   const { wp, hp } = useResponsive();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [confirmDeletePostId, setConfirmDeletePostId] = useState<string | null>(null);
-  const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
+  const [confirmDeleteFolderIds, setConfirmDeleteFolderIds] = useState<string[] | null>(null);
   const [deleteFolderName, setDeleteFolderName] = useState<string>("");
   const [postDeleteFeedback, setPostDeleteFeedback] = useState<{ visible: boolean; type: "success" | "failed"; title: string; message: string }>({ visible: false, type: "success", title: "", message: "" });
   const [folderDeleteFeedback, setFolderDeleteFeedback] = useState<{ visible: boolean; type: "success" | "failed"; title: string; message: string }>({ visible: false, type: "success", title: "", message: "" });
-  const postDeleteModalVisible = confirmDeletePostId !== null;
-  const folderDeleteModalVisible = confirmDeleteFolderId !== null;
+  const folderDeleteModalVisible = confirmDeleteFolderIds !== null;
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(new Set());
@@ -109,6 +107,12 @@ export default function BookmarksScreen() {
     return mergedFolders.find((f) => f.id === selectedFolderId);
   }, [selectedFolderId, mergedFolders]);
 
+  // The virtual "All" folder can never be deleted.
+  const selectedIsAll = useMemo(() => {
+    if (!selectedFolder) return false;
+    return selectedFolder.id === "all" || selectedFolder.name?.toLowerCase() === "all";
+  }, [selectedFolder]);
+
   const {
     data: folderPostsData,
     fetchNextPage: fetchMorePosts,
@@ -138,94 +142,6 @@ export default function BookmarksScreen() {
       return true;
     });
   }, [folderPosts, filter]);
-
-  const handleBack = () => {
-    setSelectedFolderId(null);
-    setConfirmDeletePostId(null);
-    setConfirmDeleteFolderId(null);
-    exitSelectMode();
-    queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
-  };
-
-  const handleFolderLongPress = useCallback((folderId: string, folderName: string) => {
-    setDeleteFolderName(folderName);
-    setConfirmDeleteFolderId(folderId);
-  }, []);
-
-  const handleConfirmDeleteFolder = useCallback(() => {
-    if (!confirmDeleteFolderId) return;
-    deleteFolderMutation.mutate(confirmDeleteFolderId, {
-      onSuccess: () => {
-        deleteFolder(confirmDeleteFolderId);
-        setConfirmDeleteFolderId(null);
-        setTimeout(() => {
-          setFolderDeleteFeedback({ visible: true, type: "success", title: "Deleted!", message: `"${deleteFolderName}" has been deleted.` });
-        }, 150);
-      },
-      onError: () => {
-        setConfirmDeleteFolderId(null);
-        setTimeout(() => {
-          setFolderDeleteFeedback({ visible: true, type: "failed", title: "Failed to Delete", message: "Please try again." });
-        }, 150);
-      },
-    });
-  }, [confirmDeleteFolderId, deleteFolderMutation, deleteFolder, deleteFolderName]);
-
-  const handlePostLongPress = useCallback((postId: string) => {
-    setConfirmDeletePostId(postId);
-  }, []);
-
-  const handlePostPress = useCallback((postId: string, index: number) => {
-    if (selectMode) {
-      togglePostSelection(postId);
-      return;
-    }
-    router.push({
-      pathname: "/viewer/[postId]",
-      params: {
-        postId,
-        source: "saved",
-        index: String(index),
-      },
-    });
-  }, [router, selectMode]);
-
-  const handleConfirmDeletePost = useCallback(() => {
-    if (!confirmDeletePostId) return;
-    bulkRemoveMutation.mutate([confirmDeletePostId], {
-      onSuccess: () => {
-        removeBookmarks([confirmDeletePostId], selectedFolderId || undefined);
-        setConfirmDeletePostId(null);
-        queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
-        setTimeout(() => {
-          setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: "Post removed from bookmarks." });
-        }, 150);
-      },
-      onError: () => {
-        setConfirmDeletePostId(null);
-        setTimeout(() => {
-          setPostDeleteFeedback({ visible: true, type: "failed", title: "Failed to Remove", message: "Please try again." });
-        }, 150);
-      },
-    });
-  }, [confirmDeletePostId, bulkRemoveMutation, removeBookmarks, selectedFolderId, queryClient]);
-
-  const folderCardWidth = (width - wp(4)) / 2 - 5;
-
-  useEffect(() => {
-    if (!selectedFolderId) return;
-    const onBackPress = () => {
-      if (selectMode) {
-        exitSelectMode();
-        return true;
-      }
-      setSelectedFolderId(null);
-      queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
-      return true;
-    };
-    const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
-    return () => subscription.remove();
-  }, [selectedFolderId, selectMode]);
 
   const isFolderView = selectedFolderId !== null;
   const selectedIds = isFolderView ? selectedPostIds : selectedFolderIds;
@@ -261,6 +177,130 @@ export default function BookmarksScreen() {
     setSelectedFolderIds(new Set());
   }, []);
 
+  const handleBack = () => {
+    setSelectedFolderId(null);
+    setConfirmDeleteFolderIds(null);
+    setConfirmBulkRemoveVisible(false);
+    setMoreModalVisible(false);
+    exitSelectMode();
+    queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
+  };
+
+  // Long-press never opens a modal — it enters multi-select mode.
+  // Deletion always goes through the ellipsis → bottom sheet flow.
+  const handleFolderLongPress = useCallback((folderId: string) => {
+    setSelectedFolderIds((prev) => {
+      if (prev.has(folderId)) return prev;
+      const next = new Set(prev);
+      next.add(folderId);
+      return next;
+    });
+    setSelectMode(true);
+    setMoreModalVisible(false);
+  }, []);
+
+  const handleConfirmDeleteFolders = useCallback(() => {
+    if (!confirmDeleteFolderIds || confirmDeleteFolderIds.length === 0) return;
+    const ids = confirmDeleteFolderIds;
+    const deletingOpenFolder = selectedFolderId !== null && ids.includes(selectedFolderId);
+    let successCount = 0;
+    let failCount = 0;
+    ids.forEach((folderId) => {
+      deleteFolderMutation.mutate(folderId, {
+        onSuccess: () => {
+          deleteFolder(folderId);
+          successCount++;
+          if (successCount + failCount === ids.length) {
+            setConfirmDeleteFolderIds(null);
+            if (deletingOpenFolder) {
+              setSelectedFolderId(null);
+            }
+            exitSelectMode();
+            queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
+            setTimeout(() => {
+              setFolderDeleteFeedback({
+                visible: true,
+                type: "success",
+                title: "Deleted!",
+                message: ids.length === 1 ? `"${deleteFolderName}" has been deleted.` : `${successCount} folder(s) deleted.`,
+              });
+            }, 150);
+          }
+        },
+        onError: () => {
+          failCount++;
+          if (successCount + failCount === ids.length) {
+            setConfirmDeleteFolderIds(null);
+            setTimeout(() => {
+              setFolderDeleteFeedback({ visible: true, type: "failed", title: "Failed to Delete", message: "Some folders could not be deleted." });
+            }, 150);
+          }
+        },
+      });
+    });
+  }, [confirmDeleteFolderIds, deleteFolderMutation, deleteFolder, deleteFolderName, selectedFolderId, exitSelectMode, queryClient]);
+
+  const handlePostLongPress = useCallback((postId: string) => {
+    setSelectedPostIds((prev) => {
+      if (prev.has(postId)) return prev;
+      const next = new Set(prev);
+      next.add(postId);
+      return next;
+    });
+    setSelectMode(true);
+  }, []);
+
+  const handlePostPress = useCallback((postId: string, index: number) => {
+    if (selectMode) {
+      togglePostSelection(postId);
+      return;
+    }
+    router.push({
+      pathname: "/viewer/[postId]",
+      params: {
+        postId,
+        source: "saved",
+        index: String(index),
+      },
+    });
+  }, [router, selectMode]);
+
+  const handleDeleteAction = useCallback(() => {
+    setMoreModalVisible(false);
+    if (isFolderView) {
+      // Delete the currently open folder (confirmed in the center modal).
+      if (!selectedFolderId) return;
+      const folder = mergedFolders?.find((f) => f.id === selectedFolderId);
+      setDeleteFolderName(folder?.name ?? "");
+      setConfirmDeleteFolderIds([selectedFolderId]);
+      return;
+    }
+    // Folder list: delete acts on the current selection. With nothing
+    // selected, enter select mode so the user can pick folders first.
+    if (selectedFolderIds.size > 0) {
+      setConfirmDeleteFolderIds(Array.from(selectedFolderIds));
+    } else {
+      setSelectMode(true);
+    }
+  }, [isFolderView, selectedFolderId, selectedFolderIds, mergedFolders]);
+
+  const folderCardWidth = (width - wp(4)) / 2 - 5;
+
+  useEffect(() => {
+    if (!selectedFolderId) return;
+    const onBackPress = () => {
+      if (selectMode) {
+        exitSelectMode();
+        return true;
+      }
+      setSelectedFolderId(null);
+      queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
+      return true;
+    };
+    const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => subscription.remove();
+  }, [selectedFolderId, selectMode]);
+
   const handleMorePress = useCallback(() => {
     setMoreModalVisible(true);
   }, []);
@@ -270,70 +310,27 @@ export default function BookmarksScreen() {
     setSelectMode(true);
   }, []);
 
-  const handleDeleteAction = useCallback(() => {
-    setMoreModalVisible(false);
-    if (isFolderView) {
-      setConfirmBulkRemoveVisible(true);
-    } else {
-      setConfirmBulkRemoveVisible(true);
-    }
-  }, [isFolderView]);
-
   const handleBulkRemove = useCallback(() => {
-    if (isFolderView) {
-      const postIds = Array.from(selectedPostIds);
-      if (postIds.length === 0) return;
-      bulkRemoveMutation.mutate(postIds, {
-        onSuccess: () => {
-          removeBookmarks(postIds, selectedFolderId || undefined);
-          exitSelectMode();
-          setConfirmBulkRemoveVisible(false);
-          queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
-          setTimeout(() => {
-            setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: `${postIds.length} post(s) removed from bookmarks.` });
-          }, 150);
-        },
-        onError: () => {
-          setConfirmBulkRemoveVisible(false);
-          setTimeout(() => {
-            setPostDeleteFeedback({ visible: true, type: "failed", title: "Failed to Remove", message: "Please try again." });
-          }, 150);
-        },
-      });
-    } else {
-      const folderIds = Array.from(selectedFolderIds);
-      if (folderIds.length === 0) return;
-      let successCount = 0;
-      let failCount = 0;
-      folderIds.forEach((folderId) => {
-        deleteFolderMutation.mutate(folderId, {
-          onSuccess: () => {
-            deleteFolder(folderId);
-            successCount++;
-            if (successCount + failCount === folderIds.length) {
-              exitSelectMode();
-              setConfirmBulkRemoveVisible(false);
-              if (successCount > 0) {
-                setTimeout(() => {
-                  setFolderDeleteFeedback({ visible: true, type: "success", title: "Deleted!", message: `${successCount} folder(s) deleted.` });
-                }, 150);
-              }
-            }
-          },
-          onError: () => {
-            failCount++;
-            if (successCount + failCount === folderIds.length) {
-              exitSelectMode();
-              setConfirmBulkRemoveVisible(false);
-              setTimeout(() => {
-                setFolderDeleteFeedback({ visible: true, type: "failed", title: "Failed to Delete", message: "Some folders could not be deleted." });
-              }, 150);
-            }
-          },
-        });
-      });
-    }
-  }, [isFolderView, selectedPostIds, selectedFolderIds, selectedFolderId, bulkRemoveMutation, deleteFolderMutation, removeBookmarks, deleteFolder, exitSelectMode, refetchPosts]);
+    const postIds = Array.from(selectedPostIds);
+    if (postIds.length === 0) return;
+    bulkRemoveMutation.mutate(postIds, {
+      onSuccess: () => {
+        removeBookmarks(postIds, selectedFolderId || undefined);
+        exitSelectMode();
+        setConfirmBulkRemoveVisible(false);
+        queryClient.invalidateQueries({ queryKey: ["userSavedPosts", undefined] });
+        setTimeout(() => {
+          setPostDeleteFeedback({ visible: true, type: "success", title: "Removed", message: `${postIds.length} post(s) removed from bookmarks.` });
+        }, 150);
+      },
+      onError: () => {
+        setConfirmBulkRemoveVisible(false);
+        setTimeout(() => {
+          setPostDeleteFeedback({ visible: true, type: "failed", title: "Failed to Remove", message: "Please try again." });
+        }, 150);
+      },
+    });
+  }, [selectedPostIds, selectedFolderId, bulkRemoveMutation, removeBookmarks, exitSelectMode, queryClient]);
 
   if (!isAuthenticated) {
     return (
@@ -389,15 +386,16 @@ export default function BookmarksScreen() {
               Select
             </Text>
           </Pressable>
-          <View style={{ width: "100%", height: 1, backgroundColor: "#E8E4E9" }} />
-          <Pressable
-            onPress={handleDeleteAction}
-            style={{ width: "100%", alignItems: "center", justifyContent: "center", paddingVertical: 16 }}
-          >
-            <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.black}>
-              Delete
-            </Text>
-          </Pressable>
+          {!(isFolderView && selectedIsAll) && (
+            <Pressable
+              onPress={handleDeleteAction}
+              style={{ width: "100%", alignItems: "center", justifyContent: "center", paddingVertical: 16 }}
+            >
+              <Text fontFamily="$body" fontWeight="600" fontSize={16} color="#770E0E">
+                Delete folder
+              </Text>
+            </Pressable>
+          )}
           <View style={{ width: "100%", height: 1, backgroundColor: "#E8E4E9" }} />
           <Pressable
             onPress={() => setMoreModalVisible(false)}
@@ -421,19 +419,17 @@ export default function BookmarksScreen() {
           gap={wp(4)}
         >
           <Text fontFamily="$body" fontWeight="700" fontSize={18} textAlign="center">
-            {isFolderView ? `Remove ${selectedPostIds.size} post(s)?` : `Delete ${selectedFolderIds.size} folder(s)?`}
+            Remove from bookmarks?
           </Text>
           <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
-            {isFolderView
-              ? "This will be removed from your saved items. You can bookmark it again anytime."
-              : "Selected folders will be permanently deleted along with all saved posts in them."}
+            This post will be removed from your saved items. You can bookmark it again anytime.
           </Text>
-          <Pressable onPress={handleBulkRemove} disabled={bulkRemoveMutation.isPending || deleteFolderMutation.isPending}>
-            {bulkRemoveMutation.isPending || deleteFolderMutation.isPending ? (
-              <ActivityIndicator size="small" color={colors.DEBIT_RED} />
+          <Pressable onPress={handleBulkRemove} disabled={bulkRemoveMutation.isPending}>
+            {bulkRemoveMutation.isPending ? (
+              <ActivityIndicator size="small" color="#770E0E" />
             ) : (
-              <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
-                {isFolderView ? "Remove" : "Delete"}
+              <Text fontFamily="$body" fontWeight="600" fontSize={16} color="#770E0E">
+                Remove
               </Text>
             )}
           </Pressable>
@@ -445,7 +441,7 @@ export default function BookmarksScreen() {
         </YStack>
       </BaseModal>
 
-      <BaseModal visible={postDeleteModalVisible} onClose={() => setConfirmDeletePostId(null)}>
+      <BaseModal visible={folderDeleteModalVisible} onClose={() => setConfirmDeleteFolderIds(null)}>
         <YStack
           backgroundColor={colors.white}
           borderRadius={32}
@@ -455,53 +451,25 @@ export default function BookmarksScreen() {
           gap={wp(4)}
         >
           <Text fontFamily="$body" fontWeight="700" fontSize={18} textAlign="center">
-            Remove from bookmarks?
+            {confirmDeleteFolderIds && confirmDeleteFolderIds.length > 1
+              ? `Delete ${confirmDeleteFolderIds.length} folders?`
+              : "Delete folder?"}
           </Text>
           <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
-            This will be removed from your saved items. You can bookmark it again anytime.
+            {confirmDeleteFolderIds && confirmDeleteFolderIds.length > 1
+              ? "Selected folders will be permanently deleted along with all saved posts in them."
+              : `"${deleteFolderName}" will be permanently deleted along with all saved posts in it.`}
           </Text>
-          <Pressable onPress={handleConfirmDeletePost} disabled={bulkRemoveMutation.isPending}>
-            {bulkRemoveMutation.isPending ? (
-              <ActivityIndicator size="small" color={colors.DEBIT_RED} />
-            ) : (
-              <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
-                Remove
-              </Text>
-            )}
-          </Pressable>
-          <Pressable onPress={() => setConfirmDeletePostId(null)}>
-            <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
-              Cancel
-            </Text>
-          </Pressable>
-        </YStack>
-      </BaseModal>
-
-      <BaseModal visible={folderDeleteModalVisible} onClose={() => setConfirmDeleteFolderId(null)}>
-        <YStack
-          backgroundColor={colors.white}
-          borderRadius={32}
-          padding={wp(8)}
-          marginHorizontal={wp(6)}
-          alignItems="center"
-          gap={wp(4)}
-        >
-          <Text fontFamily="$body" fontWeight="700" fontSize={18} textAlign="center">
-            Delete folder?
-          </Text>
-          <Text fontFamily="$body" fontWeight="400" fontSize={14} color={colors.subHeader} textAlign="center" lineHeight={20}>
-            &quot;{deleteFolderName}&quot; will be permanently deleted along with all saved posts in it.
-          </Text>
-          <Pressable onPress={handleConfirmDeleteFolder} disabled={deleteFolderMutation.isPending}>
+          <Pressable onPress={handleConfirmDeleteFolders} disabled={deleteFolderMutation.isPending}>
             {deleteFolderMutation.isPending ? (
-              <ActivityIndicator size="small" color={colors.DEBIT_RED} />
+              <ActivityIndicator size="small" color="#770E0E" />
             ) : (
-              <Text fontFamily="$body" fontWeight="600" fontSize={16} color={colors.DEBIT_RED}>
+              <Text fontFamily="$body" fontWeight="600" fontSize={16} color="#770E0E">
                 Delete
               </Text>
             )}
           </Pressable>
-          <Pressable onPress={() => setConfirmDeleteFolderId(null)}>
+          <Pressable onPress={() => setConfirmDeleteFolderIds(null)}>
             <Text fontFamily="$body" fontWeight="500" fontSize={16} color={colors.subHeader}>
               Cancel
             </Text>
@@ -562,7 +530,7 @@ export default function BookmarksScreen() {
                 data={filteredFolderPosts}
                 numColumns={3}
                 keyExtractor={(item, index) => `${item.id}-${index}`}
-                contentContainerStyle={{ paddingLeft: 4, paddingRight: 18, paddingTop: 8, paddingBottom: 20 }}
+                contentContainerStyle={{ paddingLeft: 4, paddingRight: 18, paddingTop: 8, paddingBottom: selectMode && hasSelection ? 110 : 20 }}
                 columnWrapperStyle={{ gap: 2 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -576,13 +544,7 @@ export default function BookmarksScreen() {
                     post={item}
                     size={ITEM_SIZE}
                     onPress={() => handlePostPress(item.id, index)}
-                    onLongPress={() => {
-                      if (selectMode) {
-                        togglePostSelection(item.id);
-                      } else {
-                        handlePostLongPress(item.id);
-                      }
-                    }}
+                    onLongPress={() => handlePostLongPress(item.id)}
                     selected={selectedPostIds.has(item.id)}
                   />
                 )}
@@ -632,13 +594,7 @@ export default function BookmarksScreen() {
                           refetchPosts();
                         }
                       }}
-                      onLongPress={!isAll ? () => {
-                        if (selectMode) {
-                          toggleFolderSelection(item.id);
-                        } else {
-                          handleFolderLongPress(item.id, item.name);
-                        }
-                      } : undefined}
+                      onLongPress={!isAll ? () => handleFolderLongPress(item.id) : undefined}
                     >
                       {isAll && first4.length > 0 ? (
                         <View style={{ width: folderCardWidth, height: folderCardWidth, backgroundColor: colors.lightGrayBg }}>
@@ -758,7 +714,10 @@ export default function BookmarksScreen() {
         </>
       )}
 
-      {/* REMOVE BUTTON BAR — SELECT MODE */}
+      {/* REMOVE BUTTON BAR — SELECT MODE, PINNED TO BOTTOM */}
+      {selectMode && hasSelection && (
+        <View style={{ height: 84 }} />
+      )}
       {selectMode && hasSelection && (
         <XStack
           justifyContent="center"
@@ -768,9 +727,20 @@ export default function BookmarksScreen() {
           backgroundColor={colors.white}
           borderTopWidth={1}
           borderTopColor="#E8E4E9"
+          position="absolute"
+          bottom={0}
+          left={0}
+          right={0}
+          zIndex={10}
         >
           <Pressable
-            onPress={() => setConfirmBulkRemoveVisible(true)}
+            onPress={() => {
+              if (isFolderView) {
+                setConfirmBulkRemoveVisible(true);
+              } else if (selectedFolderIds.size > 0) {
+                setConfirmDeleteFolderIds(Array.from(selectedFolderIds));
+              }
+            }}
             style={{
               width: 219,
               height: 48,

@@ -10,7 +10,7 @@ web-build/
 expo-env.d.ts
 
 serviceAccountZiona.json
-ziona-stagin-1dffb27beb7b.json
+ziona-stagin-*.json
 credentials.json
 
 # Firebase console downloads (raw, unrenamed)

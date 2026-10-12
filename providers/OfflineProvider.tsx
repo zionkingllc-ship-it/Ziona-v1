@@ -22,24 +22,13 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    NetInfo.fetch().then((state) => {
-      const connected = state.isConnected ?? true;
-      setIsConnected(connected);
-      if (!connected) setShowModal(true);
-    }).catch(() => {
-      setIsConnected(true);
-    });
-
+    let wasConnected = true;
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected ?? true;
-      setIsConnected((prev) => {
-        if (prev && !connected) {
-          setShowModal(true);
-        } else if (!prev && connected) {
-          setShowModal(false);
-        }
-        return connected;
-      });
+      setIsConnected(connected);
+      if (wasConnected && !connected) setShowModal(true);
+      else if (!wasConnected && connected) setShowModal(false);
+      wasConnected = connected;
     });
 
     return () => unsubscribe();

@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "511999112847-7qv3pe91npq615jqrns3n7o4hirgqaie.apps.googleusercontent.com",
+          "client_id": "273573551303-bafar3va69072q29jbcgp2l4aivs7mol.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zionking.ziona.staging",
+            "certificate_hash": "dfb697988a5f3d3e4d5e649564d73dad3f1e4830"
+          }
+        },
+        {
+          "client_id": "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -25,7 +33,20 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "273573551303-lhghjjbh4qa1tad0ml3bat95igggfp18.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "273573551303-fpipdq89n28lv7t3la0bsh1n5do0bp89.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zionking.ziona.stagin",
+                "app_store_id": "6815465114"
+              }
+            }
+          ]
         }
       }
     }

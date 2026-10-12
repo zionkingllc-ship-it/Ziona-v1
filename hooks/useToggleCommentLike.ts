@@ -24,12 +24,32 @@ function findRealId(queryClient: ReturnType<typeof useQueryClient>, tempId: stri
   return null;
 }
 
+function readLikedFromCache(queryClient: ReturnType<typeof useQueryClient>, commentId: string): boolean | undefined {
+  const queries = queryClient.getQueriesData({ queryKey: ["postComments"] });
+  for (const [, data] of queries as any[]) {
+    if (!data) continue;
+    const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
+    for (const page of pages) {
+      for (const c of page.comments ?? []) {
+        if (c.id === commentId) return c.viewerState?.liked ?? false;
+        if (c.replies) {
+          for (const r of c.replies) if (r.id === commentId) return r.viewerState?.liked ?? false;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export function useToggleCommentLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (_vars: any, context?: any) => {
-      const wasLiked = context?.preOptimisticWasLiked ?? false;
+    mutationFn: async (_vars: any) => {
+      // NOTE: TanStack Query v5 invokes mutationFn with ONLY the variables.
+      // The onMutate return value goes to onSuccess/onError, never here —
+      // so the like direction must come from the variables themselves.
+      let wasLiked = _vars.isLiked;
       let commentId = _vars.commentId;
 
       if (isTempId(commentId)) {
@@ -39,35 +59,23 @@ export function useToggleCommentLike() {
         }
       }
 
+      if (wasLiked === undefined) {
+        // Caller didn't supply the pre-toggle state. onMutate already applied
+        // the optimistic toggle, so the cache holds the NEW state — invert it.
+        const cached = readLikedFromCache(queryClient, commentId);
+        wasLiked = cached === undefined ? false : !cached;
+      }
+
       return wasLiked ? unlikeComment(commentId) : likeComment(commentId);
     },
 
-    onMutate: async ({ commentId, isLiked }) => {
+    onMutate: async ({ commentId }) => {
       await queryClient.cancelQueries({
         queryKey: ["postComments"],
         exact: false,
       });
 
-      const previousComments = queryClient.getQueryData(["postComments"]);
-
-      let preOptimisticWasLiked = isLiked;
-
-      if (preOptimisticWasLiked === undefined) {
-        const queries = queryClient.getQueriesData({ queryKey: ["postComments"] });
-        for (const [, data] of queries as any[]) {
-          if (!data) continue;
-          const pages = (data as any).pages ?? [{ comments: (data as any).comments }];
-          for (const page of pages) {
-            for (const c of page.comments ?? []) {
-              if (c.id === commentId) preOptimisticWasLiked = c.viewerState?.liked ?? false;
-              if (c.replies) {
-                for (const r of c.replies) if (r.id === commentId) preOptimisticWasLiked = r.viewerState?.liked ?? false;
-              }
-            }
-          }
-          if (preOptimisticWasLiked !== undefined) break;
-        }
-      }
+      const previousQueries = queryClient.getQueriesData({ queryKey: ["postComments"] });
 
       const findAndToggle = (item: any) => {
         if (item.id !== commentId) return item;
@@ -123,7 +131,7 @@ export function useToggleCommentLike() {
         }
       );
 
-      return { previousComments, preOptimisticWasLiked };
+      return { previousQueries };
     },
 
     onSuccess: (response, { commentId }) => {
@@ -143,7 +151,7 @@ export function useToggleCommentLike() {
               },
               stats: {
                 ...item.stats,
-                likesCount: response.commentStats?.likesCount ?? response.stats.likesCount,
+                likesCount: response.commentStats?.likesCount ?? response.stats?.likesCount ?? item.stats?.likesCount,
               },
             };
           };
@@ -180,8 +188,10 @@ export function useToggleCommentLike() {
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previousComments) {
-        queryClient.setQueryData(["postComments"], ctx.previousComments);
+      if (ctx?.previousQueries) {
+        for (const [key, data] of ctx.previousQueries as any[]) {
+          queryClient.setQueryData(key, data);
+        }
       }
     },
   });

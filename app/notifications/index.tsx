@@ -1,6 +1,6 @@
 import { Image as ExpoImage } from "expo-image";
 import { Text, View } from "tamagui";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet } from "react-native";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,7 +15,7 @@ import AuthPrompt from "@/components/ui/AuthPrompt";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useNotificationMuteStore } from "@/store/useNotificationMuteStore";
 import { useToggleFollow } from "@/hooks/useFollow";
-import { resolveDestinationFromNotification, resolveFollowRowHref } from "@/src/services/notifications/notificationNavigation";
+import { isFollowNotification, resolveDestinationFromNotification, resolveFollowRowHref } from "@/src/services/notifications/notificationNavigation";
 import { updateNotificationPreferences } from "@/services/graphQL/queries/actions/notifications";
 
 const filters: { label: string; category?: NotificationCategory }[] = [
@@ -30,7 +30,7 @@ type Filter = (typeof filters)[number];
 function matchesFilter(item: NotificationItem, label: string): boolean {
   switch (label) {
     case "Follows":
-      return item.referenceType === "follow" || item.type === "follow";
+      return isFollowNotification(item);
     case "Mentions":
       return item.referenceType === "mention" || item.type === "mention";
     case "Replies":
@@ -62,7 +62,8 @@ function getColorFromName(name?: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-function getFollowButtonLabel(viewerState?: UserMiniViewerState): string {
+function getFollowButtonLabel(viewerState?: UserMiniViewerState | null, isFollowNotification = false): string {
+  if (isFollowNotification) return viewerState?.isFollowing ? "Friends" : "Follow back";
   if (!viewerState) return "Follow";
   const { isFollowing, isFollowedBy } = viewerState;
   if (isFollowing && isFollowedBy) return "Friends";
@@ -112,10 +113,11 @@ export default function ActivityScreen() {
   const markAsRead = useMarkNotificationAsRead();
   const deleteNotif = useDeleteNotification();
   const [menuItem, setMenuItem] = useState<NotificationItem | null>(null);
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [pendingFollowIds, setPendingFollowIds] = useState<Set<string>>(new Set());
+  const pendingFollowIdsRef = useRef(new Set<string>());
   const mutedUserIds = useNotificationMuteStore((s) => s.mutedUserIds);
   const muteUserLocal = useNotificationMuteStore((s) => s.muteUser);
-  const { mutate: toggleFollow } = useToggleFollow();
+  const { mutateAsync: toggleFollow } = useToggleFollow();
 
   const notifications = useMemo(() => {
     const all: NotificationItem[] = data?.pages?.flatMap((p) => p.items) ?? [];
@@ -195,14 +197,23 @@ export default function ActivityScreen() {
   );
 
   const handleFollowPress = useCallback(
-    (e: any, item: NotificationItem) => {
+    async (e: any, item: NotificationItem) => {
       e.stopPropagation?.();
       markActionPress();
-      if (!item.user?.id || item.user.id === currentUserId) return;
-      const viewerState = item.user.viewerState;
-      if (!viewerState) return;
-      setFollowingIds((prev) => new Set(prev).add(item.user!.id!));
-      toggleFollow({ userId: item.user.id, currentFollowing: viewerState.isFollowing });
+      const userId = item.user?.id;
+      if (!userId || userId === currentUserId || pendingFollowIdsRef.current.has(userId)) return;
+      // Friends is a completed state; following back never toggles into an unfollow.
+      if (item.user?.viewerState?.isFollowing) return;
+      pendingFollowIdsRef.current.add(userId);
+      setPendingFollowIds(new Set(pendingFollowIdsRef.current));
+      try {
+        await toggleFollow({ userId, currentFollowing: false });
+      } catch {
+        Alert.alert("Couldn't follow", "Please try again.");
+      } finally {
+        pendingFollowIdsRef.current.delete(userId);
+        setPendingFollowIds(new Set(pendingFollowIdsRef.current));
+      }
     },
     [currentUserId, toggleFollow, markActionPress],
   );
@@ -210,16 +221,18 @@ export default function ActivityScreen() {
   const renderNotification = useCallback(
     ({ item }: { item: NotificationItem }) => {
       const viewerState = item.user?.viewerState;
-      const isFollowNotif = item.referenceType === "follow" || item.type === "follow";
+      const isFollowNotif = isFollowNotification(item);
       const isSuggestion = item.type === "suggest";
-      const isFollowing = followingIds.has(item.user?.id ?? "");
-      const showFollowBtn = (isFollowNotif || isSuggestion) && item.user?.id && item.user.id !== currentUserId && !!viewerState;
-      const followLabel = isSuggestion ? "Follow" : (viewerState ? getFollowButtonLabel(viewerState) : "Follow");
-      const displayLabel = isFollowing ? "Following" : followLabel;
-      const showMenuButton = !isFollowNotif;
+      const isFollowing = !!viewerState?.isFollowing;
+      const isPending = pendingFollowIds.has(item.user?.id ?? "");
+      const showFollowBtn = (isFollowNotif || isSuggestion) && item.user?.id && item.user.id !== currentUserId;
+      const displayLabel = isSuggestion ? (isFollowing ? "Following" : "Follow") : getFollowButtonLabel(viewerState, isFollowNotif);
 
       return (
-        <Pressable style={styles.activityRow} onPress={() => handleNotificationPress(item)}>
+        <Pressable
+          style={[styles.activityRow, showFollowBtn && styles.activityRowWithFollow]}
+          onPress={() => handleNotificationPress(item)}
+        >
           <NotificationAvatar avatarUrl={item.user?.avatarUrl} username={item.user?.username} />
 
           <View style={styles.activityContent}>
@@ -242,14 +255,12 @@ export default function ActivityScreen() {
           </View>
 
           <View style={styles.rightActions}>
+            <Pressable style={styles.menuButton} hitSlop={10} onPress={(e) => { e.stopPropagation?.(); markActionPress(); setMenuItem(item); }}>
+              <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
+            </Pressable>
             {showFollowBtn && (
-              <Pressable onPress={(e) => handleFollowPress(e, item)} style={[styles.followBtn, isFollowing && styles.followingBtn]}>
-                <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>{displayLabel}</Text>
-              </Pressable>
-            )}
-            {showMenuButton && (
-              <Pressable style={styles.menuButton} hitSlop={10} onPress={(e) => { e.stopPropagation?.(); markActionPress(); setMenuItem(item); }}>
-                <Ionicons name="ellipsis-horizontal" size={17} color="#17131A" />
+              <Pressable accessibilityRole="button" accessibilityLabel={displayLabel} accessibilityState={{ disabled: isPending || isFollowing, busy: isPending }} disabled={isPending || isFollowing} onPress={(e) => { void handleFollowPress(e, item); }} style={[styles.followBtn, isFollowing && styles.followingBtn]}>
+                {isPending ? <ActivityIndicator size="small" color="white" /> : <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>{displayLabel}</Text>}
               </Pressable>
             )}
             {!item.isRead && <View style={styles.notificationDot} />}
@@ -257,7 +268,7 @@ export default function ActivityScreen() {
         </Pressable>
       );
     },
-    [formatTime, handleNotificationPress, handleFollowPress, markActionPress, currentUserId],
+    [formatTime, handleNotificationPress, handleFollowPress, markActionPress, currentUserId, pendingFollowIds],
   );
 
   if (!isAuthenticated) {
@@ -441,6 +452,11 @@ const styles = StyleSheet.create({
     paddingRight: 44,
   },
 
+  activityRowWithFollow: {
+    minHeight: 110,
+    paddingBottom: 16,
+  },
+
   activityContent: {
     flex: 1,
     marginLeft: 9,
@@ -527,7 +543,7 @@ const styles = StyleSheet.create({
     height: 5,
     borderRadius: 3,
     backgroundColor: "#17131A",
-    marginTop: 10,
+    alignSelf: "flex-end",
   },
 
   separator: {

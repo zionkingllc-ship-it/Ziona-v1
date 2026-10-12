@@ -1,5 +1,10 @@
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
+import {
+  TEXT_MAX_LENGTH,
+  effectiveLength,
+  effectiveRemaining,
+} from "@/utils/textMeasure";
 import { TextInput } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import { useState } from "react";
@@ -31,7 +36,7 @@ export default function TextPostCardInput({
 
   value = "",
   onChangeText,
-  maxLength = 500,
+  maxLength = TEXT_MAX_LENGTH,
 
   showInput = true,
 }: Props) {
@@ -42,9 +47,9 @@ export default function TextPostCardInput({
 
   const flapImage = require("@/assets/images/jounalFlap2.png");
 
-  const verseLength = verseText ? verseText.length : 0;
-  const used = value.length + verseLength;
-  const remaining = Math.max(maxLength - used, 0);
+  const verseLength = effectiveLength(verseText);
+  const used = effectiveLength(value) + verseLength;
+  const remaining = effectiveRemaining(value, verseText, maxLength);
 
   return (
     <View flex={1}>
@@ -159,11 +164,14 @@ export default function TextPostCardInput({
               <TextInput
                 value={value}
                 onChangeText={(text) => {
-                  const newUsed = text.length + verseLength;
+                  const newUsed =
+                    effectiveLength(text) + verseLength;
 
                   if (newUsed > maxLength) {
                     //SHOW ERROR
-                    setRemainingError(maxLength - verseLength);
+                    setRemainingError(
+                      Math.max(maxLength - verseLength, 0),
+                    );
                     setErrorVisible(true);
                     return;
                   }
