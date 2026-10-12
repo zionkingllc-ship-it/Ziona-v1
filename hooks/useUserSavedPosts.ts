@@ -5,15 +5,18 @@ interface UseUserSavedPostsOptions {
   folderId?: string;
   mediaType?: string;
   limit?: number;
+  enabled?: boolean;
 }
 
 export function useUserSavedPosts({
   folderId,
   mediaType,
   limit = 20,
+  enabled = true,
 }: UseUserSavedPostsOptions = {}) {
   return useInfiniteQuery({
     queryKey: ["userSavedPosts", folderId, mediaType],
+    enabled,
 
     initialPageParam: undefined as string | undefined,
 

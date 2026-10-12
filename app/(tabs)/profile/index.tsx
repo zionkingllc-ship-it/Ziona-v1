@@ -1,4 +1,6 @@
 import PostThumbnail from "@/components/discover/PostThumbnail";
+import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
+import SuccessModal from "@/components/ui/modals/successModal";
 import Header from "@/components/layout/header";
 import AuthPrompt from "@/components/ui/AuthPrompt";
 import CenteredMessage from "@/components/ui/CenteredMessage";
@@ -9,21 +11,36 @@ import { useUserPosts } from "@/hooks/useUserPost";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useLikedPosts } from "@/services/graphQL/queries/actions/useLikedPosts";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useDeletePost } from "@/hooks/useDeletePost";
 import { queryClient } from "@/lib/queryClient";
 import { FeedPost } from "@/types/feedTypes";
 import { normalizePost } from "@/utils/feed/normalizePost";
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   RefreshControl,
   TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image, Text, XStack, YStack } from "tamagui";
+import { Image, Text, View, XStack, YStack } from "tamagui";
+import { useMutation } from "@tanstack/react-query";
+import { unlikePost } from "@/services/graphQL/mutation/actions";
+import { formatProfileLink } from "@/utils/formatProfileLink";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
@@ -93,7 +110,7 @@ export default function ProfileScreen() {
   const postActive = require("@/assets/images/postIconActive.png");
   const likedPostActive = require("@/assets/images/heartIconActive.png");
   const likedPostInActive = require("@/assets/images/heartIcon.png");
-  const settingIcon = require("@/assets/images/moreIcon.png");
+
   const profileShareIcon = require("@/assets/images/shareProfileIcon.png");
 
   /* ================= VIDEO THUMBNAILS ================= */
@@ -148,7 +165,55 @@ export default function ProfileScreen() {
     }
     return posts;
   }, [activeTab, posts, likedPosts]);
-  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "U";
+  const initials = profile?.username?.slice(0, 2)?.toUpperCase() || "Ur";
+
+  /* ================= DELETE POST ================= */
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleteStatus, setDeleteStatus] = useState<"success" | "failed" | null>(null);
+  const [unlikeTarget, setUnlikeTarget] = useState<string | null>(null);
+  const [unlikeStatus, setUnlikeStatus] = useState<"success" | "failed" | null>(null);
+
+  const { mutate: deletePost } = useDeletePost();
+
+  const { mutate: removeFromLiked } = useMutation({
+    mutationFn: unlikePost,
+    onSuccess: () => {
+      setUnlikeStatus("success");
+      queryClient.invalidateQueries({ queryKey: ["likedPosts"] });
+    },
+    onError: () => {
+      setUnlikeStatus("failed");
+    },
+  });
+
+  const handlePostLongPress = useCallback(
+    (postId: string) => {
+      if (activeTab === "liked") {
+        setUnlikeTarget(postId);
+      } else {
+        setDeleteTarget(postId);
+      }
+    },
+    [activeTab],
+  );
+
+  const confirmDelete = useCallback(() => {
+    if (deleteTarget) {
+      deletePost(deleteTarget, {
+        onSuccess: () => setDeleteStatus("success"),
+        onError: () => setDeleteStatus("failed"),
+      });
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, deletePost]);
+
+  const confirmUnlike = useCallback(() => {
+    if (unlikeTarget) {
+      removeFromLiked(unlikeTarget);
+      setUnlikeTarget(null);
+    }
+  }, [unlikeTarget, removeFromLiked]);
 
   /* ================= PULL TO REFRESH ================= */
 
@@ -175,19 +240,18 @@ export default function ProfileScreen() {
       edges={["top", "left", "right"]}
     >
       {/* HEADER */}
-      <XStack padding={15}>
+      <XStack>
         <Header
           heading={`@${profile?.username || ""}`}
-          imageAfter2={settingIcon}
-          imageAfter={profileShareIcon}
-          imageAfter2Press={() => router.push("/(tabs)/profile/settings")}
+          iconAfter="settings-outline"
+          onIconAfterPress={() => router.push("/settings")}
         />
       </XStack>
 
       {/* PROFILE INFO */}
       <YStack width={"100%"} gap={"$2"} padding={20}>
-        <XStack width={"100%"} justifyContent="space-between">
-          <YStack alignItems="flex-start" gap={"$2"} alignSelf="flex-start">
+        <XStack width={"100%"} justifyContent="space-between" alignItems="flex-start">
+          <YStack flexShrink={1} marginRight={12} alignItems="flex-start" gap={"$2"}>
             {profileAvatarSource ? (
               <Image
                 source={profileAvatarSource}
@@ -197,24 +261,18 @@ export default function ProfileScreen() {
                   borderRadius: 40,
                 }}
                 onError={() => {
-                  console.log(
-                    "[ProfilePage] Avatar load failed, using fallback",
-                  );
                   setProfileAvatarSource(null);
                 }}
               />
             ) : (
-              <LinearGradient
-                colors={["#D396E8", "#9D4C76"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+              <View
                 style={{
                   width: 80,
                   height: 80,
                   borderRadius: 40,
+                  backgroundColor: getColorFromName(profile?.username),
                   alignItems: "center",
                   justifyContent: "center",
-                  marginBottom: 10,
                 }}
               >
                 <Text
@@ -225,10 +283,10 @@ export default function ProfileScreen() {
                 >
                   {initials}
                 </Text>
-              </LinearGradient>
+              </View>
             )}
 
-            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600">
+            <Text fontFamily={"$body"} fontSize={"$5"} fontWeight="600" numberOfLines={2} ellipsizeMode="tail" style={{ flexShrink: 1 }}>
               {profile?.fullName || profile?.username || ""}
             </Text>
           </YStack>
@@ -259,6 +317,29 @@ export default function ProfileScreen() {
         >
           {profile?.bio || "No bio yet"}
         </Text>
+
+        {profile?.bioLink ? (
+          <TouchableOpacity
+            onPress={() => {
+              const url = profile.bioLink!.startsWith("http")
+                ? profile.bioLink!
+                : `https://${profile.bioLink!}`;
+              Linking.openURL(url);
+            }}
+          >
+            <XStack alignItems="center" gap={5} marginTop={4}>
+              <Ionicons name="link-outline" size={16} color={colors.buttonBlue} />
+              <Text
+                fontFamily={"$body"}
+                fontSize={13}
+                color={colors.buttonBlue}
+                fontWeight="500"
+              >
+                {formatProfileLink(profile.bioLink)}
+              </Text>
+            </XStack>
+          </TouchableOpacity>
+        ) : null}
       </YStack>
 
       {/* STATS */}
@@ -339,34 +420,50 @@ export default function ProfileScreen() {
           </YStack>
         ) : filteredPosts.length === 0 ? (
           <YStack marginTop={"$7"}>
-            <CenteredMessage
-              fontFamily={"$body"}
-              text="Your message matters"
-              subtitle="Create with intention. Post with purpose."
-              actionLabel="Create Post"
-              onActionPress={() => router.navigate("/(tabs)/create")}
-              fullScreen={false}
-            />
+            {activeTab === "liked" ? (
+              <CenteredMessage
+                fontFamily={"$body"}
+                text="No liked posts yet"
+                subtitle="Explore the feed and tap the heart icon to like posts you enjoy."
+                actionLabel="Go to Feed"
+                onActionPress={() => router.navigate("/(tabs)/feed")}
+                fullScreen={false}
+              />
+            ) : (
+              <CenteredMessage
+                fontFamily={"$body"}
+                text="Your message matters"
+                subtitle="Create with intention. Post with purpose."
+                actionLabel="Create"
+                onActionPress={() => router.navigate("/(tabs)/create")}
+                fullScreen={false}
+              />
+            )}
           </YStack>
         ) : (
           <FlatList
             data={filteredPosts}
             style={{ flex: 1 }}
             keyExtractor={(item) => item.id}
+            windowSize={5}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={true}
             renderItem={({ item, index }) => (
               <PostThumbnail
                 post={item}
                 size={itemSize}
-                onPress={() =>
-                  router.push({
-                    pathname: "/viewer/[postId]",
-                    params: {
-                      postId: item.id,
-                      source: activeTab === "liked" ? "liked" : "user",
-                      index: String(index),
-                    },
-                  })
-                }
+                  onPress={() =>
+                    router.push({
+                      pathname: "/viewer/[postId]",
+                      params: {
+                        postId: item.id,
+                        source: activeTab === "liked" ? "liked" : "user",
+                        ...(activeTab !== "liked" && user?.id ? { userId: user.id } : {}),
+                        index: String(index),
+                      },
+                    })
+                  }
+                onLongPress={() => handlePostLongPress(item.id)}
               />
             )}
             numColumns={3}
@@ -393,6 +490,40 @@ export default function ProfileScreen() {
           />
         )}
       </YStack>
+      <DeleteConfirmationModal
+        visible={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+
+      <DeleteConfirmationModal
+        visible={unlikeTarget !== null}
+        onClose={() => setUnlikeTarget(null)}
+        onConfirm={confirmUnlike}
+        title="Remove from liked?"
+        message="This post will be removed from your liked list."
+        confirmText="Remove"
+      />
+
+      <SuccessModal
+        visible={deleteStatus !== null}
+        type={deleteStatus === "success" ? "success" : "failed"}
+        title={deleteStatus === "success" ? "Deleted" : "Delete failed"}
+        message={deleteStatus === "success" ? "Post has been deleted." : "Could not delete post. Please try again."}
+        onClose={() => setDeleteStatus(null)}
+        autoClose
+        duration={1500}
+      />
+
+      <SuccessModal
+        visible={unlikeStatus !== null}
+        type={unlikeStatus === "success" ? "success" : "failed"}
+        title={unlikeStatus === "success" ? "Removed" : "Remove failed"}
+        message={unlikeStatus === "success" ? "Post removed from liked list." : "Could not remove post. Please try again."}
+        onClose={() => setUnlikeStatus(null)}
+        autoClose
+        duration={1500}
+      />
     </SafeAreaView>
   );
 }

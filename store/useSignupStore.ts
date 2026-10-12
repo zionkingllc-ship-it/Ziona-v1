@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type SignupFlow = "email" | "google" | null;
+type SignupFlow = "email" | "google" | "apple" | null;
 
 interface SignupState {
   email: string | null;

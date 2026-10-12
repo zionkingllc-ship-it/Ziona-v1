@@ -13,6 +13,7 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
   const {
     toggleBookmark: toggleLocalBookmark,
     setFolders,
+    updateFolderCover,
     folders: localFolders,
   } = useBookmarksStore();
 
@@ -22,10 +23,19 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(true);
   };
 
-  const toggleFolder = (folderId?: string) => {
+  const toggleFolder = (
+    folderId?: string,
+    callbacks?: { onSuccess?: () => void; onError?: () => void },
+    coverUri?: string,
+  ) => {
     if (!folderId) return;
 
     toggleLocalBookmark(postId, folderId);
+
+    if (coverUri) {
+      updateFolderCover(folderId, coverUri);
+    }
+
     toggleSaveMutation.mutate(
       {
         postId,
@@ -33,8 +43,12 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
         folderId,
       },
       {
+        onSuccess: () => {
+          callbacks?.onSuccess?.();
+        },
         onError: () => {
           toggleLocalBookmark(postId, folderId);
+          callbacks?.onError?.();
         },
       },
     );
@@ -42,39 +56,55 @@ export function useBookmarkFlow(postId: string, isSaved: boolean) {
     setFoldersVisible(false);
   };
 
-  const createFolder = (name: string, cover?: string) => {
+  const createFolder = (
+    name: string,
+    thumbnailUri?: string | null,
+    callbacks?: { onSuccess?: () => void; onError?: () => void },
+  ) => {
     createFolderMutation.mutate(
-      { name, cover: cover || undefined },
+      { name },
       {
         onSuccess: (newFolder) => {
+          const folderId = newFolder?.folder?.id;
+          if (!folderId) {
+            callbacks?.onError?.();
+            return;
+          }
           const nextFolders = [
             ...localFolders,
             {
-              id: newFolder.id,
+              id: folderId,
               name,
-              cover: cover || "",
+              cover: thumbnailUri || "",
               createdAt: new Date().toISOString(),
             },
           ];
           setFolders(nextFolders);
 
-        // Save the post to the new folder
-        toggleLocalBookmark(postId, newFolder.id);
+        toggleLocalBookmark(postId, folderId);
         toggleSaveMutation.mutate(
           {
             postId,
-            currentSaved: isSaved,
-            folderId: newFolder.id,
+            currentSaved: false,
+            folderId,
           },
           {
+            onSuccess: () => {
+              setCreateVisible(false);
+              callbacks?.onSuccess?.();
+            },
             onError: () => {
-              toggleLocalBookmark(postId, newFolder.id);
+              toggleLocalBookmark(postId, folderId);
+              callbacks?.onError?.();
             },
           },
         );
-        setCreateVisible(false);
+        },
+        onError: () => {
+          callbacks?.onError?.();
+        },
       },
-    });
+    );
   };
 
   return {

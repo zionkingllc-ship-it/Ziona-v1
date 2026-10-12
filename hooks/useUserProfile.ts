@@ -10,8 +10,10 @@ query GetUserProfile($userId: String!) {
     username
     fullName
     bio
+    bioLink
     avatarUrl
     location
+    createdAt
     hideLikeCount
     stats { followersCount followingCount postsCount }
     recentPosts {
@@ -76,7 +78,7 @@ export function useUserProfile(
   const isBootstrapping = useAuthStore((s) => s.isBootstrapping);
   return useQuery<UserProfile | null>({
     queryKey: ["userProfile", userId],
-    enabled: !!userId && !!token && !isBootstrapping,
+    enabled: !!userId && !!token && !isBootstrapping && options?.enabled !== false,
 
     refetchOnMount: true,
     refetchOnReconnect: true,

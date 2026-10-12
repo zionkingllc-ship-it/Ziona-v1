@@ -7,17 +7,23 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { authApi } from "@/services/api/authApi";
 import { useAsyncStore } from "@/store/useAsyncStore";
 import { useSignupStore } from "@/store/useSignupStore";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Text, XStack, YStack } from "tamagui";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Email() {
   const { wp, hp, fs } = useResponsive();
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
 
   const storedEmail = useSignupStore((s) => s.email);
+  const birthday = useSignupStore((s) => s.birthday);
+  const password = useSignupStore((s) => s.password);
+  const selectedUsername = useSignupStore((s) => s.selectedUsername);
   const setEmail = useSignupStore((s) => s.setEmail);
+  const setFlow = useSignupStore((s) => s.setFlow);
 
   const start = useAsyncStore((s) => s.start);
   const stop = useAsyncStore((s) => s.stop);
@@ -26,56 +32,84 @@ export default function Email() {
   const [email, setLocalEmail] = useState(storedEmail ?? "");
   const [isFocus, setIsFocus] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const isValidEmail = emailRegex.test(email);
 
   const Xspecial = require("@/assets/images/closeSquare.png");
   const mailIcon = require("@/assets/images/mailWithBoder.png");
 
-  const showInvalidFormat = isFocus && email.length > 0 && !isValidEmail;
-
-  const showError = showInvalidFormat || serverError;
+  const showError = (submitted && !isValidEmail) || serverError;
 
   const visualValidity: boolean | undefined =
-    !isFocus && !serverError ? undefined : showError ? false : true;
+    submitted && !serverError ? (!isValidEmail ? false : true) : undefined;
 
   const handleNext = async () => {
-    if (!isValidEmail || isLoading) return;
+    if (isLoading) return;
+
+    if (!isValidEmail) {
+      setSubmitted(true);
+      return;
+    }
+
+    setSubmitted(false);
 
     try {
       start("emailNext");
 
       setServerError(null);
 
-      const result = await authApi.checkEmail(email.trim().toLowerCase());
+      const trimmedEmail = email.trim().toLowerCase();
 
-      if (result.exists) {
+      const result = await authApi.checkEmail(trimmedEmail);
+
+      if (result.exists && edit !== "1") {
         setServerError(result.message || "Email already registered");
+        stop("emailNext");
         return;
       }
 
-      setEmail(email.trim().toLowerCase());
+      setEmail(trimmedEmail);
+      setFlow("email");
+
+      // Editing from OTP: signup data already exists, re-submit signup and
+      // return straight to OTP without repeating birthday/password/username.
+      if (edit === "1" && birthday && password && selectedUsername) {
+        await authApi.signUp({
+          email: trimmedEmail,
+          birthday,
+          username: selectedUsername,
+          password,
+        });
+
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            router.replace({
+              pathname: "/(auth)/verifyOtp",
+              params: { email: trimmedEmail, flow: "signup" },
+            });
+            stop("emailNext");
+          }, 120);
+        });
+        return;
+      }
 
       requestAnimationFrame(() => {
         setTimeout(() => {
           router.push("/(auth)/birthday");
+          stop("emailNext");
         }, 120);
       });
     } catch (err: any) {
-      setServerError(
-        err?.response?.data?.error?.message ||
-          "Unable to verify email, please try again",
-      );
-    } finally {
+      console.error("🟥 EMAIL ERROR:", err?.response?.data || err?.message || err);
+      setServerError(getErrorMessage(err));
       stop("emailNext");
     }
   };
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack paddingLeft={wp(5)}>
-        <Header />
-      </XStack>
+      <Header />
 
       <YStack
         flex={1}
@@ -113,6 +147,7 @@ export default function Email() {
             onChangeText={(text) => {
               setLocalEmail(text);
               setServerError(null);
+              setSubmitted(false);
             }}
             endIconVisible={isFocus}
             isValid={visualValidity}
@@ -120,6 +155,7 @@ export default function Email() {
             onEndIconPress={() => {
               setLocalEmail("");
               setServerError(null);
+              setSubmitted(false);
             }}
           />
 
@@ -139,7 +175,7 @@ export default function Email() {
           text="Next"
           textColor={colors.buttonText}
           color={colors.primaryButton}
-          disabled={!isValidEmail || isLoading}
+          disabled={isLoading}
           loading={isLoading}
           onPress={handleNext}
           style={{

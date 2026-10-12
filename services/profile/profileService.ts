@@ -5,7 +5,10 @@ import {
   uploadFileToStorage,
 } from "@/services/graphQL/mutation/media/mediaUpload";
 import { cleanAvatarUrl } from "@/services/utils/cleanAvatarUrl";
+import { getMimeType } from "@/services/utils/mime";
+import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
 import * as FileSystem from "expo-file-system/legacy";
+import { AppError } from "@/utils/error";
 
 /* =========================
    UPDATE PROFILE
@@ -14,6 +17,7 @@ import * as FileSystem from "expo-file-system/legacy";
 export async function updateProfile(input: {
   fullName?: string;
   bio?: string;
+  bioLink?: string;
   avatarUrl?: string;
   location?: string;
   hideLikeCount?: boolean;
@@ -23,14 +27,15 @@ export async function updateProfile(input: {
   const query = `
 mutation UpdateProfile(
   $bio: String
+  $bioLink: String
   $fullName: String
   $avatarUrl: String
   $location: String
   $hideLikeCount: Boolean
-  
 ) {
   updateProfile(
     bio: $bio
+    bioLink: $bioLink
     fullName: $fullName
     avatarUrl: $avatarUrl
     location: $location
@@ -40,6 +45,7 @@ mutation UpdateProfile(
     profile {
       id
       bio
+      bioLink
       fullName
       username
       avatarUrl
@@ -66,13 +72,13 @@ mutation UpdateProfile(
     ) {
       const dateMatch = error?.message?.match(/Next change on ([\w\s\d,]+)\./);
       throw Object.assign(
-        new Error(error?.message || "Failed to update profile"),
+        new AppError(error?.message || "Failed to update profile", { code: error?.code }),
         {
           rateLimitDate: dateMatch ? dateMatch[1] : null,
         },
       );
     }
-    throw new Error(res?.error?.message || "Failed to update profile");
+    throw new AppError(res?.error?.message || "Failed to update profile");
   }
 
   return res.profile;
@@ -103,16 +109,19 @@ export async function updateUsername(
     }
   `;
 
-  console.log("Updating username:", username);
   const data = await graphqlRequest(mutation, { username });
-  console.log("Update username response:", data);
 
   const res = data?.updateUsername;
 
-  console.log("Result:", res);
-
   if (!res?.success) {
-    throw new Error(res?.message || "Failed to update username");
+    const dateMatch = res?.message?.match(/Next change on ([\w\s\d,]+)\./);
+    throw Object.assign(
+      new AppError(res?.message || "Failed to update username", { code: res?.errorCode }),
+      {
+        errorCode: res?.errorCode,
+        rateLimitDate: dateMatch ? dateMatch[1] : null,
+      },
+    );
   }
 
   return res;
@@ -124,20 +133,21 @@ export async function updateUsername(
 
 export async function updateAvatar(file: { uri: string }) {
   const fileName = file.uri?.split("/").pop() || `avatar-${Date.now()}`;
-  const fileType = "image/jpeg";
+  const fileType = getMimeType(file.uri, "IMAGE");
   const fileInfo = await FileSystem.getInfoAsync(file.uri);
 
   if (!fileInfo.exists) throw new Error("Avatar file does not exist");
+
+  const convertedUri = await convertToSupportedFormat(file.uri, fileType);
+  const compressedUri = await compressImage(convertedUri);
 
   const upload = await requestMediaUpload(
     fileName,
     fileType,
     fileInfo.size || 0,
   );
-  console.log("Upload URL from backend:", upload.uploadUrl);
-  await uploadFileToStorage(upload.uploadUrl, file.uri, fileType);
+  await uploadFileToStorage(upload.uploadUrl, compressedUri, fileType);
   const avatarUrl = cleanAvatarUrl(extractPublicUrl(upload.uploadUrl));
-  console.log("Public avatar URL:", avatarUrl);
 
   const query = `
 mutation UpdateProfile( 
@@ -160,7 +170,7 @@ mutation UpdateProfile(
   const res = data?.updateProfile;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to update avatar");
+    throw new AppError(res?.error?.message || "Failed to update avatar");
   }
 
   return cleanAvatarUrl(res.profile?.avatarUrl) ?? null;

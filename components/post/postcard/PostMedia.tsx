@@ -16,6 +16,7 @@ interface Props {
   isActive: boolean;
   onTogglePlay?: () => void;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
   screenWidth: number;
   screenHeight: number;
   tabBarHeight: number;
@@ -27,6 +28,7 @@ function PostMediaComponent({
   isActive,
   onTogglePlay,
   onLike,
+  onDoubleTapLike,
   screenWidth,
   screenHeight,
   tabBarHeight,
@@ -70,18 +72,24 @@ function PostMediaComponent({
           isPlaying={isPlaying}
           onTogglePlay={onTogglePlay}
           onLike={onLike}
+          onDoubleTapLike={onDoubleTapLike}
           {...mediaProps}
         />
       );
     }
 
     return (
-      <CarouselPostCard post={post} onLike={onLike} {...mediaProps} />
+      <CarouselPostCard
+        post={post}
+        onLike={onLike}
+        onDoubleTapLike={onDoubleTapLike}
+        {...mediaProps}
+      />
     );
   }
 
   if (post.type === "text" || post.type === "bible") {
-    return <TextPostCard post={post} onLike={onLike} />;
+    return <TextPostCard post={post} onLike={onLike} onDoubleTapLike={onDoubleTapLike} />;
   }
 
   return null;

@@ -1,5 +1,7 @@
-import { KeyboardAvoidingView, Platform, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native'
+import { KeyboardAvoidingView, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native'
 import { ReactNode } from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { keyboardBehavior, keyboardOffset } from "@/constants/platform"
 
 type KeyboardAvoidingWrapperProps = {
   children: ReactNode
@@ -9,14 +11,17 @@ type KeyboardAvoidingWrapperProps = {
 
 export function KeyboardAvoidingWrapper({
   children,
-  offset = 8,
+  offset,
   backgroundColor = 'transparent',
 }: KeyboardAvoidingWrapperProps) {
+  const insets = useSafeAreaInsets()
+  const iosOffset = offset ?? insets.top
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={offset}
+      behavior={keyboardBehavior()}
+      keyboardVerticalOffset={keyboardOffset(iosOffset)}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView

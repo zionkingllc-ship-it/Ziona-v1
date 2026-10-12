@@ -14,9 +14,6 @@ export async function publishDraftPost(
     throw new Error("Draft is missing");
   }
 
-  console.log("Draft type:", draft.type);
-  console.log("FULL DRAFT:", JSON.stringify(draft, null, 2));
-
   if (draft.type === "TEXT") {
     return publishTextPost(draft);
   }

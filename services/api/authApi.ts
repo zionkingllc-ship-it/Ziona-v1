@@ -1,19 +1,14 @@
 import { User } from "@/types";
 import { api } from "./client";
+import axios from "axios";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
 
 /* ---------------- DEBUG HELPERS ---------------- */
 
-const log = (...args: any[]) => {
-  console.log("🟦 AUTH API:", ...args);
-};
+const log = (...args: any[]) => {};
 
 const errorLog = (label: string, err: any) => {
-  console.error("🟥 AUTH API ERROR:", label);
-
-  console.log("message:", err?.message);
-  console.log("code:", err?.code);
-  console.log("status:", err?.response?.status);
-  console.log("response:", err?.response?.data);
+  console.error("🟥 AUTH API ERROR:", label, getErrorMessage(err));
 };
 
 export const authApi = {
@@ -91,7 +86,7 @@ export const authApi = {
       log("suggestUsername response:", response.data);
       return response.data?.data?.suggestions ?? [];
     } catch (err: any) {
-      errorLog("suggestUsername failed:", err?.response?.data || err);
+      errorLog("suggestUsername failed:", err);
       throw err;
     }
   },
@@ -161,6 +156,25 @@ export const authApi = {
     }
   },
 
+  getAppleNonce: async (): Promise<{ rawNonce: string; nonce: string; expiresIn: number } | null> => {
+    log("getAppleNonce called");
+    try {
+      const response = await api.post("/auth/apple/nonce");
+
+      log("getAppleNonce response:", response.data);
+
+      const d = response.data?.data ?? response.data;
+      return {
+        rawNonce: d.rawNonce,
+        nonce: d.nonce,
+        expiresIn: d.expiresIn ?? 600,
+      };
+    } catch (err) {
+      errorLog("getAppleNonce failed", err);
+      return null;
+    }
+  },
+
   googleLogin: async (idToken: string) => {
     try {
       log("googleLogin called");
@@ -178,29 +192,89 @@ export const authApi = {
     }
   },
 
+  finalizeUsername: async (username: string) => {
+    try {
+      log("finalizeUsername called");
+
+      const response = await api.post("/auth/finalize-username", {
+        username,
+      });
+
+      log("finalizeUsername response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("finalizeUsername failed", err);
+      throw err;
+    }
+  },
+
+  appleLogin: async (payload: {
+    identityToken: string;
+    rawNonce: string;
+    nonce?: string;
+    user?: {
+      email?: string | null;
+      name?: { firstName?: string | null; lastName?: string | null };
+    };
+  }) => {
+    try {
+      log("appleLogin called");
+
+      const body: Record<string, any> = {
+        identityToken: payload.identityToken,
+        rawNonce: payload.rawNonce,
+      };
+      if (payload.nonce) body.nonce = payload.nonce;
+      if (payload.user?.email || payload.user?.name?.firstName || payload.user?.name?.lastName) {
+        body.user = {};
+        if (payload.user.email) body.user.email = payload.user.email;
+        if (payload.user.name?.firstName || payload.user.name?.lastName) {
+          body.user.name = {};
+          if (payload.user.name.firstName) body.user.name.firstName = payload.user.name.firstName;
+          if (payload.user.name.lastName) body.user.name.lastName = payload.user.name.lastName;
+        }
+      }
+
+      log("appleLogin payload:", JSON.stringify(body));
+
+      const response = await api.post("/auth/apple", body);
+
+      log("appleLogin response:", response.data);
+
+      return response.data;
+    } catch (err: any) {
+      errorLog("appleLogin failed", err);
+      throw err;
+    }
+  },
+
   getMe: async (): Promise<User> => {
     try {
       log("getMe called");
 
       const response = await api.get("/auth/me");
 
-      return response.data;
+      // Backend wraps in { data: ... } — unwrap consistently with other endpoints
+      return response.data?.data ?? response.data;
     } catch (err: any) {
       errorLog("getMe failed", err);
       throw err;
     }
   },
 
-  signOut: async () => {
+  signOut: async (accessToken: string) => {
     try {
       log("signOut called");
 
-      const response = await api.post("/auth/logout");
+      const response = await axios.post(`${api.defaults.baseURL}/auth/logout`, undefined, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 10000,
+      });
 
       log("signOut response:", response?.data);
     } catch (err: any) {
-      errorLog("signOut failed", err);
-      throw err;
+      console.warn("signOut failed (non-critical):", err?.message);
     }
   },
 
@@ -240,11 +314,20 @@ export const authApi = {
     }
   },
 
-  deleteAccount: async () => {
+  deleteAccount: async (payload: { reason: string; detail?: string; acknowledgePermanentDeletion: boolean; password: string }) => {
     try {
-      log("deleteAccount called");
+      log("deleteAccount called", { reason: payload.reason });
 
-      const response = await api.delete("/auth/account");
+      const response = await api({
+        method: "delete",
+        url: "/auth/me",
+        data: {
+          reason: payload.reason,
+          password: payload.password,
+          acknowledgePermanentDeletion: payload.acknowledgePermanentDeletion,
+          ...(payload.detail ? { detail: payload.detail } : {}),
+        },
+      });
 
       log("deleteAccount response:", response.data);
 

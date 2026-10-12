@@ -4,7 +4,7 @@ export function buildMediaItem(m: any): {
   type: "image" | "video";
   url: string;
   thumbnailUrl?: string;
-  
+  sortOrder?: number;
 } | null {
   const url = fixMediaUrl(m?.url);
   if (!url) return null;
@@ -25,5 +25,6 @@ export function buildMediaItem(m: any): {
     type: isVideo ? "video" : "image",
     url,
     thumbnailUrl: isValidThumb ? rawThumb : undefined,
+    sortOrder: m?.sortOrder ?? undefined,
   };
 }

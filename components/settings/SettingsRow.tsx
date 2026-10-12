@@ -30,7 +30,7 @@ export function SettingsRow({
     >
       <XStack alignItems="center" gap="$3" flex={1}>
         {icon}
-        <Text fontFamily="$body" fontSize={14} color={colors.black}>
+        <Text fontFamily="$body" fontWeight={400} fontSize={14} color={colors.black}>
           {label}
         </Text>
       </XStack>

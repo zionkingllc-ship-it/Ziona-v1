@@ -1,3 +1,5 @@
+import type { InfiniteData } from "@tanstack/react-query";
+import type { NotificationsResponse } from "@/services/graphQL/queries/actions/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   FollowersResponse,
@@ -23,7 +25,6 @@ export function useFollowers(userId: string) {
     queryKey: [FOLLOWERS_QUERY_KEY, userId],
     queryFn: async () => {
       const result = await getFollowers(userId);
-      console.log("FOLLOWERS RESULT:", result);
       return result;
     },
     enabled: !!userId,
@@ -35,7 +36,6 @@ export function useFollowing(userId: string) {
     queryKey: [FOLLOWING_QUERY_KEY, userId],
     queryFn: async () => {
       const result = await getFollowing(userId);
-      console.log("FOLLOWING RESULT:", result);
       return result;
     },
     enabled: !!userId,
@@ -46,6 +46,7 @@ export function useFriendsList(search?: string) {
   return useQuery({
     queryKey: [FRIENDS_QUERY_KEY, search],
     queryFn: () => getFriendsList(search),
+    enabled: !!search,
   });
 }
 
@@ -54,7 +55,6 @@ export function useSuggestedCreators() {
     queryKey: [SUGGESTED_QUERY_KEY],
     queryFn: async () => {
       const result = await getSuggestedCreators();
-      console.log("SUGGESTED CREATORS RESULT:", result);
       return result;
     },
   });
@@ -71,6 +71,7 @@ export function useToggleFollow() {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
+    mutationKey: ["followUser"],
     mutationFn: async ({ userId, currentFollowing }: ToggleFollowInput) => {
       return currentFollowing ? unfollowUser(userId) : followUser(userId);
     },
@@ -85,12 +86,37 @@ export function useToggleFollow() {
       toggleFollowStore(ctx.userId, ctx.previous);
     },
 
+    onSuccess: (result, { userId }) => {
+      queryClient.setQueriesData<InfiniteData<NotificationsResponse>>(
+        { queryKey: ["notifications"] },
+        (old) => old ? {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) => item.user?.id === userId ? {
+              ...item,
+              user: {
+                ...item.user,
+                viewerState: {
+                  __typename: "UserMiniViewerState" as const,
+                  isOwner: item.user.viewerState?.isOwner ?? false,
+                  isFollowedBy: item.user.viewerState?.isFollowedBy ?? (item.referenceType === "follow" || item.type === "follow"),
+                  isFollowing: result.following,
+                },
+              },
+            } : item),
+          })),
+        } : old,
+      );
+    },
+
     onSettled: async (_data, _error, variables) => {
       await queryClient.invalidateQueries({ queryKey: [FOLLOWERS_QUERY_KEY, variables.userId] });
       await queryClient.invalidateQueries({ queryKey: [FOLLOWING_QUERY_KEY, variables.userId] });
       await queryClient.invalidateQueries({ queryKey: [FOLLOWING_QUERY_KEY, currentUserId] });
       await queryClient.invalidateQueries({ queryKey: [SUGGESTED_QUERY_KEY] });
       await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      await queryClient.invalidateQueries({ queryKey: [FRIENDS_QUERY_KEY] });
     },
   });
 }

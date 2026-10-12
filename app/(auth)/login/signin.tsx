@@ -2,11 +2,12 @@ import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWra
 import Header from "@/components/layout/header";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import { SimpleButton } from "@/components/ui/centerTextButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable } from "react-native";
+import { Linking, Pressable } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
 import { EyeClosed, Eye } from "@tamagui/lucide-icons";
 
@@ -14,8 +15,10 @@ import { useAsyncStore } from "@/store/useAsyncStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { authApi } from "@/services/api/authApi";
 import { isLoginPasswordValid } from "@/utils/passwordRules";
+import { AppError, getErrorMessage, isAuthError, isNetworkError } from "@/utils/error";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
 export default function SignIn() {
   const { wp, hp, fs } = useResponsive();
@@ -35,7 +38,10 @@ export default function SignIn() {
   const [show, setShow] = useState(false);
 
   const [authError, setAuthError] = useState<string | null>(null);
+  const [emailClientError, setEmailClientError] = useState<string | null>(null);
   const [passwordClientError, setPasswordClientError] = useState<string | null>(null);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendMessage, setSuspendMessage] = useState("");
 
   const isValidEmail = emailRegex.test(email);
   const passwordIsValid = isLoginPasswordValid(password);
@@ -44,13 +50,24 @@ export default function SignIn() {
   const Xspecial = require("@/assets/images/closeSquare.png");
 
   const visualValidEmail: boolean | undefined =
-    !isFocusEmail ? undefined : isValidEmail ? true : false;
+    !emailClientError ? undefined : isValidEmail ? true : false;
 
   const visualValidPassword: boolean | undefined =
-    !isFocusPassword ? undefined : passwordIsValid ? true : false;
+    !passwordClientError ? undefined : passwordIsValid ? true : false;
 
   const handleNext = async () => {
-    if (!isValidEmail || !passwordIsValid || isLoading) return;
+    if (isLoading) return;
+
+    if (!isValidEmail || !passwordIsValid) {
+      setEmailClientError(!isValidEmail ? "Enter a valid email address" : null);
+      setPasswordClientError(
+        !passwordIsValid ? "Enter a valid password" : null,
+      );
+      return;
+    }
+
+    setEmailClientError(null);
+    setPasswordClientError(null);
 
     try {
       start("signin");
@@ -65,9 +82,10 @@ export default function SignIn() {
 
       if (response.requiresOtp) {
         router.push({
-          pathname: "/(auth)/otp",
-          params: { email: email.trim().toLowerCase() },
+          pathname: "/(auth)/verifyOtp",
+          params: { email: email.trim().toLowerCase(), flow: "signin" },
         });
+        stop("signin");
         return;
       }
 
@@ -75,26 +93,27 @@ export default function SignIn() {
         setAuth(response.user, response.tokens);
         router.replace("/(tabs)/feed");
       }
-    } catch {
-      setAuthError("Email or password incorrect");
-    } finally {
+
       stop("signin");
-    }
-  };
-
-  const handlePasswordBlur = () => {
-    setIsFocusPassword(false);
-
-    if (password.length > 0 && !passwordIsValid) {
-      setPasswordClientError("Enter a valid password");
-    } else {
-      setPasswordClientError(null);
+    } catch (error: any) {
+      const message = getErrorMessage(error);
+      if (message.toLowerCase().includes("suspended") || message.toLowerCase().includes("does not exist")) {
+        setSuspendMessage(message);
+        setShowSuspendModal(true);
+      } else if (isAuthError(error)) {
+        setAuthError(message || "Email or password incorrect");
+      } else if (isNetworkError(error)) {
+        setAuthError("Network error. Please check your connection.");
+      } else {
+        setAuthError(message || "An error occurred. Please try again.");
+      }
+      stop("signin");
     }
   };
 
   return (
     <KeyboardAvoidingWrapper>
-      <XStack padding={15}><Header /></XStack>
+      <Header />
       
 
       <YStack
@@ -134,6 +153,7 @@ export default function SignIn() {
             onChangeText={(text) => {
               setEmail(text);
               setAuthError(null);
+              setEmailClientError(null);
             }}
             endIconVisible={isFocusEmail}
             isValid={visualValidEmail}
@@ -141,8 +161,19 @@ export default function SignIn() {
             onEndIconPress={() => {
               setEmail("");
               setAuthError(null);
+              setEmailClientError(null);
             }}
           />
+          {emailClientError && (
+            <Text
+              fontSize={fs(13)}
+              color={colors.errorText}
+              alignSelf="flex-start"
+              marginTop={hp(0.5)}
+            >
+              {emailClientError}
+            </Text>
+          )}
         </YStack>
 
         {/* PASSWORD */}
@@ -156,7 +187,7 @@ export default function SignIn() {
             isFocused={isFocusPassword}
             isValid={visualValidPassword}
             onFocus={() => setIsFocusPassword(true)}
-            onBlur={handlePasswordBlur}
+            onBlur={() => setIsFocusPassword(false)}
             onChangeText={(text) => {
               setPassword(text);
               setPasswordClientError(null);
@@ -213,7 +244,7 @@ export default function SignIn() {
           text="Next"
           textColor={colors.buttonText}
           color={colors.primaryButton}
-          disabled={!isValidEmail || !passwordIsValid || isLoading}
+          disabled={isLoading}
           loading={isLoading}
           onPress={handleNext}
           style={{
@@ -224,6 +255,21 @@ export default function SignIn() {
           textSize={fs(16)}
         />
       </YStack>
+
+      <SuccessModal
+        visible={showSuspendModal}
+        type="warning"
+        autoClose={false}
+        onClose={() => setShowSuspendModal(false)}
+        title="Account issue"
+        message={suspendMessage}
+        withButton
+        buttonText="Appeal"
+        onButtonPress={() => {
+          setShowSuspendModal(false);
+          Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+        }}
+      />
     </KeyboardAvoidingWrapper>
   );
 }

@@ -11,6 +11,7 @@ import { Eye, EyeClosed } from "@tamagui/lucide-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Text, YStack } from "tamagui";
+import { AppError, getErrorMessage } from "@/utils/error";
 
 export default function CreatePassword() {
   const { email, otp } = useLocalSearchParams<{
@@ -21,10 +22,12 @@ export default function CreatePassword() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("Password reset failed");
   const [errorMessage, setErrorMessage] = useState("Your reset code may have expired. Please request a new code.");
+  const [errorType, setErrorType] = useState<"success" | "failed" | "warning" | "softwarning">("failed");
 
   const checks = {
     length: passwordRules.minLength(password),
@@ -34,37 +37,36 @@ export default function CreatePassword() {
 
   const passwordIsValid = isPasswordValid(password);
 
-  const showInvalid = isFocus && password.length > 0 && !passwordIsValid;
+  const showInvalid = attempted && !passwordIsValid;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : showInvalid ? false : true;
+    attempted ? (passwordIsValid ? true : false) : undefined;
 
   const handleSubmit = async () => {
-    if (!passwordIsValid || loading) return;
+    if (!passwordIsValid) {
+      setAttempted(true);
+      return;
+    }
+
+    if (loading) return;
     if (!email || !otp) return;
 
     try {
       setLoading(true);
 
-      console.log("RESET PASSWORD REQUEST");
-      console.log("Email:", email);
-      console.log("OTP:", otp);
-
-      const response = await authApi.confirmPasswordReset({
+      await authApi.confirmPasswordReset({
         email,
         otp,
         newPassword: password,
       });
 
-      console.log("🟢 PASSWORD RESET SUCCESS", response);
-
       router.replace("/(auth)/login/signin");
     } catch (error: any) {
       console.error("🔴 PASSWORD RESET FAILED", error?.response?.data || error);
 
-      const feedback = getNetworkModalCopy(error, "Your reset code may have expired. Please request a new code.");
-      setErrorTitle(feedback.title);
-      setErrorMessage(feedback.message);
+      setErrorTitle(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error));
+      setErrorType("failed");
       setErrorVisible(true);
     } finally {
       setLoading(false);
@@ -108,6 +110,7 @@ export default function CreatePassword() {
           onBlur={() => setIsFocus(false)}
           onChangeText={(text) => {
             setPassword(text);
+            setAttempted(false);
           }}
           endIconVisible={password.length > 0 && isFocus}
           endIcon={
@@ -142,14 +145,14 @@ export default function CreatePassword() {
           loading={loading}
           textColor={colors.white}
           color={colors.primary}
-          disabled={!passwordIsValid}
+          disabled={loading}
           onPress={handleSubmit}
         />
       </YStack>
 
       <SuccessModal
         visible={errorVisible}
-        type="failed"
+        type={errorType}
         autoClose
         duration={3000}
         onClose={() => setErrorVisible(false)}

@@ -10,6 +10,19 @@ web-build/
 expo-env.d.ts
 
 serviceAccountZiona.json
+ziona-stagin-*.json
+credentials.json
+
+# Firebase console downloads (raw, unrenamed)
+GoogleService-Info (1).plist
+google-services (2).json
+GoogleService-Info.dev.plist
+temp.json
+
+# Local-only native output (project uses EAS prebuild / CNG)
+/android/
+/ios/
+*.keystore
 # Native
 *.orig.*
 *.jks
@@ -31,6 +44,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -73,6 +87,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript

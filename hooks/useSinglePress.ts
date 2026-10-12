@@ -7,7 +7,7 @@ type Options = {
 
 export function useSinglePress(options?: Options) {
   const locked = useRef(false);
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const run = useCallback(
     (fn: () => void) => {
@@ -16,10 +16,10 @@ export function useSinglePress(options?: Options) {
       locked.current = true;
       fn();
 
-      if (options?.timeout) {
+      if (options?.timeout !== undefined) {
         timer.current = setTimeout(() => {
           locked.current = false;
-        }, options.timeout);
+        }, options.timeout!);
       }
     },
     [options?.timeout]

@@ -35,8 +35,8 @@ const OtpDigit = forwardRef<TextInput, OtpDigitProps>(
           textContentType="oneTimeCode"
           autoComplete="sms-otp"
           style={{
-            width: 44,
-            height: 48,
+            width: 50,
+            height: 50,
             borderRadius: 8,
             borderWidth: value ? 1.5 : 1,
             borderColor: value ? colors.primary : colors.borderColor,

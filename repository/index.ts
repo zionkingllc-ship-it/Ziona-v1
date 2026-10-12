@@ -1,5 +1,3 @@
-import { mockBibleRepository } from "./mockBibleRepository"
+import { GraphqlBibleRepository } from "./graphql/GraphqlBibleRepository"
 
-export const bibleRepository = mockBibleRepository // rendering dummy data comment here
-
-// export const bibleRepository = apiBibleRepository  //switch to backend uncomment here
+export const bibleRepository = new GraphqlBibleRepository()

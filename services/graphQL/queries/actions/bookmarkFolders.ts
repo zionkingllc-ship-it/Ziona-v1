@@ -1,4 +1,5 @@
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 export interface BookmarkFolder {
   id: string;
@@ -6,6 +7,7 @@ export interface BookmarkFolder {
   createdAt?: string;
   savedCount: number;
   cover?: string;
+  thumbnailUrl?: string;
   posts?: BookmarkPost[];
 }
 
@@ -31,22 +33,8 @@ export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
         id
         name
         savedCount
-        cover
-        posts {
-          id
-          type
-          caption
-          textMessage
-          scripture {
-            text
-          }
-          media {
-            items {
-              url
-              thumbnailUrl
-            }
-          }
-        }
+        createdAt
+        thumbnailUrl
       }
     }
   `;
@@ -54,7 +42,9 @@ export async function getBookmarkFolders(): Promise<BookmarkFolder[]> {
   const data = await graphqlRequest(query, {});
 
   const folders = data?.bookmarkFolders;
+
   if (!folders) {
+    console.error("🔍 [bookmarkFolders] No folders in response, throwing error");
     throw new Error("Failed to fetch bookmark folders");
   }
 
@@ -73,6 +63,7 @@ export async function createBookmarkFolder(name: string) {
           name
           savedCount
           createdAt
+          thumbnailUrl
         }
         error {
           code
@@ -92,6 +83,13 @@ export async function deleteBookmarkFolder(folderId: string) {
     mutation DeleteBookmarkFolder($folderId: String!) {
       deleteBookmarkFolder(folderId: $folderId) {
         success
+        errorCode
+        message
+        error {
+          code
+          message
+          details
+        }
       }
     }
   `;
@@ -100,7 +98,8 @@ export async function deleteBookmarkFolder(folderId: string) {
 
   const res = data?.deleteBookmarkFolder;
   if (!res?.success) {
-    throw new Error("Failed to delete folder");
+    console.error("🔍 [deleteBookmarkFolder] Backend error:", res?.errorCode, res?.message, res?.error);
+    throw new AppError(res?.error?.message || res?.message || "Failed to delete folder", { code: res?.error?.code });
   }
 
   return res;

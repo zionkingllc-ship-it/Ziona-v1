@@ -9,11 +9,13 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { runOnJS } from "react-native-reanimated";
-import { Image, View } from "tamagui";
+import { Image } from "expo-image";
+import { View } from "tamagui";
 
 interface Props {
   post: FeedMediaPost;
   onLike?: () => void;
+  onDoubleTapLike?: () => void;
   heartStyle?: any;
   triggerHeart?: () => void;
   screenWidth: number;
@@ -25,14 +27,18 @@ function CarouselPostCardComponent({
   screenWidth = 400,
   screenHeight = 800,
   onLike,
+  onDoubleTapLike,
+  heartStyle,
   triggerHeart,
 }: Props) {
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const mediaItems = (post?.media ?? []).filter(
-    (item) => item?.type === "image" && item?.url,
-  );
+  const rawMedia = (post?.media ?? [])
+    .filter((item) => item?.type === "image" && item?.url);
+  const mediaItems = rawMedia.some((m: any) => m.sortOrder !== undefined)
+    ? [...rawMedia].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : rawMedia;
 
   if (!mediaItems?.length) {
     return (
@@ -40,15 +46,11 @@ function CarouselPostCardComponent({
     );
   }
 
-  const handleLike = () => {
-    if (onLike) onLike();
-    if (triggerHeart) triggerHeart();
-  };
-
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd(() => {
-      runOnJS(handleLike)();
+      if (onDoubleTapLike) runOnJS(onDoubleTapLike)();
+      if (triggerHeart) runOnJS(triggerHeart)();
     });
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -59,9 +61,8 @@ function CarouselPostCardComponent({
   const renderImage = ({ item }: { item: any }) => (
     <Image
       source={{ uri: item.url }}
-      width={screenWidth}
-      height={screenHeight}
-      resizeMode="contain"
+      style={{ width: screenWidth, height: screenHeight }}
+      contentFit="contain"
     />
   );
 
@@ -86,7 +87,7 @@ function CarouselPostCardComponent({
         {mediaItems.length > 1 && (
           <View
             position="absolute"
-            bottom={20}
+            bottom={120}
             alignSelf="center"
             flexDirection="row"
             gap={6}
@@ -94,11 +95,11 @@ function CarouselPostCardComponent({
             {mediaItems.map((_, i) => (
               <View
                 key={i}
-                width={activeIndex === i ? 8 : 6}
+                width={activeIndex === i ? 8 : 8}
                 height={activeIndex === i ? 8 : 6}
                 borderRadius={4}
                 backgroundColor={
-                  activeIndex === i ? colors.white : "rgba(255,255,255,0.5)"
+                  activeIndex === i ? colors.primary : "rgba(255,255,255,0.5)"
                 }
               />
             ))}
@@ -108,6 +109,21 @@ function CarouselPostCardComponent({
           colors={["transparent", "rgba(0,0,0,0.3)"]}
           style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100 }}
         />
+        <Animated.View
+          style={[
+            {
+              position: "absolute",
+              alignSelf: "center",
+              top: screenHeight * 0.4,
+            },
+            heartStyle,
+          ]}
+        >
+          <Animated.Image
+            source={require("@/assets/images/likeIcon2.png")}
+            style={{ width: 80, height: 80 }}
+          />
+        </Animated.View>
       </View>
     </GestureDetector>
   );

@@ -9,17 +9,12 @@ export const passwordRules = {
 export const isPasswordValid = (password: string) =>
   Object.values(passwordRules).every((rule) => rule(password))
 
-export const loginPasswordRules = {
-  minLength: (password: string) => password.length >= 8,
-  hasUppercase: (password: string) => /[A-Z]/.test(password),
-  hasLowercase: (password: string) => /[a-z]/.test(password),
-  hasNumber: (password: string) => /[0-9]/.test(password),
-  hasSpecial: (password: string) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
-};
-
+// Login validation must match signup rules (isPasswordValid)
+// to avoid rejecting valid passwords created before any rule changes.
+// Using stricter-than-signup rules would lock users out of their accounts.
 export const isLoginPasswordValid = (password: string) =>
-  loginPasswordRules.minLength(password) &&
-  loginPasswordRules.hasUppercase(password) &&
-  loginPasswordRules.hasLowercase(password) &&
-  loginPasswordRules.hasNumber(password) &&
-  loginPasswordRules.hasSpecial(password);
+  password.length >= 8 &&
+  password.length <= 20 &&
+  /[a-zA-Z]/.test(password) &&
+  /\d/.test(password) &&
+  /[!@#$%^&*(),.?":{}|<>]/.test(password);

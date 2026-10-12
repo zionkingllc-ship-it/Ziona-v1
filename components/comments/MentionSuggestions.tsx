@@ -1,11 +1,13 @@
-import { Image, Text, View, XStack } from "tamagui";
+import { Text, View } from "tamagui";
 import { TouchableOpacity, ActivityIndicator } from "react-native";
 import colors from "@/constants/colors";
 import { useMemo, useState, useEffect } from "react";
 import { FlatList, StyleSheet } from "react-native";
-import { searchUsers } from "@/services/graphQL/queries/follow";
+import { getFollowers, getFollowing } from "@/services/graphQL/queries/follow";
+import { useAuthStore } from "@/store/useAuthStore";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 
-interface MentionUser {
+export interface MentionUser {
   id: string;
   username: string;
   avatarUrl?: string | null;
@@ -14,27 +16,52 @@ interface MentionUser {
 interface Props {
   searchText: string;
   onSelectUser: (user: MentionUser) => void;
+  onViewProfile?: (user: MentionUser) => void;
 }
 
-export function MentionSuggestions({ searchText, onSelectUser }: Props) {
+export function MentionSuggestions({ searchText, onSelectUser, onViewProfile }: Props) {
   const [users, setUsers] = useState<MentionUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   useEffect(() => {
-    if (searchText.length === 0) {
+    if (!currentUserId) {
       setUsers([]);
       return;
     }
 
     setIsLoading(true);
-    searchUsers(searchText)
-      .then(setUsers)
-      .catch(() => setUsers([]))
-      .finally(() => setIsLoading(false));
-  }, [searchText]);
+    const userId = currentUserId;
+    const query = searchText.toLowerCase().trim();
+
+    async function loadConnections() {
+      const [followersRes, followingRes] = await Promise.all([
+        getFollowers(userId),
+        getFollowing(userId),
+      ]);
+
+      const merged = new Map<string, MentionUser>();
+      for (const u of followersRes.users) {
+        if (!query || u.username.toLowerCase().includes(query)) {
+          merged.set(u.id, { id: u.id, username: u.username, avatarUrl: u.avatarUrl });
+        }
+      }
+      for (const u of followingRes.users) {
+        if (!query || u.username.toLowerCase().includes(query)) {
+          merged.set(u.id, { id: u.id, username: u.username, avatarUrl: u.avatarUrl });
+        }
+      }
+
+      setUsers(Array.from(merged.values()));
+    }
+
+    loadConnections().catch(() => setUsers([])).finally(() => setIsLoading(false));
+  }, [searchText, currentUserId]);
 
   const displayUsers = useMemo(() => {
-    return users.slice(0, 8);
+    const sliced = users.slice(0, 8);
+    return sliced;
   }, [users]);
 
   if (isLoading) {
@@ -64,21 +91,19 @@ export function MentionSuggestions({ searchText, onSelectUser }: Props) {
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.userItem}
             onPress={() => onSelectUser(item)}
+            onLongPress={() => onViewProfile?.(item)}
           >
-            <Image
-              source={
-                item.avatarUrl
-                  ? { uri: item.avatarUrl }
-                  : { uri: "https://i.pravatar.cc/100?d=mp" }
-              }
-              width={40}
-              height={40}
-              borderRadius={20}
+            <AvatarWithInitials
+              uri={item.avatarUrl}
+              name={item.username}
+              size={40}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
             />
             <Text
               fontFamily="$body"

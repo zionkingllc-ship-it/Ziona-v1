@@ -1,29 +1,39 @@
 import BaseModal from "@/components/ui/modals/BaseModal";
+import { AvatarWithInitials } from "@/components/ui/AvatarWithInitials";
 import colors from "@/constants/colors";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { usePostComments } from "@/hooks/usePostComments";
 import { useToggleCommentLike } from "@/hooks/useToggleCommentLike";
-import { useCommentReplies } from "@/hooks/useCommentReplies";
+import { useCommentReplies, useReplyLike } from "@/hooks/useCommentReplies";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import GuestProfileContent from "@/components/profile/GuestProfileContent";
+import MentionText from "./MentionText";
 import { MentionSuggestions } from "./MentionSuggestions";
 import { Heart } from "@tamagui/lucide-icons";
-import { Comment } from "@/services/graphQL/mutation/actions/comments";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { Comment, deleteComment as deleteCommentService } from "@/services/graphQL/mutation/actions/comments";
+import { reportContent, ReportReason } from "@/services/graphQL/mutation/actions/report";
+import { patchCommentCountAcrossQueries } from "@/services/graphQL/queries/actions/commentCache";
+import OptionsModal from "@/components/ui/modals/OptionsModal";
+import ConfirmReportModal from "@/components/ui/modals/ConfirmReportModal";
+import ReportReasonsModal from "@/components/ui/modals/ReportReasonsModal";
+import OtherReportModal from "@/components/ui/modals/OtherReportModal";
+import SuccessModal from "@/components/ui/modals/successModal";
+import DeleteConfirmationModal from "@/components/ui/modals/DeleteConfirmationModal";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { router } from "expo-router";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   Dimensions,
   FlatList,
+  InteractionManager,
   Keyboard,
   LayoutChangeEvent,
-  Platform,
   Pressable,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 
 const { height } = Dimensions.get("window");
@@ -35,7 +45,6 @@ type Props = {
   postId: string;
 };
 
-const EMOJIS = ["😀", "🥰", "😂", "😳", "😌", "😁", "🥺", "😏", "😬"];
 
 interface MentionUser {
   id: string;
@@ -48,7 +57,17 @@ interface ReplyState {
   username: string | null;
 }
 
+type MenuTarget =
+  | { type: "comment"; id: string; isOwner: boolean }
+  | { type: "reply"; commentId: string; replyId: string; isOwner: boolean }
+  | null;
+
 export function CommentsSheet({ visible, onClose, postId }: Props) {
+  const { requireAuth, AuthModal } = useRequireAuth();
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const goToProfile = useCallback((userId: string) => {
+    requireAuth(() => setViewingUserId(userId));
+  }, [requireAuth]);
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [bottomHeight, setBottomHeight] = useState(10);
@@ -57,22 +76,92 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
   const [failedAvatarUrls, setFailedAvatarUrls] = useState<string[]>([]);
   const [mentionSearch, setMentionSearch] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<ReplyState>({ commentId: null, username: null });
+  const [menuTarget, setMenuTarget] = useState<MenuTarget>(null);
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [reasonsVisible, setReasonsVisible] = useState(false);
+  const [otherVisible, setOtherVisible] = useState(false);
+  const [reportSuccessVisible, setReportSuccessVisible] = useState(false);
+  const [reportFailedVisible, setReportFailedVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MenuTarget>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const queryClient = useQueryClient();
 
   const inputRef = useRef<TextInput>(null);
 
-  const keyboardHeight = useSharedValue(0);
+  useEffect(() => {
+    const showEvents = [
+      Keyboard.addListener("keyboardDidShow", (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      }),
+      Keyboard.addListener("keyboardWillShow", (event) => {
+        setKeyboardHeight(event.endCoordinates.height);
+      }),
+    ];
+    const hideEvents = [
+      Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0)),
+      Keyboard.addListener("keyboardWillHide", () => setKeyboardHeight(0)),
+    ];
+
+    return () => {
+      showEvents.forEach((subscription) => subscription.remove());
+      hideEvents.forEach((subscription) => subscription.remove());
+    };
+  }, []);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = usePostComments(postId, visible);
   const createCommentMutation = useCreateComment();
   const toggleLikeMutation = useToggleCommentLike();
+  const replyLikeMutation = useReplyLike();
 
-  const comments = data?.pages.flatMap((page) => page.comments) || [];
+  const deleteMutation = useMutation({
+    mutationFn: (commentId: string) => deleteCommentService(commentId),
+    onSuccess: (_data, commentId) => {
+      queryClient.setQueryData(["postComments", postId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            comments: page.comments
+              .filter((c: any) => c.id !== commentId)
+              .map((c: any) => {
+                const hadReply = (c.replies || []).some((r: any) => r.id === commentId);
+                return {
+                  ...c,
+                  replies: (c.replies || []).filter((r: any) => r.id !== commentId),
+                  stats: hadReply
+                    ? { ...c.stats, repliesCount: Math.max(0, (c.stats?.repliesCount || 0) - 1) }
+                    : c.stats,
+                };
+              }),
+          })),
+        };
+      });
+      patchCommentCountAcrossQueries(queryClient, { postId, delta: -1 });
+    },
+  });
+
+  const comments = data?.pages?.flatMap((page) => page.comments) || [];
+
+  const mentionMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of comments) {
+      if (c.user?.username && c.user?.id) map[c.user.username] = c.user.id;
+      for (const r of c.replies || []) {
+        if (r.user?.username && r.user?.id) map[r.user.username] = r.user.id;
+      }
+    }
+    return map;
+  }, [comments]);
 
   const detectMention = useCallback((text: string) => {
     const lastAtIndex = text.lastIndexOf("@");
     if (lastAtIndex === -1) return null;
     const textAfterAt = text.slice(lastAtIndex + 1);
-    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) return null;
+    if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) {
+      return null;
+    }
     return textAfterAt;
   }, []);
 
@@ -90,28 +179,30 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
       setInputValue(newText);
     }
     setMentionSearch(null);
-    inputRef.current?.focus();
+    InteractionManager.runAfterInteractions(() => {
+      inputRef.current?.focus();
+    });
   }, [inputValue]);
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      keyboardHeight.value = withTiming(e.endCoordinates.height, { duration: 250 });
-    });
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      keyboardHeight.value = withTiming(0, { duration: 250 });
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
+  const toggleLike = (commentId: string, isLiked?: boolean) => {
+    if (toggleLikeMutation.isPending) return;
+    let liked = isLiked;
+    if (liked === undefined) {
+      const comment = comments.find((c: any) => c.id === commentId);
+      liked = comment?.viewerState?.liked ?? false;
+    }
+    toggleLikeMutation.mutate({ commentId, isLiked: !!liked });
+  };
 
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: Platform.OS === "android" ? -keyboardHeight.value : 0 }],
-  }));
-
-  const toggleLike = (commentId: string, currentLiked: boolean) => {
-    toggleLikeMutation.mutate({ commentId, currentLiked });
+  const toggleReplyLike = (commentId: string, replyId: string, isLiked?: boolean) => {
+    if (replyLikeMutation.isPending) return;
+    let liked = isLiked;
+    if (liked === undefined) {
+      const parent = comments.find((c: any) => c.id === commentId);
+      const reply = parent?.replies?.find((r: any) => r.id === replyId);
+      liked = reply?.viewerState?.liked ?? false;
+    }
+    replyLikeMutation.mutate({ postId, commentId, replyId, isLiked: !!liked });
   };
 
   const startReply = (commentId: string, username: string) => {
@@ -125,28 +216,36 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     setInputValue("");
   };
 
-  const addComment = () => {
-    if (!inputValue.trim()) return;
-
+  const addComment = useCallback(() => {
     const text = inputValue.trim();
+    if (!text) return;
+
+    inputRef.current?.blur();
+    Keyboard.dismiss();
+
+    const parentId = replyingTo.commentId;
+    const prevReplying = { ...replyingTo };
     setInputValue("");
     setReplyingTo({ commentId: null, username: null });
-    inputRef.current?.blur();
+    setMentionSearch(null);
 
     createCommentMutation.mutate(
-      { postId, text, parentCommentId: replyingTo.commentId || undefined },
+      { postId, text, parentCommentId: parentId || undefined },
       {
-        onError: () => {
+        onSuccess: (res) => {
+          console.log("[CommentsSheet] createComment success", res);
+        },
+        onError: (err: any) => {
+          console.log("[CommentsSheet] createComment error", err?.message, err);
           setInputValue(text);
+          setReplyingTo(prevReplying);
+          requestAnimationFrame(() => {
+            inputRef.current?.focus();
+          });
         },
       },
     );
-  };
-
-  const addEmoji = (emoji: string) => {
-    if (inputRef.current) inputRef.current.focus();
-    setInputValue((prev) => prev + emoji);
-  };
+  }, [inputValue, replyingTo, postId, createCommentMutation]);
 
   const onBottomLayout = (e: LayoutChangeEvent) => {
     setBottomHeight(e.nativeEvent.layout.height);
@@ -164,47 +263,96 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
     });
   };
 
+  const openMenu = (target: MenuTarget) => {
+    requireAuth(() => setMenuTarget(target));
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.type === "comment" ? deleteTarget.id : deleteTarget.replyId;
+    deleteMutation.mutate(id);
+    setDeleteTarget(null);
+  };
+
+  const submitReport = (reason: ReportReason, description?: string) => {
+    const commentId =
+      menuTarget?.type === "comment"
+        ? menuTarget.id
+        : menuTarget?.type === "reply"
+          ? menuTarget.replyId
+          : undefined;
+    reportContent(reason, postId, commentId, description)
+      .then(() => {
+        setReportSuccessVisible(true);
+      })
+      .catch(() => {
+        setReportFailedVisible(true);
+      });
+  };
+
   return (
     <BaseModal visible={visible} onClose={onClose} alignBottom>
-      <Animated.View
-        style={[
-          { height: height * 0.7, backgroundColor: "white", borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: "hidden" },
-          sheetAnimatedStyle,
-        ]}
+      <View
+        onTouchStart={(event) => event.stopPropagation()}
+        style={{
+          height: height * 0.7,
+          backgroundColor: "white",
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+          overflow: "visible",
+          zIndex: 100000,
+          elevation: 100000,
+        }}
       >
-        <YStack padding="$4" borderBottomWidth={1} borderColor="#eee" alignItems="center">
-          <Text fontFamily={"$body"} fontWeight="600" fontSize="$4">
-            Comments
-          </Text>
-        </YStack>
-
         <View style={{ flex: 1 }}>
-          <FlatList
-            data={comments}
-            keyExtractor={(item) => item.id}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16, paddingBottom: bottomHeight }}
-            renderItem={({ item }) => (
-              <CommentItem
-                comment={item}
-                expandedComments={expandedComments}
-                setExpandedComments={setExpandedComments}
-                expandedReplies={expandedReplies}
-                toggleReplies={toggleReplies}
-                failedAvatarUrls={failedAvatarUrls}
-                setFailedAvatarUrls={setFailedAvatarUrls}
-                toggleLike={toggleLike}
-                startReply={startReply}
-                toggleLikeMutation={toggleLikeMutation}
-              />
-            )}
-            onEndReached={() => hasNextPage && fetchNextPage()}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ padding: 10 }} /> : null}
-          />
+          <YStack padding="$4" borderBottomWidth={1} borderColor="#eee" alignItems="center">
+            <Text fontFamily={"$body"} fontWeight="600" fontSize="$4">
+              Comments
+            </Text>
+          </YStack>
+
+          <View style={{ flex: 1 }}>
+            <FlatList
+              data={comments}
+              keyExtractor={(item) => item.id}
+              keyboardDismissMode="none"
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={{ padding: 16, paddingBottom: bottomHeight }}
+              renderItem={({ item }) => (
+                <CommentItem
+                  comment={item}
+                  mentionMap={mentionMap}
+                  expandedComments={expandedComments}
+                  setExpandedComments={setExpandedComments}
+                  expandedReplies={expandedReplies}
+                  toggleReplies={toggleReplies}
+                  failedAvatarUrls={failedAvatarUrls}
+                  setFailedAvatarUrls={setFailedAvatarUrls}
+                  toggleLike={toggleLike}
+                  toggleReplyLike={toggleReplyLike}
+                  startReply={startReply}
+                  toggleLikeMutation={toggleLikeMutation}
+                  onViewProfile={goToProfile}
+                  onOpenMenu={openMenu}
+                />
+              )}
+              onEndReached={() => hasNextPage && fetchNextPage()}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={isFetchingNextPage ? <ActivityIndicator style={{ padding: 10 }} /> : null}
+            />
+          </View>
         </View>
 
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: keyboardHeight - 27,
+            zIndex: 10,
+            elevation: 10,
+          }}
+        >
         <YStack borderTopWidth={1} borderColor="#eee" onLayout={onBottomLayout}>
           {replyingTo.username && (
             <XStack paddingHorizontal="$3" paddingVertical="$2" backgroundColor="#f5f5f5" gap="$2" alignItems="center">
@@ -216,60 +364,148 @@ export function CommentsSheet({ visible, onClose, postId }: Props) {
           )}
 
           {mentionSearch !== null && (
-            <MentionSuggestions searchText={mentionSearch} onSelectUser={handleSelectUser} />
+            <MentionSuggestions
+              searchText={mentionSearch}
+              onSelectUser={handleSelectUser}
+              onViewProfile={(user) => requireAuth(() => router.push(`/guest?userId=${user.id}`))}
+            />
           )}
 
-          <XStack
-            padding="$1"
-            gap="$2"
-            alignItems="center"
-            backgroundColor="#FAF9FA"
-            borderWidth={1}
-            borderColor="#EEEBEF"
-            marginHorizontal={10}
-            paddingHorizontal={14}
-            borderRadius={8}
-            marginTop={10}
-            marginBottom={isFocused ? 10 : 20}
-            minHeight={43}
-          >
-            <TextInput
-              ref={inputRef}
-              multiline
-              placeholder={replyingTo.username ? `Reply to @${replyingTo.username}...` : "Join the conversation..."}
-              placeholderTextColor="#836F8B"
-              value={inputValue}
-              onChangeText={handleTextChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              maxLength={500}
-              style={{ flex: 1, fontFamily: "$body" }}
-            />
-            <TouchableOpacity onPress={addComment} disabled={createCommentMutation.isPending || !inputValue.trim()}>
-              <Image
-                source={require("@/assets/images/sendIcon.png")}
-                width={30}
-                height={30}
-                opacity={createCommentMutation.isPending || !inputValue.trim() ? 0.5 : 1}
+          <View style={{ marginHorizontal: 10, marginTop: 10, marginBottom: isFocused ? 10 : 20 }}>
+            <XStack
+              padding="$1"
+              gap="$2"
+              alignItems="center"
+              backgroundColor="#FAF9FA"
+              borderWidth={1}
+              borderColor="#EEEBEF"
+              paddingHorizontal={14}
+              borderRadius={8}
+              minHeight={43}
+            >
+              <TextInput
+                ref={inputRef}
+                multiline
+                placeholder={replyingTo.username ? `Reply to @${replyingTo.username}...` : "Join the conversation..."}
+                placeholderTextColor="#836F8B"
+                value={inputValue}
+                onChangeText={handleTextChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                maxLength={500}
+                blurOnSubmit={false}
+                style={{ flex: 1, fontFamily: "$body" }}
               />
-            </TouchableOpacity>
-          </XStack>
-
-          <XStack paddingHorizontal="$3" paddingVertical="$2" gap="$2" flexWrap="wrap" justifyContent="flex-start">
-            {EMOJIS.map((emoji) => (
-              <Pressable key={emoji} onPress={() => addEmoji(emoji)} hitSlop={8}>
-                <Text fontSize={24}>{emoji}</Text>
+              <Pressable
+                onPress={addComment}
+                disabled={createCommentMutation.isPending || !inputValue.trim()}
+                style={{ padding: 4 }}
+                hitSlop={8}
+              >
+                <Image
+                  source={require("@/assets/images/sendIcon.png")}
+                  width={30}
+                  height={30}
+                  opacity={createCommentMutation.isPending || !inputValue.trim() ? 0.5 : 1}
+                />
               </Pressable>
-            ))}
-          </XStack>
+            </XStack>
+          </View>
+
         </YStack>
-      </Animated.View>
+        </View>
+      </View>
+
+      {viewingUserId && (
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, backgroundColor: colors.white }}>
+          <GuestProfileContent userId={viewingUserId} onBack={() => setViewingUserId(null)} />
+        </View>
+      )}
+
+      <OptionsModal
+        visible={!!menuTarget}
+        onClose={() => setMenuTarget(null)}
+        onReportPost={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onReportComment={() => {
+          setMenuTarget(null);
+          setConfirmVisible(true);
+        }}
+        onDelete={() => {
+          setDeleteTarget(menuTarget);
+          setMenuTarget(null);
+        }}
+        isOwner={menuTarget?.type === "comment" ? menuTarget.isOwner : menuTarget?.isOwner}
+      />
+
+      <ConfirmReportModal
+        visible={confirmVisible}
+        contentType="comment"
+        onClose={() => setConfirmVisible(false)}
+        onConfirm={() => {
+          setConfirmVisible(false);
+          setReasonsVisible(true);
+        }}
+      />
+
+      <ReportReasonsModal
+        visible={reasonsVisible}
+        onClose={() => setReasonsVisible(false)}
+        onSelectReason={(reason) => {
+          setReasonsVisible(false);
+          submitReport(reason as ReportReason);
+        }}
+        onSelectOther={() => {
+          setReasonsVisible(false);
+          setOtherVisible(true);
+        }}
+      />
+
+      <OtherReportModal
+        visible={otherVisible}
+        onClose={() => setOtherVisible(false)}
+        onSubmit={(description) => {
+          setOtherVisible(false);
+          submitReport("OTHER" as ReportReason, description);
+        }}
+      />
+
+      <SuccessModal
+        visible={reportSuccessVisible}
+        onClose={() => setReportSuccessVisible(false)}
+        title="Report Submitted"
+        message="Thank you for your report. We'll review it shortly."
+        autoClose
+      />
+
+      <SuccessModal
+        visible={reportFailedVisible}
+        onClose={() => setReportFailedVisible(false)}
+        title="Something went wrong"
+        message="Please try again later."
+        type="failed"
+        autoClose
+      />
+
+      <DeleteConfirmationModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment? This cannot be undone."
+        confirmText="Delete"
+      />
+
+      {AuthModal}
     </BaseModal>
   );
 }
 
 function CommentItem({
   comment,
+  mentionMap,
   expandedComments,
   setExpandedComments,
   expandedReplies,
@@ -277,53 +513,54 @@ function CommentItem({
   failedAvatarUrls,
   setFailedAvatarUrls,
   toggleLike,
+  toggleReplyLike,
   startReply,
   toggleLikeMutation,
+  onViewProfile,
+  onOpenMenu,
 }: {
   comment: Comment;
+  mentionMap: Record<string, string>;
   expandedComments: Set<string>;
   setExpandedComments: React.Dispatch<React.SetStateAction<Set<string>>>;
   expandedReplies: Set<string>;
   toggleReplies: (id: string) => void;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string, liked: boolean) => void;
+  toggleLike: (id: string, isLiked?: boolean) => void;
+  toggleReplyLike: (commentId: string, replyId: string, isLiked?: boolean) => void;
   startReply: (id: string, username: string) => void;
   toggleLikeMutation: any;
+  onViewProfile: (userId: string) => void;
+  onOpenMenu: (target: MenuTarget) => void;
 }) {
   const isExpanded = expandedComments.has(comment.id);
   const areRepliesExpanded = expandedReplies.has(comment.id);
   const shouldTruncate = comment.text.length > 80;
   const displayText = isExpanded || !shouldTruncate ? comment.text : comment.text.slice(0, 80) + "...";
 
-  const handleAvatarError = (url: string | undefined | null) => {
-    if (url) {
-      setFailedAvatarUrls((prev) => Array.from(new Set([...prev, url])));
-    }
-  };
-
   return (
     <View paddingVertical="$3" borderBottomWidth={1} borderBottomColor="#f0f0f0">
       <XStack justifyContent="space-between">
         <XStack gap="$2" flex={1}>
-          <Image
-            source={
-              comment.user?.avatarUrl && comment.user.avatarUrl.trim() && !failedAvatarUrls.includes(comment.user.avatarUrl)
-                ? { uri: comment.user.avatarUrl }
-                : { uri: "https://i.pravatar.cc/100?d=mp" }
-            }
-            width={36}
-            height={36}
-            borderRadius={18}
-            onError={() => handleAvatarError(comment.user?.avatarUrl)}
-          />
+          <Pressable onPress={() => comment.user?.id && onViewProfile(comment.user.id)}>
+            <AvatarWithInitials
+              uri={comment.user?.avatarUrl}
+              name={comment.user?.username}
+              size={36}
+              failedUris={failedAvatarUrls}
+              setFailedUris={setFailedAvatarUrls}
+            />
+          </Pressable>
           <YStack flex={1}>
             <XStack gap="$2" alignItems="center">
-              <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
+              <Pressable onPress={() => comment.user?.id && onViewProfile(comment.user.id)}>
+                <Text fontWeight="600" fontFamily="$body" fontSize={14}>{comment.user?.username || "User"}</Text>
+              </Pressable>
               <Text color="#999" fontFamily="$body" fontSize={11}>{formatDate(comment.createdAt)}</Text>
             </XStack>
 
-            <Text fontSize={13} fontFamily="$body" marginTop={4}>{displayText}</Text>
+            <MentionText text={displayText} mentionMap={mentionMap} fontSize={13} />
 
             {shouldTruncate && !isExpanded && (
               <TouchableOpacity onPress={() => setExpandedComments((prev) => new Set([...prev, comment.id]))}>
@@ -338,15 +575,21 @@ function CommentItem({
             )}
 
             <XStack marginTop={12} gap={15}>
-              <TouchableOpacity onPress={() => startReply(comment.id, comment.user?.username || "User")}>
+              <TouchableOpacity
+                onPress={() => startReply(comment.id, comment.user?.username || "User")}
+                style={{ width: 40, height: 15, borderRadius: 4, justifyContent: "center", alignItems: "center" }}
+              >
                 <Text fontSize={12} fontFamily="$body" color="#836F8B">Reply</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => toggleReplies(comment.id)}>
-                <Text fontSize={12} fontFamily="$body" color="#836F8B">
-                  {areRepliesExpanded ? "Hide" : "View"} Replies ({comment.stats?.repliesCount || 0})
-                </Text>
-              </TouchableOpacity>
+              {comment.stats?.repliesCount > 0 && (
+                <TouchableOpacity onPress={() => toggleReplies(comment.id)} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                  <Text fontSize={12} fontFamily="$body" color="#836F8B">
+                    {areRepliesExpanded ? "Hide" : "View"} Replies ({comment.stats?.repliesCount})
+                  </Text>
+                  <Ionicons name={areRepliesExpanded ? "chevron-up" : "chevron-down"} size={12} color="#836F8B" />
+                </TouchableOpacity>
+              )}
             </XStack>
 
             {areRepliesExpanded && (
@@ -355,10 +598,14 @@ function CommentItem({
                   <ReplyItem
                     key={reply.id}
                     reply={reply}
+                    mentionMap={mentionMap}
                     failedAvatarUrls={failedAvatarUrls}
                     setFailedAvatarUrls={setFailedAvatarUrls}
-                    toggleLike={toggleLike}
+                    toggleLike={() => toggleReplyLike(comment.id, reply.id, !!reply.viewerState?.liked)}
                     startReply={startReply}
+                    onViewProfile={onViewProfile}
+                    onOpenMenu={onOpenMenu}
+                    commentId={comment.id}
                   />
                 ))}
               </View>
@@ -366,7 +613,7 @@ function CommentItem({
           </YStack>
         </XStack>
 
-        <Pressable onPress={() => toggleLike(comment.id, comment.viewerState?.liked || false)} disabled={toggleLikeMutation.isPending}>
+        <Pressable style={{ alignSelf: "flex-start" }} onPress={() => toggleLike(comment.id, !!comment.viewerState?.liked)} disabled={toggleLikeMutation.isPending}>
           {comment.viewerState?.liked ? (
             <Image source={likeIconActive} width={20} height={20} />
           ) : (
@@ -381,43 +628,46 @@ function CommentItem({
 
 function ReplyItem({
   reply,
+  mentionMap,
   failedAvatarUrls,
   setFailedAvatarUrls,
   toggleLike,
   startReply,
+  onViewProfile,
+  onOpenMenu,
+  commentId,
 }: {
   reply: any;
+  mentionMap: Record<string, string>;
   failedAvatarUrls: string[];
   setFailedAvatarUrls: React.Dispatch<React.SetStateAction<string[]>>;
-  toggleLike: (id: string, liked: boolean) => void;
+  toggleLike: () => void;
   startReply: (id: string, username: string) => void;
+  onViewProfile: (userId: string) => void;
+  onOpenMenu: (target: MenuTarget) => void;
+  commentId: string;
 }) {
   return (
     <XStack gap="$2" marginTop="$2" alignItems="flex-start">
-      <Image
-        source={
-          reply.user?.avatarUrl && reply.user.avatarUrl.trim() && !failedAvatarUrls.includes(reply.user.avatarUrl)
-            ? { uri: reply.user.avatarUrl }
-            : { uri: "https://i.pravatar.cc/100?d=mp" }
-        }
-        width={28}
-        height={28}
-        borderRadius={14}
-        onError={() => reply.user?.avatarUrl && setFailedAvatarUrls((prev) => Array.from(new Set([...prev, reply.user.avatarUrl])))}
-      />
+      <Pressable onPress={() => reply.user?.id && onViewProfile(reply.user.id)}>
+        <AvatarWithInitials
+          uri={reply.user?.avatarUrl}
+          name={reply.user?.username}
+          size={28}
+          failedUris={failedAvatarUrls}
+          setFailedUris={setFailedAvatarUrls}
+        />
+      </Pressable>
       <YStack flex={1}>
         <XStack gap="$2" alignItems="center">
-          <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
+          <Pressable onPress={() => reply.user?.id && onViewProfile(reply.user.id)}>
+            <Text fontWeight="600" fontFamily="$body" fontSize={13}>{reply.user?.username || "User"}</Text>
+          </Pressable>
           <Text color="#999" fontFamily="$body" fontSize={10}>{formatDate(reply.createdAt)}</Text>
         </XStack>
-        <Text fontSize={12} fontFamily="$body" marginTop={2}>{reply.text}</Text>
-        <XStack marginTop={8} gap={12}>
-          <TouchableOpacity onPress={() => startReply(reply.id, reply.user?.username || "User")}>
-            <Text fontSize={11} fontFamily="$body" color="#836F8B">Reply</Text>
-          </TouchableOpacity>
-        </XStack>
+        <MentionText text={reply.text} mentionMap={mentionMap} fontSize={12} />
       </YStack>
-      <Pressable onPress={() => toggleLike(reply.id, reply.viewerState?.liked || false)}>
+      <Pressable onPress={toggleLike}>
         {reply.viewerState?.liked ? (
           <Image source={likeIconActive} width={16} height={16} />
         ) : (

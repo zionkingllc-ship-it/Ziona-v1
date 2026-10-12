@@ -5,19 +5,18 @@ import { SimpleButton } from "@/components/ui/centerTextButton";
 import BibleSelectorModal from "@/components/ui/modals/BibleSelectorModal";
 import CategoryModal from "@/components/ui/modals/CategoryModal";
 import SuccessModal from "@/components/ui/modals/successModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
 
 import { usePostFeedback } from "@/hooks/usePostFeedback";
 import { useResponsive } from "@/hooks/useResponsive";
-import { publishDraftPost } from "@/services/graphQL/publishDraftPost";
 import { useCreatePostStore } from "@/store/createPostStore";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { shortenBookName } from "@/utils/bibleNames";
+import { TEXT_MAX_LENGTH, effectiveLength, isWithinLimit } from "@/utils/textMeasure";
 import { useEffect, useState } from "react";
 import { Image, ScrollView, TouchableOpacity } from "react-native";
-import { useQueryClient } from "@tanstack/react-query";
-import { Text, XStack, YStack } from "tamagui";
+import { router } from "expo-router";
+import { Text, View, XStack, YStack } from "tamagui";
 
 /* =========================
    HELPER
@@ -28,8 +27,10 @@ function buildReference(book: string, chapter: number, verses: number[]) {
 
   if (!sorted.length) return "";
 
+  const shortBook = shortenBookName(book);
+
   if (sorted.length === 1) {
-    return `${book} ${chapter}:${sorted[0]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}`;
   }
 
   const isContinuous = sorted.every(
@@ -37,28 +38,31 @@ function buildReference(book: string, chapter: number, verses: number[]) {
   );
 
   if (isContinuous) {
-    return `${book} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
+    return `${shortBook} ${chapter}:${sorted[0]}-${sorted[sorted.length - 1]}`;
   }
 
-  return `${book} ${chapter}:${sorted.join(", ")}`;
+  return `${shortBook} ${chapter}:${sorted.join(", ")}`;
 }
 
 export default function CreateTextScreen() {
   const { wp, hp, fs } = useResponsive();
 
-  const { draft, startDraft, setText, setCategory, setBibleVerse } =
-    useCreatePostStore();
+  const draft = useCreatePostStore((s) => s.draft);
+  const startDraft = useCreatePostStore((s) => s.startDraft);
+  const setText = useCreatePostStore((s) => s.setText);
+  const setCategory = useCreatePostStore((s) => s.setCategory);
+  const setBibleVerse = useCreatePostStore((s) => s.setBibleVerse);
 
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [bibleVisible, setBibleVisible] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
 
-  const MAX_LENGTH = 500;
+  const MAX_LENGTH = TEXT_MAX_LENGTH;
 
   /* =========================
      ENSURE TEXT DRAFT
   ========================= */
+
+  const feedback = usePostFeedback("/(tabs)/create");
 
   useEffect(() => {
     if (!draft) {
@@ -98,17 +102,14 @@ export default function CreateTextScreen() {
   ========================= */
 
   const hasText = textValue.trim().length > 0;
-  const queryClient = useQueryClient();
 
-  const canUpload = !!draft.category?.id && (hasText || !!verseText);
+  const canUpload = !!draft.category?.id && hasText;
 
   /* =========================
      POST HANDLER
   ========================= */
 
-  const feedback = usePostFeedback("/(tabs)/create");
-
-  async function handleUpload() {
+  function handleUpload() {
     if (!draft) return;
 
     if (!canUpload) {
@@ -116,33 +117,15 @@ export default function CreateTextScreen() {
       return;
     }
 
-    try {
-      setUploading(true);
-
-      await publishDraftPost(draft, queryClient);
-
-      setShowProgress(true);
-    } catch (error: any) {
-      const networkFeedback = getNetworkModalCopy(
-        error,
-        error?.message || "We couldn't create your post.",
-      );
-      feedback.showError(networkFeedback.message, networkFeedback.type);
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function handleProgressComplete() {
-    setShowProgress(false);
-    feedback.showSuccess();
+    router.push("/create/uploadProgress");
   }
 
   /* =========================
      CHARACTER LIMIT
   ========================= */
 
-  const combinedLength = (textValue?.length ?? 0) + (verseText?.length ?? 0);
+  const combinedLength =
+    effectiveLength(textValue) + effectiveLength(verseText);
 
   const remaining = MAX_LENGTH - combinedLength;
 
@@ -150,9 +133,7 @@ export default function CreateTextScreen() {
     <YStack
       style={{ flex: 1, backgroundColor: colors.white, paddingTop: hp(5) }}
     >
-      <XStack marginLeft={wp(4)}>
-        <Header heading="Create Post" />
-      </XStack>
+      <Header heading="Create Post" />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -170,9 +151,7 @@ export default function CreateTextScreen() {
             verseText={verseText}
             value={textValue}
             onChangeText={(text) => {
-              const verseLen = verseText?.length ?? 0;
-
-              if (text.length + verseLen <= MAX_LENGTH) {
+              if (isWithinLimit(text, verseText, MAX_LENGTH)) {
                 setText(text);
               }
             }}
@@ -215,10 +194,10 @@ export default function CreateTextScreen() {
           </XStack>
 
           <SimpleButton
-            text={uploading ? "Posting..." : "Post"}
+            text="Next"
             textColor={colors.buttonText}
             color={colors.primary}
-            disabled={uploading || !canUpload}
+            disabled={!canUpload}
             onPress={handleUpload}
           />
         </YStack>
@@ -232,41 +211,35 @@ export default function CreateTextScreen() {
         }}
       />
 
-      <BibleSelectorModal
-        visible={bibleVisible}
-        onClose={() => setBibleVisible(false)}
-        onDone={(data) => {
-          const newVerseLength = data.text.length;
-          const currentTextLength = textValue.length;
+      {bibleVisible && (
+        <BibleSelectorModal
+          visible={bibleVisible}
+          onClose={() => setBibleVisible(false)}
+          onDone={(data) => {
+            if (
+              effectiveLength(data.text) + effectiveLength(textValue) >
+              MAX_LENGTH
+            ) {
+              feedback.showError(
+                "Selected bible verse too long, Please select fewer verses to stay under 500 characters",
+              );
+              return;
+            }
 
-          if (newVerseLength + currentTextLength > MAX_LENGTH) {
-            feedback.showError(
-              "Selected bible verse too long, Please select fewer verses to stay under 500 characters",
-            );
-            return;
-          }
+            setBibleVerse(data);
+          }}
+        />
+      )}
 
-          setBibleVerse(data);
-          setBibleVisible(false);
-        }}
-      />
       <SuccessModal
         visible={feedback.visible}
-        onClose={feedback.handleClose}
-        title={
-          feedback.type === "success"
-            ? "Success"
-            : feedback.type === "warning"
-              ? "Network issue"
-              : "Failed"
-        }
+        onClose={() => {
+          feedback.handleClose();
+        }}
+        title={feedback.title}
         message={feedback.message}
         type={feedback.type}
         autoClose
-      />
-      <PostProgressModal
-        visible={showProgress}
-        onComplete={handleProgressComplete}
       />
     </YStack>
   );

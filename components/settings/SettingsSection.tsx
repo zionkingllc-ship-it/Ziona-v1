@@ -19,6 +19,7 @@ export function SettingsSection({
       {title && (
         <Text
           fontFamily="$body"
+          fontWeight={500}
           fontSize={13}
           color={colors.gray}
           marginBottom={6}

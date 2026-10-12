@@ -1,0 +1,55 @@
+import { AppState, AppStateStatus } from "react-native";
+import type { Router } from "expo-router";
+import { isTokenExpired } from "./refresh";
+import { clearAuthTokens } from "@/services/api/client";
+import { authApi } from "@/services/api/authApi";
+import { useAuthStore } from "@/store/useAuthStore";
+
+let healthInterval: ReturnType<typeof setInterval> | null = null;
+let appStateSubscription: any = null;
+let navigator: Router | null = null;
+
+export function startAuthHealthMonitor(router: Router) {
+  navigator = router;
+  runHealthCheck();
+  healthInterval = setInterval(runHealthCheck, 60_000);
+  appStateSubscription = AppState.addEventListener("change", (state: AppStateStatus) => {
+    if (state === "active") runHealthCheck();
+  });
+}
+
+export function stopAuthHealthMonitor() {
+  if (healthInterval) { clearInterval(healthInterval); healthInterval = null; }
+  if (appStateSubscription) { appStateSubscription.remove(); appStateSubscription = null; }
+  navigator = null;
+}
+
+async function runHealthCheck() {
+  const { isAuthenticated, tokens } = useAuthStore.getState();
+  if (!isAuthenticated) return;
+
+  if (isTokenExpired()) {
+    // Double-check: only force logout if the stored token is actually missing
+    // (module-level tokenExpiresAt can be stale after concurrent refreshes)
+    if (!tokens?.accessToken) {
+      forceLogout();
+      return;
+    }
+    // Let the API interceptor refresh an expired token before deciding to log out.
+  }
+
+  try {
+    await authApi.getMe();
+  } catch (err: any) {
+    const status = err?.status ?? err?.response?.status;
+    if (status === 401) {
+      navigator?.replace("/(auth)");
+    }
+  }
+}
+
+function forceLogout() {
+  clearAuthTokens();
+  useAuthStore.getState().clearSession();
+  navigator?.replace("/(auth)");
+}

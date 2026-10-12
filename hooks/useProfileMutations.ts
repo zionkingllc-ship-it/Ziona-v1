@@ -33,7 +33,7 @@ export function useUpdateAvatar() {
   return useMutation({
     mutationFn: updateAvatar,
 
-    onSuccess: (avatarUrl: string) => {
+    onSuccess: (avatarUrl: string | null) => {
       if (!userId) return;
 
       queryClient.setQueryData(

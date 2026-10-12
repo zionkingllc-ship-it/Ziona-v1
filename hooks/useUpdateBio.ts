@@ -7,12 +7,18 @@ export function useUpdateBio() {
   const userId = useAuthStore((s) => s.user?.id);
 
   return useMutation({
-    mutationFn: async (bio: string) => {
-      const result = await updateProfile({ bio });
+    mutationFn: async ({
+      bio,
+      bioLink,
+    }: {
+      bio: string;
+      bioLink?: string;
+    }) => {
+      const result = await updateProfile({ bio, bioLink });
       return result;
     },
 
-    onMutate: async (newBio) => {
+    onMutate: async ({ bio, bioLink }) => {
       if (!userId) return;
 
       await queryClient.cancelQueries({ queryKey: ["userProfile", userId] });
@@ -21,7 +27,8 @@ export function useUpdateBio() {
 
       queryClient.setQueryData(
         ["userProfile", userId],
-        (old: any) => (old ? { ...old, bio: newBio } : old)
+        (old: any) =>
+          old ? { ...old, bio, bioLink: bioLink ?? old.bioLink } : old
       );
 
       return { previousData };

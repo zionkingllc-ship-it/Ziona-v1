@@ -1,4 +1,5 @@
 import { graphqlRequest } from "../../graphqlClient";
+import { AppError } from "@/utils/error";
 
 /* SAVE */
 export async function savePost(postId: string, folderId?: string) {
@@ -17,7 +18,7 @@ export async function savePost(postId: string, folderId?: string) {
   const res = data?.savePost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Save failed");
+    throw new AppError(res?.error?.message || "Save failed", { code: res?.error?.code });
   }
 
   return res;

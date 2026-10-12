@@ -1,4 +1,5 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 /* =========================
    LIKE POST
@@ -28,7 +29,7 @@ export async function likePost(postId: string) {
   const res = data?.likePost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Like failed");
+    throw new AppError(res?.error?.message || "Like failed", { code: res?.error?.code });
   }
 
   return {
@@ -71,7 +72,7 @@ export async function unlikePost(postId: string) {
   const res = data?.unlikePost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Unlike failed");
+    throw new AppError(res?.error?.message || "Unlike failed", { code: res?.error?.code });
   }
 
   return {

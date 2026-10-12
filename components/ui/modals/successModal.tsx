@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { StyleProp, StyleSheet } from "react-native";
 import { Image, Text, View } from "tamagui";
 import { SimpleButtonWithStyle } from "../SimpleButtonWithStyle";
+import CloseButton from "../CloseButton";
 import BaseModal from "./BaseModal";
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
   withButton?: boolean;
   buttonText?: string;
   buttonDisabled?: boolean;
+  buttonLoading?: boolean;
   buttonColor?: any;
   buttonTextColor?: string;
   buttonTextSize?: any;
@@ -28,11 +30,12 @@ export default function SuccessModal({
   onClose,
   title = "",
   message = "",
-  autoClose = true,
+  autoClose = false,
   duration = 5000,
   type = "success",
   withButton = false,
   buttonDisabled = false,
+  buttonLoading = false,
   buttonColor = colors.primary,
   buttonText = "submit",
   buttonTextColor = colors.white,
@@ -41,7 +44,7 @@ export default function SuccessModal({
   buttonStyle,
 }: Props) {
   useEffect(() => {
-   let timer: ReturnType<typeof setTimeout>;
+    let timer: ReturnType<typeof setTimeout>;
 
     if (visible && autoClose) {
       timer = setTimeout(() => {
@@ -61,7 +64,8 @@ export default function SuccessModal({
   return (
     <BaseModal visible={visible} onClose={onClose}>
       <View style={styles.card}>
-        {/* Green Check Circle */}
+        <CloseButton onPress={onClose} size={24} style={styles.closeButton} />
+        
         {type === "success" ? (
           <Image source={successImage} width={50} height={50} bottom={10} />
         ) : type === "failed" ? (
@@ -83,6 +87,7 @@ export default function SuccessModal({
             onPress={onButtonPress}
             color={buttonColor}
             disabled={buttonDisabled}
+            loading={buttonLoading}
             style={buttonStyle}
           />
         )}
@@ -127,5 +132,10 @@ const styles = StyleSheet.create({
     fontFamily: "$body",
     color: "#666",
     marginBottom: 10,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
   },
 });

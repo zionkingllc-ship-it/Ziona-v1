@@ -5,44 +5,41 @@ import { Button, XStack } from "tamagui";
 type TwoButtonSwitchProps = {
   value: "forYou" | "following";
   onChange: (value: "forYou" | "following") => void;
-  width: number | string;
-  emptyFollowing?: boolean;
+  emptyFeed?: boolean;
   fontFamily?: any;
 };
 
 export default function TwoButtonSwitch({
   value,
   onChange,
-  width,
-  emptyFollowing = false,
+  emptyFeed = false,
   fontFamily = "$body",
 }: TwoButtonSwitchProps) {
   const isForYou = value === "forYou";
 
-  const activeBg = emptyFollowing ? colorsDefault.primary : colorsDefault.white;
-  const activeText = emptyFollowing
-    ? colorsDefault.white
-    : colorsDefault.primary;
-  const inactiveText = emptyFollowing
-    ? colorsDefault.primary
-    : colorsDefault.white;
+  const activeBg = colorsDefault.white;
+  const activeText = colorsDefault.primary;
+  const inactiveBg = "rgba(68, 68, 68, 0.3)";
+  const inactiveText = colorsDefault.white;
 
   return (
     <XStack
       borderColor={"#E4C0F1"}
       borderWidth={1}
       height={"$3"}
-      gap="$2"
+      gap={0}
       alignSelf="center"
       justifyContent="center"
-      borderRadius={999}
-      width={width}
+borderRadius={999}
+    flex={1}
+    maxWidth={260}
+    minWidth={180}
     >
       <Button
-        width={"50%"}
+        flex={1}
         height={"100%"}
         borderRadius={99}
-        backgroundColor={isForYou ? activeBg : "transparent"}
+        backgroundColor={isForYou ? activeBg : inactiveBg}
         borderColor={isForYou ? "#E4C0F1" : "transparent"}
         color={isForYou ? activeText : inactiveText}
         fontSize={13}
@@ -59,10 +56,10 @@ export default function TwoButtonSwitch({
       </Button>
 
       <Button
-        width={"50%"}
+        flex={1}
         height={"100%"}
         borderRadius={99}
-        backgroundColor={!isForYou ? activeBg : "transparent"}
+        backgroundColor={!isForYou ? activeBg : inactiveBg}
         borderColor={!isForYou ? "#E4C0F1" : "transparent"}
         color={!isForYou ? activeText : inactiveText}
         shadowColor="#000"

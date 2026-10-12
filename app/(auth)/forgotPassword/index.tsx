@@ -16,32 +16,36 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorTitle, setErrorTitle] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [errorType, setErrorType] = useState<"success" | "failed" | "warning" | "softwarning">("failed");
 
   const isValidEmail = emailRegex.test(email);
 
-  const showInvalid = isFocus && email.length > 0 && !isValidEmail;
+  const showInvalid = attempted && !isValidEmail;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : showInvalid ? false : true;
+    attempted ? (isValidEmail ? true : false) : undefined;
 
   const handleSendCode = async () => {
-    if (!isValidEmail || loading) return;
+    if (loading) return;
+
+    if (!isValidEmail) {
+      setAttempted(true);
+      return;
+    }
+
+    setAttempted(false);
 
     try {
       setLoading(true);
 
-      console.log("PASSWORD RESET REQUEST");
-      console.log("Email:", email);
-
-      const response = await authApi.requestPasswordReset(
+      await authApi.requestPasswordReset(
         email.trim().toLowerCase()
       );
-
-      console.log("PASSWORD RESET RESPONSE:", response);
 
       router.push({
         pathname: "/(auth)/verifyOtp",
@@ -51,13 +55,10 @@ export default function ForgotPassword() {
         },
       });
     } catch (error: any) {
-      console.error(
-        "PASSWORD RESET FAILED:",
-        error?.response?.data || error
-      );
       const feedback = getNetworkModalCopy(error, "Failed to send reset code. Please try again.");
       setErrorTitle(feedback.title);
       setErrorMessage(feedback.message);
+      setErrorType(feedback.type as "warning" | "failed");
       setErrorVisible(true);
     } finally {
       setLoading(false);
@@ -115,6 +116,8 @@ export default function ForgotPassword() {
             onBlur={() => setIsFocus(false)}
             onChangeText={(text) => {
               setEmail(text);
+              setErrorVisible(false);
+              setAttempted(false);
             }}
           />
 
@@ -129,7 +132,7 @@ export default function ForgotPassword() {
           text="Send code"
           color={colors.primary}
           textColor={colors.white}
-          disabled={!isValidEmail || loading}
+          disabled={loading}
           onPress={handleSendCode}
           style={{ width: "100%", marginTop: 20 }}
         />
@@ -140,7 +143,7 @@ export default function ForgotPassword() {
         onClose={() => setErrorVisible(false)}
         title={errorTitle}
         message={errorMessage}
-        type="warning"
+        type={errorType}
       />
     </KeyboardAvoidingWrapper>
   );

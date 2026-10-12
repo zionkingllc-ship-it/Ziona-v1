@@ -1,6 +1,8 @@
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+import { AppError } from "@/utils/error";
 
 export async function createMediaPost(variables: {
+  category: string;
   caption?: string | null;
   mediaIds?: string[];
   mediaUrls?: string[];
@@ -9,6 +11,7 @@ export async function createMediaPost(variables: {
   const mutation = `
     mutation CreateNewPost(
       $postType: PostType!
+      $category: String!
       $caption: String
       $mediaIds: [String!]
       $mediaUrls: [String!]
@@ -16,6 +19,7 @@ export async function createMediaPost(variables: {
     ) {
       createPost(
         postType: $postType
+        category: $category
         caption: $caption
         mediaIds: $mediaIds
         mediaUrls: $mediaUrls
@@ -27,6 +31,18 @@ export async function createMediaPost(variables: {
           type
           caption
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           media {
             url
             type
@@ -52,7 +68,7 @@ export async function createMediaPost(variables: {
   const res = data?.createPost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to create media post");
+    throw new AppError(res?.error?.message || "Failed to create media post", { code: res?.error?.code });
   }
 
   return res;
@@ -97,6 +113,18 @@ export async function createTextPost(variables: {
           type
           textMessage
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           scripture {
             reference
             text
@@ -117,12 +145,10 @@ export async function createTextPost(variables: {
     postType: "TEXT",
   });
 
-  console.log("📝 CREATE TEXT POST RESPONSE:", JSON.stringify(data, null, 2));
-
   const res = data?.createPost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to create text post");
+    throw new AppError(res?.error?.message || "Failed to create text post", { code: res?.error?.code });
   }
 
   return res;
@@ -167,6 +193,18 @@ export async function createBiblePost(variables: {
           type
           textMessage
           createdAt
+          author {
+            id
+            username
+            avatarUrl
+          }
+          category {
+            slug
+            textPostBg
+            bgColor
+            id
+            label
+          }
           scripture {
             reference
             text
@@ -190,7 +228,7 @@ export async function createBiblePost(variables: {
   const res = data?.createPost;
 
   if (!res?.success) {
-    throw new Error(res?.error?.message || "Failed to create bible post");
+    throw new AppError(res?.error?.message || "Failed to create bible post", { code: res?.error?.code });
   }
 
   return res;

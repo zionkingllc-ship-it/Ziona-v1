@@ -1,119 +1,186 @@
 import Header from "@/components/layout/header";
-import TagSelectorCard from "@/components/post/TagSelectorCard";
 import { SimpleButton } from "@/components/ui/centerTextButton";
 import SuccessModal from "@/components/ui/modals/successModal";
-import PostProgressModal from "@/components/ui/modals/PostProgressModal";
 
 import colors from "@/constants/colors";
+import { MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_SIZE_LABEL } from "@/constants/videoLimits";
 import { useResponsive } from "@/hooks/useResponsive";
-import { publishMediaPost } from "@/services/graphQL/drafts/mediaDraft";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useCreatePostStore } from "@/store/createPostStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
 
 import { useVideoPlayer, VideoView } from "expo-video";
-import { Image, Pressable, TouchableOpacity } from "react-native";
+import { FlatList, Image, NativeScrollEvent, NativeSyntheticEvent, Pressable, TouchableOpacity } from "react-native";
 import { Text, View, XStack, YStack } from "tamagui";
-import { Play, Pause } from "@tamagui/lucide-icons";
+import { Play } from "@tamagui/lucide-icons";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
+import { Image as ExpoImage } from "expo-image";
+
+function VideoPreview({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (instance) => {
+    instance.loop = false;
+  });
+  const isFocused = useIsFocused();
+  const [playing, setPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!isFocused) {
+      player.pause();
+      return;
+    }
+
+    if (playing) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isFocused, playing, player]);
+
+  useEffect(() => {
+    const sub = player.addListener("playToEnd", () => {
+      player.currentTime = 0;
+      setPlaying(false);
+    });
+    return () => sub.remove();
+  }, [player]);
+
+  return (
+    <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
+      <Pressable
+        onPress={() => setPlaying((p) => !p)}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <VideoView
+          player={player}
+          style={{ width: "100%", height: "100%" }}
+          contentFit="contain"
+          nativeControls={false}
+        />
+
+        {!playing && (
+          <View
+            style={{
+              position: "absolute",
+              width: 60,
+              height: 60,
+              borderRadius: 30,
+              backgroundColor: "#FFF1DB",
+              justifyContent: "center",
+              alignItems: "center",
+              alignSelf: "center",
+              top: "50%",
+              marginTop: -30,
+            }}
+          >
+            <Play size={28} color="black" fill="black" />
+          </View>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+function getInitials(name?: string): string {
+  if (!name) return "Ur";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorFromName(name?: string): string {
+  if (!name) return "#7A2E8A";
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ["#7A2E8A", "#4A90A4", "#E58E26", "#2E8A6A", "#8A4A2E", "#4A2E8A"];
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function AuthorAvatar({ username, avatarUrl }: { username?: string; avatarUrl?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const hasValidUri = avatarUrl && avatarUrl.trim() && !failed;
+
+  if (!hasValidUri) {
+    const initials = getInitials(username);
+    const bgColor = getColorFromName(username);
+    return (
+      <View width={36} height={36} borderRadius={18} backgroundColor={bgColor} alignItems="center" justifyContent="center">
+        <Text color="white" fontSize={13} fontWeight="600">{initials}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ExpoImage
+      source={{ uri: avatarUrl }}
+      style={{ width: 36, height: 36, borderRadius: 18 }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export default function CreateMediaPreviewScreen() {
-  const { wp, hp, fs } = useResponsive();
+  const { wp, hp, insets } = useResponsive();
   const { draft } = useCreatePostStore();
   const currentUser = useAuthStore((s) => s.user);
-
-  const [uploading, setUploading] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const queryClient = useQueryClient();
+  const { data: profile } = useUserProfile(currentUser?.id);
+  const avatarUrl = profile?.avatarUrl ?? currentUser?.avatarUrl;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<
     "success" | "failed" | "warning"
   >("success");
   const [modalMessage, setModalMessage] = useState("");
+  const [modalTitle, setModalTitle] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
 
   if (!draft || draft.type !== "MEDIA") return null;
 
   const mediaDraft = draft;
-  const media = mediaDraft.media.items[0];
+  const items = mediaDraft.media.items;
 
-  const getVideoUri = (uri: string | null) => {
-    if (!uri) return "";
-    if (uri.startsWith("file://")) {
-      return uri.replace("file://", "");
-    }
-    return uri;
-  };
-
-  const videoUri = media?.type === "VIDEO" ? getVideoUri(media.uri) : null;
-  const player = useVideoPlayer(videoUri, (instance) => {
-    instance.loop = true;
-  });
-
-  useEffect(() => {
-    if (player) {
-      player.pause();
-    }
-  }, [player]);
+  const cardWidth = wp(100) - wp(12);
 
   const caption = mediaDraft.caption ?? "";
 
-  const canUpload =
-    mediaDraft.media.items.length > 0 && !!mediaDraft.category?.id;
+  const canUpload = items.length > 0 && !!mediaDraft.category?.id;
 
-  async function handleUpload() {
-    if (uploading) return;
-
+  function handleUpload() {
     if (!canUpload) {
       setModalType("failed");
+      setModalTitle("Required Fields");
       setModalMessage("Add media and category");
       setModalVisible(true);
       return;
     }
 
-    try {
-      setUploading(true);
-
-      await publishMediaPost(mediaDraft, queryClient);
-
-      setShowProgress(true);
-    } catch (error: any) {
-      const feedback = getNetworkModalCopy(
-        error,
-        error?.message || "Upload failed",
-      );
-      setModalType(feedback.type);
-      setModalMessage(feedback.message);
+    const oversizedVideo = items.find(
+      (m) => m.type === "VIDEO" && (m.fileSize ?? 0) > MAX_VIDEO_SIZE_BYTES,
+    );
+    if (oversizedVideo) {
+      setModalType("failed");
+      setModalTitle("Video Too Large");
+      setModalMessage(`Video should not be more than ${MAX_VIDEO_SIZE_LABEL}.`);
       setModalVisible(true);
-    } finally {
-      setUploading(false);
+      return;
     }
+
+    router.push("/create/uploadProgress");
   }
 
-  function handleProgressComplete() {
-    setShowProgress(false);
-    setModalType("success");
-    setModalMessage("Post uploaded successfully");
-    setModalVisible(true);
-
-    setTimeout(() => {
-      router.replace("/(tabs)/create");
-    }, 1200);
-  }
-
-  const togglePlay = () => {
-    if (uploading) return;
-    setIsPlaying((prev) => !prev);
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const page = Math.round(e.nativeEvent.contentOffset.x / cardWidth);
+    setCurrentPage(page);
   };
 
   const handleBack = () => {
-    if (uploading) return;
     router.back();
   };
 
@@ -122,71 +189,57 @@ export default function CreateMediaPreviewScreen() {
       flex={1}
       backgroundColor={colors.white}
       paddingTop={hp(5)}
-      paddingHorizontal={wp(6)}
     >
       <Header heading="Preview" />
 
+      <YStack paddingHorizontal={wp(6)} flex={1}>
       <View
         style={{
           width: "100%",
-          height: hp(55),
+          height: hp(80),
           borderRadius: 10,
           overflow: "hidden",
           marginTop: hp(2),
         }}
       >
-        {media?.type === "IMAGE" && (
-          <Pressable
-            onPress={togglePlay}
-            disabled={uploading}
-            style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
-          >
-            <Image
-              source={{ uri: media.uri }}
-              style={{ width: "100%", height: "100%" }}
-            />
-          </Pressable>
-        )}
-
-        {media?.type === "VIDEO" && (
-          <View style={{ width: "100%", height: "100%", backgroundColor: "black" }}>
-            <Pressable
-              onPress={togglePlay}
-              disabled={uploading}
-              style={{ width: "100%", height: "100%", opacity: uploading ? 0.5 : 1 }}
-            >
-              <VideoView
-                player={player}
-                style={{ width: "100%", height: "100%" }}
-                contentFit="cover"
-                nativeControls={false}
-              />
-
-              {!isPlaying && (
-                <View
-                  style={{
-                    position: "absolute",
-                    width: 60,
-                    height: 60,
-                    borderRadius: 30,
-                    backgroundColor: "#FFF1DB",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    alignSelf: "center",
-                    top: "50%",
-                    marginTop: -30,
-                  }}
-                >
-                  <Play size={28} color={colors.black} fill={colors.black} />
+        <FlatList
+          data={items}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          renderItem={({ item }) => (
+            <View width={cardWidth} height="100%">
+              {item.type === "IMAGE" ? (
+                <Image
+                  source={{ uri: item.uri }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View width={cardWidth} height="100%">
+                  <VideoPreview uri={item.uri} />
                 </View>
               )}
-            </Pressable>
-          </View>
-        )}
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+        />
+
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.25)",
+          }}
+          pointerEvents="none"
+        />
 
         <TouchableOpacity
           onPress={handleBack}
-          disabled={uploading}
           style={{
             position: "absolute",
             top: 14,
@@ -197,80 +250,80 @@ export default function CreateMediaPreviewScreen() {
             borderRadius: 13,
             alignItems: "center",
             justifyContent: "center",
-            opacity: uploading ? 0.5 : 1,
           }}
         >
           <Text color="white">✕</Text>
         </TouchableOpacity>
 
-        <XStack
-          position="absolute"
-          bottom={14}
-          left={14}
-          right={60}
-          gap={10}
-          alignItems="center"
+        <View
+          style={{
+            position: "absolute",
+            bottom: 14,
+            left: 14,
+            right: 60,
+          }}
         >
-          <Image
-            source={
-              currentUser?.avatarUrl
-                ? { uri: currentUser.avatarUrl }
-                : require("@/assets/images/profile.png")
-            }
-            width={36}
-            height={36}
-            borderRadius={18}
-          />
-          <YStack flex={1}>
-            <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
-              {currentUser?.username || "User"}
-            </Text>
-            {caption ? (
-              <Text
-                color="white"
-                fontFamily="$body"
-                fontSize={12}
-                numberOfLines={2}
-              >
-                {caption}
+          {items.length > 1 && (
+            <XStack justifyContent="center" marginBottom={hp(1)} gap={wp(1.5)}>
+              {items.map((_, i) => (
+                <View
+                  key={i}
+                  width={wp(2.5)}
+                  height={wp(2.5)}
+                  borderRadius={wp(1.25)}
+                  backgroundColor={i === currentPage ? "white" : "rgba(255,255,255,0.4)"}
+                />
+              ))}
+            </XStack>
+          )}
+
+          <XStack gap={10} alignItems="center">
+            <AuthorAvatar username={currentUser?.username} avatarUrl={avatarUrl} />
+            <YStack flex={1}>
+              <Text color="white" fontFamily="$body" fontSize={13} fontWeight="600">
+                {currentUser?.username || "User"}
               </Text>
-            ) : null}
-          </YStack>
-        </XStack>
+              {caption ? (
+                <Text
+                  color="white"
+                  fontFamily="$body"
+                  fontSize={12}
+                  numberOfLines={2}
+                >
+                  {caption}
+                </Text>
+              ) : null}
+            </YStack>
+          </XStack>
+        </View>
       </View>
 
-      <XStack justifyContent="center" marginTop={hp(5)}>
-        <TagSelectorCard category={mediaDraft.category} disabled={uploading} onPress={() => {}} />
-      </XStack>
+      <View style={{ flex: 1 }} />
 
-      <YStack marginTop={hp(3)}>
+      <YStack
+        marginTop={hp(3)}
+        paddingBottom={insets.bottom + hp(2)}
+      >
         <SimpleButton
-          text={uploading ? "Uploading..." : "Upload"}
-          disabled={!canUpload || uploading}
+          text="Upload"
+          disabled={!canUpload}
           onPress={handleUpload}
           color={colors.primary}
           textColor={colors.buttonText}
         />
       </YStack>
 
-      <SuccessModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={
-          modalType === "success"
-            ? "Success"
-            : modalType === "warning"
-              ? "Network issue"
-              : "Failed"
-        }
-        message={modalMessage}
-        type={modalType}
-        autoClose
-      />
-      <PostProgressModal
-        visible={showProgress}
-        onComplete={handleProgressComplete}
-      />
+      {modalVisible && (
+        <SuccessModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={modalTitle}
+          message={modalMessage}
+          type={modalType}
+          autoClose
+        />
+      )}
+      </YStack>
     </YStack>
   );
 }

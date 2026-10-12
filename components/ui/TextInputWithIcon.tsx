@@ -1,6 +1,6 @@
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Image, Pressable, ImageSourcePropType, TextInputProps } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import BaseInput from "@/components/ui/BaseTextInput";
@@ -38,10 +38,12 @@ export function TextInputWithIcon({
   fontFamily = "System",
   inputType = "alphanumeric",
   onEndIconPress,
-  isFocused,
+  isFocused: isFocusedProp,
   ...props
 }: AppTextInputProps) {
   const { wp, hp, fs } = useResponsive();
+  const [internalFocused, setInternalFocused] = useState(false);
+  const isFocused = isFocusedProp ?? internalFocused;
 
   const borderColor =
     isValid === false
@@ -64,8 +66,8 @@ export function TextInputWithIcon({
       ? colors.successText
       : colors.inputTitle;
 
-  const INPUT_HEIGHT = hp(7);
-  const INPUT_MIN_HEIGHT = 48;
+  const INPUT_HEIGHT = hp(9);
+  const INPUT_MIN_HEIGHT = 64;
   const ICON_SIZE = wp(5);
 
   const handleChange = (text: string) => {
@@ -76,13 +78,13 @@ export function TextInputWithIcon({
     }
   };
 
-  const showHeading = isFocused || value.length > 0;
+  const showFloatingLabel = isFocused || value.length > 0;
 
   return (
     <XStack
       alignItems="center"
       paddingHorizontal={wp(3)}
-      paddingVertical={wp(1.5)}
+      paddingVertical={wp(4)}
       minHeight={Math.max(INPUT_HEIGHT, INPUT_MIN_HEIGHT)}
       height={INPUT_HEIGHT}
       width="100%"
@@ -102,8 +104,8 @@ export function TextInputWithIcon({
       )}
 
       <YStack flex={1} justifyContent="center">
-        {showHeading && (
-          <Text fontSize={fs(10)} color={headerColor} marginBottom={hp(0.3)}>
+        {showFloatingLabel && (
+          <Text fontSize={10} color={headerColor} marginBottom={hp(0.5)}>
             {headingText}
           </Text>
         )}
@@ -111,20 +113,30 @@ export function TextInputWithIcon({
         <BaseInput
           {...props}
           value={value}
-          placeholder={placeholder}
-          placeholderTextColor={colors.placeHolderText}
+          placeholder={showFloatingLabel ? undefined : placeholder}
+          placeholderTextColor="#836F8B"
           keyboardType={
             props.keyboardType ??
             (inputType === "numeric" ? "number-pad" : "default")
           }
-          style={{
-            fontSize: fs(16),
-            color: colors.black,
-            fontFamily,
-            lineHeight: fs(20),
-            paddingVertical: 0,
-          }}
+style={{
+              fontSize: 16,
+              color: colors.black,
+              fontFamily,
+              lineHeight: fs(14),
+              paddingVertical: 2,
+              paddingTop: 2,
+              textAlignVertical: "top",
+            }}
           onChangeText={handleChange}
+          onFocus={(e) => {
+            if (isFocusedProp === undefined) setInternalFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            if (isFocusedProp === undefined) setInternalFocused(false);
+            props.onBlur?.(e);
+          }}
         />
       </YStack>
 

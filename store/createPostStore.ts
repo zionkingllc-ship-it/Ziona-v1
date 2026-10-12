@@ -1,5 +1,6 @@
 import { Category } from "@/types/category";
 import { BibleVerse, CreatePostDraft, MediaItem } from "@/types/createPost";
+import { TEXT_MAX_LENGTH, effectiveLength } from "@/utils/textMeasure";
 
 import { create } from "zustand";
 
@@ -7,6 +8,8 @@ type StartDraftType = "TEXT" | "MEDIA" | "BIBLE";
 
 interface CreatePostState {
   draft: CreatePostDraft | null;
+
+  mediaError: string;
 
   startDraft: (type: StartDraftType, mediaType?: "IMAGE" | "VIDEO") => void;
 
@@ -20,13 +23,17 @@ interface CreatePostState {
 
   setCaption: (caption: string) => void;
 
+  setMediaError: (message: string) => void;
+
   resetDraft: () => void;
 }
 
-const MAX_LENGTH = 500;
+const MAX_LENGTH = TEXT_MAX_LENGTH;
 
 export const useCreatePostStore = create<CreatePostState>((set) => ({
   draft: null,
+
+  mediaError: "",
 
   /* =========================
      START DRAFT
@@ -90,7 +97,11 @@ export const useCreatePostStore = create<CreatePostState>((set) => ({
     set((state) => {
       if (!state.draft) return state;
 
-      if (text.length > MAX_LENGTH) return state;
+      // Weight newlines as full visual lines so Enter-spam counts against the budget.
+      const verseLen =
+        state.draft.type === "TEXT" ? (state.draft.bibleVerse?.text ?? "") : "";
+      if (effectiveLength(text) + effectiveLength(verseLen) > MAX_LENGTH)
+        return state;
 
       if (state.draft.type === "TEXT") {
         return {
@@ -182,8 +193,14 @@ export const useCreatePostStore = create<CreatePostState>((set) => ({
     }),
 
   /* =========================
+     MEDIA ERROR
+  ========================= */
+
+  setMediaError: (message) => set({ mediaError: message }),
+
+  /* =========================
      RESET
   ========================= */
 
-  resetDraft: () => set({ draft: null }),
+  resetDraft: () => set({ draft: null, mediaError: "" }),
 }));

@@ -1,6 +1,7 @@
 import Header from "@/components/layout/header";
 import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWrapper";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import SuccessModal from "@/components/ui/modals/successModal";
 import { TextInputWithIcon } from "@/components/ui/TextInputWithIcon";
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -9,8 +10,12 @@ import { authApi } from "@/services/api/authApi";
 import { useAsyncStore } from "@/store/useAsyncStore";
 import { router } from "expo-router";
 import { useState } from "react";
+import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { api } from "@/services/api/client";
+import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
+import { logCompleteRegistrationEvent } from "@/services/analytics/metaEvents";
+
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
 export default function CreateUsername() {
   const { wp, hp, fs } = useResponsive();
@@ -29,18 +34,24 @@ export default function CreateUsername() {
   const [username, setUsername] = useState("");
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [isFocus, setIsFocus] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const userIcon = require("@/assets/images/userIcon.png");
  
   const isValidUsername = username.trim().length > 0;
 
   const visualValidity: boolean | undefined =
-    !isFocus ? undefined : isValidUsername ? true : false;
+    attempted ? (isValidUsername ? true : false) : undefined;
 
 const flow = useSignupStore((s) => s.flow);
 
 const handleSubmit = async () => {
-  if (!isValidUsername) return;
+  if (!isValidUsername) {
+    setAttempted(true);
+    return;
+  }
 
   const cleanUsername = username.trim().toLowerCase();
 
@@ -50,7 +61,13 @@ const handleSubmit = async () => {
     start("signup");
 
     if (flow === "email") {
-      if (!email || !birthday || !password) return;
+      if (!email || !birthday || !password) {
+        console.error("🟥 USERNAME: missing store data - email:", email, "birthday:", birthday, "password:", password);
+        setError("Something went wrong. Please go back and try again.");
+        setShowErrorModal(true);
+        stop("signup");
+        return;
+      }
 
       await authApi.signUp({
         email,
@@ -59,22 +76,39 @@ const handleSubmit = async () => {
         password,
       });
 
-      router.push({
-        pathname: "/(auth)/verifyOtp",
-        params: { email, flow: "signup" },
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.push({
+            pathname: "/(auth)/verifyOtp",
+            params: { email, flow: "signup" },
+          });
+          stop("signup");
+        }, 120);
       });
+      return;
     }
 
-    if (flow === "google") {
-      await api.post("/user/finalize-username", {
-        username: cleanUsername,
-      });
+    if (flow === "google" || flow === "apple") {
+      await authApi.finalizeUsername(cleanUsername);
 
-      router.replace("/(tabs)/feed");
+      logCompleteRegistrationEvent(flow);
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          router.replace("/(tabs)/feed");
+          stop("signup");
+        }, 120);
+      });
+      return;
     }
-  } catch (error) {
-    console.error("Signup error:", error);
-  } finally {
+
+    setError("Signup failed. Please try again.");
+    setShowErrorModal(true);
+    stop("signup");
+  } catch (err: any) {
+    console.error("🟥 USERNAME ERROR:", err);
+    setError(getErrorMessage(err));
+    setShowErrorModal(true);
     stop("signup");
   }
 };
@@ -123,9 +157,17 @@ const handleSubmit = async () => {
             onChangeText={(value) => {
               setUsername(value);
               setSelectedSuggestion(null);
+              setError(null);
+              setAttempted(false);
             }}
           />
         </YStack>
+
+        {attempted && !isValidUsername && (
+          <Text fontSize={fs(13)} color={colors.errorText} alignSelf="flex-start">
+            Enter a username
+          </Text>
+        )}
 
         {/* USERNAME SUGGESTIONS */}
 
@@ -168,7 +210,7 @@ const handleSubmit = async () => {
           text="Sign up"
           textColor={colors.white}
           color={colors.primary}
-          disabled={!isValidUsername || isLoading}
+          disabled={isLoading}
           onPress={handleSubmit}
           style={{
             width: "100%",
@@ -177,6 +219,21 @@ const handleSubmit = async () => {
           }}
         />
       </YStack>
+
+      <SuccessModal
+        visible={showErrorModal}
+        type="failed"
+        autoClose={false}
+        onClose={() => setShowErrorModal(false)}
+        title="Signup failed"
+        message={error || ""}
+        withButton
+        buttonText="Appeal"
+        onButtonPress={() => {
+          setShowErrorModal(false);
+          Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+        }}
+      />
     </KeyboardAvoidingWrapper>
   );
 }

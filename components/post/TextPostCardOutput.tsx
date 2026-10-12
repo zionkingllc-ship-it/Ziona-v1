@@ -1,6 +1,7 @@
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { Category } from "@/types/category";
+import { sanitizeForDisplay } from "@/utils/textMeasure";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 
 interface Props {
@@ -20,9 +21,13 @@ export default function TextPostCardOutput({
 }: Props) {
   const { wp, hp, fs } = useResponsive();
 
+  // Safety net for legacy Enter-spam posts: collapse 3+ newlines, trim edges.
+  const safeVerseText = sanitizeForDisplay(verseText);
+  const safeTestimonyText = sanitizeForDisplay(testimonyText);
+
   const hasHeader = category || scripture;
-  const hasVerse = !!verseText;
-  const hasTestimony = !!testimonyText;
+  const hasVerse = safeVerseText.length > 0;
+  const hasTestimony = safeTestimonyText.length > 0;
   const flapImage = require("@/assets/images/jounalFlap.png");
   return (
     <View flex={1} width={"100%"}>
@@ -41,9 +46,11 @@ export default function TextPostCardOutput({
       </View>
       <XStack
         flex={1}
+        flexShrink={1}
         backgroundColor={category?.bgColor ?? "#ffc904b8"}
         padding={hp(1.5)}
         borderRadius={wp(1.5)}
+        overflow="hidden"
       >
         {/* Decorative Strip */}
         <YStack
@@ -54,7 +61,7 @@ export default function TextPostCardOutput({
         />
 
         {/* Content */}
-        <YStack flex={1} padding={hp(1)}>
+        <YStack flex={1} flexShrink={1} padding={hp(1)} overflow="hidden">
           {/* HEADER */}
           {hasHeader && (
             <YStack
@@ -115,6 +122,8 @@ export default function TextPostCardOutput({
               borderLeftColor="#62292E"
               paddingLeft={wp(4)}
               marginBottom={hp(2)}
+              flexShrink={1}
+              overflow="hidden"
             >
               <Text
                 fontFamily="$heading"
@@ -123,8 +132,10 @@ export default function TextPostCardOutput({
                 fontStyle="italic"
                 color={colors.black}
                 lineHeight={fs(25)}
+                numberOfLines={6}
+                ellipsizeMode="tail"
               >
-                {verseText}
+                {safeVerseText}
               </Text>
             </View>
           )}
@@ -137,8 +148,11 @@ export default function TextPostCardOutput({
               fontSize={fs(17)}
               color={colors.black}
               lineHeight={fs(25)}
+              flexShrink={1}
+              numberOfLines={10}
+              ellipsizeMode="tail"
             >
-              {testimonyText}
+              {safeTestimonyText}
             </Text>
           )}
         </YStack>

@@ -1,5 +1,7 @@
 import { useBookmarkFolders } from "@/hooks/useBookmarkSettings";
-import React from "react";
+import { useBookmarksStore } from "@/store/useBookmarkStore";
+import { resolveCover } from "@/utils/bookmarkCover";
+import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Image, Text, XStack } from "tamagui";
 import KeyboardBottomSheetModal from "./KeyboardBottomSheetModal";
@@ -19,7 +21,36 @@ export default function BookmarkFoldersModal({
   onToggleFolder,
   onCreateNew,
 }: Props) {
-  const { data: folders = [], isLoading } = useBookmarkFolders();
+  const { data: apiFolders = [], isLoading } = useBookmarkFolders();
+  const { folders: localFolders } = useBookmarksStore();
+
+  const folders = useMemo(() =>
+    apiFolders.map((f) => ({
+      ...f,
+      cover: localFolders.find((lf) => lf.id === f.id)?.cover || f.thumbnailUrl || f.cover || "",
+    })),
+    [apiFolders, localFolders],
+  );
+
+  const [coverMap, setCoverMap] = useState<Record<string, { type: string; uri?: string | null; data?: any }>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all(
+      folders.map(async (f) => {
+        const parsed = await resolveCover(f.cover);
+        return { folderId: f.id, parsed };
+      }),
+    ).then((results) => {
+      if (!mounted) return;
+      const map: Record<string, any> = {};
+      results.forEach((r) => {
+        map[r.folderId] = r.parsed;
+      });
+      setCoverMap(map);
+    });
+    return () => { mounted = false; };
+  }, [folders]);
   
   const bookmarkInactive = require("@/assets/images/bookmarkBlackIcon.png");
   const bookmarkActive = require("@/assets/images/bookmarkIconActive.png");
@@ -51,40 +82,49 @@ export default function BookmarkFoldersModal({
             data={folders}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => {
-              const isSaved = savedFolderIds.includes(item.id);
+              renderItem={({ item }) => {
+                  const isSaved = savedFolderIds.includes(item.id);
+                  const parsed = coverMap[item.id] || { type: "image", uri: null };
 
-              return (
-                <TouchableOpacity
-                  style={styles.row}
-                  onPress={() => onToggleFolder(item.id)}
-                >
-                  <Image
-                    source={
-                      item.cover && typeof item.cover === "string"
-                        ? { uri: item.cover }
-                        : require("@/assets/images/FolderBaner.png")
-                    }
-                    style={styles.image}
-                  />
+                  return (
+                    <TouchableOpacity
+                      style={styles.row}
+                      onPress={() => onToggleFolder(item.id)}
+                    >
+                      {parsed.type === "post" ? (
+                        <View style={[styles.image, { backgroundColor: parsed.data?.bgColor || "#181419", justifyContent: "center", alignItems: "center" }]}>
+                          <Text fontFamily="$body" fontSize={10} fontWeight="600" color="#333" textAlign="center" numberOfLines={2}>
+                            {parsed.data?.textMessage?.trim() || parsed.data?.scriptureText?.trim() || "Text Post"}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Image
+                          source={
+                            parsed.uri
+                              ? { uri: parsed.uri }
+                              : require("@/assets/images/FolderBaner.png")
+                          }
+                          style={styles.image}
+                        />
+                      )}
 
-                  <View style={styles.info}>
-                    <Text fontFamily={"$body"}>
-                      {item.name}
-                    </Text>
-                    <Text fontFamily={"$body"} fontSize={12} color="#999">
-                      {item.savedCount} saved
-                    </Text>
-                  </View>
+                      <View style={styles.info}>
+                        <Text fontFamily={"$body"}>
+                          {item.name}
+                        </Text>
+                        <Text fontFamily={"$body"} fontSize={12} color="#999">
+                          {item.savedCount} saved
+                        </Text>
+                      </View>
 
-                  {isSaved ? (
-                    <Image source={bookmarkActive} height={24} width={24} />
-                  ) : (
-                    <Image source={bookmarkInactive} height={24} width={24} />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
+                      {isSaved ? (
+                        <Image source={bookmarkActive} height={24} width={24} />
+                      ) : (
+                        <Image source={bookmarkInactive} height={24} width={24} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
           />
         )}
       </View>

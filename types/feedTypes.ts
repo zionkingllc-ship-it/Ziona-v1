@@ -1,5 +1,22 @@
 export type FeedPost = FeedTextPost | FeedMediaPost | FeedBiblePost;
 
+export type FeedCirclePromo = {
+  type: "circlePromo";
+  id: string;
+  circles: {
+    id: string;
+    name: string;
+    description: string;
+    coverImage: string;
+    memberCount: number;
+    isJoined: boolean;
+    avatars?: string[];
+    members?: { id: string; name: string; avatarUrl?: string }[];
+  }[];
+};
+
+export type FeedItem = FeedPost | FeedCirclePromo;
+
 /* =========================
    SHARED
  ========================= */
@@ -36,7 +53,6 @@ type BaseFeedPost = {
     liked: boolean;
     saved: boolean;
     followingAuthor: boolean;
-    followedByAuthor: boolean;
     isOwner: boolean;
   };
 };
@@ -75,6 +91,7 @@ type ImageMedia = {
   type: "image";
   url: string;
   thumbnailUrl?: string;
+  sortOrder?: number;
 };
 
 type VideoMedia = {

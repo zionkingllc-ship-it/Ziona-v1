@@ -4,7 +4,36 @@ export async function invalidateFeed(queryClient: QueryClient) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["forYouFeed"] }),
     queryClient.invalidateQueries({ queryKey: ["followingFeed"] }),
+    queryClient.invalidateQueries({ queryKey: ["userPosts"] }),
   ]);
+}
 
-  console.log("Feed invalidated (forYou + following)");
+export function movePostToFeedTop(
+  queryClient: QueryClient,
+  postId: string,
+  postData?: any,
+) {
+  const feedKeys = [["forYouFeed"], ["followingFeed"]];
+  feedKeys.forEach((key) => {
+    queryClient.setQueryData(key, (oldData: any) => {
+      if (!oldData?.pages?.length) return oldData;
+      const pages = [...oldData.pages];
+      const firstPage = { ...pages[0] };
+      const posts = [...(firstPage.posts ?? [])];
+
+      const postIndex = posts.findIndex((p: any) => p?.id === postId);
+
+      if (postIndex === -1) {
+        if (!postData) return oldData;
+        pages[0] = { ...firstPage, posts: [postData, ...posts] };
+        return { ...oldData, pages };
+      }
+
+      if (postIndex === 0) return oldData;
+
+      const [post] = posts.splice(postIndex, 1);
+      pages[0] = { ...firstPage, posts: [post, ...posts] };
+      return { ...oldData, pages };
+    });
+  });
 }

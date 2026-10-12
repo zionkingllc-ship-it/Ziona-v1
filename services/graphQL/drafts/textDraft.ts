@@ -24,7 +24,6 @@ if (draft.bibleVerse) {
       bibleMessage: verse.text,
     };
 
-    console.log("📝 TEXT + BIBLE POST INPUT:", JSON.stringify(payload, null, 2));
     return createTextPost(payload);
   }
 
@@ -32,6 +31,5 @@ if (draft.bibleVerse) {
     throw new Error("Text cannot be empty");
   }
 
-  console.log("TEXT POST INPUT:", basePayload);
   return createTextPost(basePayload);
 }

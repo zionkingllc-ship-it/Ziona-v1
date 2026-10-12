@@ -1,5 +1,10 @@
 import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
+import {
+  TEXT_MAX_LENGTH,
+  effectiveLength,
+  effectiveRemaining,
+} from "@/utils/textMeasure";
 import { TextInput } from "react-native";
 import { Image, Text, View, XStack, YStack } from "tamagui";
 import { useState } from "react";
@@ -29,9 +34,9 @@ export default function TextPostCardInput({
   translation,
   verseText,
 
-  value,
+  value = "",
   onChangeText,
-  maxLength = 500,
+  maxLength = TEXT_MAX_LENGTH,
 
   showInput = true,
 }: Props) {
@@ -42,9 +47,9 @@ export default function TextPostCardInput({
 
   const flapImage = require("@/assets/images/jounalFlap2.png");
 
-  const verseLength = verseText ? verseText.length : 0;
-  const used = value.length + verseLength;
-  const remaining = Math.max(maxLength - used, 0);
+  const verseLength = effectiveLength(verseText);
+  const used = effectiveLength(value) + verseLength;
+  const remaining = effectiveRemaining(value, verseText, maxLength);
 
   return (
     <View flex={1}>
@@ -148,36 +153,31 @@ export default function TextPostCardInput({
               paddingLeft={wp(4)}
               marginBottom={hp(2)}
             >
-              <Text
-                fontFamily="$heading"
-                fontWeight="400"
-                fontSize={fs(17)}
-                fontStyle="italic"
-                color={colors.black}
-                lineHeight={fs(25)}
-              >
+              <Text fontFamily="$body" fontSize={14} color={colors.black}>
                 {verseText}
               </Text>
             </View>
           )}
 
           <View flex={1} justifyContent="space-between">
-            {showInput && (
+            {showInput ? (
               <TextInput
                 value={value}
                 onChangeText={(text) => {
-                  const newUsed = text.length + verseLength;
+                  const newUsed =
+                    effectiveLength(text) + verseLength;
 
                   if (newUsed > maxLength) {
                     //SHOW ERROR
-                    setRemainingError(maxLength - verseLength);
+                    setRemainingError(
+                      Math.max(maxLength - verseLength, 0),
+                    );
                     setErrorVisible(true);
                     return;
                   }
 
                   onChangeText(text);
                 }}
-                placeholder="Whats on your mind?"
                 multiline
                 style={{
                   flex: 1,
@@ -187,24 +187,32 @@ export default function TextPostCardInput({
                   textAlignVertical: "top",
                 }}
               />
-            )}
-
-            {showInput && (
+            ) : value ? (
               <Text
-                alignSelf="flex-end"
-                fontSize={fs(11)}
-                color={
-                  used < maxLength / 2
-                    ? "#836F8B"
-                    : used === maxLength
-                    ? colors.errorText
-                    : "#ac8101"
-                }
-                marginTop={hp(1)}
+                flex={1}
+                fontSize={fs(17)}
+                color={colors.black}
+                lineHeight={fs(25)}
+                fontFamily="$body"
               >
-                {used}/{maxLength}
+                {value}
               </Text>
-            )}
+            ) : null}
+
+            <Text
+              alignSelf="flex-end"
+              fontSize={fs(11)}
+              color={
+                used < maxLength / 2
+                  ? "#836F8B"
+                  : used === maxLength
+                  ? colors.errorText
+                  : "#ac8101"
+              }
+              marginTop={hp(1)}
+            >
+              {used}/{maxLength}
+            </Text>
           </View>
         </YStack>
       </XStack>

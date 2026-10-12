@@ -1,0 +1,741 @@
+import { graphqlRequest } from "@/services/graphQL/graphqlClient";
+
+/* =========================
+   CIRCLE QUERIES
+   ========================= */
+
+export const GET_ALL_CIRCLES = `
+  query GetAllCircles {
+    allCircles {
+      id
+      name
+      description
+      coverImage
+      memberCount
+      isJoined
+      isSubscribed
+      avatars
+      memberPreviews {
+        id
+        fullName
+        avatarUrl
+      }
+    }
+  }
+`;
+
+export const GET_MY_CIRCLES = `
+  query GetMyCircles {
+    myCircles {
+      id
+      name
+      description
+      coverImage
+      memberCount
+      isJoined
+      isSubscribed
+      avatars
+      activeAnchor {
+        id
+        anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorImageText
+        content
+        title
+        mediaUrl
+        backgroundImage
+        backgroundColors
+        bibleText
+        bibleReference
+        createdAt
+        expiresAt
+      }
+    }
+  }
+`;
+
+export const GET_SUGGESTED_CIRCLES = `
+  query GetSuggestedCircles {
+    suggestedCircles {
+      id
+      name
+      description
+      coverImage
+      memberCount
+      isJoined
+      isSubscribed
+      avatars
+    }
+  }
+`;
+
+export const GET_CIRCLE_DETAIL = `
+  query GetCircleDetail($id: String!) {
+    circle(id: $id) {
+      id
+      name
+      description
+      coverImage
+      bannerImage
+      profileImage
+      title
+      image
+      memberCount
+      isJoined
+      isSubscribed
+      avatars
+      memberAvatars
+      rules {
+        ruleNumber
+        title
+        description
+      }
+      activeAnchor {
+        id
+        title
+        content
+        anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorImageText
+        anchorLikedCount
+        anchorVerse
+        mediaUrl
+        createdAt
+        expiresAt
+        timeRemaining
+        responseCount
+        prayedCount
+        likedImage
+        isActive
+        isExpired
+        publishedAt
+        type
+        backgroundColors
+        backgroundImage
+        bibleReference
+        bibleText
+        scripture
+        scriptureReference {
+          book
+          chapter
+          verseStart
+          verseEnd
+          text
+          translation
+        }
+        pages {
+          pageNumber
+          content
+          mediaUrl
+          title
+        }
+        author {
+          id
+          username
+          avatarUrl
+        }
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_FEED = `
+  query GetCircleFeed($circleId: String!, $page: Int, $pageSize: Int) {
+    circleFeed(circleId: $circleId, page: $page, pageSize: $pageSize) {
+      pageInfo {
+        currentPage
+        hasNextPage
+        totalCount
+      }
+      posts {
+        id
+        text
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
+        mediaUrl
+        mediaType
+        createdAt
+        likes
+        likesCount
+        likeCount
+        likedImage
+        comments
+        commentsCount
+        prayedCount
+        anchorLikedCount
+        anchorReference {
+          anchorId
+          anchorType
+          title
+          content
+          mediaUrl
+          backgroundImage
+          backgroundColors
+          bibleReference
+          bibleText
+        }
+        savedCount
+        sharedCount
+        user {
+          id
+          name
+          username
+          avatar
+          avatarUrl
+        }
+        viewerState {
+          liked
+          prayed
+        }
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_FEED_DATA = `
+  query GetCircleFeedData($circleId: String!, $historyLimit: Int, $page: Int, $pageSize: Int, $sortBy: String, $authorId: String) {
+    circleFeedData(circleId: $circleId, historyLimit: $historyLimit, page: $page, pageSize: $pageSize, sortBy: $sortBy, authorId: $authorId) {
+      name
+      description
+      bannerImage
+      profileImage
+      memberCount
+      isJoined
+      memberAvatars
+      activeAnchor {
+        id
+        title
+        content
+        anchorType
+        anchorImage
+        anchorText
+        anchorVideo
+        anchorThumbnail
+        anchorLikedCount
+        mediaUrl
+        createdAt
+        expiresAt
+        timeRemaining
+        responseCount
+        prayedCount
+        likedImage
+        type
+        isExpired
+        backgroundColors
+        backgroundImage
+        bibleReference
+        bibleText
+        scripture
+        scriptureReference {
+          book
+          chapter
+          verseStart
+          verseEnd
+          text
+          translation
+        }
+        pages {
+          pageNumber
+          content
+          mediaUrl
+          title
+        }
+        viewerState {
+          liked
+          prayed
+        }
+      }
+      pastAnchors {
+        id
+        title
+        content
+        anchorType
+        anchorImage
+        createdAt
+        expiresAt
+        responseCount
+        timeRemaining
+      }
+      posts {
+        id
+        text
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
+        mediaUrl
+        mediaType
+        createdAt
+        likes
+        likesCount
+        likeCount
+        likedImage
+        comments
+        commentsCount
+        prayedCount
+        anchorLikedCount
+        anchorReference {
+          anchorId
+          anchorType
+          title
+          content
+          mediaUrl
+          backgroundImage
+          backgroundColors
+          bibleReference
+          bibleText
+        }
+        savedCount
+        sharedCount
+        user {
+          id
+          name
+          username
+          avatar
+          avatarUrl
+        }
+        viewerState {
+          liked
+          prayed
+        }
+      }
+      rules {
+        ruleNumber
+        title
+        description
+      }
+    }
+  }
+`;
+
+export const GET_ACTIVE_ANCHOR = `
+  query GetActiveAnchor($circleId: String!) {
+    activeAnchor(circleId: $circleId) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorImageText
+      anchorLikedCount
+      anchorVerse
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      likedImage
+      isActive
+      isExpired
+      publishedAt
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+export const GET_ANCHOR_HISTORY = `
+  query GetAnchorHistory {
+    anchorHistory {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      responseCount
+      timeRemaining
+      prayedCount
+      type
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+      author {
+        id
+        username
+        avatarUrl
+      }
+    }
+  }
+`;
+
+export const GET_ANCHOR_BY_DATE = `
+  query GetAnchorByDate($circleId: String!, $date: String!) {
+    anchorByDate(circleId: $circleId, date: $date) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      likedImage
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      type
+      isActive
+      isExpired
+      publishedAt
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+export const GET_ANCHOR_BY_ID = `
+  query GetAnchor($id: String!) {
+    anchor(id: $id) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+export const GET_ANCHOR_RESPONSES = `
+  query GetAnchorResponses($anchorId: String!) {
+    anchorResponses(anchorId: $anchorId) {
+      id
+      content
+      responseType
+      mediaType
+      mediaUrl
+      createdAt
+      reactionCount
+      replyCount
+      viewerReactionType
+      author {
+        id
+        username
+        avatarUrl
+      }
+    }
+  }
+`;
+
+export const GET_ANCHOR = `
+  query GetAnchor($id: String!) {
+    anchor(id: $id) {
+      id
+      title
+      content
+      anchorType
+      anchorImage
+      anchorText
+      anchorVideo
+      anchorThumbnail
+      anchorLikedCount
+      mediaUrl
+      createdAt
+      expiresAt
+      timeRemaining
+      responseCount
+      prayedCount
+      likedImage
+      type
+      isExpired
+      backgroundColors
+      backgroundImage
+      bibleReference
+      bibleText
+      scripture
+      scriptureReference {
+        book
+        chapter
+        verseStart
+        verseEnd
+        text
+        translation
+      }
+      pages {
+        pageNumber
+        content
+        mediaUrl
+        title
+      }
+      viewerState {
+        liked
+        prayed
+      }
+      author {
+        id
+        username
+        avatarUrl
+      }
+    }
+  }
+`;
+
+export const GET_CIRCLE_POST = `
+  query GetCirclePost($id: String!) {
+    circlePost(id: $id) {
+      id
+      text
+        media {
+          id
+          url
+          type
+          thumbnailUrl
+          width
+          height
+          duration
+        }
+      mediaUrl
+      mediaType
+      createdAt
+      likes
+      likesCount
+      likeCount
+      likedImage
+      comments
+      commentsCount
+      prayedCount
+      anchorReference {
+        anchorId
+        anchorType
+        title
+        content
+        mediaUrl
+        backgroundImage
+        backgroundColors
+        bibleReference
+        bibleText
+      }
+      savedCount
+      sharedCount
+      user {
+        id
+        name
+        username
+        avatar
+        avatarUrl
+      }
+      viewerState {
+        liked
+        prayed
+      }
+    }
+  }
+`;
+
+/* =========================
+   FETCHERS
+   ========================= */
+
+export async function fetchAllCircles() {
+  const res = await graphqlRequest(GET_ALL_CIRCLES, {});
+  const circles = res?.allCircles ?? [];
+  return circles;
+}
+
+export async function fetchMyCircles() {
+  const res = await graphqlRequest(GET_MY_CIRCLES, {});
+  const circles = res?.myCircles ?? [];
+  return circles;
+}
+
+export async function fetchSuggestedCircles() {
+  const res = await graphqlRequest(GET_SUGGESTED_CIRCLES, {});
+  return res?.suggestedCircles ?? [];
+}
+
+export async function fetchCircleDetail(id: string) {
+  const res = await graphqlRequest(GET_CIRCLE_DETAIL, { id });
+  return res?.circle ?? null;
+}
+
+export async function fetchCircleFeed(
+  circleId: string,
+  page = 1,
+  pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
+) {
+  const res = await graphqlRequest(GET_CIRCLE_FEED, {
+    circleId,
+    page,
+    pageSize,
+  });
+  return (
+    res?.circleFeed ?? {
+      pageInfo: { currentPage: 1, hasNextPage: false, totalCount: 0 },
+      posts: [],
+    }
+  );
+}
+
+export async function fetchCircleFeedData(
+  circleId: string,
+  historyLimit?: number,
+  page = 1,
+  pageSize = 20,
+  sortBy?: string,
+  authorId?: string,
+) {
+  const res = await graphqlRequest(GET_CIRCLE_FEED_DATA, {
+    circleId,
+    historyLimit: historyLimit ?? 10,
+    page,
+    pageSize,
+    sortBy,
+    authorId,
+  });
+  return res?.circleFeedData ?? null;
+}
+
+function mapActiveAnchor(raw: any): any {
+  if (!raw) return null;
+  return {
+    ...raw,
+    type: raw.anchorType,
+  };
+}
+
+export async function fetchActiveAnchor(circleId: string) {
+  const res = await graphqlRequest(GET_ACTIVE_ANCHOR, { circleId });
+  return mapActiveAnchor(res?.activeAnchor ?? null);
+}
+
+export async function fetchAnchorHistory() {
+  const res = await graphqlRequest(GET_ANCHOR_HISTORY, {});
+  return res?.anchorHistory ?? [];
+}
+
+export async function fetchAnchorResponses(anchorId: string) {
+  const res = await graphqlRequest(GET_ANCHOR_RESPONSES, { anchorId });
+  return res?.anchorResponses ?? [];
+}
+
+export async function fetchAnchor(id: string) {
+  const res = await graphqlRequest(GET_ANCHOR, { id });
+  return res?.anchor ?? null;
+}
+
+export async function fetchAnchorByDate(circleId: string, date: string) {
+  const res = await graphqlRequest(GET_ANCHOR_BY_DATE, { circleId, date });
+  return mapActiveAnchor(res?.anchorByDate ?? null);
+}
+
+export async function fetchAnchorById(anchorId: string) {
+  const res = await graphqlRequest(GET_ANCHOR_BY_ID, { id: anchorId });
+  return res?.anchor ?? null;
+}
+
+export async function fetchCirclePost(id: string) {
+  const res = await graphqlRequest(GET_CIRCLE_POST, { id });
+  return res?.circlePost ?? null;
+}
