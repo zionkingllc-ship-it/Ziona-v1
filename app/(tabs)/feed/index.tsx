@@ -34,6 +34,7 @@ import {
 import { View } from "tamagui";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/useAuthStore";
+import { refreshFeedQuery } from "@/services/feed/refreshFeed";
 import { usePostActionsStore } from "@/store/usePostActionStore";
 import { onAppEvent } from "@/src/data/eventBus";
 import { useAppTrackingTransparency } from "@/hooks/useAppTrackingTransparency";
@@ -96,18 +97,20 @@ export default function Feed() {
   }, []);
 
   const onRefreshFeed = useCallback(async () => {
+    if (refreshingFeed) return;
     setRefreshingFeed(true);
     try {
+      setPendingScrollPostId(null);
+      setActivePostId(null);
       setPromotedCirclesInitialized(false);
       setPromotedCirclesPool([]);
-      const key = feedType === "forYou" ? "forYouFeed" : "followingFeed";
-      await queryClient.refetchQueries({ queryKey: [key] });
+      await refreshFeedQuery(queryClient, feedType);
     } catch (err) {
       console.error("Feed refresh failed:", err);
     } finally {
       setRefreshingFeed(false);
     }
-  }, [feedType, queryClient]);
+  }, [feedType, queryClient, refreshingFeed]);
 
   useFocusEffect(
     useCallback(() => {
