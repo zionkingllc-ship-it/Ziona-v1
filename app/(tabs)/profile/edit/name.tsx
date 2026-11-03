@@ -5,25 +5,28 @@ import colors from "@/constants/colors";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useUpdateProfile } from "@/hooks/useProfileMutations";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useProfileEditPolicy } from "@/hooks/useProfileEditPolicy";
+import { formatEditDate, getEditAvailability } from "@/utils/profileEditPolicy";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getNetworkModalCopy } from "@/utils/network/getNetworkModalCopy";
-import { AppError, getErrorMessage } from "@/utils/error";
-import { storage } from "@/utils/storage";
+import { getErrorMessage } from "@/utils/error";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input, Text, XStack, YStack } from "tamagui";
 
 export default function EditNameScreen() {
-  const NAME_CHANGE_INTERVAL_MS = 14 * 24 * 60 * 60 * 1000;
   const router = useRouter();
   const { hp } = useResponsive();
+  const queryClient = useQueryClient();
 
   const userId = useAuthStore((s) => s.user?.id);
   const { data: user } = useUserProfile(userId, {
     enabled: !!userId,
   });
 
+  const { data: editPolicy } = useProfileEditPolicy(userId);
   const mutation = useUpdateProfile();
 
   const [name, setName] = useState("");
@@ -31,52 +34,14 @@ export default function EditNameScreen() {
   const [errorVisible, setErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorTitle, setErrorTitle] = useState("");
-  const [nextChangeDate, setNextChangeDate] = useState<string | null>(null);
-  const [nextChangeTimestamp, setNextChangeTimestamp] = useState<number | null>(null);
-
-  const dateKey = userId ? `name-change-next-date-v2:${userId}` : null;
-
-  const formatDate = (timestamp: number) =>
-    new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-      .format(new Date(timestamp))
-      .replace(",", "");
+  const [now, setNow] = useState(Date.now());
+  const editStatus = getEditAvailability(editPolicy, now);
+  const nameLocked = editStatus.nameLockedUntil !== null;
 
   useEffect(() => {
-    if (!dateKey) return;
-
-    storage.get<{ timestamp: number }>(dateKey).then((saved) => {
-      if (saved?.timestamp && saved.timestamp > Date.now()) {
-        setNextChangeTimestamp(saved.timestamp);
-        setNextChangeDate(formatDate(saved.timestamp));
-      } else {
-        storage.remove(dateKey);
-      }
-    });
-  }, [dateKey]);
-
-  useEffect(() => {
-    if (!nextChangeTimestamp) return;
-
-    const remaining = nextChangeTimestamp - Date.now();
-    if (remaining <= 0) {
-      setNextChangeTimestamp(null);
-      setNextChangeDate(null);
-      if (dateKey) storage.remove(dateKey);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setNextChangeTimestamp(null);
-      setNextChangeDate(null);
-      if (dateKey) storage.remove(dateKey);
-    }, remaining);
-
-    return () => clearTimeout(timer);
-  }, [dateKey, nextChangeTimestamp]);
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (user?.fullName) {
@@ -85,29 +50,16 @@ export default function EditNameScreen() {
   }, [user?.fullName]);
 
   const handleSave = () => {
-    if (!name.trim() || mutation.isPending) return;
+    if (!name.trim() || mutation.isPending || nameLocked) return;
 
     mutation.mutate(
         { fullName: name },
       {
         onSuccess: () => {
-          const nextChangeTimestamp = Date.now() + NAME_CHANGE_INTERVAL_MS;
-          setNextChangeTimestamp(nextChangeTimestamp);
-          setNextChangeDate(formatDate(nextChangeTimestamp));
-          if (dateKey) {
-            storage.set(dateKey, { timestamp: nextChangeTimestamp });
-          }
+          if (userId) void queryClient.invalidateQueries({ queryKey: ["profileEditPolicy", userId] });
           setSuccessVisible(true);
         },
         onError: (e: any) => {
-          if (e?.rateLimitDate) {
-            setNextChangeDate(e.rateLimitDate.replace(/,/g, ""));
-            const parsedDate = Date.parse(e.rateLimitDate);
-            if (dateKey && !Number.isNaN(parsedDate)) {
-              setNextChangeTimestamp(parsedDate);
-              storage.set(dateKey, { timestamp: parsedDate });
-            }
-          }
           const feedback = getNetworkModalCopy(e, getErrorMessage(e) || "Failed to update name");
           setErrorTitle(feedback.title);
           setErrorMessage(feedback.message);
@@ -127,7 +79,9 @@ export default function EditNameScreen() {
 
       <YStack flex={1} padding="$4" gap="$4">
         <Text fontFamily={"$body"} fontWeight={"400"} fontSize={16}>
-          You&apos;re allowed one name change every 14 days.
+          {editStatus.inGrace
+            ? "You can change your name freely during your first 48 hours."
+            : "You’re allowed one name change every 14 days."}
         </Text>
 
         <YStack
@@ -157,7 +111,7 @@ export default function EditNameScreen() {
             fontFamily={"$body"}
             fontWeight={"400"}
             marginTop={-4}
-            disabled={!!nextChangeDate}
+            disabled={nameLocked}
             maxLength={30}
           />
         </YStack>
@@ -168,9 +122,9 @@ export default function EditNameScreen() {
           </Text>
         </XStack>
 
-        {nextChangeDate && (
+        {editStatus.nameLockedUntil !== null && (
           <Text alignSelf="center" fontFamily={"$body"} fontWeight={"400"} fontSize={13} color={colors.placeHolderText}>
-            Next change on <Text color={colors.black}>{nextChangeDate}</Text>
+            Next change on <Text color={colors.black}>{formatEditDate(editStatus.nameLockedUntil)}</Text>
           </Text>
         )}
 
@@ -180,7 +134,7 @@ export default function EditNameScreen() {
           textColor="white"
           color={colors.primary}
           marginTop={20}
-          disabled={mutation.isPending || !!nextChangeDate}
+          disabled={mutation.isPending || nameLocked}
         />
       </YStack>
 

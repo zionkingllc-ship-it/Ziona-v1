@@ -68,7 +68,7 @@ export default function TabsLayout() {
     const isAuth = useAuthStore.getState().isAuthenticated;
     if (isAuth) {
       Promise.allSettled([
-        queryClient.prefetchQuery({ queryKey: ["forYouFeed"], queryFn: () => fetchForYouFeed({ pageParam: undefined }) }),
+        queryClient.prefetchInfiniteQuery({ queryKey: ["forYouFeed"], queryFn: ({ pageParam }) => fetchForYouFeed({ pageParam }), initialPageParam: undefined as string | undefined }),
         queryClient.prefetchQuery({ queryKey: ["allCircles"], queryFn: fetchAllCircles }),
         queryClient.prefetchQuery({ queryKey: ["myCircles"], queryFn: fetchMyCircles }),
         queryClient.prefetchInfiniteQuery({ queryKey: ["notifications", 50], queryFn: ({ pageParam }) => getNotifications(50, pageParam), initialPageParam: undefined as string | undefined }),
