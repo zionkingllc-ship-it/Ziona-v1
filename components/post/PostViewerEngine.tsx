@@ -9,7 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ActivityIndicator, AppState, FlatList, View, ViewToken } from "react-native";
+import { ActivityIndicator, AppState, FlatList, RefreshControl, View, ViewToken } from "react-native";
 import colors from "@/constants/colors";
 
 type Props = {
@@ -277,8 +277,9 @@ function PostViewerEngineComponent({
             animated: false,
           });
         }}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
+        refreshControl={onRefresh ? (
+          <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+        ) : undefined}
         ListFooterComponent={isFetchingNextPage ? (
           <View style={{ height: 60, justifyContent: "center", alignItems: "center" }}>
             <ActivityIndicator size="small" color={colors.primary} />
