@@ -1,3 +1,4 @@
+import { canQueryNotifications } from "@/services/auth/notificationReadiness";
 import colors from "@/constants/colors";
 import { useScreenDimensions } from "@/context/ScreenDimensionsContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -65,7 +66,7 @@ export default function TabsLayout() {
     setTabBarHeight(TAB_BAR_VISUAL_HEIGHT);
 
     // Preload data for all tab screens
-    const isAuth = useAuthStore.getState().isAuthenticated;
+    const isAuth = canQueryNotifications(useAuthStore.getState());
     if (isAuth) {
       Promise.allSettled([
         queryClient.prefetchInfiniteQuery({ queryKey: ["forYouFeed"], queryFn: ({ pageParam }) => fetchForYouFeed({ pageParam }), initialPageParam: undefined as string | undefined }),

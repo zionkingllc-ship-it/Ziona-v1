@@ -2,7 +2,7 @@ import axios, { InternalAxiosRequestConfig } from "axios";
 import type { useAuthStore } from "@/store/useAuthStore";
 import { refreshWithRetry, setTokenExpiry, clearTokenExpiry } from "@/services/auth/refresh";
 import { getSessionVersion } from "@/services/auth/session";
-import { AppError } from "@/utils/error";
+import { AppError, normalizeRestError } from "@/utils/error";
 
 function getAuthStore(): typeof useAuthStore {
   return require("@/store/useAuthStore").useAuthStore;
@@ -53,8 +53,6 @@ api.interceptors.response.use(
       }
       await getAuthStore().getState().clearSession();
     }
-    throw error.response
-      ? new AppError(error.response.data?.message || "Request failed", { status: error.response.status })
-      : new AppError(error.message || "Network error", { retryable: true });
+    throw normalizeRestError(error);
   },
 );
