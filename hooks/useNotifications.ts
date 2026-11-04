@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/store/useAuthStore";
+import { canQueryNotifications } from "@/services/auth/notificationReadiness";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getNotifications,
@@ -17,7 +19,9 @@ async function syncBadgeCount() {
 }
 
 export function useNotifications(limit: number = 20, category?: NotificationCategory) {
+  const enabled = useAuthStore(canQueryNotifications);
   return useInfiniteQuery({
+    enabled,
     queryKey: ["notifications", limit, category],
     queryFn: ({ pageParam }) => getNotifications(limit, pageParam, category),
     initialPageParam: undefined as string | undefined,
@@ -27,10 +31,12 @@ export function useNotifications(limit: number = 20, category?: NotificationCate
 }
 
 export function useUnreadCount() {
+  const enabled = useAuthStore(canQueryNotifications);
   return useQuery({
+    enabled,
     queryKey: ["unreadNotificationCount"],
     queryFn: getUnreadNotificationCount,
-    refetchInterval: 30000,
+    refetchInterval: enabled ? 30000 : false,
   });
 }
 

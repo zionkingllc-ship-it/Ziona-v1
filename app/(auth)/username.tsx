@@ -1,3 +1,4 @@
+import { signupRecovery } from "@/utils/signupRecovery";
 import Header from "@/components/layout/header";
 import { KeyboardAvoidingWrapper } from "@/components/layout/KeyboardAvoidingWrapper";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
@@ -10,12 +11,10 @@ import { authApi } from "@/services/api/authApi";
 import { useAsyncStore } from "@/store/useAsyncStore";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Linking } from "react-native";
 import { Image, Text, XStack, YStack } from "tamagui";
-import { AppError, getErrorMessage, isAuthError } from "@/utils/error";
+import { AppError, getErrorMessage } from "@/utils/error";
 import { logCompleteRegistrationEvent } from "@/services/analytics/metaEvents";
 
-const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL || "support@ziona.app";
 
 export default function CreateUsername() {
   const { wp, hp, fs } = useResponsive();
@@ -36,6 +35,8 @@ export default function CreateUsername() {
   const [isFocus, setIsFocus] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [errorCode, setErrorCode] = useState<string>();
   const [showErrorModal, setShowErrorModal] = useState(false);
 
   const userIcon = require("@/assets/images/userIcon.png");
@@ -47,7 +48,25 @@ export default function CreateUsername() {
 
 const flow = useSignupStore((s) => s.flow);
 
+const resendCode = async () => {
+  if (isLoading || !email) return;
+  start("signup");
+  setShowErrorModal(false);
+  try {
+    await authApi.resendOtp(email);
+    router.push({ pathname: "/(auth)/verifyOtp", params: { email, flow: "signup" } });
+  } catch (err) {
+    setError(getErrorMessage(err));
+    setShowErrorModal(true);
+  } finally {
+    stop("signup");
+  }
+};
+
 const handleSubmit = async () => {
+  if (isLoading) return;
+  if (pendingVerification) return resendCode();
+  setErrorCode(undefined);
   if (!isValidUsername) {
     setAttempted(true);
     return;
@@ -62,7 +81,6 @@ const handleSubmit = async () => {
 
     if (flow === "email") {
       if (!email || !birthday || !password) {
-        console.error("🟥 USERNAME: missing store data - email:", email, "birthday:", birthday, "password:", password);
         setError("Something went wrong. Please go back and try again.");
         setShowErrorModal(true);
         stop("signup");
@@ -105,8 +123,10 @@ const handleSubmit = async () => {
     setError("Signup failed. Please try again.");
     setShowErrorModal(true);
     stop("signup");
-  } catch (err: any) {
-    console.error("🟥 USERNAME ERROR:", err);
+  } catch (err: unknown) {
+    const code = err instanceof AppError ? err.code : undefined;
+    setErrorCode(code);
+    if (code === "OTP_EMAIL_QUEUE_FAILED") setPendingVerification(true);
     setError(getErrorMessage(err));
     setShowErrorModal(true);
     stop("signup");
@@ -207,7 +227,7 @@ const handleSubmit = async () => {
         {/* SIGNUP BUTTON */}
 
         <PrimaryButton
-          text="Sign up"
+          text={pendingVerification ? "Resend code" : "Sign up"}
           textColor={colors.white}
           color={colors.primary}
           disabled={isLoading}
@@ -225,13 +245,16 @@ const handleSubmit = async () => {
         type="failed"
         autoClose={false}
         onClose={() => setShowErrorModal(false)}
-        title="Signup failed"
+        title={pendingVerification ? "Verification code unavailable" : "Signup failed"}
         message={error || ""}
         withButton
-        buttonText="Appeal"
+        buttonText={signupRecovery(errorCode, pendingVerification).label}
         onButtonPress={() => {
           setShowErrorModal(false);
-          Linking.openURL(`mailto:${SUPPORT_EMAIL}`);
+          const { action } = signupRecovery(errorCode, pendingVerification);
+          if (action === "resend") void resendCode();
+          else if (action === "signin") router.push("/(auth)/login");
+          else if (action === "retry") void handleSubmit();
         }}
       />
     </KeyboardAvoidingWrapper>

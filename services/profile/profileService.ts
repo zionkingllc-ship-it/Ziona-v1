@@ -5,9 +5,7 @@ import {
   uploadFileToStorage,
 } from "@/services/graphQL/mutation/media/mediaUpload";
 import { cleanAvatarUrl } from "@/services/utils/cleanAvatarUrl";
-import { getMimeType } from "@/services/utils/mime";
-import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
-import * as FileSystem from "expo-file-system/legacy";
+import { prepareUploadMedia } from "@/services/utils/prepareUploadMedia";
 import { AppError } from "@/utils/error";
 
 /* =========================
@@ -132,19 +130,12 @@ export async function updateUsername(
 ========================= */
 
 export async function updateAvatar(file: { uri: string }) {
-  const fileName = file.uri?.split("/").pop() || `avatar-${Date.now()}`;
-  const fileType = getMimeType(file.uri, "IMAGE");
-  const fileInfo = await FileSystem.getInfoAsync(file.uri);
-
-  if (!fileInfo.exists) throw new Error("Avatar file does not exist");
-
-  const convertedUri = await convertToSupportedFormat(file.uri, fileType);
-  const compressedUri = await compressImage(convertedUri);
+  const { uri: compressedUri, fileName, fileType, fileSize } = await prepareUploadMedia(file.uri, "IMAGE");
 
   const upload = await requestMediaUpload(
     fileName,
     fileType,
-    fileInfo.size || 0,
+    fileSize,
   );
   await uploadFileToStorage(upload.uploadUrl, compressedUri, fileType);
   const avatarUrl = cleanAvatarUrl(extractPublicUrl(upload.uploadUrl));

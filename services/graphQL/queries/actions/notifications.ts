@@ -1,3 +1,6 @@
+import { useAuthStore } from "@/store/useAuthStore";
+import { canQueryNotifications } from "@/services/auth/notificationReadiness";
+import { getSessionVersion } from "@/services/auth/session";
 import { graphqlRequest } from "@/services/graphQL/graphqlClient";
 import type {
   NotificationItem as GQLNotificationItem,
@@ -58,6 +61,8 @@ export async function getNotifications(limit: number = 50, cursor?: string, cate
 }
 
 export async function getUnreadNotificationCount(): Promise<number> {
+  if (!canQueryNotifications(useAuthStore.getState())) return 0;
+  const version = getSessionVersion();
   const query = `
     query UnreadCount {
       unreadNotificationCount
@@ -66,6 +71,7 @@ export async function getUnreadNotificationCount(): Promise<number> {
 
   try {
     const data = await graphqlRequest(query, {});
+    if (version !== getSessionVersion() || !canQueryNotifications(useAuthStore.getState())) return 0;
     return data?.unreadNotificationCount ?? 0;
   } catch {
     return 0;
