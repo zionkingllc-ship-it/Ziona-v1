@@ -8,13 +8,10 @@ import { createMediaPost } from "../mutation/createPost";
 
 import { MediaDraft } from "@/types/createPost";
 import { invalidateFeed } from "@/services/feed/invalidateFeed";
-import * as FileSystem from "expo-file-system/legacy";
 
 import { QueryClient } from "@tanstack/react-query";
 
-import { getMimeType } from "@/services/utils/mime";
-import { compressImage, convertToSupportedFormat } from "@/services/utils/imageConversion";
-import { compressVideo } from "@/services/utils/videoCompression";
+import { prepareUploadMedia } from "@/services/utils/prepareUploadMedia";
 
 /* =========================
    MAIN FUNCTION
@@ -29,30 +26,14 @@ export async function preUploadMedia(
 
   const uploads = items.map(async (item, index: number) => {
     try {
-      let fileUri = item.uri;
-
-      if (item.type === "IMAGE") {
-        fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
-        fileUri = await compressImage(fileUri);
-      } else if (item.type === "VIDEO") {
-        fileUri = await compressVideo(fileUri);
-      }
-
-      const fileName =
-        fileUri?.split("/").pop() || `file-${Date.now()}-${index}`;
-
-      const fileType = getMimeType(fileUri, item.type as "IMAGE" | "VIDEO");
-
-      const fileInfo = await FileSystem.getInfoAsync(fileUri);
-
-      if (!fileInfo.exists) throw new Error("File does not exist");
-      if (!fileInfo.size || fileInfo.size <= 0)
-        throw new Error("Invalid file size");
+      const { uri: fileUri, fileName, fileType, fileSize } = await prepareUploadMedia(
+        item.uri, item.type as "IMAGE" | "VIDEO",
+      );
 
       const upload = await requestUploadSession(
         fileName,
         fileType,
-        fileInfo.size,
+        fileSize,
       );
 
       const itemProgress = (pct: number) => {
@@ -60,7 +41,7 @@ export async function preUploadMedia(
         onProgress?.(overall);
       };
 
-      await uploadWithStrategy(upload, fileUri, fileType, fileInfo.size, itemProgress);
+      await uploadWithStrategy(upload, fileUri, fileType, fileSize, itemProgress);
 
       const { mediaUrl } = await confirmMediaUpload(upload.mediaId);
 
@@ -123,31 +104,15 @@ export async function publishMediaPost(
     const uploads = items.map(async (item, index: number) => {
       try {
         lifecycle?.assertActive();
-        let fileUri = item.uri;
-
-        if (item.type === "IMAGE") {
-          fileUri = await convertToSupportedFormat(fileUri, getMimeType(fileUri, "IMAGE"));
-          fileUri = await compressImage(fileUri);
-        } else if (item.type === "VIDEO") {
-          fileUri = await compressVideo(fileUri);
-        }
-
-        const fileName =
-          fileUri?.split("/").pop() || `file-${Date.now()}-${index}`;
-
-        const fileType = getMimeType(fileUri, item.type as "IMAGE" | "VIDEO");
-
-        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+        const { uri: fileUri, fileName, fileType, fileSize } = await prepareUploadMedia(
+          item.uri, item.type as "IMAGE" | "VIDEO",
+        );
         lifecycle?.assertActive();
-
-        if (!fileInfo.exists) throw new Error("File does not exist");
-        if (!fileInfo.size || fileInfo.size <= 0)
-          throw new Error("Invalid file size");
 
         const upload = await requestUploadSession(
           fileName,
           fileType,
-          fileInfo.size,
+          fileSize,
         );
         lifecycle?.assertActive();
 
@@ -156,7 +121,7 @@ export async function publishMediaPost(
           onProgress?.(overall);
         };
 
-        await uploadWithStrategy(upload, fileUri, fileType, fileInfo.size, itemProgress);
+        await uploadWithStrategy(upload, fileUri, fileType, fileSize, itemProgress);
         lifecycle?.assertActive();
 
         const { mediaUrl } = await confirmMediaUpload(upload.mediaId);

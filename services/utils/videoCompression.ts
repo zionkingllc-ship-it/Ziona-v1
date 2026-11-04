@@ -34,18 +34,6 @@ export async function compressVideo(
       onProgress,
     );
 
-    const ext = result.split(".").pop()?.toLowerCase() ?? "";
-    if (ext === "mov" || ext === "avi" || ext === "m4v") {
-      const correctedPath = result.replace(/\.(mov|avi|m4v)$/i, ".mp4");
-      try {
-        await FileSystem.copyAsync({ from: result, to: correctedPath });
-        await FileSystem.deleteAsync(result, { idempotent: true });
-        return correctedPath;
-      } catch {
-        return result;
-      }
-    }
-
     return result;
   } catch (err) {
     throw new Error(`Video compression failed: ${err instanceof Error ? err.message : "Unknown error"}`);

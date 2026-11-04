@@ -158,6 +158,8 @@ function uploadHarness() {
     '@/utils/feed/normalizePost': { normalizePost: p => p },
     '@/services/utils/mime': { getMimeType: () => 'video/mp4' },
     '@/services/utils/imageConversion': {},
+    './imageConversion': {},
+    './videoCompression': { compressVideo: async uri => uri },
     '@/services/utils/videoCompression': { compressVideo: async uri => uri },
     'expo-file-system/legacy': { getInfoAsync: async () => ({ exists: true, size: 1 }) },
     '../mutation/media/mediaUpload': {

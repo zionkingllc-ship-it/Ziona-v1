@@ -2,13 +2,17 @@ export class AppError extends Error {
   public readonly code?: string;
   public readonly status?: number;
   public readonly retryable?: boolean;
+  public readonly retryAfter?: string;
+  public readonly details?: Record<string, unknown>;
 
-  constructor(message: string, options?: { code?: string; status?: number; retryable?: boolean }) {
+  constructor(message: string, options?: { code?: string; status?: number; retryable?: boolean; retryAfter?: string; details?: Record<string, unknown> }) {
     super(message);
     this.name = "AppError";
     this.code = options?.code;
     this.status = options?.status;
     this.retryable = options?.retryable;
+    this.retryAfter = options?.retryAfter;
+    this.details = options?.details;
   }
 }
 
@@ -60,4 +64,25 @@ export function shouldRetry(error: unknown): boolean {
     return error.retryable ?? true;
   }
   return true;
+}
+
+/** Normalize the backend auth envelope without discarding machine-readable fields. */
+export function normalizeRestError(error: {
+  response?: { status: number; data?: any; headers?: Record<string, unknown> };
+  message?: string;
+}): AppError {
+  const response = error.response;
+  if (!response) return new AppError("Unable to connect. Check your connection and try again.", { code: "NETWORK_ERROR", retryable: true });
+  const nested = response.data?.error;
+  const message = typeof nested?.message === "string" ? nested.message
+    : typeof response.data?.message === "string" ? response.data.message
+    : response.status >= 500 ? "The service is temporarily unavailable. Please try again."
+    : "Check your details and try again.";
+  return new AppError(message, {
+    status: response.status,
+    code: typeof nested?.code === "string" ? nested.code : undefined,
+    details: nested?.details,
+    retryAfter: response.headers?.["retry-after"] === undefined ? undefined : String(response.headers["retry-after"]),
+    retryable: response.status === 429 || response.status >= 500,
+  });
 }
