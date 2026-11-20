@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus, Linking, NativeModules, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
@@ -26,12 +26,20 @@ try {
       getMessaging,
       getToken: rnfbGetToken,
       onTokenRefresh: rnfbOnTokenRefresh,
+      onNotificationOpenedApp: rnfbOnNotificationOpenedApp,
+      getInitialNotification: rnfbGetInitialNotification,
     } = require("@react-native-firebase/messaging");
     const messagingApi = getMessaging(getApp());
     messaging = {
       getToken: () => rnfbGetToken(messagingApi),
       onTokenRefresh: (handler: (token: string) => void) =>
         rnfbOnTokenRefresh(messagingApi, handler),
+      // iOS: when RNFB owns the UNUserNotificationCenter delegate,
+      // expo-notifications never receives the tap response, so these are the
+      // only events that fire when a push opens the app.
+      onNotificationOpenedApp: (handler: (message: any) => void) =>
+        rnfbOnNotificationOpenedApp(messagingApi, handler),
+      getInitialNotification: () => rnfbGetInitialNotification(messagingApi),
     };
   }
 } catch {}
@@ -169,8 +177,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
   const userId = useAuthStore((s) => s.user?.id);
   const navReady = useRootNavigationReady();
   const appState = useRef(AppState.currentState);
-  const pendingResponseRef = useRef<Record<string, unknown> | null>(null);
-  const isMountedRef = useRef(true);
+  const [pendingData, setPendingData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -220,7 +227,7 @@ export default function NotificationProvider({ children }: { children: React.Rea
       console.log("[Notifications] notification ID opened:", response.notification.request.identifier);
       const data = response.notification.request.content.data as Record<string, unknown> | undefined;
       if (!data) return;
-      pendingResponseRef.current = data;
+      setPendingData(data);
     });
 
     const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
@@ -240,44 +247,71 @@ export default function NotificationProvider({ children }: { children: React.Rea
     };
   }, []);
 
+  // iOS: RNFB owns the notification-center delegate in builds where it
+  // initialises before expo-notifications, so expo's response listener above
+  // never fires. Bridge both RNFB tap events into the same pending data.
+  useEffect(() => {
+    if (!messaging) return;
+    let active = true;
+    const unsubscribe = messaging.onNotificationOpenedApp((message: any) => {
+      const data = message?.data as Record<string, unknown> | undefined;
+      if (data) {
+        console.log("[Notifications] RNFB tap (background):", message?.messageId);
+        setPendingData(data);
+      }
+    });
+    messaging
+      .getInitialNotification()
+      .then((message: any) => {
+        if (!active) return;
+        const data = message?.data as Record<string, unknown> | undefined;
+        if (data) {
+          console.log("[Notifications] RNFB tap (cold start):", message?.messageId);
+          setPendingData(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!navReady || !isAuthenticated || !pendingData) return;
+
+    const href = resolveNotificationDestination(pendingData);
+    if (href) pushOnce(href);
+    setPendingData(null);
+    // Clear stored ID after successful navigation so next launch doesn't re-trigger
+    clearHandled();
+  }, [navReady, isAuthenticated, pendingData]);
+
+  // On cold start, check expo-notifications for a genuinely new response
+  // (Android, and iOS builds where expo owns the delegate).
   useEffect(() => {
     if (!navReady || !isAuthenticated) return;
-
-    const handleData = (data: Record<string, unknown>) => {
-      const href = resolveNotificationDestination(data);
-      if (href) pushOnce(href);
-      // Clear stored ID after successful navigation so next launch doesn't re-trigger
-      clearHandled();
-    };
-
-    // Handle pending response from when app was backgrounded
-    if (pendingResponseRef.current) {
-      handleData(pendingResponseRef.current);
-      pendingResponseRef.current = null;
-    }
-
-    // On cold start, check for a genuinely new notification response
+    let active = true;
     Notifications.getLastNotificationResponseAsync()
       .then(async (response) => {
-        if (!isMountedRef.current) return;
-        if (!response) return;
+        if (!active || !response) return;
         const id = response.notification.request.identifier;
         console.log("[Notifications] cold start last response:", id);
-        
+
         // Only navigate if this is a new unhandled notification
         const shouldHandle = await tryMarkHandled(id);
-        if (!shouldHandle) {
+        if (!shouldHandle || !active) {
           console.log("[Notifications] skipping already-handled notification:", id);
           return;
         }
-        
+
         const data = response.notification.request.content.data as Record<string, unknown> | undefined;
-        if (data) handleData(data);
+        if (data) setPendingData(data);
       })
       .catch(() => {});
 
     return () => {
-      isMountedRef.current = false;
+      active = false;
     };
   }, [navReady, isAuthenticated]);
 

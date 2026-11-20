@@ -14,6 +14,85 @@ function toHrefFromParts(
   // Takes precedence over the legacy secondaryEntityId overload.
   circleId?: string,
 ): NotificationHref | null {
+  // The backend's destination routes are symbolic names ("post_detail",
+  // "comment_thread", ...), not URL paths. Resolve those first: previously a
+  // comment push fell through to the reference-type fallback and opened the
+  // post with the comments sheet closed.
+  const routeKey = route.trim().toLowerCase();
+
+  if (routeKey === "post_detail" || routeKey === "post") {
+    if (!entityId) return null;
+    return { pathname: `/viewer/${entityId}`, params: { postId: entityId } };
+  }
+
+  if (routeKey === "comment_thread" || routeKey === "comment") {
+    // entityId is the comment, secondaryEntityId is its parent post.
+    const postId = secondaryEntityId || entityId;
+    if (!postId) return null;
+    const params: Record<string, string> = { postId, openComments: "1" };
+    if (secondaryEntityId && entityId && entityId !== postId) {
+      params.commentId = entityId;
+    }
+    return { pathname: `/viewer/${postId}`, params };
+  }
+
+  if (routeKey === "profile" || routeKey === "user") {
+    if (!entityId) return null;
+    return { pathname: "/guest", params: { userId: entityId } };
+  }
+
+  if (routeKey === "circle_post_detail" || routeKey === "circle_post") {
+    if (!entityId) return null;
+    return {
+      pathname: "/posts/[id]",
+      params: { postId: entityId, ...(circleId ? { circleId } : {}) },
+    };
+  }
+
+  if (routeKey === "circle_post_comment_thread" || routeKey === "circle_post_comment") {
+    // secondaryEntityId is the parent circle post, entityId is the comment.
+    if (secondaryEntityId) {
+      return {
+        pathname: "/posts/[id]",
+        params: {
+          postId: secondaryEntityId,
+          openComments: "1",
+          ...(entityId ? { commentId: entityId } : {}),
+          ...(circleId ? { circleId } : {}),
+        },
+      };
+    }
+    if (circleId) return { pathname: "/circleFeed", params: { id: circleId } };
+    return null;
+  }
+
+  if (routeKey === "anchor_response") {
+    // secondaryEntityId is the anchor the response belongs to, entityId the
+    // response itself. Anchor views need the anchor id, not the response id.
+    const anchorId = secondaryEntityId || entityId;
+    if (!anchorId || !circleId) {
+      return circleId ? { pathname: "/circleFeed", params: { id: circleId } } : null;
+    }
+    return {
+      pathname: "/(tabs)/circle/anchorUnifiedView",
+      params: { id: anchorId, circleId, source: "notification" },
+    };
+  }
+
+  if (routeKey === "anchor_detail" || routeKey === "anchor") {
+    if (entityId && circleId) {
+      return {
+        pathname: "/(tabs)/circle/anchorUnifiedView",
+        params: { id: entityId, circleId, source: "notification" },
+      };
+    }
+    return circleId ? { pathname: "/circleFeed", params: { id: circleId } } : null;
+  }
+
+  if (routeKey === "notification_detail" || routeKey === "support_ticket") {
+    return { pathname: "/notifications" };
+  }
+
   if (route.startsWith("/post/") || route.startsWith("/posts/")) {
     const id =
       entityId ||
@@ -137,6 +216,10 @@ function resolveDestination(data?: Record<string, unknown> | null): Notification
 
   if (!referenceType || !referenceId) return null;
 
+  // Legacy rows may still carry "Anchor" / "ContactMessage"; the backend
+  // normalises new rows, so compare a lowercase, punctuation-free key.
+  const referenceTypeKey = referenceType.toLowerCase().replace(/[^a-z0-9]/g, "");
+
   // Nested destination object (may exist without a route when only
   // reference fields were sent). Reused by the comment/circle fallbacks below.
   const fallbackDest = data.destination as Record<string, unknown> | undefined;
@@ -149,10 +232,10 @@ function resolveDestination(data?: Record<string, unknown> | null): Notification
       ? fallbackDest.circleId
       : undefined;
 
-  switch (referenceType) {
+  switch (referenceTypeKey) {
     case "post":
     case "like":
-    case "like_post":
+    case "likepost":
     case "mention": {
       const params: Record<string, string> = { postId: referenceId };
       return { pathname: `/viewer/${referenceId}`, params };
@@ -176,21 +259,58 @@ function resolveDestination(data?: Record<string, unknown> | null): Notification
       return { pathname: "/guest", params: { userId: referenceId } };
     case "circle":
       return { pathname: "/circleFeed", params: { id: referenceId } };
-    case "circle_post":
+    case "circlepost": {
+      const circleId =
+        pickStr(data, "circleId", "destinationCircleId") ??
+        pickStr(data, "secondaryEntityId", "destinationSecondaryEntityId") ??
+        destSecondaryId;
+      return circleId ? { pathname: "/circleFeed", params: { id: circleId } } : null;
+    }
+    case "circlepostcomment": {
+      const circleId =
+        pickStr(data, "circleId", "destinationCircleId") ?? destCircleId;
+      const postId =
+        pickStr(data, "secondaryEntityId", "destinationSecondaryEntityId") ??
+        destSecondaryId;
+      if (!postId) {
+        return circleId ? { pathname: "/circleFeed", params: { id: circleId } } : null;
+      }
+      const params: Record<string, string> = { postId, openComments: "1" };
+      if (referenceId !== postId) params.commentId = referenceId;
+      if (circleId) params.circleId = circleId;
+      return { pathname: "/posts/[id]", params };
+    }
     case "anchor": {
       const circleId =
         pickStr(data, "circleId", "destinationCircleId") ??
         pickStr(data, "secondaryEntityId", "destinationSecondaryEntityId") ??
         destSecondaryId;
       return circleId
-        ? referenceType === "anchor"
-          ? {
-              pathname: "/(tabs)/circle/anchorUnifiedView",
-              params: { id: referenceId, circleId, source: "notification" },
-            }
-          : { pathname: "/circleFeed", params: { id: circleId } }
+        ? {
+            pathname: "/(tabs)/circle/anchorUnifiedView",
+            params: { id: referenceId, circleId, source: "notification" },
+          }
         : null;
     }
+    case "anchorresponse": {
+      // referenceId is the response; secondaryEntityId is its anchor.
+      const circleId =
+        pickStr(data, "circleId", "destinationCircleId") ?? destCircleId;
+      const anchorId =
+        pickStr(data, "secondaryEntityId", "destinationSecondaryEntityId") ??
+        destSecondaryId;
+      if (!circleId) return null;
+      return anchorId
+        ? {
+            pathname: "/(tabs)/circle/anchorUnifiedView",
+            params: { id: anchorId, circleId, source: "notification" },
+          }
+        : { pathname: "/circleFeed", params: { id: circleId } };
+    }
+    case "contactmessage":
+    case "supportticket":
+    case "notification":
+      return { pathname: "/notifications" };
     default:
       return null;
   }
